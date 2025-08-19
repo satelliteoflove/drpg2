@@ -2,6 +2,8 @@ export class InputManager {
     private keys: Set<string> = new Set();
     private keyHandlers: Map<string, () => void> = new Map();
     private onKeyPress?: (key: string) => boolean;
+    private lastKeyPressTime: Map<string, number> = new Map();
+    private keyRepeatDelay: number = 150; // milliseconds
 
     constructor() {
         this.setupEventListeners();
@@ -9,16 +11,28 @@ export class InputManager {
 
     private setupEventListeners(): void {
         document.addEventListener('keydown', (event) => {
-            this.keys.add(event.key.toLowerCase());
+            const key = event.key.toLowerCase();
+            this.keys.add(key);
+            
+            // Check if enough time has passed since the last press of this key
+            const now = Date.now();
+            const lastPress = this.lastKeyPressTime.get(key) || 0;
+            
+            if (now - lastPress < this.keyRepeatDelay) {
+                event.preventDefault();
+                return;
+            }
+            
+            this.lastKeyPressTime.set(key, now);
             
             if (this.onKeyPress) {
-                const handled = this.onKeyPress(event.key.toLowerCase());
+                const handled = this.onKeyPress(key);
                 if (handled) {
                     event.preventDefault();
                 }
             }
             
-            const handler = this.keyHandlers.get(event.key.toLowerCase());
+            const handler = this.keyHandlers.get(key);
             if (handler) {
                 handler();
                 event.preventDefault();
@@ -26,11 +40,14 @@ export class InputManager {
         });
 
         document.addEventListener('keyup', (event) => {
-            this.keys.delete(event.key.toLowerCase());
+            const key = event.key.toLowerCase();
+            this.keys.delete(key);
+            this.lastKeyPressTime.delete(key);
         });
 
         document.addEventListener('blur', () => {
             this.keys.clear();
+            this.lastKeyPressTime.clear();
         });
     }
 
@@ -69,5 +86,13 @@ export class InputManager {
             cancel: this.isKeyPressed('escape'),
             menu: this.isKeyPressed('m') || this.isKeyPressed('tab')
         };
+    }
+
+    public setKeyRepeatDelay(delay: number): void {
+        this.keyRepeatDelay = delay;
+    }
+
+    public getKeyRepeatDelay(): number {
+        return this.keyRepeatDelay;
     }
 }

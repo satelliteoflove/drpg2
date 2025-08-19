@@ -13,7 +13,7 @@ export class DungeonScene extends Scene {
     private statusPanel!: StatusPanel;
     private messageLog!: MessageLog;
     private lastMoveTime: number = 0;
-    private moveDelay: number = 200;
+    private moveDelay: number = 350;
 
     constructor(gameState: GameState, sceneManager: SceneManager, inputManager: InputManager) {
         super('Dungeon');
@@ -72,8 +72,10 @@ export class DungeonScene extends Scene {
 
         const movement = this.inputManager.getMovementInput();
         let moved = false;
+        let attempted = false;
 
         if (movement.forward) {
+            attempted = true;
             if (this.canMoveForward()) {
                 this.gameState.party.move('forward');
                 moved = true;
@@ -82,6 +84,7 @@ export class DungeonScene extends Scene {
                 this.messageLog.addWarningMessage('Cannot move forward - blocked by wall');
             }
         } else if (movement.backward) {
+            attempted = true;
             if (this.canMoveBackward()) {
                 this.gameState.party.move('backward');
                 moved = true;
@@ -90,19 +93,23 @@ export class DungeonScene extends Scene {
                 this.messageLog.addWarningMessage('Cannot move backward - blocked by wall');
             }
         } else if (movement.left) {
+            attempted = true;
             this.gameState.party.move('left');
             moved = true;
             this.messageLog.addMessage('Turned left');
         } else if (movement.right) {
+            attempted = true;
             this.gameState.party.move('right');
             moved = true;
             this.messageLog.addMessage('Turned right');
         }
 
-        if (moved) {
+        if (attempted) {
             this.lastMoveTime = now;
-            this.gameState.turnCount++;
-            this.markCurrentTileDiscovered();
+            if (moved) {
+                this.gameState.turnCount++;
+                this.markCurrentTileDiscovered();
+            }
         }
     }
 
