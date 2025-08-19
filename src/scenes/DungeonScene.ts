@@ -4,6 +4,7 @@ import { GameState, DungeonTile } from '../types/GameTypes';
 import { DungeonView } from '../ui/DungeonView';
 import { StatusPanel } from '../ui/StatusPanel';
 import { MessageLog } from '../ui/MessageLog';
+import { DungeonMapView } from '../ui/DungeonMapView';
 
 export class DungeonScene extends Scene {
     private gameState: GameState;
@@ -12,6 +13,7 @@ export class DungeonScene extends Scene {
     private dungeonView!: DungeonView;
     private statusPanel!: StatusPanel;
     private messageLog!: MessageLog;
+    private dungeonMapView!: DungeonMapView;
     private lastMoveTime: number = 0;
     private moveDelay: number = 350;
     private lastTileEventPosition: { x: number, y: number, floor: number } | null = null;
@@ -50,26 +52,40 @@ export class DungeonScene extends Scene {
                 this.gameState.party.y,
                 this.gameState.party.facing
             );
-            this.dungeonView.render();
+            
+            this.dungeonMapView.setDungeon(currentDungeon);
+            this.dungeonMapView.setPlayerPosition(
+                this.gameState.party.x,
+                this.gameState.party.y,
+                this.gameState.party.facing
+            );
+            
+            if (!this.dungeonMapView.getIsVisible()) {
+                this.dungeonView.render();
+                this.statusPanel.render(this.gameState.party);
+                this.messageLog.render();
+            }
+            
+            this.dungeonMapView.render();
         }
-
-        this.statusPanel.render(this.gameState.party);
-        this.messageLog.render();
     }
 
     private initializeUI(canvas: HTMLCanvasElement): void {
         this.dungeonView = new DungeonView(canvas);
         this.statusPanel = new StatusPanel(canvas, 624, 0, 400, 500);
         this.messageLog = new MessageLog(canvas, 624, 500, 400, 268);
+        this.dungeonMapView = new DungeonMapView(canvas);
         
         this.messageLog.addSystemMessage('Welcome to the dungeon!');
         this.messageLog.addSystemMessage('Use WASD or arrow keys to move');
-        this.messageLog.addSystemMessage('Press ENTER to interact with objects');
+        this.messageLog.addSystemMessage('Press ENTER to interact, M for map');
         this.messageLog.addSystemMessage('Press C to toggle combat encounters');
         this.messageLog.addSystemMessage('Press R to rest, ESC to return to main menu');
     }
 
     private handleMovement(): void {
+        if (this.dungeonMapView?.getIsVisible()) return;
+        
         const now = Date.now();
         if (now - this.lastMoveTime < this.moveDelay) return;
 
@@ -305,8 +321,13 @@ export class DungeonScene extends Scene {
             return true;
         }
 
-        if (key === 'm' || key === 'tab') {
-            this.messageLog.addSystemMessage('Menu functionality not yet implemented');
+        if (key === 'm') {
+            this.toggleMap();
+            return true;
+        }
+        
+        if (key === 'tab') {
+            this.messageLog.addSystemMessage('Inventory not yet implemented');
             return true;
         }
 
@@ -327,6 +348,16 @@ export class DungeonScene extends Scene {
             this.messageLog.addSystemMessage('Combat encounters ENABLED');
         } else {
             this.messageLog.addWarningMessage('Combat encounters DISABLED (testing mode)');
+        }
+    }
+
+    private toggleMap(): void {
+        this.dungeonMapView.toggle();
+        
+        if (this.dungeonMapView.getIsVisible()) {
+            this.messageLog.addSystemMessage('Map opened');
+        } else {
+            this.messageLog.addSystemMessage('Map closed');
         }
     }
 
