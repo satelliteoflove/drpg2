@@ -114,7 +114,7 @@ export class MainMenuScene extends Scene {
         switch (selectedText) {
             case 'New Game':
                 SaveManager.deleteSave();
-                this.sceneManager.switchTo('character_creation');
+                this.sceneManager.switchTo('new_game');
                 break;
                 
             case 'Continue Game':

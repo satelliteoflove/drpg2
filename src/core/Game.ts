@@ -1,6 +1,7 @@
 import { SceneManager } from './Scene';
 import { InputManager } from './Input';
 import { MainMenuScene } from '../scenes/MainMenuScene';
+import { NewGameScene } from '../scenes/NewGameScene';
 import { DungeonScene } from '../scenes/DungeonScene';
 import { CharacterCreationScene } from '../scenes/CharacterCreationScene';
 import { CombatScene } from '../scenes/CombatScene';
@@ -79,6 +80,7 @@ export class Game {
 
     private setupScenes(): void {
         this.sceneManager.addScene('main_menu', new MainMenuScene(this.gameState, this.sceneManager));
+        this.sceneManager.addScene('new_game', new NewGameScene(this.gameState, this.sceneManager));
         this.sceneManager.addScene('character_creation', new CharacterCreationScene(this.gameState, this.sceneManager));
         this.sceneManager.addScene('dungeon', new DungeonScene(this.gameState, this.sceneManager, this.inputManager));
         this.sceneManager.addScene('combat', new CombatScene(this.gameState, this.sceneManager));
