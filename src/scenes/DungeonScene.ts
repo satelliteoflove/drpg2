@@ -14,6 +14,7 @@ export class DungeonScene extends Scene {
     private messageLog!: MessageLog;
     private lastMoveTime: number = 0;
     private moveDelay: number = 350;
+    private lastTileEventPosition: { x: number, y: number, floor: number } | null = null;
 
     constructor(gameState: GameState, sceneManager: SceneManager, inputManager: InputManager) {
         super('Dungeon');
@@ -24,6 +25,7 @@ export class DungeonScene extends Scene {
 
     public enter(): void {
         this.messageLog?.addSystemMessage('Entered the dungeon...');
+        this.lastTileEventPosition = null;
     }
 
     public exit(): void {
@@ -109,6 +111,7 @@ export class DungeonScene extends Scene {
             if (moved) {
                 this.gameState.turnCount++;
                 this.markCurrentTileDiscovered();
+                this.lastTileEventPosition = null;
             }
         }
     }
@@ -189,6 +192,21 @@ export class DungeonScene extends Scene {
 
         const currentTile = currentDungeon.tiles[this.gameState.party.y][this.gameState.party.x];
         if (!currentTile) return;
+
+        const currentPosition = {
+            x: this.gameState.party.x,
+            y: this.gameState.party.y,
+            floor: this.gameState.currentFloor
+        };
+
+        const hasMovedToNewTile = !this.lastTileEventPosition ||
+            this.lastTileEventPosition.x !== currentPosition.x ||
+            this.lastTileEventPosition.y !== currentPosition.y ||
+            this.lastTileEventPosition.floor !== currentPosition.floor;
+
+        if (!hasMovedToNewTile) return;
+
+        this.lastTileEventPosition = currentPosition;
 
         switch (currentTile.type) {
             case 'stairs_up':
@@ -307,6 +325,7 @@ export class DungeonScene extends Scene {
                     this.gameState.currentFloor--;
                     this.gameState.party.floor = this.gameState.currentFloor;
                     this.messageLog.addSystemMessage(`Ascended to floor ${this.gameState.currentFloor}`);
+                    this.lastTileEventPosition = null;
                 } else {
                     this.messageLog.addSystemMessage('You have escaped the dungeon!');
                 }
@@ -317,6 +336,7 @@ export class DungeonScene extends Scene {
                     this.gameState.currentFloor++;
                     this.gameState.party.floor = this.gameState.currentFloor;
                     this.messageLog.addSystemMessage(`Descended to floor ${this.gameState.currentFloor}`);
+                    this.lastTileEventPosition = null;
                 } else {
                     this.messageLog.addSystemMessage('The stairs lead into impenetrable darkness...');
                 }
