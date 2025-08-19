@@ -173,6 +173,7 @@ export interface GameState {
     currentEncounter?: Encounter;
     gameTime: number;
     turnCount: number;
+    combatEnabled: boolean;
 }
 
 export interface Encounter {

@@ -65,7 +65,8 @@ export class DungeonScene extends Scene {
         this.messageLog.addSystemMessage('Welcome to the dungeon!');
         this.messageLog.addSystemMessage('Use WASD or arrow keys to move');
         this.messageLog.addSystemMessage('Press ENTER to interact with objects');
-        this.messageLog.addSystemMessage('Press ESC to return to main menu');
+        this.messageLog.addSystemMessage('Press C to toggle combat encounters');
+        this.messageLog.addSystemMessage('Press R to rest, ESC to return to main menu');
     }
 
     private handleMovement(): void {
@@ -169,6 +170,8 @@ export class DungeonScene extends Scene {
     }
 
     private checkRandomEncounter(): void {
+        if (!this.gameState.combatEnabled) return;
+        
         if (Math.random() < 0.02) {
             const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
             if (!currentDungeon) return;
@@ -297,6 +300,11 @@ export class DungeonScene extends Scene {
             return true;
         }
 
+        if (key === 'c') {
+            this.toggleCombat();
+            return true;
+        }
+
         if (key === 'm' || key === 'tab') {
             this.messageLog.addSystemMessage('Menu functionality not yet implemented');
             return true;
@@ -310,6 +318,16 @@ export class DungeonScene extends Scene {
         }
 
         return false;
+    }
+
+    private toggleCombat(): void {
+        this.gameState.combatEnabled = !this.gameState.combatEnabled;
+        
+        if (this.gameState.combatEnabled) {
+            this.messageLog.addSystemMessage('Combat encounters ENABLED');
+        } else {
+            this.messageLog.addWarningMessage('Combat encounters DISABLED (testing mode)');
+        }
     }
 
     private handleInteraction(): void {

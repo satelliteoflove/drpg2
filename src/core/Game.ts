@@ -50,6 +50,10 @@ export class Game {
             this.gameState = savedGame.gameState;
             this.gameState.party = this.reconstructParty(savedGame.gameState.party);
             this.playtimeStart = Date.now() - (savedGame.playtimeSeconds * 1000);
+            
+            if (this.gameState.combatEnabled === undefined) {
+                this.gameState.combatEnabled = true;
+            }
         } else {
             this.gameState = {
                 party: new Party(),
@@ -57,7 +61,8 @@ export class Game {
                 currentFloor: 1,
                 inCombat: false,
                 gameTime: 0,
-                turnCount: 0
+                turnCount: 0,
+                combatEnabled: true
             };
             
             this.generateNewDungeon();

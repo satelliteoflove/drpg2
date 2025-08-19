@@ -115,7 +115,8 @@ export class SaveManager {
             typeof gameState.currentFloor === 'number' &&
             typeof gameState.inCombat === 'boolean' &&
             typeof gameState.gameTime === 'number' &&
-            typeof gameState.turnCount === 'number'
+            typeof gameState.turnCount === 'number' &&
+            (gameState.combatEnabled === undefined || typeof gameState.combatEnabled === 'boolean')
         );
     }
 
