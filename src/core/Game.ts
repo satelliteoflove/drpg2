@@ -1,5 +1,6 @@
 import { SceneManager } from './Scene';
 import { InputManager } from './Input';
+import { MainMenuScene } from '../scenes/MainMenuScene';
 import { DungeonScene } from '../scenes/DungeonScene';
 import { CharacterCreationScene } from '../scenes/CharacterCreationScene';
 import { CombatScene } from '../scenes/CombatScene';
@@ -46,6 +47,7 @@ export class Game {
         
         if (savedGame) {
             this.gameState = savedGame.gameState;
+            this.gameState.party = this.reconstructParty(savedGame.gameState.party);
             this.playtimeStart = Date.now() - (savedGame.playtimeSeconds * 1000);
         } else {
             this.gameState = {
@@ -67,16 +69,21 @@ export class Game {
         }
     }
 
+    private reconstructParty(partyData: any): Party {
+        const party = new Party();
+        
+        Object.assign(party, partyData);
+        
+        return party;
+    }
+
     private setupScenes(): void {
+        this.sceneManager.addScene('main_menu', new MainMenuScene(this.gameState, this.sceneManager));
         this.sceneManager.addScene('character_creation', new CharacterCreationScene(this.gameState, this.sceneManager));
         this.sceneManager.addScene('dungeon', new DungeonScene(this.gameState, this.sceneManager, this.inputManager));
         this.sceneManager.addScene('combat', new CombatScene(this.gameState, this.sceneManager));
         
-        if (this.gameState.party.characters.length === 0) {
-            this.sceneManager.switchTo('character_creation');
-        } else {
-            this.sceneManager.switchTo('dungeon');
-        }
+        this.sceneManager.switchTo('main_menu');
     }
 
     public start(): void {
