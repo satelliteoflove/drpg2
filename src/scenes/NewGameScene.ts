@@ -95,6 +95,7 @@ export class NewGameScene extends Scene {
 
     private selectCurrentOption(): void {
         if (this.selectedOption === 0) {
+            this.clearGameStateForNewGame();
             this.sceneManager.switchTo('character_creation');
         } else {
             this.autoGenerateParty();
@@ -102,6 +103,7 @@ export class NewGameScene extends Scene {
     }
 
     private autoGenerateParty(): void {
+        this.clearGameStateForNewGame();
         this.gameState.party.characters = [];
 
         const partyTemplates = [
@@ -138,6 +140,20 @@ export class NewGameScene extends Scene {
 
         this.generateNewDungeon();
         this.sceneManager.switchTo('dungeon');
+    }
+
+    private clearGameStateForNewGame(): void {
+        this.gameState.currentFloor = 1;
+        this.gameState.inCombat = false;
+        this.gameState.gameTime = 0;
+        this.gameState.turnCount = 0;
+        this.gameState.combatEnabled = true;
+        this.gameState.currentEncounter = undefined;
+        
+        this.gameState.party.x = 0;
+        this.gameState.party.y = 0;
+        this.gameState.party.floor = 1;
+        this.gameState.party.facing = 'north';
     }
 
     private generateNewDungeon(): void {

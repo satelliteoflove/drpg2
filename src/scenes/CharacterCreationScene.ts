@@ -1,6 +1,7 @@
 import { Scene, SceneManager } from '../core/Scene';
 import { GameState, CharacterRace, CharacterClass, CharacterAlignment } from '../types/GameTypes';
 import { Character } from '../entities/Character';
+import { DungeonGenerator } from '../utils/DungeonGenerator';
 
 export class CharacterCreationScene extends Scene {
     private gameState: GameState;
@@ -389,6 +390,7 @@ export class CharacterCreationScene extends Scene {
                 }
             } else if (this.selectedIndex === 1) {
                 if (this.gameState.party.characters.length > 0) {
+                    this.generateNewDungeon();
                     this.sceneManager.switchTo('dungeon');
                 }
             } else if (this.selectedIndex === 2) {
@@ -438,5 +440,20 @@ export class CharacterCreationScene extends Scene {
                 break;
         }
         this.selectedIndex = 0;
+    }
+
+    private generateNewDungeon(): void {
+        const generator = new DungeonGenerator(20, 20);
+        this.gameState.dungeon = [];
+        
+        for (let i = 1; i <= 10; i++) {
+            this.gameState.dungeon.push(generator.generateLevel(i));
+        }
+        
+        const firstLevel = this.gameState.dungeon[0];
+        this.gameState.party.x = firstLevel.startX;
+        this.gameState.party.y = firstLevel.startY;
+        this.gameState.party.floor = 1;
+        this.gameState.party.facing = 'north';
     }
 }
