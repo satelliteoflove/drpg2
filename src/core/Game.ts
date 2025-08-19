@@ -60,14 +60,21 @@ export class Game {
                 turnCount: 0
             };
             
-            const generator = new DungeonGenerator(20, 20);
-            for (let i = 1; i <= 10; i++) {
-                this.gameState.dungeon.push(generator.generateLevel(i));
-            }
-            
-            this.gameState.party.x = 1;
-            this.gameState.party.y = 1;
+            this.generateNewDungeon();
         }
+    }
+
+    private generateNewDungeon(): void {
+        const generator = new DungeonGenerator(20, 20);
+        this.gameState.dungeon = [];
+        
+        for (let i = 1; i <= 10; i++) {
+            this.gameState.dungeon.push(generator.generateLevel(i));
+        }
+        
+        const firstLevel = this.gameState.dungeon[0];
+        this.gameState.party.x = firstLevel.startX;
+        this.gameState.party.y = firstLevel.startY;
     }
 
     private reconstructParty(partyData: any): Party {

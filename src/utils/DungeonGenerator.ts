@@ -4,6 +4,7 @@ export class DungeonGenerator {
     private width: number;
     private height: number;
     private level: number;
+    private rooms: { x: number, y: number, width: number, height: number }[] = [];
 
     constructor(width: number = 20, height: number = 20) {
         this.width = width;
@@ -22,6 +23,7 @@ export class DungeonGenerator {
         
         const encounters = this.generateEncounterZones();
         const events = this.generateEvents(tiles);
+        const startPosition = this.findValidStartPosition(tiles);
 
         return {
             level,
@@ -29,7 +31,9 @@ export class DungeonGenerator {
             height: this.height,
             tiles,
             encounters,
-            events
+            events,
+            startX: startPosition.x,
+            startY: startPosition.y
         };
     }
 
@@ -88,6 +92,8 @@ export class DungeonGenerator {
                 }
             }
         }
+        
+        this.rooms = rooms;
     }
 
     private generateCorridors(tiles: DungeonTile[][]): void {
@@ -287,5 +293,25 @@ export class DungeonGenerator {
             default:
                 return {};
         }
+    }
+
+    private findValidStartPosition(tiles: DungeonTile[][]): { x: number, y: number } {
+        if (this.rooms.length > 0) {
+            const firstRoom = this.rooms[0];
+            const centerX = firstRoom.x + Math.floor(firstRoom.width / 2);
+            const centerY = firstRoom.y + Math.floor(firstRoom.height / 2);
+            
+            if (tiles[centerY] && tiles[centerY][centerX] && tiles[centerY][centerX].type === 'floor') {
+                return { x: centerX, y: centerY };
+            }
+        }
+        
+        const floorTiles = this.getFloorTiles(tiles);
+        if (floorTiles.length > 0) {
+            const randomFloor = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+            return { x: randomFloor.x, y: randomFloor.y };
+        }
+        
+        return { x: 1, y: 1 };
     }
 }

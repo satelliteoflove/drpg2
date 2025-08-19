@@ -132,6 +132,8 @@ export interface DungeonLevel {
     tiles: DungeonTile[][];
     encounters: EncounterZone[];
     events: DungeonEvent[];
+    startX: number;
+    startY: number;
 }
 
 export interface EncounterZone {

@@ -1,6 +1,7 @@
 import { Scene, SceneManager } from '../core/Scene';
 import { GameState, CharacterRace, CharacterClass, CharacterAlignment } from '../types/GameTypes';
 import { Character } from '../entities/Character';
+import { DungeonGenerator } from '../utils/DungeonGenerator';
 
 export class NewGameScene extends Scene {
     private gameState: GameState;
@@ -135,6 +136,20 @@ export class NewGameScene extends Scene {
             this.gameState.party.addCharacter(character);
         });
 
+        this.generateNewDungeon();
         this.sceneManager.switchTo('dungeon');
+    }
+
+    private generateNewDungeon(): void {
+        const generator = new DungeonGenerator(20, 20);
+        this.gameState.dungeon = [];
+        
+        for (let i = 1; i <= 10; i++) {
+            this.gameState.dungeon.push(generator.generateLevel(i));
+        }
+        
+        const firstLevel = this.gameState.dungeon[0];
+        this.gameState.party.x = firstLevel.startX;
+        this.gameState.party.y = firstLevel.startY;
     }
 }
