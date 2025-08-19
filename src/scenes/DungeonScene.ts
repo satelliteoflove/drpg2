@@ -63,6 +63,7 @@ export class DungeonScene extends Scene {
         this.messageLog.addSystemMessage('Welcome to the dungeon!');
         this.messageLog.addSystemMessage('Use WASD or arrow keys to move');
         this.messageLog.addSystemMessage('Press ENTER to interact with objects');
+        this.messageLog.addSystemMessage('Press ESC to return to main menu');
     }
 
     private handleMovement(): void {
@@ -273,6 +274,13 @@ export class DungeonScene extends Scene {
 
         if (key === 'm' || key === 'tab') {
             this.messageLog.addSystemMessage('Menu functionality not yet implemented');
+            return true;
+        }
+
+        if (key === 'escape') {
+            if (confirm('Return to main menu? (Progress will be saved)')) {
+                this.sceneManager.switchTo('main_menu');
+            }
             return true;
         }
 
