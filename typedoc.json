@@ -1,0 +1,40 @@
+{
+  "entryPoints": ["src/api.ts"],
+  "out": "docs/api",
+  "theme": "default",
+  "name": "DRPG2 - Dungeon Crawler Game Engine",
+  "readme": "README.md",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/node_modules/**",
+    "**/dist/**"
+  ],
+  "includeVersion": true,
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "excludeNotDocumented": false,
+  "sort": ["source-order"],
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  },
+  "categorizeByGroup": true,
+  "defaultCategory": "Core",
+  "categoryOrder": [
+    "Core",
+    "Entities",
+    "Systems",
+    "Services",
+    "UI",
+    "Utils",
+    "Types"
+  ],
+  "gitRevision": "main",
+  "githubPages": false,
+  "sourceLinkTemplate": "https://github.com/the4ofus/drpg2/blob/{gitRevision}/{path}#L{line}",
+  "plugin": ["typedoc-plugin-markdown"],
+  "logLevel": "Info"
+}
