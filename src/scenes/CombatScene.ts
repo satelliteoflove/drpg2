@@ -1,4 +1,4 @@
-import { Scene, SceneManager } from '../core/Scene';
+import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState, Monster } from '../types/GameTypes';
 import { CombatSystem } from '../systems/CombatSystem';
 import { StatusPanel } from '../ui/StatusPanel';
@@ -120,20 +120,42 @@ export class CombatScene extends Scene {
     this.renderCombatInfo(ctx);
   }
 
+  public renderLayered(renderContext: SceneRenderContext): void {
+    const { renderManager } = renderContext;
+    
+    if (!this.statusPanel) {
+      this.initializeUI(renderContext.mainContext.canvas);
+    }
+
+    renderManager.renderBackground((ctx) => {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    });
+
+    renderManager.renderEntities((ctx) => {
+      this.renderCombatArea(ctx);
+    });
+
+    renderManager.renderUI((ctx) => {
+      this.renderUI(ctx);
+      this.renderCombatInfo(ctx);
+    });
+  }
+
   private initializeUI(canvas: HTMLCanvasElement): void {
-    this.statusPanel = new StatusPanel(canvas, 624, 0, 400, 400);
-    this.messageLog = new MessageLog(canvas, 624, 400, 400, 368);
+    this.statusPanel = new StatusPanel(canvas, 650, 0, 374, 300);
+    this.messageLog = new MessageLog(canvas, 650, 470, 374, 298);
 
     this.messageLog.addCombatMessage('Combat begins!');
   }
 
   private renderCombatArea(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = '#1a0000';
-    ctx.fillRect(0, 0, 624, 400);
+    ctx.fillRect(0, 0, 640, 400);
 
     ctx.strokeStyle = '#600000';
     ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, 624, 400);
+    ctx.strokeRect(0, 0, 640, 400);
 
     const encounter = this.combatSystem.getEncounter();
     if (!encounter) return;
@@ -225,10 +247,10 @@ export class CombatScene extends Scene {
   }
 
   private renderActionMenu(ctx: CanvasRenderingContext2D): void {
-    const menuX = 50;
-    const menuY = 400;
-    const menuWidth = 500;
-    const menuHeight = 200;
+    const menuX = 20;
+    const menuY = 420;
+    const menuWidth = 600;
+    const menuHeight = 320;
 
     ctx.fillStyle = '#222';
     ctx.fillRect(menuX, menuY, menuWidth, menuHeight);

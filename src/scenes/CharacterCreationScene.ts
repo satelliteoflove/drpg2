@@ -1,4 +1,4 @@
-import { Scene, SceneManager } from '../core/Scene';
+import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { CharacterAlignment, CharacterClass, CharacterRace, GameState } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { DungeonGenerator } from '../utils/DungeonGenerator';
@@ -76,6 +76,48 @@ export class CharacterCreationScene extends Scene {
     }
 
     this.renderInstructions(ctx);
+  }
+
+  public renderLayered(renderContext: SceneRenderContext): void {
+    const { renderManager } = renderContext;
+
+    renderManager.renderBackground((ctx) => {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    });
+
+    renderManager.renderUI((ctx) => {
+      ctx.fillStyle = '#fff';
+      ctx.font = '24px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('CHARACTER CREATION', ctx.canvas.width / 2, 50);
+
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'left';
+
+      switch (this.currentStep) {
+        case 'name':
+          this.renderNameStep(ctx);
+          break;
+        case 'race':
+          this.renderRaceStep(ctx);
+          break;
+        case 'class':
+          this.renderClassStep(ctx);
+          break;
+        case 'alignment':
+          this.renderAlignmentStep(ctx);
+          break;
+        case 'confirm':
+          this.renderConfirmStep(ctx);
+          break;
+        case 'party':
+          this.renderPartyStep(ctx);
+          break;
+      }
+
+      this.renderInstructions(ctx);
+    });
   }
 
   private renderNameStep(ctx: CanvasRenderingContext2D): void {

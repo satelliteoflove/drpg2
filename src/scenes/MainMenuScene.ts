@@ -1,4 +1,4 @@
-import { Scene, SceneManager } from '../core/Scene';
+import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState } from '../types/GameTypes';
 import { SaveManager } from '../utils/SaveManager';
 
@@ -29,6 +29,21 @@ export class MainMenuScene extends Scene {
     this.renderTitle(ctx);
     this.renderMenu(ctx);
     this.renderFooter(ctx);
+  }
+
+  public renderLayered(renderContext: SceneRenderContext): void {
+    const { renderManager } = renderContext;
+
+    renderManager.renderBackground((ctx) => {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    });
+
+    renderManager.renderUI((ctx) => {
+      this.renderTitle(ctx);
+      this.renderMenu(ctx);
+      this.renderFooter(ctx);
+    });
   }
 
   private renderTitle(ctx: CanvasRenderingContext2D): void {

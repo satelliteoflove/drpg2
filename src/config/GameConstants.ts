@@ -122,11 +122,28 @@ export const GAME_CONFIG = {
     DEBUG_INFO_OFFSET: 10,
   },
 
+  RENDERING: {
+    TARGET_FPS: 60,
+    MIN_FPS_THRESHOLD: 30,
+    SPATIAL_PARTITION_CELL_SIZE: 32,
+    MAX_SPRITE_CACHE_SIZE: 100,
+    ENABLE_FRUSTUM_CULLING: true,
+    ENABLE_DIRTY_RECTANGLE_TRACKING: true,
+    LAYER_COMPOSITING: true,
+    VSYNC: true,
+  },
+
   COLORS: {
     BACKGROUND: '#000',
     DEBUG_TEXT: '#666',
     MAP_GRID: 'rgba(255, 255, 255, 0.1)',
+    LAYER_BACKGROUND: '#111',
+    PERFORMANCE_GOOD: '#0f0',
+    PERFORMANCE_MODERATE: '#ff0',
+    PERFORMANCE_POOR: '#f00',
   },
+
+  DEBUG_MODE: false,
 } as const;
 
 export type CharacterClass = (typeof GAME_CONFIG.HP_BONUSES)[keyof typeof GAME_CONFIG.HP_BONUSES];

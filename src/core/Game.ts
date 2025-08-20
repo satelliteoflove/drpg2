@@ -1,5 +1,6 @@
 import { SceneManager } from './Scene';
 import { InputManager } from './Input';
+import { RenderManager } from './RenderManager';
 import { MainMenuScene } from '../scenes/MainMenuScene';
 import { NewGameScene } from '../scenes/NewGameScene';
 import { DungeonScene } from '../scenes/DungeonScene';
@@ -7,20 +8,21 @@ import { CharacterCreationScene } from '../scenes/CharacterCreationScene';
 import { CombatScene } from '../scenes/CombatScene';
 import { Party } from '../entities/Party';
 import { Character } from '../entities/Character';
-import { DungeonGenerator } from '../utils/DungeonGenerator';
 import { GameState } from '../types/GameTypes';
-import { SaveManager } from '../utils/SaveManager';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { TypeValidation } from '../utils/TypeValidation';
 import { ErrorHandler, ErrorSeverity, createSafeCanvas } from '../utils/ErrorHandler';
+import { GameServices } from '../services/GameServices';
 
 export class Game {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
+  private services: GameServices;
+  private renderManager: RenderManager;
+  private sceneManager: SceneManager;
+  private inputManager: InputManager;
   private lastTime: number = 0;
   private isRunning: boolean = false;
-  private sceneManager!: SceneManager;
-  private inputManager!: InputManager;
   private gameState!: GameState;
   private playtimeStart: number = Date.now();
 
@@ -31,6 +33,12 @@ export class Game {
       throw new Error('Failed to initialize canvas context');
     }
     this.ctx = ctx;
+    
+    this.services = new GameServices({ canvas });
+    this.renderManager = this.services.getRenderManager();
+    this.sceneManager = this.services.getSceneManager();
+    this.inputManager = this.services.getInputManager();
+    
     this.setupCanvas();
     this.initializeManagers();
     this.initializeGameState();
@@ -43,16 +51,16 @@ export class Game {
   }
 
   private initializeManagers(): void {
-    this.sceneManager = new SceneManager();
-    this.inputManager = new InputManager();
-
+    this.sceneManager.setRenderManager(this.renderManager);
+    
     this.inputManager.setKeyPressCallback((key: string) => {
       return this.sceneManager.handleInput(key);
     });
   }
 
   private initializeGameState(): void {
-    const savedGame = SaveManager.loadGame();
+    const saveManager = this.services.getSaveManager();
+    const savedGame = saveManager.loadGame();
 
     if (savedGame) {
       const validatedGameState = TypeValidation.safeValidateGameState(savedGame.gameState);
@@ -93,7 +101,7 @@ export class Game {
   }
 
   private generateNewDungeon(): void {
-    const generator = new DungeonGenerator(20, 20);
+    const generator = this.services.getDungeonGenerator();
     this.gameState.dungeon = [];
 
     for (let i = 1; i <= 10; i++) {
@@ -201,6 +209,12 @@ export class Game {
     if (this.inputManager) {
       this.inputManager.cleanup();
     }
+    if (this.renderManager) {
+      this.renderManager.dispose();
+    }
+    if (this.services) {
+      this.services.dispose();
+    }
   }
 
   private setupAutoSave(): void {
@@ -231,12 +245,16 @@ export class Game {
   private render(): void {
     ErrorHandler.safeCanvasOperation(
       () => {
+        // Clear main canvas
         this.ctx.fillStyle = GAME_CONFIG.COLORS.BACKGROUND;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // Render the current scene
         this.sceneManager.render(this.ctx);
 
+        // Render debug info
         this.renderDebugInfo();
+
         return undefined;
       },
       undefined,
@@ -250,34 +268,28 @@ export class Game {
     const minutes = Math.floor((playtimeSeconds % 3600) / 60);
     const seconds = playtimeSeconds % 60;
 
-    ErrorHandler.safeCanvasOperation(
-      () => {
-        this.ctx.fillStyle = GAME_CONFIG.COLORS.DEBUG_TEXT;
-        this.ctx.font = '12px monospace';
-        this.ctx.fillText(
-          `Playtime: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
-          GAME_CONFIG.UI.DEBUG_INFO_OFFSET,
-          this.canvas.height - GAME_CONFIG.UI.DEBUG_INFO_OFFSET
-        );
-
-        const currentScene = this.sceneManager.getCurrentScene();
-        if (currentScene) {
-          this.ctx.fillText(
-            `Scene: ${currentScene.getName()}`,
-            200,
-            this.canvas.height - GAME_CONFIG.UI.DEBUG_INFO_OFFSET
-          );
-        }
-        return undefined;
-      },
-      undefined,
-      'Game.renderDebugInfo'
+    this.ctx.fillStyle = GAME_CONFIG.COLORS.DEBUG_TEXT;
+    this.ctx.font = '12px monospace';
+    this.ctx.fillText(
+      `Playtime: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
+      GAME_CONFIG.UI.DEBUG_INFO_OFFSET,
+      this.canvas.height - GAME_CONFIG.UI.DEBUG_INFO_OFFSET
     );
+
+    const currentScene = this.sceneManager.getCurrentScene();
+    if (currentScene) {
+      this.ctx.fillText(
+        `Scene: ${currentScene.getName()}`,
+        200,
+        this.canvas.height - GAME_CONFIG.UI.DEBUG_INFO_OFFSET
+      );
+    }
   }
 
   private saveGame(): void {
     const playtimeSeconds = Math.floor((Date.now() - this.playtimeStart) / 1000);
-    SaveManager.saveGame(this.gameState, playtimeSeconds);
+    const saveManager = this.services.getSaveManager();
+    saveManager.saveGame(this.gameState, playtimeSeconds);
   }
 
   public getCanvas(): HTMLCanvasElement {

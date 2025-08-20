@@ -1,4 +1,4 @@
-import { Scene, SceneManager } from '../core/Scene';
+import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { CharacterAlignment, CharacterClass, CharacterRace, GameState } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { DungeonGenerator } from '../utils/DungeonGenerator';
@@ -69,6 +69,60 @@ export class NewGameScene extends Scene {
       ctx.canvas.width / 2,
       ctx.canvas.height - 20
     );
+  }
+
+  public renderLayered(renderContext: SceneRenderContext): void {
+    const { renderManager } = renderContext;
+
+    renderManager.renderBackground((ctx) => {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    });
+
+    renderManager.renderUI((ctx) => {
+      ctx.fillStyle = '#fff';
+      ctx.font = '24px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('NEW GAME', ctx.canvas.width / 2, 100);
+
+      ctx.font = '16px monospace';
+      ctx.fillText('Choose how you want to create your party:', ctx.canvas.width / 2, 180);
+
+      const startY = 250;
+      const lineHeight = 50;
+
+      this.menuOptions.forEach((option, index) => {
+        const y = startY + index * lineHeight;
+
+        if (index === this.selectedOption) {
+          ctx.fillStyle = '#ffaa00';
+          ctx.fillText('> ' + option + ' <', ctx.canvas.width / 2, y);
+        } else {
+          ctx.fillStyle = '#fff';
+          ctx.fillText(option, ctx.canvas.width / 2, y);
+        }
+      });
+
+      ctx.fillStyle = '#aaa';
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'left';
+
+      if (this.selectedOption === 0) {
+        ctx.fillText('Create characters one by one with full customization', 50, 400);
+      } else {
+        ctx.fillText('Automatically generate a balanced party of 4 characters', 50, 400);
+        ctx.fillText('Classes: Fighter, Mage, Priest, Thief', 50, 420);
+      }
+
+      ctx.fillStyle = '#666';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        'UP/DOWN to select, ENTER to choose, ESC to go back',
+        ctx.canvas.width / 2,
+        ctx.canvas.height - 20
+      );
+    });
   }
 
   public handleInput(key: string): boolean {

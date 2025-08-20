@@ -1,4 +1,4 @@
-import { Scene, SceneManager } from '../core/Scene';
+import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { InputManager } from '../core/Input';
 import { DungeonTile, GameState } from '../types/GameTypes';
 import { DungeonView } from '../ui/DungeonView';
@@ -36,7 +36,6 @@ export class DungeonScene extends Scene {
 
   public update(_deltaTime: number): void {
     this.handleMovement();
-    this.checkRandomEncounter();
     this.checkTileEvents();
   }
 
@@ -68,6 +67,45 @@ export class DungeonScene extends Scene {
       }
 
       this.dungeonMapView.render();
+    }
+  }
+
+  public renderLayered(renderContext: SceneRenderContext): void {
+    const { renderManager } = renderContext;
+    
+    if (!this.dungeonView) {
+      this.initializeUI(renderContext.mainContext.canvas);
+    }
+
+    const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
+    if (currentDungeon) {
+      this.dungeonView.setDungeon(currentDungeon);
+      this.dungeonView.setPlayerPosition(
+        this.gameState.party.x,
+        this.gameState.party.y,
+        this.gameState.party.facing
+      );
+
+      this.dungeonMapView.setDungeon(currentDungeon);
+      this.dungeonMapView.setPlayerPosition(
+        this.gameState.party.x,
+        this.gameState.party.y,
+        this.gameState.party.facing
+      );
+
+      renderManager.renderDungeon(() => {
+        if (!this.dungeonMapView.getIsVisible()) {
+          this.dungeonView.render();
+        }
+      });
+
+      renderManager.renderUI(() => {
+        if (!this.dungeonMapView.getIsVisible()) {
+          this.statusPanel.render(this.gameState.party);
+          this.messageLog.render();
+        }
+        this.dungeonMapView.render();
+      });
     }
   }
 
@@ -130,6 +168,7 @@ export class DungeonScene extends Scene {
         this.gameState.turnCount++;
         this.markCurrentTileDiscovered();
         this.lastTileEventPosition = null;
+        this.checkRandomEncounter(); // Only check encounters when player actually moves
       }
     }
   }
@@ -333,6 +372,7 @@ export class DungeonScene extends Scene {
     if (key === 'r') {
       this.gameState.party.rest();
       this.messageLog.addSystemMessage('Party rests and recovers some health and mana');
+      this.checkRandomEncounter(); // Check for encounters when resting
       return true;
     }
 
@@ -422,5 +462,8 @@ export class DungeonScene extends Scene {
         currentTile.type = 'floor';
         break;
     }
+
+    // Check for encounters after any interaction
+    this.checkRandomEncounter();
   }
 }
