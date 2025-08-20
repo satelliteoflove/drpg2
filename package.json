@@ -9,19 +9,44 @@
     "build:dev": "webpack --mode development",
     "watch": "webpack --mode development --watch",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.{ts,js,json,md}",
+    "format:check": "prettier --check src/**/*.{ts,js,json,md}",
+    "quality": "npm run lint && npm run format:check && npm run typecheck"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^24.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.40.0",
+    "@typescript-eslint/parser": "^8.40.0",
     "copy-webpack-plugin": "^13.0.1",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
     "html-webpack-plugin": "^5.6.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.5",
+    "prettier": "^3.6.2",
     "ts-loader": "^9.5.2",
     "typescript": "^5.9.2",
     "webpack": "^5.101.3",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.2"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.33.0",
+    "@jest/globals": "^30.0.5",
+    "@types/jest": "^30.0.0",
+    "@types/jsdom": "^21.1.7",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "jsdom": "^26.1.0",
+    "ts-jest": "^29.4.1"
   }
 }
