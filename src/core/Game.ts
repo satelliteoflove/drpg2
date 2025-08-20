@@ -146,7 +146,13 @@ export class Game {
           );
 
           // Restore saved properties (except the ones set by constructor)
-          const { name: _name, race: _race, class: _charClass, alignment: _alignment, ...restData } = charData;
+          const {
+            name: _name,
+            race: _race,
+            class: _charClass,
+            alignment: _alignment,
+            ...restData
+          } = charData;
           Object.assign(newChar, restData);
           party.characters.push(newChar);
         } catch (error) {

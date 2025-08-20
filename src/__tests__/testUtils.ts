@@ -16,7 +16,7 @@ export class TestUtils {
     canvas.height = 768;
     return canvas;
   }
-  
+
   /**
    * Creates a mock canvas 2D rendering context
    */
@@ -58,33 +58,40 @@ export class TestUtils {
       globalCompositeOperation: 'source-over' as GlobalCompositeOperation,
     } as unknown as CanvasRenderingContext2D;
   }
-  
+
   /**
    * Creates a test character with default stats
    */
-  static createTestCharacter(overrides: Partial<{
-    name: string;
-    race: string;
-    class: string;
-    alignment: string;
-  }> = {}): Character {
+  static createTestCharacter(
+    overrides: Partial<{
+      name: string;
+      race: string;
+      class: string;
+      alignment: string;
+    }> = {}
+  ): Character {
     const defaults = {
       name: 'Test Hero',
       race: 'Human',
       class: 'Fighter',
       alignment: 'Good',
     };
-    
+
     const params = { ...defaults, ...overrides };
-    return new Character(params.name, params.race as any, params.class as any, params.alignment as any);
+    return new Character(
+      params.name,
+      params.race as any,
+      params.class as any,
+      params.alignment as any
+    );
   }
-  
+
   /**
    * Creates a test party with specified number of characters
    */
   static createTestParty(characterCount: number = 1): Party {
     const party = new Party();
-    
+
     for (let i = 0; i < characterCount; i++) {
       const character = this.createTestCharacter({
         name: `Hero ${i + 1}`,
@@ -92,10 +99,10 @@ export class TestUtils {
       });
       party.addCharacter(character);
     }
-    
+
     return party;
   }
-  
+
   /**
    * Creates a minimal test game state
    */
@@ -109,31 +116,31 @@ export class TestUtils {
       turnCount: 0,
       combatEnabled: true,
     };
-    
+
     return { ...defaults, ...overrides };
   }
-  
+
   /**
    * Creates a spy function that can be used in tests
    */
   static createSpy<T extends (...args: any[]) => any>(implementation?: T): any {
     return jest.fn(implementation);
   }
-  
+
   /**
    * Waits for a specified number of milliseconds (useful for async tests)
    */
   static async wait(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-  
+
   /**
    * Advances Jest fake timers by specified milliseconds
    */
   static advanceTimers(ms: number): void {
     jest.advanceTimersByTime(ms);
   }
-  
+
   /**
    * Asserts that a function throws an error with a specific message
    */
@@ -144,13 +151,13 @@ export class TestUtils {
       expect(fn).toThrow();
     }
   }
-  
+
   /**
    * Creates a mock for localStorage with specified initial data
    */
   static createMockLocalStorage(initialData: Record<string, string> = {}): Storage {
     const store: Record<string, string> = { ...initialData };
-    
+
     return {
       getItem: jest.fn((key: string) => store[key] || null),
       setItem: jest.fn((key: string, value: string) => {
@@ -166,7 +173,7 @@ export class TestUtils {
       length: Object.keys(store).length,
     } as Storage;
   }
-  
+
   /**
    * Asserts that a canvas context method was called with specific parameters
    */
