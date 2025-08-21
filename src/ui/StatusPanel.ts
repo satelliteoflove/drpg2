@@ -132,7 +132,7 @@ export class StatusPanel {
     }
   }
 
-  public renderCombatStatus(currentTurn: string, turnOrder: string[], ctx?: CanvasRenderingContext2D): void {
+  public renderCombatStatus(currentTurn: string, turnOrder: string[], currentTurnIndex: number = 0, ctx?: CanvasRenderingContext2D): void {
     const renderCtx = ctx || this.currentRenderCtx;
     // Position combat status below the party status panel with proper spacing
     const combatY = this.y + this.height + 20;
@@ -155,9 +155,24 @@ export class StatusPanel {
     renderCtx.font = '10px monospace';
     renderCtx.fillText('Turn Order:', this.x + 10, combatY + 60);
 
-    turnOrder.slice(0, 8).forEach((unit, index) => {
-      renderCtx.fillStyle = index === 0 ? '#ffff00' : '#ccc';
-      renderCtx.fillText(`${index + 1}. ${unit}`, this.x + 10, combatY + 75 + index * 12);
+    // Use grid layout for turn order to fit more characters
+    const maxCols = 2; // Two columns to fit more units
+    const colWidth = (this.width - 40) / maxCols; // Account for padding
+    const rowHeight = 12;
+    const startX = this.x + 10;
+    const startY = combatY + 75;
+
+    turnOrder.slice(0, 12).forEach((unit, index) => { // Show up to 12 units
+      const col = index % maxCols;
+      const row = Math.floor(index / maxCols);
+      const x = startX + col * colWidth;
+      const y = startY + row * rowHeight;
+
+      renderCtx.fillStyle = index === currentTurnIndex ? '#ffff00' : '#ccc';
+      
+      // Truncate long names to fit in grid cells
+      const displayName = unit.length > 12 ? unit.substring(0, 12) + '...' : unit;
+      renderCtx.fillText(`${index + 1}. ${displayName}`, x, y);
     });
   }
 }
