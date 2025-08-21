@@ -40,9 +40,18 @@ export class MainMenuScene extends Scene {
     });
 
     renderManager.renderUI((ctx) => {
+      // Save and restore context to ensure clean state
+      ctx.save();
       this.renderTitle(ctx);
+      ctx.restore();
+      
+      ctx.save();
       this.renderMenu(ctx);
+      ctx.restore();
+      
+      ctx.save();
       this.renderFooter(ctx);
+      ctx.restore();
     });
   }
 
@@ -60,6 +69,13 @@ export class MainMenuScene extends Scene {
   private renderMenu(ctx: CanvasRenderingContext2D): void {
     const startY = 280;
     const lineHeight = 50;
+
+    // Debug: Log menu options
+    if (this.menuOptions.length === 0) {
+      console.warn('MainMenuScene: No menu options available!');
+      // Fallback - ensure menu options exist
+      this.updateMenuOptions();
+    }
 
     ctx.textAlign = 'center';
     ctx.font = '24px monospace';
