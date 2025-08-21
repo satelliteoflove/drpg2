@@ -132,31 +132,32 @@ export class StatusPanel {
     }
   }
 
-  public renderCombatStatus(currentTurn: string, turnOrder: string[]): void {
+  public renderCombatStatus(currentTurn: string, turnOrder: string[], ctx?: CanvasRenderingContext2D): void {
+    const renderCtx = ctx || this.currentRenderCtx;
     // Position combat status below the party status panel with proper spacing
     const combatY = this.y + this.height + 20;
 
-    this.currentRenderCtx.fillStyle = '#330000';
-    this.currentRenderCtx.fillRect(this.x, combatY, this.width, 140);
+    renderCtx.fillStyle = '#330000';
+    renderCtx.fillRect(this.x, combatY, this.width, 140);
 
-    this.currentRenderCtx.strokeStyle = '#ff0000';
-    this.currentRenderCtx.lineWidth = 2;
-    this.currentRenderCtx.strokeRect(this.x, combatY, this.width, 140);
+    renderCtx.strokeStyle = '#ff0000';
+    renderCtx.lineWidth = 2;
+    renderCtx.strokeRect(this.x, combatY, this.width, 140);
 
-    this.currentRenderCtx.fillStyle = '#ff0000';
-    this.currentRenderCtx.font = '14px monospace';
-    this.currentRenderCtx.fillText('COMBAT', this.x + 10, combatY + 20);
+    renderCtx.fillStyle = '#ff0000';
+    renderCtx.font = '14px monospace';
+    renderCtx.fillText('COMBAT', this.x + 10, combatY + 20);
 
-    this.currentRenderCtx.fillStyle = '#fff';
-    this.currentRenderCtx.font = '12px monospace';
-    this.currentRenderCtx.fillText(`Current: ${currentTurn}`, this.x + 10, combatY + 40);
+    renderCtx.fillStyle = '#fff';
+    renderCtx.font = '12px monospace';
+    renderCtx.fillText(`Current: ${currentTurn}`, this.x + 10, combatY + 40);
 
-    this.currentRenderCtx.font = '10px monospace';
-    this.currentRenderCtx.fillText('Turn Order:', this.x + 10, combatY + 60);
+    renderCtx.font = '10px monospace';
+    renderCtx.fillText('Turn Order:', this.x + 10, combatY + 60);
 
     turnOrder.slice(0, 8).forEach((unit, index) => {
-      this.currentRenderCtx.fillStyle = index === 0 ? '#ffff00' : '#ccc';
-      this.currentRenderCtx.fillText(`${index + 1}. ${unit}`, this.x + 10, combatY + 75 + index * 12);
+      renderCtx.fillStyle = index === 0 ? '#ffff00' : '#ccc';
+      renderCtx.fillText(`${index + 1}. ${unit}`, this.x + 10, combatY + 75 + index * 12);
     });
   }
 }
