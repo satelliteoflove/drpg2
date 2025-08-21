@@ -112,12 +112,10 @@ export class RenderManager {
   public renderScene(scene: Scene): void {
     ErrorHandler.safeCanvasOperation(
       () => {
-        // Clear and render to appropriate layers
-        this.clearDynamicLayers();
-        
         // Use the dungeon layer context for scene rendering
         const dungeonLayer = this.optimizer.getLayer(RenderManager.LAYERS.DUNGEON);
         if (dungeonLayer) {
+          this.optimizer.clearLayer(RenderManager.LAYERS.DUNGEON);
           scene.render(dungeonLayer.context);
           this.optimizer.markLayerDirty(RenderManager.LAYERS.DUNGEON);
         }
@@ -129,19 +127,14 @@ export class RenderManager {
     );
   }
 
-  private clearDynamicLayers(): void {
-    // Clear non-persistent layers
-    this.optimizer.clearLayer(RenderManager.LAYERS.ENTITIES);
-    this.optimizer.clearLayer(RenderManager.LAYERS.EFFECTS);
-    this.optimizer.clearLayer(RenderManager.LAYERS.UI);
-    this.optimizer.clearLayer(RenderManager.LAYERS.DEBUG);
-  }
 
   public renderBackground(renderFn: (ctx: CanvasRenderingContext2D) => void): void {
     const layer = this.optimizer.getLayer(RenderManager.LAYERS.BACKGROUND);
-    if (layer && layer.isDirty) {
+    if (layer) {
+      // Always render background - it's the foundation layer
       this.optimizer.clearLayer(RenderManager.LAYERS.BACKGROUND);
       this.optimizer.batchDrawCalls(layer.context, renderFn);
+      this.optimizer.markLayerDirty(RenderManager.LAYERS.BACKGROUND);
     }
   }
 
@@ -157,6 +150,8 @@ export class RenderManager {
   public renderEntities(renderFn: (ctx: CanvasRenderingContext2D) => void): void {
     const layer = this.optimizer.getLayer(RenderManager.LAYERS.ENTITIES);
     if (layer) {
+      // Clear entities layer before rendering new content
+      this.optimizer.clearLayer(RenderManager.LAYERS.ENTITIES);
       this.optimizer.batchDrawCalls(layer.context, renderFn);
       this.optimizer.markLayerDirty(RenderManager.LAYERS.ENTITIES);
     }
@@ -165,6 +160,8 @@ export class RenderManager {
   public renderEffects(renderFn: (ctx: CanvasRenderingContext2D) => void): void {
     const layer = this.optimizer.getLayer(RenderManager.LAYERS.EFFECTS);
     if (layer) {
+      // Clear effects layer before rendering new content
+      this.optimizer.clearLayer(RenderManager.LAYERS.EFFECTS);
       this.optimizer.batchDrawCalls(layer.context, renderFn);
       this.optimizer.markLayerDirty(RenderManager.LAYERS.EFFECTS);
     }
@@ -173,6 +170,8 @@ export class RenderManager {
   public renderUI(renderFn: (ctx: CanvasRenderingContext2D) => void): void {
     const layer = this.optimizer.getLayer(RenderManager.LAYERS.UI);
     if (layer) {
+      // Clear UI layer before rendering new content
+      this.optimizer.clearLayer(RenderManager.LAYERS.UI);
       this.optimizer.batchDrawCalls(layer.context, renderFn);
       this.optimizer.markLayerDirty(RenderManager.LAYERS.UI);
     }
@@ -293,6 +292,44 @@ export class RenderManager {
 
     // Update spatial partition
     this.spatialPartition = new SpatialPartition(width, height);
+  }
+
+  public getAllLayers(): Map<string, LayerConfig> {
+    return this.optimizer.getAllLayers();
+  }
+
+  public getLayerNames(): string[] {
+    return this.optimizer.getLayerNames();
+  }
+
+  public forceAllLayersDirty(): void {
+    this.optimizer.forceAllLayersDirty();
+  }
+
+  public resetForSceneChange(): void {
+    // Force all layers dirty for the new scene
+    this.forceAllLayersDirty();
+    // Verify layer integrity after reset
+    this.verifyLayerIntegrity();
+  }
+
+  public verifyLayerIntegrity(): boolean {
+    return this.optimizer.verifyLayerIntegrity();
+  }
+
+  public debugLayers(): void {
+    if (GAME_CONFIG.DEBUG_MODE) {
+      console.log('=== Layer Debug Info ===');
+      const layers = this.getAllLayers();
+      for (const [name, layer] of layers) {
+        console.log(`Layer ${name}:`, {
+          zIndex: layer.zIndex,
+          isDirty: layer.isDirty,
+          persistent: layer.persistent,
+          dimensions: `${layer.canvas.width}x${layer.canvas.height}`,
+        });
+      }
+    }
   }
 
   public dispose(): void {
