@@ -327,8 +327,20 @@ export class CombatSystem {
     }
 
     if (aliveMonsters.length === 0) {
-      const totalExp = this.encounter.monsters.reduce((sum, m) => sum + m.experience, 0);
-      const totalGold = this.encounter.monsters.reduce((sum, m) => sum + m.gold, 0);
+      console.log('All monsters defeated! Calculating rewards...');
+      console.log('Monsters:', this.encounter.monsters);
+      
+      const totalExp = this.encounter.monsters.reduce((sum, m) => {
+        console.log(`Monster ${m.name} gives ${m.experience} experience`);
+        return sum + m.experience;
+      }, 0);
+      
+      const totalGold = this.encounter.monsters.reduce((sum, m) => {
+        console.log(`Monster ${m.name} gives ${m.gold} gold`);
+        return sum + m.gold;
+      }, 0);
+      
+      console.log(`Total rewards: ${totalExp} experience, ${totalGold} gold`);
       this.endCombat(true, { experience: totalExp, gold: totalGold });
       return true;
     }
