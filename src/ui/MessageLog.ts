@@ -1,3 +1,5 @@
+import { GAME_CONFIG } from '../config/GameConstants';
+
 export class MessageLog {
   private ctx: CanvasRenderingContext2D;
   private currentRenderCtx: CanvasRenderingContext2D;
@@ -29,6 +31,18 @@ export class MessageLog {
     }
   }
 
+  public getMessageCount(): number {
+    return this.messages.length;
+  }
+
+  public clear(): void {
+    this.messages = [];
+  }
+
+  public hasMessages(): boolean {
+    return this.messages.length > 0;
+  }
+
   public render(ctx?: CanvasRenderingContext2D): void {
     this.currentRenderCtx = ctx || this.ctx;
     this.currentRenderCtx.fillStyle = '#0a0a0a';
@@ -50,8 +64,12 @@ export class MessageLog {
 
     recentMessages.forEach((message, index) => {
       const messageY = startY + index * lineHeight;
-      const age = Date.now() - message.timestamp;
-      const alpha = Math.max(0.3, 1 - age / 10000); // Fade over 10 seconds
+      let alpha = 1;
+      
+      if (GAME_CONFIG.UI.MESSAGE_FADE_ENABLED) {
+        const age = Date.now() - message.timestamp;
+        alpha = Math.max(0.3, 1 - age / GAME_CONFIG.UI.MESSAGE_FADE_TIME);
+      }
 
       this.currentRenderCtx.save();
       this.currentRenderCtx.globalAlpha = alpha;
@@ -105,10 +123,6 @@ export class MessageLog {
       this.currentRenderCtx.fillStyle = '#aaa';
       this.currentRenderCtx.fillRect(this.x + this.width - 10, indicatorY, 5, indicatorHeight);
     }
-  }
-
-  public clear(): void {
-    this.messages = [];
   }
 
   public addCombatMessage(message: string): void {
