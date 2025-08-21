@@ -77,6 +77,12 @@ export class DungeonScene extends Scene {
       this.initializeUI(renderContext.mainContext.canvas);
     }
 
+    // Render background layer - CRITICAL for preventing black screen
+    renderManager.renderBackground((ctx) => {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    });
+
     const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
     if (currentDungeon) {
       this.dungeonView.setDungeon(currentDungeon);
@@ -93,18 +99,27 @@ export class DungeonScene extends Scene {
         this.gameState.party.facing
       );
 
-      renderManager.renderDungeon(() => {
+      renderManager.renderDungeon((ctx) => {
         if (!this.dungeonMapView.getIsVisible()) {
-          this.dungeonView.render();
+          // Pass the layer context to dungeonView
+          this.dungeonView.render(ctx);
         }
       });
 
-      renderManager.renderUI(() => {
+      renderManager.renderUI((ctx) => {
         if (!this.dungeonMapView.getIsVisible()) {
-          this.statusPanel.render(this.gameState.party);
-          this.messageLog.render();
+          this.statusPanel.render(this.gameState.party, ctx);
+          this.messageLog.render(ctx);
         }
-        this.dungeonMapView.render();
+        this.dungeonMapView.render(ctx);
+      });
+    } else {
+      // Fallback if no dungeon data
+      renderManager.renderUI((ctx) => {
+        ctx.fillStyle = '#fff';
+        ctx.font = '24px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('No dungeon data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
       });
     }
   }
