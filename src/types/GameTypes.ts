@@ -155,19 +155,25 @@ export interface DungeonLevel {
   width: number;
   height: number;
   tiles: DungeonTile[][];
-  encounters: EncounterZone[];
+  overrideZones: OverrideZone[];
   events: DungeonEvent[];
   startX: number;
   startY: number;
 }
 
-export interface EncounterZone {
+export interface OverrideZone {
   x1: number;
   y1: number;
   x2: number;
   y2: number;
-  monsterGroups: string[];
-  encounterRate: number;
+  type: 'safe' | 'boss' | 'special_mobs' | 'high_frequency' | 'low_frequency' | 'ambush' | 'treasure';
+  data?: {
+    monsterGroups?: string[];
+    encounterRate?: number;
+    bossType?: string;
+    treasureType?: string;
+    description?: string;
+  };
 }
 
 export type DungeonEventData =
@@ -207,6 +213,7 @@ export interface GameState {
   gameTime: number;
   turnCount: number;
   combatEnabled: boolean;
+  messageLog?: any; // MessageLog instance that persists across scenes
 }
 
 export interface Encounter {
