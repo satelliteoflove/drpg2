@@ -7,6 +7,7 @@ export class CombatSystem {
   private encounter: Encounter | null = null;
   private onCombatEnd?: (victory: boolean, rewards?: { experience: number; gold: number }) => void;
   private recursionDepth: number = 0;
+  private isProcessingTurn: boolean = false; // Prevent simultaneous turn processing
 
   public startCombat(
     monsters: Monster[],
@@ -15,6 +16,7 @@ export class CombatSystem {
   ): void {
     this.onCombatEnd = onCombatEnd;
     this.recursionDepth = 0;
+    this.isProcessingTurn = false;
 
     this.encounter = {
       monsters: monsters.map(m => ({ ...m })),
@@ -72,6 +74,13 @@ export class CombatSystem {
       return 'Invalid action';
     }
 
+    // Prevent multiple simultaneous actions
+    if (this.isProcessingTurn) {
+      return 'Action already in progress';
+    }
+
+    this.isProcessingTurn = true;
+
     let result = '';
 
     switch (action) {
@@ -89,6 +98,7 @@ export class CombatSystem {
         break;
       case 'Run':
         if (this.attemptRun()) {
+          this.isProcessingTurn = false;
           this.endCombat(false);
           return 'Successfully ran away!';
         } else {
@@ -186,12 +196,14 @@ export class CombatSystem {
     const currentUnit = this.getCurrentUnit();
     if (!currentUnit || !this.encounter) {
       // Silently skip if no unit or encounter
+      this.isProcessingTurn = false;
       this.nextTurn();
       return '';
     }
     
     if ('class' in currentUnit) {
-      // It's a player's turn, not a monster's - just skip
+      // It's a player's turn, not a monster's - reset flag and skip
+      this.isProcessingTurn = false;
       return '';
     }
 
@@ -201,6 +213,7 @@ export class CombatSystem {
     ) as Character[];
 
     if (alivePlayers.length === 0) {
+      this.isProcessingTurn = false;
       this.endCombat(false);
       return 'Party defeated!';
     }
@@ -254,13 +267,17 @@ export class CombatSystem {
   }
 
   private nextTurn(): void {
-    if (!this.encounter) return;
+    if (!this.encounter) {
+      this.isProcessingTurn = false;
+      return;
+    }
 
     this.encounter.currentTurn = (this.encounter.currentTurn + 1) % this.encounter.turnOrder.length;
 
     this.cleanupDeadUnits();
 
     if (this.checkCombatEnd()) {
+      this.isProcessingTurn = false;
       return;
     }
 
@@ -271,6 +288,7 @@ export class CombatSystem {
         ErrorSeverity.HIGH,
         'CombatSystem.nextTurn'
       );
+      this.isProcessingTurn = false;
       this.endCombat(false);
       return;
     }
@@ -292,6 +310,7 @@ export class CombatSystem {
                 error instanceof Error ? error : undefined
               );
               this.recursionDepth = Math.max(0, this.recursionDepth - 1);
+              this.isProcessingTurn = false;
               this.nextTurn();
             }
           }, GAME_CONFIG.COMBAT.MONSTER_TURN_DELAY);
@@ -301,8 +320,9 @@ export class CombatSystem {
         'Combat Timer Setup'
       );
     } else {
-      // Reset recursion depth for player turns
+      // Reset recursion depth for player turns and allow next action
       this.recursionDepth = 0;
+      this.isProcessingTurn = false;
     }
   }
 
@@ -361,6 +381,7 @@ export class CombatSystem {
     }
     this.encounter = null;
     this.recursionDepth = 0;
+    this.isProcessingTurn = false;
   }
 
   public getEncounter(): Encounter | null {
