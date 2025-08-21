@@ -2,6 +2,7 @@ import { Direction, DungeonLevel, DungeonTile } from '../types/GameTypes';
 
 export class DungeonView {
   private ctx: CanvasRenderingContext2D;
+  private currentRenderCtx: CanvasRenderingContext2D;
   private dungeon: DungeonLevel | null = null;
   private playerX: number = 0;
   private playerY: number = 0;
@@ -12,6 +13,7 @@ export class DungeonView {
 
   constructor(canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
+    this.currentRenderCtx = this.ctx;
   }
 
   public setDungeon(dungeon: DungeonLevel): void {
@@ -24,11 +26,14 @@ export class DungeonView {
     this.playerFacing = facing;
   }
 
-  public render(): void {
+  public render(ctx?: CanvasRenderingContext2D): void {
     if (!this.dungeon) return;
 
-    this.ctx.fillStyle = '#000';
-    this.ctx.fillRect(0, 0, this.VIEW_WIDTH, this.VIEW_HEIGHT);
+    // Set the current rendering context
+    this.currentRenderCtx = ctx || this.ctx;
+    
+    this.currentRenderCtx.fillStyle = '#000';
+    this.currentRenderCtx.fillRect(0, 0, this.VIEW_WIDTH, this.VIEW_HEIGHT);
 
     this.renderDepth3();
     this.renderDepth2();
@@ -214,24 +219,24 @@ export class DungeonView {
   }
 
   private drawWall(x: number, y: number, width: number, height: number, color: string): void {
-    this.ctx.fillStyle = color;
-    this.ctx.fillRect(x - width / 2, y - height / 2, width, height);
+    this.currentRenderCtx.fillStyle = color;
+    this.currentRenderCtx.fillRect(x - width / 2, y - height / 2, width, height);
 
-    this.ctx.strokeStyle = '#222';
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+    this.currentRenderCtx.strokeStyle = '#222';
+    this.currentRenderCtx.lineWidth = 1;
+    this.currentRenderCtx.strokeRect(x - width / 2, y - height / 2, width, height);
 
-    this.ctx.fillStyle = '#000';
-    this.ctx.fillRect(x - width / 4, y - height / 4, width / 8, height / 8);
+    this.currentRenderCtx.fillStyle = '#000';
+    this.currentRenderCtx.fillRect(x - width / 4, y - height / 4, width / 8, height / 8);
   }
 
   private drawFloor(x: number, y: number, width: number, height: number, color: string): void {
-    this.ctx.fillStyle = color;
-    this.ctx.fillRect(x - width / 2, y + height / 4, width, height / 2);
+    this.currentRenderCtx.fillStyle = color;
+    this.currentRenderCtx.fillRect(x - width / 2, y + height / 4, width, height / 2);
 
-    this.ctx.strokeStyle = '#444';
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(x - width / 2, y + height / 4, width, height / 2);
+    this.currentRenderCtx.strokeStyle = '#444';
+    this.currentRenderCtx.lineWidth = 1;
+    this.currentRenderCtx.strokeRect(x - width / 2, y + height / 4, width, height / 2);
   }
 
   private drawSpecialTile(tile: DungeonTile, x: number, y: number, size: number): void {
@@ -239,79 +244,79 @@ export class DungeonView {
 
     switch (tile.type) {
       case 'door':
-        this.ctx.fillStyle = '#8B4513';
-        this.ctx.fillRect(x - size / 4, y - size / 2, size / 2, size);
-        this.ctx.fillStyle = '#FFD700';
-        this.ctx.fillRect(x - size / 8, y - size / 8, size / 16, size / 16);
+        this.currentRenderCtx.fillStyle = '#8B4513';
+        this.currentRenderCtx.fillRect(x - size / 4, y - size / 2, size / 2, size);
+        this.currentRenderCtx.fillStyle = '#FFD700';
+        this.currentRenderCtx.fillRect(x - size / 8, y - size / 8, size / 16, size / 16);
         break;
 
       case 'chest':
-        this.ctx.fillStyle = '#8B4513';
-        this.ctx.fillRect(x - size / 3, y - size / 6, (size * 2) / 3, size / 3);
-        this.ctx.fillStyle = '#FFD700';
-        this.ctx.fillRect(x - size / 6, y - size / 12, size / 8, size / 6);
+        this.currentRenderCtx.fillStyle = '#8B4513';
+        this.currentRenderCtx.fillRect(x - size / 3, y - size / 6, (size * 2) / 3, size / 3);
+        this.currentRenderCtx.fillStyle = '#FFD700';
+        this.currentRenderCtx.fillRect(x - size / 6, y - size / 12, size / 8, size / 6);
         break;
 
       case 'stairs_up':
-        this.ctx.strokeStyle = '#999';
-        this.ctx.lineWidth = 2;
+        this.currentRenderCtx.strokeStyle = '#999';
+        this.currentRenderCtx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
-          this.ctx.beginPath();
-          this.ctx.moveTo(x - size / 3 + (i * size) / 6, y + size / 6);
-          this.ctx.lineTo(x + size / 3, y + size / 6 - (i * size) / 6);
-          this.ctx.stroke();
+          this.currentRenderCtx.beginPath();
+          this.currentRenderCtx.moveTo(x - size / 3 + (i * size) / 6, y + size / 6);
+          this.currentRenderCtx.lineTo(x + size / 3, y + size / 6 - (i * size) / 6);
+          this.currentRenderCtx.stroke();
         }
         break;
 
       case 'stairs_down':
-        this.ctx.strokeStyle = '#666';
-        this.ctx.lineWidth = 2;
+        this.currentRenderCtx.strokeStyle = '#666';
+        this.currentRenderCtx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
-          this.ctx.beginPath();
-          this.ctx.moveTo(x - size / 3, y - size / 6 + (i * size) / 6);
-          this.ctx.lineTo(x + size / 3 - (i * size) / 6, y + size / 6);
-          this.ctx.stroke();
+          this.currentRenderCtx.beginPath();
+          this.currentRenderCtx.moveTo(x - size / 3, y - size / 6 + (i * size) / 6);
+          this.currentRenderCtx.lineTo(x + size / 3 - (i * size) / 6, y + size / 6);
+          this.currentRenderCtx.stroke();
         }
         break;
 
       case 'trap':
-        this.ctx.fillStyle = '#FF0000';
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, size / 6, 0, Math.PI * 2);
-        this.ctx.fill();
+        this.currentRenderCtx.fillStyle = '#FF0000';
+        this.currentRenderCtx.beginPath();
+        this.currentRenderCtx.arc(x, y, size / 6, 0, Math.PI * 2);
+        this.currentRenderCtx.fill();
         break;
 
       case 'event':
-        this.ctx.fillStyle = '#800080';
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, size / 4, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.strokeStyle = '#FF00FF';
-        this.ctx.lineWidth = 2;
-        this.ctx.stroke();
+        this.currentRenderCtx.fillStyle = '#800080';
+        this.currentRenderCtx.beginPath();
+        this.currentRenderCtx.arc(x, y, size / 4, 0, Math.PI * 2);
+        this.currentRenderCtx.fill();
+        this.currentRenderCtx.strokeStyle = '#FF00FF';
+        this.currentRenderCtx.lineWidth = 2;
+        this.currentRenderCtx.stroke();
         break;
     }
   }
 
   private renderUI(): void {
-    this.ctx.fillStyle = '#333';
-    this.ctx.fillRect(0, this.VIEW_HEIGHT - 60, this.VIEW_WIDTH, 60);
+    this.currentRenderCtx.fillStyle = '#333';
+    this.currentRenderCtx.fillRect(0, this.VIEW_HEIGHT - 60, this.VIEW_WIDTH, 60);
 
-    this.ctx.strokeStyle = '#666';
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeRect(0, this.VIEW_HEIGHT - 60, this.VIEW_WIDTH, 60);
+    this.currentRenderCtx.strokeStyle = '#666';
+    this.currentRenderCtx.lineWidth = 2;
+    this.currentRenderCtx.strokeRect(0, this.VIEW_HEIGHT - 60, this.VIEW_WIDTH, 60);
 
-    this.ctx.fillStyle = '#fff';
-    this.ctx.font = '14px monospace';
-    this.ctx.fillText(`Position: ${this.playerX}, ${this.playerY}`, 10, this.VIEW_HEIGHT - 40);
-    this.ctx.fillText(`Facing: ${this.playerFacing}`, 10, this.VIEW_HEIGHT - 20);
+    this.currentRenderCtx.fillStyle = '#fff';
+    this.currentRenderCtx.font = '14px monospace';
+    this.currentRenderCtx.fillText(`Position: ${this.playerX}, ${this.playerY}`, 10, this.VIEW_HEIGHT - 40);
+    this.currentRenderCtx.fillText(`Facing: ${this.playerFacing}`, 10, this.VIEW_HEIGHT - 20);
 
     if (this.dungeon) {
-      this.ctx.fillText(`Floor: ${this.dungeon.level}`, 200, this.VIEW_HEIGHT - 40);
+      this.currentRenderCtx.fillText(`Floor: ${this.dungeon.level}`, 200, this.VIEW_HEIGHT - 40);
 
       const currentTile = this.getTileAt(this.playerX, this.playerY);
       if (currentTile && currentTile.type !== 'floor') {
-        this.ctx.fillText(`On: ${currentTile.type}`, 200, this.VIEW_HEIGHT - 20);
+        this.currentRenderCtx.fillText(`On: ${currentTile.type}`, 200, this.VIEW_HEIGHT - 20);
       }
     }
 
@@ -319,30 +324,30 @@ export class DungeonView {
     const compassX = this.VIEW_WIDTH - compassSize - 10;
     const compassY = this.VIEW_HEIGHT - compassSize - 10;
 
-    this.ctx.strokeStyle = '#666';
-    this.ctx.lineWidth = 2;
-    this.ctx.beginPath();
-    this.ctx.arc(compassX, compassY, compassSize / 2, 0, Math.PI * 2);
-    this.ctx.stroke();
+    this.currentRenderCtx.strokeStyle = '#666';
+    this.currentRenderCtx.lineWidth = 2;
+    this.currentRenderCtx.beginPath();
+    this.currentRenderCtx.arc(compassX, compassY, compassSize / 2, 0, Math.PI * 2);
+    this.currentRenderCtx.stroke();
 
-    this.ctx.fillStyle = '#ff0000';
-    this.ctx.font = '12px monospace';
-    this.ctx.textAlign = 'center';
-    this.ctx.fillText('N', compassX, compassY - compassSize / 3);
+    this.currentRenderCtx.fillStyle = '#ff0000';
+    this.currentRenderCtx.font = '12px monospace';
+    this.currentRenderCtx.textAlign = 'center';
+    this.currentRenderCtx.fillText('N', compassX, compassY - compassSize / 3);
 
     const arrowLength = compassSize / 3;
     const angle = this.getCompassAngle();
     const arrowX = compassX + Math.sin(angle) * arrowLength;
     const arrowY = compassY - Math.cos(angle) * arrowLength;
 
-    this.ctx.strokeStyle = '#ff0000';
-    this.ctx.lineWidth = 3;
-    this.ctx.beginPath();
-    this.ctx.moveTo(compassX, compassY);
-    this.ctx.lineTo(arrowX, arrowY);
-    this.ctx.stroke();
+    this.currentRenderCtx.strokeStyle = '#ff0000';
+    this.currentRenderCtx.lineWidth = 3;
+    this.currentRenderCtx.beginPath();
+    this.currentRenderCtx.moveTo(compassX, compassY);
+    this.currentRenderCtx.lineTo(arrowX, arrowY);
+    this.currentRenderCtx.stroke();
 
-    this.ctx.textAlign = 'start';
+    this.currentRenderCtx.textAlign = 'start';
   }
 
   private getCompassAngle(): number {

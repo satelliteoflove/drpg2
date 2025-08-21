@@ -3,6 +3,7 @@ import { Party } from '../entities/Party';
 
 export class StatusPanel {
   private ctx: CanvasRenderingContext2D;
+  private currentRenderCtx: CanvasRenderingContext2D;
   private x: number;
   private y: number;
   private width: number;
@@ -10,23 +11,26 @@ export class StatusPanel {
 
   constructor(canvas: HTMLCanvasElement, x: number, y: number, width: number, height: number) {
     this.ctx = canvas.getContext('2d')!;
+    this.currentRenderCtx = this.ctx;
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
   }
 
-  public render(party: Party): void {
-    this.ctx.fillStyle = '#1a1a1a';
-    this.ctx.fillRect(this.x, this.y, this.width, this.height);
+  public render(party: Party, ctx?: CanvasRenderingContext2D): void {
+    this.currentRenderCtx = ctx || this.ctx;
+    
+    this.currentRenderCtx.fillStyle = '#1a1a1a';
+    this.currentRenderCtx.fillRect(this.x, this.y, this.width, this.height);
 
-    this.ctx.strokeStyle = '#333';
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeRect(this.x, this.y, this.width, this.height);
+    this.currentRenderCtx.strokeStyle = '#333';
+    this.currentRenderCtx.lineWidth = 2;
+    this.currentRenderCtx.strokeRect(this.x, this.y, this.width, this.height);
 
-    this.ctx.fillStyle = '#fff';
-    this.ctx.font = '14px monospace';
-    this.ctx.fillText('PARTY STATUS', this.x + 10, this.y + 20);
+    this.currentRenderCtx.fillStyle = '#fff';
+    this.currentRenderCtx.font = '14px monospace';
+    this.currentRenderCtx.fillText('PARTY STATUS', this.x + 10, this.y + 20);
 
     const charHeight = 45;
     const startY = this.y + 40;
@@ -50,81 +54,81 @@ export class StatusPanel {
   ): void {
     const statusColor = char.isDead ? '#ff0000' : char.status !== 'OK' ? '#ffaa00' : '#00ff00';
 
-    this.ctx.strokeStyle = statusColor;
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(x, y, width, height);
+    this.currentRenderCtx.strokeStyle = statusColor;
+    this.currentRenderCtx.lineWidth = 1;
+    this.currentRenderCtx.strokeRect(x, y, width, height);
 
-    this.ctx.fillStyle = '#fff';
-    this.ctx.font = '11px monospace';
+    this.currentRenderCtx.fillStyle = '#fff';
+    this.currentRenderCtx.font = '11px monospace';
 
-    this.ctx.fillText(`${char.name} (${char.class})`, x + 5, y + 12);
-    this.ctx.fillText(`Lv.${char.level}`, x + 5, y + 24);
+    this.currentRenderCtx.fillText(`${char.name} (${char.class})`, x + 5, y + 12);
+    this.currentRenderCtx.fillText(`Lv.${char.level}`, x + 5, y + 24);
 
-    this.ctx.fillStyle = statusColor;
-    this.ctx.fillText(`${char.status}`, x + 60, y + 24);
+    this.currentRenderCtx.fillStyle = statusColor;
+    this.currentRenderCtx.fillText(`${char.status}`, x + 60, y + 24);
 
     const hpBarWidth = width - 100;
     const hpPercent = char.maxHp > 0 ? char.hp / char.maxHp : 0;
 
-    this.ctx.fillStyle = '#333';
-    this.ctx.fillRect(x + 5, y + 28, hpBarWidth, 6);
+    this.currentRenderCtx.fillStyle = '#333';
+    this.currentRenderCtx.fillRect(x + 5, y + 28, hpBarWidth, 6);
 
-    this.ctx.fillStyle = hpPercent > 0.5 ? '#00ff00' : hpPercent > 0.25 ? '#ffaa00' : '#ff0000';
-    this.ctx.fillRect(x + 5, y + 28, hpBarWidth * hpPercent, 6);
+    this.currentRenderCtx.fillStyle = hpPercent > 0.5 ? '#00ff00' : hpPercent > 0.25 ? '#ffaa00' : '#ff0000';
+    this.currentRenderCtx.fillRect(x + 5, y + 28, hpBarWidth * hpPercent, 6);
 
-    this.ctx.fillStyle = '#fff';
-    this.ctx.font = '9px monospace';
-    this.ctx.fillText(`HP: ${char.hp}/${char.maxHp}`, x + 5, y + 40);
+    this.currentRenderCtx.fillStyle = '#fff';
+    this.currentRenderCtx.font = '9px monospace';
+    this.currentRenderCtx.fillText(`HP: ${char.hp}/${char.maxHp}`, x + 5, y + 40);
 
-    this.ctx.fillStyle = '#aaa';
-    this.ctx.font = '8px monospace';
-    this.ctx.fillText(`AC: ${char.ac}`, x + width - 35, y + 12);
-    this.ctx.fillText(`Gold: ${char.gold}`, x + width - 50, y + 24);
-    this.ctx.fillText(`Exp: ${char.experience}`, x + width - 55, y + 36);
+    this.currentRenderCtx.fillStyle = '#aaa';
+    this.currentRenderCtx.font = '8px monospace';
+    this.currentRenderCtx.fillText(`AC: ${char.ac}`, x + width - 35, y + 12);
+    this.currentRenderCtx.fillText(`Gold: ${char.gold}`, x + width - 50, y + 24);
+    this.currentRenderCtx.fillText(`Exp: ${char.experience}`, x + width - 55, y + 36);
 
     if (char.maxMp > 0) {
       const mpPercent = char.mp / char.maxMp;
-      this.ctx.fillStyle = '#333';
-      this.ctx.fillRect(x + 5, y + 34, hpBarWidth, 4);
+      this.currentRenderCtx.fillStyle = '#333';
+      this.currentRenderCtx.fillRect(x + 5, y + 34, hpBarWidth, 4);
 
-      this.ctx.fillStyle = '#0088ff';
-      this.ctx.fillRect(x + 5, y + 34, hpBarWidth * mpPercent, 4);
+      this.currentRenderCtx.fillStyle = '#0088ff';
+      this.currentRenderCtx.fillRect(x + 5, y + 34, hpBarWidth * mpPercent, 4);
 
-      this.ctx.fillStyle = '#fff';
-      this.ctx.font = '8px monospace';
-      this.ctx.fillText(`MP: ${char.mp}/${char.maxMp}`, x + width - 55, y + 48);
+      this.currentRenderCtx.fillStyle = '#fff';
+      this.currentRenderCtx.font = '8px monospace';
+      this.currentRenderCtx.fillText(`MP: ${char.mp}/${char.maxMp}`, x + width - 55, y + 48);
     }
   }
 
   private renderPartyInfo(party: Party): void {
     const infoY = this.y + this.height - 60;
 
-    this.ctx.fillStyle = '#333';
-    this.ctx.fillRect(this.x + 10, infoY, this.width - 20, 50);
+    this.currentRenderCtx.fillStyle = '#333';
+    this.currentRenderCtx.fillRect(this.x + 10, infoY, this.width - 20, 50);
 
-    this.ctx.strokeStyle = '#666';
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(this.x + 10, infoY, this.width - 20, 50);
+    this.currentRenderCtx.strokeStyle = '#666';
+    this.currentRenderCtx.lineWidth = 1;
+    this.currentRenderCtx.strokeRect(this.x + 10, infoY, this.width - 20, 50);
 
-    this.ctx.fillStyle = '#fff';
-    this.ctx.font = '10px monospace';
-    this.ctx.fillText('PARTY INFO', this.x + 15, infoY + 12);
+    this.currentRenderCtx.fillStyle = '#fff';
+    this.currentRenderCtx.font = '10px monospace';
+    this.currentRenderCtx.fillText('PARTY INFO', this.x + 15, infoY + 12);
 
-    this.ctx.font = '9px monospace';
-    this.ctx.fillText(`Position: (${party.x}, ${party.y})`, this.x + 15, infoY + 25);
-    this.ctx.fillText(`Facing: ${party.facing}`, this.x + 15, infoY + 35);
-    this.ctx.fillText(`Floor: ${party.floor}`, this.x + 15, infoY + 45);
+    this.currentRenderCtx.font = '9px monospace';
+    this.currentRenderCtx.fillText(`Position: (${party.x}, ${party.y})`, this.x + 15, infoY + 25);
+    this.currentRenderCtx.fillText(`Facing: ${party.facing}`, this.x + 15, infoY + 35);
+    this.currentRenderCtx.fillText(`Floor: ${party.floor}`, this.x + 15, infoY + 45);
 
     const aliveCount = party.getAliveCharacters().length;
     const totalGold = party.getTotalGold();
 
-    this.ctx.fillText(`Alive: ${aliveCount}/${party.characters.length}`, this.x + 180, infoY + 25);
-    this.ctx.fillText(`Total Gold: ${totalGold}`, this.x + 180, infoY + 35);
+    this.currentRenderCtx.fillText(`Alive: ${aliveCount}/${party.characters.length}`, this.x + 180, infoY + 25);
+    this.currentRenderCtx.fillText(`Total Gold: ${totalGold}`, this.x + 180, infoY + 35);
 
     if (party.isWiped()) {
-      this.ctx.fillStyle = '#ff0000';
-      this.ctx.font = '10px monospace';
-      this.ctx.fillText('PARTY WIPED!', this.x + 180, infoY + 45);
+      this.currentRenderCtx.fillStyle = '#ff0000';
+      this.currentRenderCtx.font = '10px monospace';
+      this.currentRenderCtx.fillText('PARTY WIPED!', this.x + 180, infoY + 45);
     }
   }
 
@@ -132,27 +136,27 @@ export class StatusPanel {
     // Position combat status below the party status panel with proper spacing
     const combatY = this.y + this.height + 20;
 
-    this.ctx.fillStyle = '#330000';
-    this.ctx.fillRect(this.x, combatY, this.width, 140);
+    this.currentRenderCtx.fillStyle = '#330000';
+    this.currentRenderCtx.fillRect(this.x, combatY, this.width, 140);
 
-    this.ctx.strokeStyle = '#ff0000';
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeRect(this.x, combatY, this.width, 140);
+    this.currentRenderCtx.strokeStyle = '#ff0000';
+    this.currentRenderCtx.lineWidth = 2;
+    this.currentRenderCtx.strokeRect(this.x, combatY, this.width, 140);
 
-    this.ctx.fillStyle = '#ff0000';
-    this.ctx.font = '14px monospace';
-    this.ctx.fillText('COMBAT', this.x + 10, combatY + 20);
+    this.currentRenderCtx.fillStyle = '#ff0000';
+    this.currentRenderCtx.font = '14px monospace';
+    this.currentRenderCtx.fillText('COMBAT', this.x + 10, combatY + 20);
 
-    this.ctx.fillStyle = '#fff';
-    this.ctx.font = '12px monospace';
-    this.ctx.fillText(`Current: ${currentTurn}`, this.x + 10, combatY + 40);
+    this.currentRenderCtx.fillStyle = '#fff';
+    this.currentRenderCtx.font = '12px monospace';
+    this.currentRenderCtx.fillText(`Current: ${currentTurn}`, this.x + 10, combatY + 40);
 
-    this.ctx.font = '10px monospace';
-    this.ctx.fillText('Turn Order:', this.x + 10, combatY + 60);
+    this.currentRenderCtx.font = '10px monospace';
+    this.currentRenderCtx.fillText('Turn Order:', this.x + 10, combatY + 60);
 
     turnOrder.slice(0, 8).forEach((unit, index) => {
-      this.ctx.fillStyle = index === 0 ? '#ffff00' : '#ccc';
-      this.ctx.fillText(`${index + 1}. ${unit}`, this.x + 10, combatY + 75 + index * 12);
+      this.currentRenderCtx.fillStyle = index === 0 ? '#ffff00' : '#ccc';
+      this.currentRenderCtx.fillText(`${index + 1}. ${unit}`, this.x + 10, combatY + 75 + index * 12);
     });
   }
 }

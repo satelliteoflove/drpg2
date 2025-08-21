@@ -3,6 +3,7 @@ import { DungeonLevel, DungeonTile } from '../types/GameTypes';
 export class DungeonMapView {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
+  private currentRenderCtx: CanvasRenderingContext2D;
   private isVisible: boolean = false;
   private dungeon: DungeonLevel | null = null;
   private playerX: number = 0;
@@ -33,6 +34,7 @@ export class DungeonMapView {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
+    this.currentRenderCtx = this.ctx;
   }
 
   public setDungeon(dungeon: DungeonLevel): void {
@@ -61,10 +63,11 @@ export class DungeonMapView {
     return this.isVisible;
   }
 
-  public render(): void {
+  public render(ctx?: CanvasRenderingContext2D): void {
     if (!this.isVisible || !this.dungeon) return;
-
-    this.ctx.save();
+    
+    this.currentRenderCtx = ctx || this.ctx;
+    this.currentRenderCtx.save();
 
     this.drawBackground();
     this.drawMap();
@@ -72,16 +75,16 @@ export class DungeonMapView {
     this.drawLegend();
     this.drawTitle();
 
-    this.ctx.restore();
+    this.currentRenderCtx.restore();
   }
 
   private drawBackground(): void {
-    this.ctx.fillStyle = this.COLORS.background;
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.currentRenderCtx.fillStyle = this.COLORS.background;
+    this.currentRenderCtx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    this.ctx.strokeStyle = this.COLORS.border;
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeRect(10, 10, this.canvas.width - 20, this.canvas.height - 20);
+    this.currentRenderCtx.strokeStyle = this.COLORS.border;
+    this.currentRenderCtx.lineWidth = 2;
+    this.currentRenderCtx.strokeRect(10, 10, this.canvas.width - 20, this.canvas.height - 20);
   }
 
   private drawMap(): void {
@@ -102,30 +105,30 @@ export class DungeonMapView {
       }
     }
 
-    this.ctx.strokeStyle = this.COLORS.grid;
-    this.ctx.lineWidth = 0.5;
+    this.currentRenderCtx.strokeStyle = this.COLORS.grid;
+    this.currentRenderCtx.lineWidth = 0.5;
 
     for (let x = 0; x <= this.dungeon.width; x++) {
       const drawX = offsetX + x * this.TILE_SIZE;
-      this.ctx.beginPath();
-      this.ctx.moveTo(drawX, offsetY);
-      this.ctx.lineTo(drawX, offsetY + mapHeight);
-      this.ctx.stroke();
+      this.currentRenderCtx.beginPath();
+      this.currentRenderCtx.moveTo(drawX, offsetY);
+      this.currentRenderCtx.lineTo(drawX, offsetY + mapHeight);
+      this.currentRenderCtx.stroke();
     }
 
     for (let y = 0; y <= this.dungeon.height; y++) {
       const drawY = offsetY + y * this.TILE_SIZE;
-      this.ctx.beginPath();
-      this.ctx.moveTo(offsetX, drawY);
-      this.ctx.lineTo(offsetX + mapWidth, drawY);
-      this.ctx.stroke();
+      this.currentRenderCtx.beginPath();
+      this.currentRenderCtx.moveTo(offsetX, drawY);
+      this.currentRenderCtx.lineTo(offsetX + mapWidth, drawY);
+      this.currentRenderCtx.stroke();
     }
   }
 
   private drawTile(tile: DungeonTile, x: number, y: number): void {
     if (!tile.discovered) {
-      this.ctx.fillStyle = this.COLORS.undiscovered;
-      this.ctx.fillRect(x, y, this.TILE_SIZE, this.TILE_SIZE);
+      this.currentRenderCtx.fillStyle = this.COLORS.undiscovered;
+      this.currentRenderCtx.fillRect(x, y, this.TILE_SIZE, this.TILE_SIZE);
       return;
     }
 
@@ -165,44 +168,44 @@ export class DungeonMapView {
         break;
     }
 
-    this.ctx.fillStyle = color;
-    this.ctx.fillRect(x, y, this.TILE_SIZE, this.TILE_SIZE);
+    this.currentRenderCtx.fillStyle = color;
+    this.currentRenderCtx.fillRect(x, y, this.TILE_SIZE, this.TILE_SIZE);
 
     if (symbol) {
-      this.ctx.fillStyle = '#000';
-      this.ctx.font = 'bold 14px monospace';
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.fillText(symbol, x + this.TILE_SIZE / 2, y + this.TILE_SIZE / 2);
+      this.currentRenderCtx.fillStyle = '#000';
+      this.currentRenderCtx.font = 'bold 14px monospace';
+      this.currentRenderCtx.textAlign = 'center';
+      this.currentRenderCtx.textBaseline = 'middle';
+      this.currentRenderCtx.fillText(symbol, x + this.TILE_SIZE / 2, y + this.TILE_SIZE / 2);
     }
 
     if (tile.type !== 'wall') {
-      this.ctx.strokeStyle = this.COLORS.wallLine;
-      this.ctx.lineWidth = 2;
+      this.currentRenderCtx.strokeStyle = this.COLORS.wallLine;
+      this.currentRenderCtx.lineWidth = 2;
 
       if (tile.northWall) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(x, y);
-        this.ctx.lineTo(x + this.TILE_SIZE, y);
-        this.ctx.stroke();
+        this.currentRenderCtx.beginPath();
+        this.currentRenderCtx.moveTo(x, y);
+        this.currentRenderCtx.lineTo(x + this.TILE_SIZE, y);
+        this.currentRenderCtx.stroke();
       }
       if (tile.southWall) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(x, y + this.TILE_SIZE);
-        this.ctx.lineTo(x + this.TILE_SIZE, y + this.TILE_SIZE);
-        this.ctx.stroke();
+        this.currentRenderCtx.beginPath();
+        this.currentRenderCtx.moveTo(x, y + this.TILE_SIZE);
+        this.currentRenderCtx.lineTo(x + this.TILE_SIZE, y + this.TILE_SIZE);
+        this.currentRenderCtx.stroke();
       }
       if (tile.westWall) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(x, y);
-        this.ctx.lineTo(x, y + this.TILE_SIZE);
-        this.ctx.stroke();
+        this.currentRenderCtx.beginPath();
+        this.currentRenderCtx.moveTo(x, y);
+        this.currentRenderCtx.lineTo(x, y + this.TILE_SIZE);
+        this.currentRenderCtx.stroke();
       }
       if (tile.eastWall) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(x + this.TILE_SIZE, y);
-        this.ctx.lineTo(x + this.TILE_SIZE, y + this.TILE_SIZE);
-        this.ctx.stroke();
+        this.currentRenderCtx.beginPath();
+        this.currentRenderCtx.moveTo(x + this.TILE_SIZE, y);
+        this.currentRenderCtx.lineTo(x + this.TILE_SIZE, y + this.TILE_SIZE);
+        this.currentRenderCtx.stroke();
       }
     }
   }
@@ -218,15 +221,15 @@ export class DungeonMapView {
     const playerDrawX = offsetX + this.playerX * this.TILE_SIZE + this.TILE_SIZE / 2;
     const playerDrawY = offsetY + this.playerY * this.TILE_SIZE + this.TILE_SIZE / 2;
 
-    this.ctx.fillStyle = this.COLORS.player;
-    this.ctx.beginPath();
-    this.ctx.arc(playerDrawX, playerDrawY, 6, 0, Math.PI * 2);
-    this.ctx.fill();
+    this.currentRenderCtx.fillStyle = this.COLORS.player;
+    this.currentRenderCtx.beginPath();
+    this.currentRenderCtx.arc(playerDrawX, playerDrawY, 6, 0, Math.PI * 2);
+    this.currentRenderCtx.fill();
 
-    this.ctx.strokeStyle = this.COLORS.playerDirection;
-    this.ctx.lineWidth = 3;
-    this.ctx.beginPath();
-    this.ctx.moveTo(playerDrawX, playerDrawY);
+    this.currentRenderCtx.strokeStyle = this.COLORS.playerDirection;
+    this.currentRenderCtx.lineWidth = 3;
+    this.currentRenderCtx.beginPath();
+    this.currentRenderCtx.moveTo(playerDrawX, playerDrawY);
 
     let dirX = 0,
       dirY = 0;
@@ -245,11 +248,11 @@ export class DungeonMapView {
         break;
     }
 
-    this.ctx.lineTo(
+    this.currentRenderCtx.lineTo(
       playerDrawX + dirX * this.TILE_SIZE * 0.4,
       playerDrawY + dirY * this.TILE_SIZE * 0.4
     );
-    this.ctx.stroke();
+    this.currentRenderCtx.stroke();
   }
 
   private drawLegend(): void {
@@ -258,18 +261,18 @@ export class DungeonMapView {
     const legendWidth = 200;
     const legendHeight = 150;
 
-    this.ctx.fillStyle = this.COLORS.legendBg;
-    this.ctx.fillRect(legendX, legendY, legendWidth, legendHeight);
+    this.currentRenderCtx.fillStyle = this.COLORS.legendBg;
+    this.currentRenderCtx.fillRect(legendX, legendY, legendWidth, legendHeight);
 
-    this.ctx.strokeStyle = this.COLORS.border;
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(legendX, legendY, legendWidth, legendHeight);
+    this.currentRenderCtx.strokeStyle = this.COLORS.border;
+    this.currentRenderCtx.lineWidth = 1;
+    this.currentRenderCtx.strokeRect(legendX, legendY, legendWidth, legendHeight);
 
-    this.ctx.fillStyle = this.COLORS.text;
-    this.ctx.font = 'bold 14px monospace';
-    this.ctx.textAlign = 'left';
-    this.ctx.textBaseline = 'top';
-    this.ctx.fillText('LEGEND', legendX + 10, legendY + 10);
+    this.currentRenderCtx.fillStyle = this.COLORS.text;
+    this.currentRenderCtx.font = 'bold 14px monospace';
+    this.currentRenderCtx.textAlign = 'left';
+    this.currentRenderCtx.textBaseline = 'top';
+    this.currentRenderCtx.fillText('LEGEND', legendX + 10, legendY + 10);
 
     const items = [
       { color: this.COLORS.floor, label: 'Floor' },
@@ -281,34 +284,34 @@ export class DungeonMapView {
       { color: this.COLORS.player, label: '● You' },
     ];
 
-    this.ctx.font = '12px monospace';
+    this.currentRenderCtx.font = '12px monospace';
     items.forEach((item, index) => {
       const itemY = legendY + 35 + index * 16;
 
-      this.ctx.fillStyle = item.color;
-      this.ctx.fillRect(legendX + 10, itemY, 12, 12);
+      this.currentRenderCtx.fillStyle = item.color;
+      this.currentRenderCtx.fillRect(legendX + 10, itemY, 12, 12);
 
-      this.ctx.fillStyle = this.COLORS.text;
-      this.ctx.fillText(item.label, legendX + 30, itemY);
+      this.currentRenderCtx.fillStyle = this.COLORS.text;
+      this.currentRenderCtx.fillText(item.label, legendX + 30, itemY);
     });
   }
 
   private drawTitle(): void {
     if (!this.dungeon) return;
 
-    this.ctx.fillStyle = this.COLORS.text;
-    this.ctx.font = 'bold 20px monospace';
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'top';
-    this.ctx.fillText(`DUNGEON FLOOR ${this.dungeon.level}`, this.canvas.width / 2, 30);
+    this.currentRenderCtx.fillStyle = this.COLORS.text;
+    this.currentRenderCtx.font = 'bold 20px monospace';
+    this.currentRenderCtx.textAlign = 'center';
+    this.currentRenderCtx.textBaseline = 'top';
+    this.currentRenderCtx.fillText(`DUNGEON FLOOR ${this.dungeon.level}`, this.canvas.width / 2, 30);
 
-    this.ctx.font = '14px monospace';
-    this.ctx.fillText(
+    this.currentRenderCtx.font = '14px monospace';
+    this.currentRenderCtx.fillText(
       `Position: (${this.playerX}, ${this.playerY}) Facing: ${this.playerFacing.toUpperCase()}`,
       this.canvas.width / 2,
       55
     );
 
-    this.ctx.fillText('Press M to close map', this.canvas.width / 2, this.canvas.height - 30);
+    this.currentRenderCtx.fillText('Press M to close map', this.canvas.width / 2, this.canvas.height - 30);
   }
 }

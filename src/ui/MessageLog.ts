@@ -1,5 +1,6 @@
 export class MessageLog {
   private ctx: CanvasRenderingContext2D;
+  private currentRenderCtx: CanvasRenderingContext2D;
   private messages: { text: string; timestamp: number; color?: string }[] = [];
   private maxMessages: number = 20;
   private x: number;
@@ -9,6 +10,7 @@ export class MessageLog {
 
   constructor(canvas: HTMLCanvasElement, x: number, y: number, width: number, height: number) {
     this.ctx = canvas.getContext('2d')!;
+    this.currentRenderCtx = this.ctx;
     this.x = x;
     this.y = y;
     this.width = width;
@@ -27,17 +29,18 @@ export class MessageLog {
     }
   }
 
-  public render(): void {
-    this.ctx.fillStyle = '#0a0a0a';
-    this.ctx.fillRect(this.x, this.y, this.width, this.height);
+  public render(ctx?: CanvasRenderingContext2D): void {
+    this.currentRenderCtx = ctx || this.ctx;
+    this.currentRenderCtx.fillStyle = '#0a0a0a';
+    this.currentRenderCtx.fillRect(this.x, this.y, this.width, this.height);
 
-    this.ctx.strokeStyle = '#333';
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(this.x, this.y, this.width, this.height);
+    this.currentRenderCtx.strokeStyle = '#333';
+    this.currentRenderCtx.lineWidth = 1;
+    this.currentRenderCtx.strokeRect(this.x, this.y, this.width, this.height);
 
-    this.ctx.fillStyle = '#fff';
-    this.ctx.font = '12px monospace';
-    this.ctx.fillText('MESSAGE LOG', this.x + 5, this.y + 15);
+    this.currentRenderCtx.fillStyle = '#fff';
+    this.currentRenderCtx.font = '12px monospace';
+    this.currentRenderCtx.fillText('MESSAGE LOG', this.x + 5, this.y + 15);
 
     const lineHeight = 14;
     const startY = this.y + 30;
@@ -50,17 +53,17 @@ export class MessageLog {
       const age = Date.now() - message.timestamp;
       const alpha = Math.max(0.3, 1 - age / 10000); // Fade over 10 seconds
 
-      this.ctx.save();
-      this.ctx.globalAlpha = alpha;
-      this.ctx.fillStyle = message.color || '#fff';
-      this.ctx.font = '11px monospace';
+      this.currentRenderCtx.save();
+      this.currentRenderCtx.globalAlpha = alpha;
+      this.currentRenderCtx.fillStyle = message.color || '#fff';
+      this.currentRenderCtx.font = '11px monospace';
 
       const wrappedLines = this.wrapText(message.text, this.width - 10);
       wrappedLines.forEach((line, lineIndex) => {
-        this.ctx.fillText(line, this.x + 5, messageY + lineIndex * lineHeight);
+        this.currentRenderCtx.fillText(line, this.x + 5, messageY + lineIndex * lineHeight);
       });
 
-      this.ctx.restore();
+      this.currentRenderCtx.restore();
     });
 
     this.renderScrollIndicator();
@@ -73,7 +76,7 @@ export class MessageLog {
 
     words.forEach(word => {
       const testLine = currentLine + (currentLine ? ' ' : '') + word;
-      const metrics = this.ctx.measureText(testLine);
+      const metrics = this.currentRenderCtx.measureText(testLine);
 
       if (metrics.width > maxWidth && currentLine) {
         lines.push(currentLine);
@@ -92,15 +95,15 @@ export class MessageLog {
 
   private renderScrollIndicator(): void {
     if (this.messages.length > Math.floor((this.height - 35) / 14)) {
-      this.ctx.fillStyle = '#666';
-      this.ctx.fillRect(this.x + this.width - 10, this.y + 20, 5, this.height - 25);
+      this.currentRenderCtx.fillStyle = '#666';
+      this.currentRenderCtx.fillRect(this.x + this.width - 10, this.y + 20, 5, this.height - 25);
 
       const scrollPercent = Math.min(1, Math.floor((this.height - 35) / 14) / this.messages.length);
       const indicatorHeight = Math.max(10, (this.height - 25) * scrollPercent);
       const indicatorY = this.y + 20 + (this.height - 25 - indicatorHeight);
 
-      this.ctx.fillStyle = '#aaa';
-      this.ctx.fillRect(this.x + this.width - 10, indicatorY, 5, indicatorHeight);
+      this.currentRenderCtx.fillStyle = '#aaa';
+      this.currentRenderCtx.fillRect(this.x + this.width - 10, indicatorY, 5, indicatorHeight);
     }
   }
 
