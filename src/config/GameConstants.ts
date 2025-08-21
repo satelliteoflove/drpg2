@@ -9,6 +9,15 @@ export const GAME_CONFIG = {
     BASE_ZONE_RATE: 0.1,
     SURPRISE_CHANCE: 0.1,
     LEVEL_RATE_MULTIPLIER: 0.02,
+    OVERRIDE_ZONE_RATES: {
+      high_frequency: 0.08,
+      low_frequency: 0.01,
+      boss: 0.5,
+      special_mobs: 0.15,
+      treasure: 0.05,
+      ambush: 1.0,
+      safe: 0.0,
+    },
   },
 
   CHARACTER: {
@@ -119,6 +128,7 @@ export const GAME_CONFIG = {
 
   UI: {
     MESSAGE_FADE_TIME: 10000,
+    MESSAGE_FADE_ENABLED: false,
     DEBUG_INFO_OFFSET: 10,
   },
 
