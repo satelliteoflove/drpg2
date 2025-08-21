@@ -1,0 +1,6 @@
+# Global code owners
+* @clchildress
+
+# Specific ownership patterns
+src/ @clchildress
+*.md @clchildress
