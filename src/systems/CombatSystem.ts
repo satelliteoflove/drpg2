@@ -184,8 +184,15 @@ export class CombatSystem {
 
   public executeMonsterTurn(): string {
     const currentUnit = this.getCurrentUnit();
-    if (!currentUnit || 'class' in currentUnit || !this.encounter) {
-      return 'Invalid monster turn';
+    if (!currentUnit || !this.encounter) {
+      // Silently skip if no unit or encounter
+      this.nextTurn();
+      return '';
+    }
+    
+    if ('class' in currentUnit) {
+      // It's a player's turn, not a monster's - just skip
+      return '';
     }
 
     const monster = currentUnit;

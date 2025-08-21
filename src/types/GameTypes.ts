@@ -214,6 +214,12 @@ export interface GameState {
   turnCount: number;
   combatEnabled: boolean;
   messageLog?: any; // MessageLog instance that persists across scenes
+  encounterContext?: {
+    zoneType: string;
+    bossType?: string;
+    description?: string;
+    monsterGroups?: string[];
+  };
 }
 
 export interface Encounter {

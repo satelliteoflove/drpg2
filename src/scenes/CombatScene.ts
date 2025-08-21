@@ -111,8 +111,6 @@ export class CombatScene extends Scene {
   }
 
   private generateEncounterMessage(monsters: Monster[]): void {
-    const context = this.gameState.encounterContext;
-    
     // Always generate message based on actual monsters encountered
     const monsterCounts = new Map<string, number>();
     monsters.forEach(monster => {
@@ -122,33 +120,30 @@ export class CombatScene extends Scene {
 
     const monsterTypes = Array.from(monsterCounts.entries());
     
-    // Debug logging to understand what's happening
-    console.log('Encounter context:', context);
-    console.log('Monsters:', monsters.map(m => ({ name: m.name, hp: m.maxHp, exp: m.experience })));
-    console.log('Has boss-like monsters:', this.hasBossLikeMonsters(monsters));
+    // Helper function to add correct article (a/an)
+    const withArticle = (word: string): string => {
+      const vowels = ['a', 'e', 'i', 'o', 'u'];
+      const article = vowels.includes(word[0].toLowerCase()) ? 'an' : 'a';
+      return `${article} ${word}`;
+    };
     
-    // Always generate message based on actual monsters - ignore zone context for message generation
+    // Always generate message based on actual monsters
     if (monsterTypes.length === 1) {
       const [type, count] = monsterTypes[0];
       if (count === 1) {
-        this.messageLog.addCombatMessage(`A ${type.toLowerCase()} appears!`);
+        this.messageLog.addCombatMessage(`${withArticle(type.toLowerCase()).charAt(0).toUpperCase() + withArticle(type.toLowerCase()).slice(1)} appears!`);
       } else {
         this.messageLog.addCombatMessage(`A group of ${count} ${type.toLowerCase()}s appears!`);
       }
     } else {
       const typeList = monsterTypes.map(([type, count]) => 
-        count === 1 ? `a ${type.toLowerCase()}` : `${count} ${type.toLowerCase()}s`
+        count === 1 ? withArticle(type.toLowerCase()) : `${count} ${type.toLowerCase()}s`
       ).join(', ');
       this.messageLog.addCombatMessage(`A hostile group appears: ${typeList}!`);
     }
 
     // Clear encounter context after use
     this.gameState.encounterContext = undefined;
-  }
-
-  private hasBossLikeMonsters(monsters: Monster[]): boolean {
-    // Check if any monster has high HP/stats that would indicate a boss
-    return monsters.some(monster => monster.maxHp > 50 || monster.experience > 50);
   }
 
   public update(_deltaTime: number): void {
