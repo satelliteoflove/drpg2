@@ -3,7 +3,6 @@ import { InputManager } from '../core/Input';
 import { DungeonTile, GameState } from '../types/GameTypes';
 import { DungeonView } from '../ui/DungeonView';
 import { StatusPanel } from '../ui/StatusPanel';
-import { MessageLog } from '../ui/MessageLog';
 import { DungeonMapView } from '../ui/DungeonMapView';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { safeConfirm } from '../utils/ErrorHandler';
@@ -14,7 +13,7 @@ export class DungeonScene extends Scene {
   private inputManager: InputManager;
   private dungeonView!: DungeonView;
   private statusPanel!: StatusPanel;
-  private messageLog!: MessageLog;
+  private messageLog: any; // Shared from gameState
   private dungeonMapView!: DungeonMapView;
   private lastMoveTime: number = 0;
   private moveDelay: number = 350;
@@ -25,6 +24,14 @@ export class DungeonScene extends Scene {
     this.gameState = gameState;
     this.sceneManager = sceneManager;
     this.inputManager = inputManager;
+    
+    // Initialize messageLog immediately to avoid runtime errors
+    this.messageLog = this.gameState.messageLog;
+    
+    // Safety check - if messageLog is still undefined, create a temporary one
+    if (!this.messageLog) {
+      console.warn('MessageLog not found in gameState, this should not happen');
+    }
   }
 
   public enter(): void {
@@ -127,14 +134,7 @@ export class DungeonScene extends Scene {
   private initializeUI(canvas: HTMLCanvasElement): void {
     this.dungeonView = new DungeonView(canvas);
     this.statusPanel = new StatusPanel(canvas, 624, 0, 400, 500);
-    this.messageLog = new MessageLog(canvas, 624, 500, 400, 268);
     this.dungeonMapView = new DungeonMapView(canvas);
-
-    this.messageLog.addSystemMessage('Welcome to the dungeon!');
-    this.messageLog.addSystemMessage('Use WASD or arrow keys to move');
-    this.messageLog.addSystemMessage('Press ENTER to interact, M for map');
-    this.messageLog.addSystemMessage('Press C to toggle combat encounters');
-    this.messageLog.addSystemMessage('Press R to rest, ESC to return to main menu');
   }
 
   private handleMovement(): void {
@@ -248,24 +248,76 @@ export class DungeonScene extends Scene {
   private checkRandomEncounter(): void {
     if (!this.gameState.combatEnabled) return;
 
-    if (Math.random() < GAME_CONFIG.ENCOUNTER.RANDOM_RATE) {
-      const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
-      if (!currentDungeon) return;
+    const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
+    if (!currentDungeon) return;
 
-      const encounter = currentDungeon.encounters.find(
-        zone =>
-          this.gameState.party.x >= zone.x1 &&
-          this.gameState.party.x <= zone.x2 &&
-          this.gameState.party.y >= zone.y1 &&
-          this.gameState.party.y <= zone.y2
-      );
+    // Check if player is in an override zone
+    const currentZone = this.getOverrideZoneAtPosition(
+      this.gameState.party.x, 
+      this.gameState.party.y, 
+      currentDungeon
+    );
 
-      if (encounter && Math.random() < encounter.encounterRate) {
-        this.messageLog.addCombatMessage('Monsters approach!');
-        this.gameState.inCombat = true;
-        this.sceneManager.switchTo('combat');
+    // Determine encounter behavior based on zone
+    let shouldTriggerEncounter = false;
+    let encounterRate: number = GAME_CONFIG.ENCOUNTER.RANDOM_RATE;
+    let monsterGroups: string[] | undefined = undefined;
+
+    if (currentZone) {
+      switch (currentZone.type) {
+        case 'safe':
+          return; // No encounters in safe zones
+        case 'ambush':
+          shouldTriggerEncounter = true; // Guaranteed encounter
+          break;
+        case 'boss':
+          encounterRate = currentZone.data?.encounterRate ?? 0.5;
+          monsterGroups = currentZone.data?.monsterGroups;
+          break;
+        case 'high_frequency':
+          encounterRate = currentZone.data?.encounterRate ?? 0.08;
+          break;
+        case 'low_frequency':
+          encounterRate = currentZone.data?.encounterRate ?? 0.01;
+          break;
+        case 'special_mobs':
+          encounterRate = currentZone.data?.encounterRate ?? GAME_CONFIG.ENCOUNTER.RANDOM_RATE;
+          monsterGroups = currentZone.data?.monsterGroups;
+          break;
+        case 'treasure':
+          // Treasure zones might have guardian encounters
+          encounterRate = GAME_CONFIG.ENCOUNTER.OVERRIDE_ZONE_RATES.treasure;
+          break;
       }
     }
+
+    // Roll for encounter (always allow encounters unless in safe zone)
+    if (shouldTriggerEncounter || Math.random() < encounterRate) {
+      // Add zone-specific messaging
+      if (currentZone?.type === 'boss') {
+        this.messageLog.addCombatMessage(`A powerful ${currentZone.data?.bossType || 'guardian'} blocks your path!`);
+      } else if (currentZone?.type === 'ambush') {
+        this.messageLog.addCombatMessage('You\'ve walked into an ambush!');
+      } else if (currentZone?.type === 'special_mobs') {
+        this.messageLog.addCombatMessage(`${currentZone.data?.description || 'Strange creatures'} emerge!`);
+      } else {
+        this.messageLog.addCombatMessage('Monsters approach!');
+      }
+
+      // Store monster groups for combat system to use
+      if (monsterGroups) {
+        // TODO: Pass monster groups to combat system when available
+      }
+
+      this.gameState.inCombat = true;
+      this.sceneManager.switchTo('combat');
+    }
+  }
+
+  private getOverrideZoneAtPosition(x: number, y: number, dungeon: any): any {
+    return dungeon.overrideZones?.find((zone: any) =>
+      x >= zone.x1 && x <= zone.x2 && y >= zone.y1 && y <= zone.y2
+    ) || null;
   }
 
   private checkTileEvents(): void {
@@ -396,6 +448,11 @@ export class DungeonScene extends Scene {
       return true;
     }
 
+    if (key === 't') {
+      this.triggerCombat();
+      return true;
+    }
+
     if (key === 'm') {
       this.toggleMap();
       return true;
@@ -424,6 +481,39 @@ export class DungeonScene extends Scene {
     } else {
       this.messageLog.addWarningMessage('Combat encounters DISABLED (testing mode)');
     }
+  }
+
+  private triggerCombat(): void {
+    const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
+    if (!currentDungeon) {
+      this.messageLog.addWarningMessage('No dungeon data - cannot trigger combat');
+      return;
+    }
+
+    const playerPos = `(${this.gameState.party.x}, ${this.gameState.party.y})`;
+    const currentZone = this.getOverrideZoneAtPosition(
+      this.gameState.party.x, 
+      this.gameState.party.y, 
+      currentDungeon
+    );
+
+    // Check if in safe zone
+    if (currentZone?.type === 'safe') {
+      this.messageLog.addWarningMessage(`Cannot trigger combat in safe zone at ${playerPos}`);
+      return;
+    }
+
+    // Force trigger combat with zone-specific messaging
+    if (currentZone?.type === 'boss') {
+      this.messageLog.addCombatMessage(`You challenge the ${currentZone.data?.bossType || 'guardian'}!`);
+    } else if (currentZone?.type === 'special_mobs') {
+      this.messageLog.addCombatMessage(`You seek out the ${currentZone.data?.description || 'special creatures'}!`);
+    } else {
+      this.messageLog.addCombatMessage(`You force an encounter at ${playerPos}!`);
+    }
+
+    this.gameState.inCombat = true;
+    this.sceneManager.switchTo('combat');
   }
 
   private toggleMap(): void {
