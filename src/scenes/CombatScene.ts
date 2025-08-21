@@ -2,14 +2,13 @@ import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState, Monster } from '../types/GameTypes';
 import { CombatSystem } from '../systems/CombatSystem';
 import { StatusPanel } from '../ui/StatusPanel';
-import { MessageLog } from '../ui/MessageLog';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
   private sceneManager: SceneManager;
   private combatSystem: CombatSystem;
   private statusPanel!: StatusPanel;
-  private messageLog!: MessageLog;
+  private messageLog: any; // Shared from gameState
   private selectedAction: number = 0;
   private selectedTarget: number = 0;
   private actionState: 'select_action' | 'select_target' | 'select_spell' | 'waiting' =
@@ -21,6 +20,14 @@ export class CombatScene extends Scene {
     this.gameState = gameState;
     this.sceneManager = sceneManager;
     this.combatSystem = new CombatSystem();
+    
+    // Initialize messageLog immediately to avoid runtime errors
+    this.messageLog = this.gameState.messageLog;
+    
+    // Safety check - if messageLog is still undefined, create a temporary one
+    if (!this.messageLog) {
+      console.warn('MessageLog not found in gameState, this should not happen');
+    }
   }
 
   public enter(): void {
@@ -144,8 +151,8 @@ export class CombatScene extends Scene {
 
   private initializeUI(canvas: HTMLCanvasElement): void {
     this.statusPanel = new StatusPanel(canvas, 650, 0, 374, 300);
-    this.messageLog = new MessageLog(canvas, 650, 470, 374, 298);
-
+    
+    // Only add combat message, don't create a new log
     this.messageLog.addCombatMessage('Combat begins!');
   }
 
@@ -161,7 +168,6 @@ export class CombatScene extends Scene {
     if (!encounter) return;
 
     this.renderMonsters(ctx, encounter.monsters);
-    this.renderParty(ctx);
   }
 
   private renderMonsters(ctx: CanvasRenderingContext2D, monsters: Monster[]): void {
@@ -205,41 +211,10 @@ export class CombatScene extends Scene {
     });
   }
 
-  private renderParty(ctx: CanvasRenderingContext2D): void {
-    const aliveCharacters = this.gameState.party.getAliveCharacters();
-
-    aliveCharacters.forEach((character: any, index: number) => {
-      const x = 50 + index * 80;
-      const y = 280;
-
-      ctx.fillStyle = '#000080';
-      ctx.fillRect(x, y, 70, 80);
-
-      ctx.strokeStyle = '#0000ff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, 70, 80);
-
-      ctx.fillStyle = '#fff';
-      ctx.font = '10px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(character.name, x + 35, y + 15);
-
-      const hpPercent = character.hp / character.maxHp;
-      ctx.fillStyle = '#333';
-      ctx.fillRect(x + 5, y + 20, 60, 6);
-
-      ctx.fillStyle = hpPercent > 0.5 ? '#00ff00' : hpPercent > 0.25 ? '#ffaa00' : '#ff0000';
-      ctx.fillRect(x + 5, y + 20, 60 * hpPercent, 6);
-
-      ctx.fillStyle = '#fff';
-      ctx.font = '24px monospace';
-      ctx.fillText('🛡️', x + 35, y + 55);
-    });
-  }
 
   private renderUI(ctx: CanvasRenderingContext2D): void {
-    this.statusPanel.render(this.gameState.party);
-    this.messageLog.render();
+    this.statusPanel.render(this.gameState.party, ctx);
+    this.messageLog.render(ctx);
 
     if (this.combatSystem.canPlayerAct()) {
       this.renderActionMenu(ctx);
@@ -283,7 +258,7 @@ export class CombatScene extends Scene {
     }
   }
 
-  private renderCombatInfo(_ctx: CanvasRenderingContext2D): void {
+  private renderCombatInfo(ctx: CanvasRenderingContext2D): void {
     const encounter = this.combatSystem.getEncounter();
     if (!encounter) return;
 
@@ -294,7 +269,8 @@ export class CombatScene extends Scene {
 
       this.statusPanel.renderCombatStatus(
         'class' in currentUnit ? currentUnit.name : currentUnit.name,
-        turnOrder
+        turnOrder,
+        ctx
       );
     }
   }
@@ -395,18 +371,31 @@ export class CombatScene extends Scene {
   }
 
   private endCombat(victory: boolean, rewards?: { experience: number; gold: number }): void {
-    if (victory && rewards) {
-      this.messageLog.addSystemMessage(
-        `Victory! Gained ${rewards.experience} experience and ${rewards.gold} gold!`
-      );
-      this.gameState.party.distributeExperience(rewards.experience);
-      this.gameState.party.distributeGold(rewards.gold);
-    } else {
-      this.messageLog.addDeathMessage('Defeated...');
-    }
+    try {
+      console.log('endCombat called:', { victory, rewards });
+      
+      if (victory && rewards) {
+        this.messageLog.addSystemMessage(
+          `Victory! Gained ${rewards.experience} experience and ${rewards.gold} gold!`
+        );
+        
+        console.log('Distributing rewards to party...');
+        this.gameState.party.distributeExperience(rewards.experience);
+        this.gameState.party.distributeGold(rewards.gold);
+        console.log('Rewards distributed successfully');
+      } else {
+        this.messageLog.addDeathMessage('Defeated...');
+      }
 
-    setTimeout(() => {
-      this.sceneManager.switchTo('dungeon');
-    }, 3000);
+      setTimeout(() => {
+        this.sceneManager.switchTo('dungeon');
+      }, 3000);
+    } catch (error) {
+      console.error('Error in endCombat:', error);
+      this.messageLog.addWarningMessage('Error processing combat results');
+      setTimeout(() => {
+        this.sceneManager.switchTo('dungeon');
+      }, 1000);
+    }
   }
 }
