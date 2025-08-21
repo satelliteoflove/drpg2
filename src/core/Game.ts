@@ -14,6 +14,7 @@ import { TypeValidation } from '../utils/TypeValidation';
 import { ErrorHandler, ErrorSeverity, createSafeCanvas } from '../utils/ErrorHandler';
 import { GameServices } from '../services/GameServices';
 import { LayerTestUtils } from '../utils/LayerTestUtils';
+import { MessageLog } from '../ui/MessageLog';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -72,6 +73,10 @@ export class Game {
         this.gameState = validatedGameState;
         this.gameState.party = this.reconstructParty(savedGame.gameState.party);
         this.playtimeStart = Date.now() - savedGame.playtimeSeconds * 1000;
+        
+        // Create a new MessageLog for loaded game (messages aren't saved)
+        this.gameState.messageLog = new MessageLog(this.canvas, 624, 500, 400, 268);
+        this.gameState.messageLog.addSystemMessage('Game loaded successfully');
       } else {
         ErrorHandler.logError(
           'Invalid saved game data, starting new game',
@@ -99,7 +104,16 @@ export class Game {
       gameTime: 0,
       turnCount: 0,
       combatEnabled: true,
+      messageLog: new MessageLog(this.canvas, 624, 500, 400, 268),
     };
+
+    // Add initial game messages
+    this.gameState.messageLog.addSystemMessage('Welcome to the dungeon!');
+    this.gameState.messageLog.addSystemMessage('Use WASD or arrow keys to move');
+    this.gameState.messageLog.addSystemMessage('Press ENTER to interact, M for map');
+    this.gameState.messageLog.addSystemMessage('Press C to toggle combat encounters');
+    this.gameState.messageLog.addSystemMessage('Press T to trigger combat (testing)');
+    this.gameState.messageLog.addSystemMessage('Press R to rest, ESC to return to main menu');
 
     this.generateNewDungeon();
   }
