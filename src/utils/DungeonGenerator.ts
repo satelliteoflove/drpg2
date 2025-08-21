@@ -1,4 +1,4 @@
-import { DungeonEvent, DungeonLevel, DungeonTile, EncounterZone } from '../types/GameTypes';
+import { DungeonEvent, DungeonLevel, DungeonTile, OverrideZone } from '../types/GameTypes';
 
 export class DungeonGenerator {
   private width: number;
@@ -21,7 +21,7 @@ export class DungeonGenerator {
     this.placeSpecialTiles(tiles);
     this.calculateWalls(tiles);
 
-    const encounters = this.generateEncounterZones();
+    const overrideZones = this.generateOverrideZones(tiles);
     const events = this.generateEvents(tiles);
     const startPosition = this.findValidStartPosition(tiles);
 
@@ -30,7 +30,7 @@ export class DungeonGenerator {
       width: this.width,
       height: this.height,
       tiles,
-      encounters,
+      overrideZones,
       events,
       startX: startPosition.x,
       startY: startPosition.y,
@@ -218,40 +218,94 @@ export class DungeonGenerator {
     return floorTiles;
   }
 
-  private generateEncounterZones(): EncounterZone[] {
-    const zones: EncounterZone[] = [];
-    const numZones = 3 + Math.floor(Math.random() * 3);
+  private generateOverrideZones(tiles: DungeonTile[][]): OverrideZone[] {
+    const zones: OverrideZone[] = [];
 
-    for (let i = 0; i < numZones; i++) {
-      const x1 = Math.floor(Math.random() * (this.width - 5));
-      const y1 = Math.floor(Math.random() * (this.height - 5));
-      const x2 = x1 + 3 + Math.floor(Math.random() * 5);
-      const y2 = y1 + 3 + Math.floor(Math.random() * 5);
+    // Generate safe zone around starting position
+    const startPos = this.findValidStartPosition(tiles);
+    zones.push({
+      x1: Math.max(0, startPos.x - 2),
+      y1: Math.max(0, startPos.y - 2),
+      x2: Math.min(this.width - 1, startPos.x + 2),
+      y2: Math.min(this.height - 1, startPos.y + 2),
+      type: 'safe',
+      data: { description: 'Starting area - safe from encounters' }
+    });
+
+    // Generate boss zones in largest rooms
+    const largeRooms = this.rooms.filter(room => room.width * room.height >= 16);
+    for (const room of largeRooms.slice(0, 2)) {
+      zones.push({
+        x1: room.x,
+        y1: room.y,
+        x2: room.x + room.width - 1,
+        y2: room.y + room.height - 1,
+        type: 'boss',
+        data: {
+          bossType: 'floor_guardian',
+          encounterRate: 1.0,
+          monsterGroups: [`boss_level_${this.level}`],
+          description: 'Guardian chamber'
+        }
+      });
+    }
+
+    // Generate special mob zones based on level theme
+    const numSpecialZones = 1 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < numSpecialZones; i++) {
+      const room = this.rooms[Math.floor(Math.random() * this.rooms.length)];
+      if (room) {
+        zones.push({
+          x1: room.x,
+          y1: room.y,
+          x2: room.x + room.width - 1,
+          y2: room.y + room.height - 1,
+          type: 'special_mobs',
+          data: {
+            monsterGroups: this.getSpecialMonsterGroupsForLevel(),
+            encounterRate: 0.15,
+            description: `Lair of ${this.getSpecialMonsterGroupsForLevel()[0]}s`
+          }
+        });
+      }
+    }
+
+    // Generate high frequency zones in corridors
+    const numHighFreq = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < numHighFreq; i++) {
+      const x1 = Math.floor(Math.random() * (this.width - 4));
+      const y1 = Math.floor(Math.random() * (this.height - 4));
+      const x2 = x1 + 2 + Math.floor(Math.random() * 3);
+      const y2 = y1 + 2 + Math.floor(Math.random() * 3);
 
       zones.push({
         x1,
         y1,
         x2: Math.min(x2, this.width - 1),
         y2: Math.min(y2, this.height - 1),
-        monsterGroups: this.getMonsterGroupsForLevel(),
-        encounterRate: 0.1 + this.level * 0.02,
+        type: 'high_frequency',
+        data: {
+          encounterRate: 0.08,
+          description: 'Dangerous corridor - high monster activity'
+        }
       });
     }
 
     return zones;
   }
 
-  private getMonsterGroupsForLevel(): string[] {
-    const allMonsters = [
-      ['slime', 'rat', 'bat'],
-      ['goblin', 'kobold', 'zombie'],
-      ['orc', 'skeleton', 'ghoul'],
-      ['ogre', 'wight', 'gargoyle'],
-      ['troll', 'vampire', 'demon'],
+
+  private getSpecialMonsterGroupsForLevel(): string[] {
+    const specialMonsters = [
+      ['giant_spider', 'dire_wolf', 'owlbear'],
+      ['shadow', 'wraith', 'banshee'],
+      ['troll_shaman', 'stone_giant', 'chimera'],
+      ['dragon_wyrmling', 'lich', 'demon_lord'],
+      ['ancient_dragon', 'pit_fiend', 'solar'],
     ];
 
-    const levelIndex = Math.min(this.level - 1, allMonsters.length - 1);
-    return allMonsters[levelIndex];
+    const levelIndex = Math.min(this.level - 1, specialMonsters.length - 1);
+    return specialMonsters[levelIndex];
   }
 
   private generateEvents(tiles: DungeonTile[][]): DungeonEvent[] {

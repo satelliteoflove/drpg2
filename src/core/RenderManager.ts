@@ -307,10 +307,22 @@ export class RenderManager {
   }
 
   public resetForSceneChange(): void {
+    // Clear all dynamic (non-persistent) layers when switching scenes
+    this.clearDynamicLayers();
     // Force all layers dirty for the new scene
     this.forceAllLayersDirty();
     // Verify layer integrity after reset
     this.verifyLayerIntegrity();
+  }
+
+  private clearDynamicLayers(): void {
+    // Clear non-persistent layers that should be reset between scenes
+    this.optimizer.clearLayer(RenderManager.LAYERS.DUNGEON);
+    this.optimizer.clearLayer(RenderManager.LAYERS.ENTITIES);
+    this.optimizer.clearLayer(RenderManager.LAYERS.EFFECTS);
+    this.optimizer.clearLayer(RenderManager.LAYERS.UI);
+    this.optimizer.clearLayer(RenderManager.LAYERS.DEBUG);
+    // Note: Background layer is persistent and will be redrawn by the new scene
   }
 
   public verifyLayerIntegrity(): boolean {

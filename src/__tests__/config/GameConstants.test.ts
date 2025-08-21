@@ -24,6 +24,24 @@ describe('GameConstants', () => {
       expect(GAME_CONFIG.ENCOUNTER.RANDOM_RATE).toBeGreaterThan(0);
       expect(GAME_CONFIG.ENCOUNTER.RANDOM_RATE).toBeLessThan(1);
     });
+
+    it('should have valid override zone rates', () => {
+      const overrideRates = GAME_CONFIG.ENCOUNTER.OVERRIDE_ZONE_RATES;
+      expect(overrideRates.safe).toBe(0.0);
+      expect(overrideRates.boss).toBe(0.5);
+      expect(overrideRates.high_frequency).toBe(0.08);
+      expect(overrideRates.low_frequency).toBe(0.01);
+      expect(overrideRates.special_mobs).toBe(0.15);
+      expect(overrideRates.treasure).toBe(0.05);
+      expect(overrideRates.ambush).toBe(1.0);
+
+      // Verify all rates are valid numbers
+      Object.values(overrideRates).forEach(rate => {
+        expect(typeof rate).toBe('number');
+        expect(rate).toBeGreaterThanOrEqual(0);
+        expect(rate).toBeLessThanOrEqual(1);
+      });
+    });
   });
 
   describe('CHARACTER configuration', () => {
