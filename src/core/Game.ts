@@ -13,6 +13,7 @@ import { GAME_CONFIG } from '../config/GameConstants';
 import { TypeValidation } from '../utils/TypeValidation';
 import { ErrorHandler, ErrorSeverity, createSafeCanvas } from '../utils/ErrorHandler';
 import { GameServices } from '../services/GameServices';
+import { LayerTestUtils } from '../utils/LayerTestUtils';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -25,6 +26,7 @@ export class Game {
   private isRunning: boolean = false;
   private gameState!: GameState;
   private playtimeStart: number = Date.now();
+  private frameCount: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -34,12 +36,14 @@ export class Game {
     }
     this.ctx = ctx;
     
+    // CRITICAL: Set canvas dimensions BEFORE creating services/layers
+    this.setupCanvas();
+    
     this.services = new GameServices({ canvas });
     this.renderManager = this.services.getRenderManager();
     this.sceneManager = this.services.getSceneManager();
     this.inputManager = this.services.getInputManager();
     
-    this.setupCanvas();
     this.initializeManagers();
     this.initializeGameState();
     this.setupScenes();
@@ -239,21 +243,57 @@ export class Game {
 
   private update(deltaTime: number): void {
     this.gameState.gameTime += deltaTime;
+    this.frameCount++;
     this.sceneManager.update(deltaTime);
   }
 
   private render(): void {
     ErrorHandler.safeCanvasOperation(
       () => {
-        // Clear main canvas
-        this.ctx.fillStyle = GAME_CONFIG.COLORS.BACKGROUND;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        // Start frame timing and skip if needed for performance
+        if (!this.renderManager.startFrame(performance.now())) {
+          return undefined;
+        }
 
-        // Render the current scene
-        this.sceneManager.render(this.ctx);
-
-        // Render debug info
-        this.renderDebugInfo();
+        // Use layered rendering if available, otherwise fall back to direct rendering
+        const currentScene = this.sceneManager.getCurrentScene();
+        if (currentScene?.hasLayeredRendering()) {
+          // Debug layer state if needed
+          if (GAME_CONFIG.DEBUG_MODE && this.frameCount % 60 === 0) { // Every second at 60fps
+            this.renderManager.debugLayers();
+            // Run comprehensive layer tests
+            const testResults = LayerTestUtils.runLayerTests(this.renderManager, this.canvas);
+            console.log('Layer Test Results:', testResults.summary);
+            if (testResults.failed > 0) {
+              console.warn('Layer test failures:', testResults.results.filter(r => !r.passed));
+            }
+            // Debug layer content analysis
+            const layerAnalysis = LayerTestUtils.analyzeLayers(this.renderManager);
+            console.log('Layer Analysis:', layerAnalysis);
+          }
+          this.sceneManager.renderLayered(this.ctx);
+          
+          // Complete the frame - this composites all layers to main canvas
+          this.renderManager.endFrame();
+          
+          // NOW render debug info directly on top of the composited result
+          this.renderDebugInfo();
+        } else {
+          // For direct rendering, clear canvas first
+          this.ctx.fillStyle = GAME_CONFIG.COLORS.BACKGROUND;
+          this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+          
+          if (GAME_CONFIG.DEBUG_MODE && this.frameCount % 600 === 0) { // Every 10 seconds
+            console.log('Using direct rendering (layered rendering not available)');
+          }
+          this.sceneManager.render(this.ctx);
+          
+          // Complete the frame (no-op for direct rendering but keeps consistency)
+          this.renderManager.endFrame();
+          
+          // Render debug info on top
+          this.renderDebugInfo();
+        }
 
         return undefined;
       },
