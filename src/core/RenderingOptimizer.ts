@@ -23,9 +23,41 @@ export class RenderingOptimizer {
   private frameCount: number = 0;
   private fps: number = 0;
   private skipFrameThreshold: number = 1000 / 30; // 30 FPS threshold
+  private targetFPS: number = 60;
+  private adaptivePerformance: boolean = true;
 
   constructor(private mainCanvas: HTMLCanvasElement) {
     this.setupMainLayer();
+    this.optimizeForDevice();
+  }
+
+  private optimizeForDevice(): void {
+    // Detect lower-end devices and adjust performance settings
+    const isLowEndDevice = this.detectLowEndDevice();
+    if (isLowEndDevice) {
+      this.targetFPS = 30;
+      this.skipFrameThreshold = 1000 / 15; // More aggressive frame skipping
+      this.adaptivePerformance = true;
+    }
+  }
+
+  private detectLowEndDevice(): boolean {
+    // Simple heuristics to detect lower-end devices
+    const canvas = document.createElement('canvas');
+    canvas.width = 100;
+    canvas.height = 100;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return false;
+
+    // Test rendering performance with a simple operation
+    const start = performance.now();
+    for (let i = 0; i < 1000; i++) {
+      ctx.fillRect(0, 0, 100, 100);
+    }
+    const end = performance.now();
+    
+    // If simple operations take too long, assume lower-end device
+    return (end - start) > 10; // 10ms threshold
   }
 
   private setupMainLayer(): void {
@@ -70,9 +102,20 @@ export class RenderingOptimizer {
       throw new Error(`Failed to create context for layer ${name}`);
     }
 
-    // Enable image smoothing for better quality
-    context.imageSmoothingEnabled = true;
-    context.imageSmoothingQuality = 'high';
+    // Copy rendering settings from main canvas context
+    const mainContext = this.mainCanvas.getContext('2d');
+    if (mainContext) {
+      context.imageSmoothingEnabled = mainContext.imageSmoothingEnabled;
+      context.imageSmoothingQuality = mainContext.imageSmoothingQuality;
+      context.textBaseline = mainContext.textBaseline;
+      context.textAlign = mainContext.textAlign;
+    } else {
+      // Fallback settings for layer
+      context.imageSmoothingEnabled = false; // Pixel art style
+      context.imageSmoothingQuality = 'low';
+      context.textBaseline = 'top';
+      context.textAlign = 'start';
+    }
 
     const layerConfig: LayerConfig = {
       name,
@@ -112,6 +155,18 @@ export class RenderingOptimizer {
 
   public shouldSkipFrame(currentTime: number): boolean {
     const deltaTime = currentTime - this.lastFrameTime;
+    
+    // Adaptive performance: adjust threshold based on current performance
+    if (this.adaptivePerformance && this.frameCount % 60 === 0) {
+      if (this.fps < this.targetFPS * 0.8) {
+        // Performance is poor, be more aggressive with frame skipping
+        this.skipFrameThreshold = Math.min(this.skipFrameThreshold * 1.1, 1000 / 15);
+      } else if (this.fps > this.targetFPS * 0.95) {
+        // Performance is good, reduce frame skipping
+        this.skipFrameThreshold = Math.max(this.skipFrameThreshold * 0.95, 1000 / this.targetFPS);
+      }
+    }
+    
     return deltaTime < this.skipFrameThreshold;
   }
 
@@ -130,20 +185,20 @@ export class RenderingOptimizer {
     const mainLayer = this.layers.get('main');
     if (!mainLayer) return;
 
-    // Clear main canvas if any layer is dirty
-    const anyLayerDirty = Array.from(this.layers.values()).some(layer => layer.isDirty);
-    if (anyLayerDirty) {
-      mainLayer.context.clearRect(0, 0, mainLayer.canvas.width, mainLayer.canvas.height);
-    }
+    // Clear main canvas with background color before compositing layers
+    mainLayer.context.fillStyle = '#000';
+    mainLayer.context.fillRect(0, 0, mainLayer.canvas.width, mainLayer.canvas.height);
 
     // Sort layers by z-index and composite them
     const sortedLayers = Array.from(this.layers.values())
       .filter(layer => layer.name !== 'main')
       .sort((a, b) => a.zIndex - b.zIndex);
 
+    // Always composite all layers to main canvas
     for (const layer of sortedLayers) {
-      if (layer.isDirty || !layer.persistent) {
-        this.compositeLayer(layer, mainLayer);
+      this.compositeLayer(layer, mainLayer);
+      // Only mark clean after compositing if it was dirty
+      if (layer.isDirty) {
         layer.isDirty = false;
       }
     }
@@ -204,6 +259,47 @@ export class RenderingOptimizer {
 
   public getLayerCount(): number {
     return this.layers.size;
+  }
+
+  public getAllLayers(): Map<string, LayerConfig> {
+    return new Map(this.layers);
+  }
+
+  public getLayerNames(): string[] {
+    return Array.from(this.layers.keys());
+  }
+
+  public forceAllLayersDirty(): void {
+    for (const layer of this.layers.values()) {
+      layer.isDirty = true;
+    }
+  }
+
+  public verifyLayerIntegrity(): boolean {
+    // Check that all layers have correct dimensions and contexts
+    for (const layer of this.layers.values()) {
+      if (layer.name === 'main') continue;
+      
+      if (layer.canvas.width !== this.mainCanvas.width || 
+          layer.canvas.height !== this.mainCanvas.height) {
+        ErrorHandler.logError(
+          `Layer ${layer.name} has incorrect dimensions: ${layer.canvas.width}x${layer.canvas.height}, expected: ${this.mainCanvas.width}x${this.mainCanvas.height}`,
+          ErrorSeverity.HIGH,
+          'RenderingOptimizer.verifyLayerIntegrity'
+        );
+        return false;
+      }
+      
+      if (!layer.context) {
+        ErrorHandler.logError(
+          `Layer ${layer.name} has no context`,
+          ErrorSeverity.HIGH,
+          'RenderingOptimizer.verifyLayerIntegrity'
+        );
+        return false;
+      }
+    }
+    return true;
   }
 
   public dispose(): void {
