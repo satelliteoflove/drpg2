@@ -14,6 +14,7 @@ export class CombatScene extends Scene {
   private actionState: 'select_action' | 'select_target' | 'select_spell' | 'waiting' =
     'select_action';
   private waitingForAnimation: boolean = false;
+  private isProcessingAction: boolean = false; // Prevent multiple simultaneous actions
 
   constructor(gameState: GameState, sceneManager: SceneManager) {
     super('Combat');
@@ -35,6 +36,7 @@ export class CombatScene extends Scene {
     this.actionState = 'select_action';
     this.selectedAction = 0;
     this.selectedTarget = 0;
+    this.isProcessingAction = false;
   }
 
   public exit(): void {
@@ -319,18 +321,25 @@ export class CombatScene extends Scene {
     if (!this.combatSystem.canPlayerAct()) {
       setTimeout(() => {
         const result = this.combatSystem.executeMonsterTurn();
-        this.messageLog.addCombatMessage(result);
+        if (result) {
+          this.messageLog.addCombatMessage(result);
+        }
 
         if (this.gameState.party.isWiped()) {
           this.messageLog.addDeathMessage('Party defeated!');
+          this.isProcessingAction = false; // Reset flag before ending combat
           setTimeout(() => this.endCombat(false), 2000);
         }
       }, 1000);
+    } else {
+      // If it's now a player's turn, ensure the flag is reset
+      this.isProcessingAction = false;
     }
   }
 
   public handleInput(key: string): boolean {
-    if (this.actionState === 'waiting') return true;
+    // Ignore all input if we're processing an action or waiting
+    if (this.isProcessingAction || this.actionState === 'waiting') return true;
 
     if (this.actionState === 'select_action') {
       return this.handleActionSelection(key);
@@ -389,6 +398,10 @@ export class CombatScene extends Scene {
   }
 
   private executeAction(action: string): void {
+    // Prevent multiple simultaneous executions
+    if (this.isProcessingAction) return;
+    
+    this.isProcessingAction = true;
     this.actionState = 'waiting';
 
     let result = '';
@@ -403,6 +416,7 @@ export class CombatScene extends Scene {
     setTimeout(() => {
       this.actionState = this.combatSystem.canPlayerAct() ? 'select_action' : 'waiting';
       this.selectedAction = 0;
+      this.isProcessingAction = false; // Re-enable input processing
 
       if (!this.combatSystem.canPlayerAct()) {
         this.waitingForAnimation = true;
@@ -413,6 +427,9 @@ export class CombatScene extends Scene {
   private endCombat(victory: boolean, rewards?: { experience: number; gold: number }): void {
     try {
       console.log('endCombat called:', { victory, rewards });
+      
+      // Reset processing flag to prevent lockups
+      this.isProcessingAction = false;
       
       if (victory && rewards) {
         this.messageLog.addSystemMessage(
@@ -433,6 +450,7 @@ export class CombatScene extends Scene {
     } catch (error) {
       console.error('Error in endCombat:', error);
       this.messageLog.addWarningMessage('Error processing combat results');
+      this.isProcessingAction = false; // Ensure flag is reset even on error
       setTimeout(() => {
         this.sceneManager.switchTo('dungeon');
       }, 1000);
