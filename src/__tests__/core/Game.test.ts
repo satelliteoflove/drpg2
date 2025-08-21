@@ -64,11 +64,14 @@ describe('Game', () => {
     const mockDungeonGenerator = DungeonGenerator as jest.MockedClass<typeof DungeonGenerator>;
     mockDungeonGenerator.mockImplementation(() => ({
       generateLevel: jest.fn().mockReturnValue({
+        level: 1,
         startX: 1,
         startY: 1,
         width: 20,
         height: 20,
-        cells: [],
+        tiles: [],
+        overrideZones: [],
+        events: [],
       }),
     }) as any);
     
@@ -146,7 +149,7 @@ describe('Game', () => {
             width: 20,
             height: 20,
             tiles: [],
-            encounters: [],
+            overrideZones: [],
             events: [],
             startX: 1,
             startY: 1,
