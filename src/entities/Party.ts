@@ -147,9 +147,9 @@ export class Party implements IParty {
     const aliveChars = this.getAliveCharacters();
     if (aliveChars.length === 0) return;
 
-    const expPerChar = Math.floor(amount / aliveChars.length);
+    // Each character gets the full experience amount (not split)
     aliveChars.forEach(char => {
-      char.addExperience(expPerChar);
+      char.addExperience(amount);
     });
   }
 }
