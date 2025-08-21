@@ -69,6 +69,10 @@ export class SceneManager {
       this.nextScene = null;
 
       if (this.currentScene) {
+        // Reset layers for the new scene
+        if (this.renderManager) {
+          this.renderManager.resetForSceneChange();
+        }
         this.currentScene.enter();
       }
     }
