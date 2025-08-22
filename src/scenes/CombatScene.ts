@@ -13,8 +13,8 @@ export class CombatScene extends Scene {
   private selectedTarget: number = 0;
   private actionState: 'select_action' | 'select_target' | 'select_spell' | 'waiting' =
     'select_action';
-  private waitingForAnimation: boolean = false;
   private isProcessingAction: boolean = false; // Prevent multiple simultaneous actions
+  private lastActionTime: number = 0; // Debounce rapid input
 
   constructor(gameState: GameState, sceneManager: SceneManager) {
     super('Combat');
@@ -37,6 +37,8 @@ export class CombatScene extends Scene {
     this.selectedAction = 0;
     this.selectedTarget = 0;
     this.isProcessingAction = false;
+    this.lastActionTime = 0;
+    console.log(`[DEBUG] Combat scene entered - UI state reset`);
   }
 
   public exit(): void {
@@ -52,6 +54,11 @@ export class CombatScene extends Scene {
 
     this.combatSystem.startCombat(monsters, aliveCharacters, (victory: boolean, rewards) => {
       this.endCombat(victory, rewards);
+    }, (message: string) => {
+      // Callback for monster turn messages
+      if (message) {
+        this.messageLog.addCombatMessage(message);
+      }
     });
   }
 
@@ -149,9 +156,20 @@ export class CombatScene extends Scene {
   }
 
   public update(_deltaTime: number): void {
-    if (this.waitingForAnimation) {
-      this.waitingForAnimation = false;
-      this.processAITurn();
+    // CombatSystem now handles all turn processing automatically
+    // Just check if party is wiped after any updates
+    if (this.gameState.party.isWiped()) {
+      this.messageLog.addDeathMessage('Party defeated!');
+      this.isProcessingAction = false;
+      setTimeout(() => this.endCombat(false), 2000);
+      return;
+    }
+    
+    // Check if we should reset UI state when it's player's turn
+    const canPlayerAct = this.combatSystem.canPlayerAct();
+    if (canPlayerAct && this.actionState === 'waiting') {
+      this.actionState = 'select_action';
+      this.isProcessingAction = false;
     }
   }
 
@@ -317,25 +335,6 @@ export class CombatScene extends Scene {
     }
   }
 
-  private processAITurn(): void {
-    if (!this.combatSystem.canPlayerAct()) {
-      setTimeout(() => {
-        const result = this.combatSystem.executeMonsterTurn();
-        if (result) {
-          this.messageLog.addCombatMessage(result);
-        }
-
-        if (this.gameState.party.isWiped()) {
-          this.messageLog.addDeathMessage('Party defeated!');
-          this.isProcessingAction = false; // Reset flag before ending combat
-          setTimeout(() => this.endCombat(false), 2000);
-        }
-      }, 1000);
-    } else {
-      // If it's now a player's turn, ensure the flag is reset
-      this.isProcessingAction = false;
-    }
-  }
 
   public handleInput(key: string): boolean {
     // Ignore all input if we're processing an action or waiting
@@ -398,8 +397,20 @@ export class CombatScene extends Scene {
   }
 
   private executeAction(action: string): void {
+    const now = Date.now();
+    
+    // Debounce rapid input - ignore if pressed too quickly
+    if (now - this.lastActionTime < 100) {
+      console.log(`[DEBUG] Action debounced - pressed too quickly`);
+      return;
+    }
+    this.lastActionTime = now;
+    
     // Prevent multiple simultaneous executions
-    if (this.isProcessingAction) return;
+    if (this.isProcessingAction) {
+      console.log(`[DEBUG] Action blocked - already processing`);
+      return;
+    }
     
     this.isProcessingAction = true;
     this.actionState = 'waiting';
@@ -411,17 +422,34 @@ export class CombatScene extends Scene {
       result = this.combatSystem.executePlayerAction(action);
     }
 
-    this.messageLog.addCombatMessage(result);
+    console.log(`[DEBUG] Action result: "${result}"`);
 
+    // Handle different result types
+    if (result === 'Action already in progress') {
+      // CombatSystem is busy - reset UI immediately
+      console.log(`[DEBUG] CombatSystem busy - resetting UI`);
+      this.isProcessingAction = false;
+      this.actionState = 'select_action';
+      return;
+    } else if (result === 'Combat state invalid') {
+      // Combat ended unexpectedly
+      console.log(`[DEBUG] Combat state invalid - resetting UI`);
+      this.isProcessingAction = false;
+      this.actionState = 'select_action';
+      return;
+    } else if (result && result.length > 0) {
+      // Valid action result
+      this.messageLog.addCombatMessage(result);
+    }
+
+    // Schedule UI state check to happen after CombatSystem settles
     setTimeout(() => {
-      this.actionState = this.combatSystem.canPlayerAct() ? 'select_action' : 'waiting';
+      const canAct = this.combatSystem.canPlayerAct();
+      this.actionState = canAct ? 'select_action' : 'waiting';
       this.selectedAction = 0;
-      this.isProcessingAction = false; // Re-enable input processing
-
-      if (!this.combatSystem.canPlayerAct()) {
-        this.waitingForAnimation = true;
-      }
-    }, 1000);
+      this.isProcessingAction = false;
+      console.log(`[DEBUG] UI state reset - canPlayerAct: ${canAct}, actionState: ${this.actionState}`);
+    }, 50);
   }
 
   private endCombat(victory: boolean, rewards?: { experience: number; gold: number }): void {
