@@ -293,21 +293,13 @@ export class DungeonScene extends Scene {
 
     // Roll for encounter (always allow encounters unless in safe zone)
     if (shouldTriggerEncounter || Math.random() < encounterRate) {
-      // Add zone-specific messaging
-      if (currentZone?.type === 'boss') {
-        this.messageLog.addCombatMessage(`A powerful ${currentZone.data?.bossType || 'guardian'} blocks your path!`);
-      } else if (currentZone?.type === 'ambush') {
-        this.messageLog.addCombatMessage('You\'ve walked into an ambush!');
-      } else if (currentZone?.type === 'special_mobs') {
-        this.messageLog.addCombatMessage(`${currentZone.data?.description || 'Strange creatures'} emerge!`);
-      } else {
-        this.messageLog.addCombatMessage('Monsters approach!');
-      }
-
-      // Store monster groups for combat system to use
-      if (monsterGroups) {
-        // TODO: Pass monster groups to combat system when available
-      }
+      // Store zone information for combat scene to use for proper messaging
+      this.gameState.encounterContext = {
+        zoneType: currentZone?.type || 'normal',
+        bossType: currentZone?.data?.bossType,
+        description: currentZone?.data?.description,
+        monsterGroups
+      };
 
       this.gameState.inCombat = true;
       this.sceneManager.switchTo('combat');
@@ -503,14 +495,15 @@ export class DungeonScene extends Scene {
       return;
     }
 
-    // Force trigger combat with zone-specific messaging
-    if (currentZone?.type === 'boss') {
-      this.messageLog.addCombatMessage(`You challenge the ${currentZone.data?.bossType || 'guardian'}!`);
-    } else if (currentZone?.type === 'special_mobs') {
-      this.messageLog.addCombatMessage(`You seek out the ${currentZone.data?.description || 'special creatures'}!`);
-    } else {
-      this.messageLog.addCombatMessage(`You force an encounter at ${playerPos}!`);
-    }
+    // Store zone information for combat scene to generate proper messaging
+    this.gameState.encounterContext = {
+      zoneType: currentZone?.type || 'normal',
+      bossType: currentZone?.data?.bossType,
+      description: currentZone?.data?.description,
+      monsterGroups: currentZone?.data?.monsterGroups
+    };
+
+    this.messageLog.addSystemMessage(`Forcing encounter at ${playerPos}...`);
 
     this.gameState.inCombat = true;
     this.sceneManager.switchTo('combat');
