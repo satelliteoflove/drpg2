@@ -1,11 +1,12 @@
 import { Character } from '../entities/Character';
-import { Encounter, Monster, Spell } from '../types/GameTypes';
+import { Encounter, Monster, Spell, Item } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { ErrorHandler, ErrorSeverity } from '../utils/ErrorHandler';
+import { InventorySystem } from './InventorySystem';
 
 export class CombatSystem {
   private encounter: Encounter | null = null;
-  private onCombatEnd?: (victory: boolean, rewards?: { experience: number; gold: number }) => void;
+  private onCombatEnd?: (victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }) => void;
   private onMessage?: (message: string) => void;
   private recursionDepth: number = 0;
   private isProcessingTurn: boolean = false; // Prevent simultaneous turn processing
@@ -16,7 +17,7 @@ export class CombatSystem {
   public startCombat(
     monsters: Monster[],
     party: Character[],
-    onCombatEnd: (victory: boolean, rewards?: { experience: number; gold: number }) => void,
+    onCombatEnd: (victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }) => void,
     onMessage?: (message: string) => void
   ): void {
     this.onCombatEnd = onCombatEnd;
@@ -367,7 +368,18 @@ export class CombatSystem {
   }
 
   private calculateDamage(attacker: Character, target: Monster): number {
-    const baseDamage = Math.floor(attacker.stats.strength / 2) + Math.floor(Math.random() * 6) + 1;
+    let baseDamage = Math.floor(attacker.stats.strength / 2) + Math.floor(Math.random() * 6) + 1;
+    
+    // Add weapon damage if equipped
+    const weapon = attacker.equipment.weapon;
+    if (weapon && weapon.effects) {
+      const damageEffect = weapon.effects.find(effect => effect.type === 'damage');
+      if (damageEffect) {
+        baseDamage += damageEffect.value;
+        console.log(`${attacker.name} attacks with ${weapon.name} for +${damageEffect.value} damage!`);
+      }
+    }
+    
     const defense = Math.floor(target.ac / 2);
     return Math.max(1, baseDamage - defense);
   }
@@ -549,16 +561,38 @@ export class CombatSystem {
         console.log(`Monster ${m.name} gives ${m.gold} gold`);
         return sum + m.gold;
       }, 0);
+
+      const droppedItems = this.calculateItemDrops(this.encounter.monsters);
       
-      console.log(`Total rewards: ${totalExp} experience, ${totalGold} gold`);
-      this.endCombat(true, { experience: totalExp, gold: totalGold });
+      console.log(`Total rewards: ${totalExp} experience, ${totalGold} gold, ${droppedItems.length} items`);
+      this.endCombat(true, { experience: totalExp, gold: totalGold, items: droppedItems });
       return true;
     }
 
     return false;
   }
 
-  private endCombat(victory: boolean, rewards?: { experience: number; gold: number }): void {
+  private calculateItemDrops(monsters: Monster[]): Item[] {
+    const droppedItems: Item[] = [];
+
+    monsters.forEach(monster => {
+      if (monster.itemDrops && monster.itemDrops.length > 0) {
+        monster.itemDrops.forEach(drop => {
+          if (Math.random() < drop.chance) {
+            const item = InventorySystem.getItem(drop.itemId);
+            if (item) {
+              droppedItems.push(item);
+              console.log(`${monster.name} dropped ${item.name}!`);
+            }
+          }
+        });
+      }
+    });
+
+    return droppedItems;
+  }
+
+  private endCombat(victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }): void {
     if (this.onCombatEnd) {
       this.onCombatEnd(victory, rewards);
     }
@@ -580,5 +614,9 @@ export class CombatSystem {
     ).length;
 
     return `Players: ${alivePlayers} | Monsters: ${aliveMonsters.length}`;
+  }
+
+  public forceCheckCombatEnd(): void {
+    this.checkCombatEnd();
   }
 }

@@ -451,7 +451,7 @@ export class DungeonScene extends Scene {
     }
 
     if (key === 'tab') {
-      this.messageLog.addSystemMessage('Inventory not yet implemented');
+      this.sceneManager.switchTo('inventory');
       return true;
     }
 

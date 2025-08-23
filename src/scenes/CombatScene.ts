@@ -1,7 +1,8 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
-import { GameState, Monster } from '../types/GameTypes';
+import { GameState, Monster, Item } from '../types/GameTypes';
 import { CombatSystem } from '../systems/CombatSystem';
 import { StatusPanel } from '../ui/StatusPanel';
+import { InventorySystem } from '../systems/InventorySystem';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
@@ -73,7 +74,7 @@ export class CombatScene extends Scene {
         attacks: [{ name: 'Slime Attack', damage: '1d4+1', effect: '', chance: 0.8 }],
         experience: 10,
         gold: 5,
-        itemDrops: [],
+        itemDrops: [{ itemId: 'dagger', chance: 0.05 }],
         resistances: [],
         weaknesses: ['fire'],
       },
@@ -86,7 +87,7 @@ export class CombatScene extends Scene {
         attacks: [{ name: 'Club', damage: '1d6+1', effect: '', chance: 0.9 }],
         experience: 15,
         gold: 8,
-        itemDrops: [],
+        itemDrops: [{ itemId: 'dagger', chance: 0.1 }],
         resistances: [],
         weaknesses: [],
       },
@@ -102,7 +103,7 @@ export class CombatScene extends Scene {
         ],
         experience: 25,
         gold: 15,
-        itemDrops: [],
+        itemDrops: [{ itemId: 'dagger', chance: 0.15 }],
         resistances: [],
         weaknesses: [],
       },
@@ -333,10 +334,21 @@ export class CombatScene extends Scene {
         ctx
       );
     }
+
+    // Show debug hint
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    ctx.fillText('[DEBUG: Press Ctrl+K for instant kill]', ctx.canvas.width - 200, ctx.canvas.height - 10);
   }
 
 
   public handleInput(key: string): boolean {
+    // Debug instant kill - Ctrl+K kills all enemies
+    if (key === 'ctrl+k') {
+      this.executeInstantKill();
+      return true;
+    }
+
     // Ignore all input if we're processing an action or waiting
     if (this.isProcessingAction || this.actionState === 'waiting') return true;
 
@@ -452,7 +464,25 @@ export class CombatScene extends Scene {
     }, 50);
   }
 
-  private endCombat(victory: boolean, rewards?: { experience: number; gold: number }): void {
+  private executeInstantKill(): void {
+    const encounter = this.combatSystem.getEncounter();
+    if (!encounter) return;
+
+    // Deal 999 damage to all enemies
+    this.messageLog.addSystemMessage('[DEBUG] Instant Kill activated! Dealing 999 damage to all enemies.');
+    
+    encounter.monsters.forEach(monster => {
+      if (monster.hp > 0) {
+        monster.hp = 0;
+        this.messageLog.addCombatMessage(`${monster.name} takes 999 damage and is defeated!`);
+      }
+    });
+
+    // Force check combat end to trigger rewards
+    this.combatSystem.forceCheckCombatEnd();
+  }
+
+  private endCombat(victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }): void {
     try {
       console.log('endCombat called:', { victory, rewards });
       
@@ -467,6 +497,18 @@ export class CombatScene extends Scene {
         console.log('Distributing rewards to party...');
         this.gameState.party.distributeExperience(rewards.experience);
         this.gameState.party.distributeGold(rewards.gold);
+        
+        // Handle item drops
+        if (rewards.items && rewards.items.length > 0) {
+          const firstCharacter = this.gameState.party.getAliveCharacters()[0];
+          if (firstCharacter) {
+            rewards.items.forEach(item => {
+              InventorySystem.addItemToInventory(firstCharacter, item.id);
+              this.messageLog.addSystemMessage(`Found ${item.name}! Added to ${firstCharacter.name}'s inventory.`);
+            });
+          }
+        }
+        
         console.log('Rewards distributed successfully');
       } else {
         this.messageLog.addDeathMessage('Defeated...');

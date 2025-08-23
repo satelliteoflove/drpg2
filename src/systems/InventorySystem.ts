@@ -324,6 +324,61 @@ export class InventorySystem {
     return true;
   }
 
+  public static tradeItem(
+    fromCharacter: Character, 
+    toCharacter: Character, 
+    itemId: string
+  ): boolean {
+    const itemIndex = fromCharacter.inventory.findIndex(i => i.id === itemId);
+    if (itemIndex === -1) return false;
+
+    const item = fromCharacter.inventory[itemIndex];
+    
+    // Check if recipient can carry the additional weight
+    const itemWeight = item.weight * item.quantity;
+    if (this.getInventoryWeight(toCharacter) + itemWeight > this.getCarryCapacity(toCharacter)) {
+      return false;
+    }
+
+    // Remove from sender
+    fromCharacter.inventory.splice(itemIndex, 1);
+    
+    // Add to recipient (handle stacking for consumables)
+    const existingItem = toCharacter.inventory.find(i => i.id === itemId && i.type === 'consumable');
+    if (existingItem && item.type === 'consumable') {
+      existingItem.quantity += item.quantity;
+    } else {
+      toCharacter.inventory.push(item);
+    }
+
+    return true;
+  }
+
+  public static dropItem(character: Character, itemId: string): Item | null {
+    const itemIndex = character.inventory.findIndex(i => i.id === itemId);
+    if (itemIndex === -1) return null;
+
+    const item = character.inventory[itemIndex];
+    
+    // If it's equipped, unequip it first
+    if (item.equipped) {
+      const equipSlot = this.getEquipSlot(item.type);
+      if (equipSlot) {
+        this.unequipItem(character, equipSlot);
+      }
+    }
+
+    // Remove from inventory
+    if (item.quantity > 1) {
+      item.quantity--;
+      const droppedItem = { ...item, quantity: 1 };
+      return droppedItem;
+    } else {
+      character.inventory.splice(itemIndex, 1);
+      return item;
+    }
+  }
+
   public static generateRandomLoot(level: number): Item[] {
     const loot: Item[] = [];
     const numItems = 1 + Math.floor(Math.random() * 3);
