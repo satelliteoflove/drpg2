@@ -214,6 +214,7 @@ export interface GameState {
   turnCount: number;
   combatEnabled: boolean;
   messageLog?: any; // MessageLog instance that persists across scenes
+  hasEnteredDungeon?: boolean; // Track if player has entered dungeon to prevent duplicate messages
   encounterContext?: {
     zoneType: string;
     bossType?: string;

@@ -68,15 +68,27 @@ export class InventoryScene extends Scene {
   }
 
   private renderCharacterSelect(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#fff';
+    ctx.font = '16px monospace';
     ctx.fillText('PARTY INVENTORY', 10, 30);
     ctx.fillText('Select Character:', 10, 60);
+
+    if (!this.gameState.party || !this.gameState.party.characters) {
+      ctx.fillText('Error: No party data found', 10, 100);
+      return;
+    }
+
+    if (this.gameState.party.characters.length === 0) {
+      ctx.fillText('Error: No characters in party', 10, 100);
+      return;
+    }
 
     this.gameState.party.characters.forEach((character: Character, index: number) => {
       const y = 90 + index * 30;
       ctx.fillStyle = index === this.selectedCharacter ? '#ffff00' : '#fff';
       
       const status = character.isDead ? ' (DEAD)' : '';
-      const items = character.inventory.length;
+      const items = character.inventory ? character.inventory.length : 0;
       ctx.fillText(`${index + 1}. ${character.name}${status} - ${items} items`, 20, y);
     });
 

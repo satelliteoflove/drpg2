@@ -214,6 +214,7 @@ export class NewGameScene extends Scene {
     this.gameState.turnCount = 0;
     this.gameState.combatEnabled = true;
     this.gameState.currentEncounter = undefined;
+    this.gameState.hasEnteredDungeon = false;
 
     this.gameState.party.x = 0;
     this.gameState.party.y = 0;
