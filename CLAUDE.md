@@ -107,3 +107,4 @@ Strict TypeScript configuration with:
 - camelCase for functions and variables
 - Separate interface definitions in their own files when shared across modules
 - Test files adjacent to source files with `.test.ts` suffix (when tests are added)
+- Strongly avoid asynchronous functionality
