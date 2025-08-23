@@ -18,6 +18,7 @@ export class DungeonScene extends Scene {
   private lastMoveTime: number = 0;
   private moveDelay: number = 350;
   private lastTileEventPosition: { x: number; y: number; floor: number } | null = null;
+  private lastEncounterPosition: { x: number; y: number; floor: number } | null = null;
 
   constructor(gameState: GameState, sceneManager: SceneManager, inputManager: InputManager) {
     super('Dungeon');
@@ -35,7 +36,12 @@ export class DungeonScene extends Scene {
   }
 
   public enter(): void {
-    this.messageLog?.addSystemMessage('Entered the dungeon...');
+    // Only show "Entered the dungeon..." message when truly entering for the first time,
+    // not when returning from combat, inventory, etc.
+    if (!this.gameState.inCombat && !this.gameState.hasEnteredDungeon) {
+      this.messageLog?.addSystemMessage('Entered the dungeon...');
+      this.gameState.hasEnteredDungeon = true;
+    }
     this.lastTileEventPosition = null;
   }
 
@@ -152,7 +158,7 @@ export class DungeonScene extends Scene {
       if (this.canMoveForward()) {
         this.gameState.party.move('forward');
         moved = true;
-        this.messageLog.addMessage('Moved forward');
+        // Remove verbose movement message - let important events speak for themselves
       } else {
         this.messageLog.addWarningMessage('Cannot move forward - blocked by wall');
       }
@@ -161,7 +167,7 @@ export class DungeonScene extends Scene {
       if (this.canMoveBackward()) {
         this.gameState.party.move('backward');
         moved = true;
-        this.messageLog.addMessage('Moved backward');
+        // Remove verbose movement message - let important events speak for themselves
       } else {
         this.messageLog.addWarningMessage('Cannot move backward - blocked by wall');
       }
@@ -169,12 +175,12 @@ export class DungeonScene extends Scene {
       attempted = true;
       this.gameState.party.move('left');
       moved = true;
-      this.messageLog.addMessage('Turned left');
+      // Remove verbose turning message - let important events speak for themselves
     } else if (movement.right) {
       attempted = true;
       this.gameState.party.move('right');
       moved = true;
-      this.messageLog.addMessage('Turned right');
+      // Remove verbose turning message - let important events speak for themselves
     }
 
     if (attempted) {
@@ -251,6 +257,20 @@ export class DungeonScene extends Scene {
     const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
     if (!currentDungeon) return;
 
+    // Check if we're at the same position as the last encounter
+    const currentPosition = {
+      x: this.gameState.party.x,
+      y: this.gameState.party.y,
+      floor: this.gameState.currentFloor
+    };
+
+    if (this.lastEncounterPosition &&
+        this.lastEncounterPosition.x === currentPosition.x &&
+        this.lastEncounterPosition.y === currentPosition.y &&
+        this.lastEncounterPosition.floor === currentPosition.floor) {
+      return; // Don't trigger encounter at same position
+    }
+
     // Check if player is in an override zone
     const currentZone = this.getOverrideZoneAtPosition(
       this.gameState.party.x, 
@@ -301,6 +321,9 @@ export class DungeonScene extends Scene {
         monsterGroups
       };
 
+      // Store encounter position to prevent re-encounters at same spot
+      this.lastEncounterPosition = { ...currentPosition };
+      
       this.gameState.inCombat = true;
       this.sceneManager.switchTo('combat');
     }
@@ -505,6 +528,13 @@ export class DungeonScene extends Scene {
 
     this.messageLog.addSystemMessage(`Forcing encounter at ${playerPos}...`);
 
+    // Store encounter position to prevent re-encounters at same spot
+    this.lastEncounterPosition = {
+      x: this.gameState.party.x,
+      y: this.gameState.party.y,
+      floor: this.gameState.currentFloor
+    };
+    
     this.gameState.inCombat = true;
     this.sceneManager.switchTo('combat');
   }
@@ -533,6 +563,7 @@ export class DungeonScene extends Scene {
           this.gameState.party.floor = this.gameState.currentFloor;
           this.messageLog.addSystemMessage(`Ascended to floor ${this.gameState.currentFloor}`);
           this.lastTileEventPosition = null;
+          this.gameState.hasEnteredDungeon = false; // Allow "Entered the dungeon..." for new floor
         } else {
           this.messageLog.addSystemMessage('You have escaped the dungeon!');
         }
@@ -544,6 +575,7 @@ export class DungeonScene extends Scene {
           this.gameState.party.floor = this.gameState.currentFloor;
           this.messageLog.addSystemMessage(`Descended to floor ${this.gameState.currentFloor}`);
           this.lastTileEventPosition = null;
+          this.gameState.hasEnteredDungeon = false; // Allow "Entered the dungeon..." for new floor
         } else {
           this.messageLog.addSystemMessage('The stairs lead into impenetrable darkness...');
         }
