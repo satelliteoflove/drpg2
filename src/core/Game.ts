@@ -29,6 +29,7 @@ export class Game {
   private gameState!: GameState;
   private playtimeStart: number = Date.now();
   private frameCount: number = 0;
+  private autoSaveFrameCounter: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -238,11 +239,8 @@ export class Game {
   }
 
   private setupAutoSave(): void {
-    setInterval(() => {
-      if (this.isRunning && !this.gameState.inCombat) {
-        this.saveGame();
-      }
-    }, GAME_CONFIG.AUTO_SAVE.INTERVAL_MS);
+    // Auto-save is now handled in the game loop using frame-based counting
+    this.autoSaveFrameCounter = 0;
   }
 
   private gameLoop = (currentTime: number = 0): void => {
@@ -261,6 +259,16 @@ export class Game {
     this.gameState.gameTime += deltaTime;
     this.frameCount++;
     this.sceneManager.update(deltaTime);
+    
+    // Handle auto-save using frame-based counting
+    this.autoSaveFrameCounter++;
+    // Auto-save every 1800 frames (approximately 30 seconds at 60fps)
+    if (this.autoSaveFrameCounter >= 1800) {
+      if (this.isRunning && !this.gameState.inCombat) {
+        this.saveGame();
+      }
+      this.autoSaveFrameCounter = 0;
+    }
   }
 
   private render(): void {

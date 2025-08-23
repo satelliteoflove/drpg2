@@ -162,7 +162,7 @@ export class CombatScene extends Scene {
     if (this.gameState.party.isWiped()) {
       this.messageLog.addDeathMessage('Party defeated!');
       this.isProcessingAction = false;
-      setTimeout(() => this.endCombat(false), 2000);
+      this.endCombat(false);
       return;
     }
     
@@ -454,14 +454,12 @@ export class CombatScene extends Scene {
       this.messageLog.addCombatMessage(result);
     }
 
-    // Schedule UI state check to happen after CombatSystem settles
-    setTimeout(() => {
-      const canAct = this.combatSystem.canPlayerAct();
-      this.actionState = canAct ? 'select_action' : 'waiting';
-      this.selectedAction = 0;
-      this.isProcessingAction = false;
-      console.log(`[DEBUG] UI state reset - canPlayerAct: ${canAct}, actionState: ${this.actionState}`);
-    }, 50);
+    // Update UI state immediately
+    const canAct = this.combatSystem.canPlayerAct();
+    this.actionState = canAct ? 'select_action' : 'waiting';
+    this.selectedAction = 0;
+    this.isProcessingAction = false;
+    console.log(`[DEBUG] UI state reset - canPlayerAct: ${canAct}, actionState: ${this.actionState}`);
   }
 
   private executeInstantKill(): void {
@@ -514,16 +512,12 @@ export class CombatScene extends Scene {
         this.messageLog.addDeathMessage('Defeated...');
       }
 
-      setTimeout(() => {
-        this.sceneManager.switchTo('dungeon');
-      }, 3000);
+      this.sceneManager.switchTo('dungeon');
     } catch (error) {
       console.error('Error in endCombat:', error);
       this.messageLog.addWarningMessage('Error processing combat results');
       this.isProcessingAction = false; // Ensure flag is reset even on error
-      setTimeout(() => {
-        this.sceneManager.switchTo('dungeon');
-      }, 1000);
+      this.sceneManager.switchTo('dungeon');
     }
   }
 }
