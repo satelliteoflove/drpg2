@@ -18,6 +18,14 @@ export const GAME_CONFIG = {
       ambush: 1.0,
       safe: 0.0,
     },
+    ZONE_GENERATION: {
+      ENABLE_SAFE_ZONES: false,        // Safe zones around starting area
+      ENABLE_BOSS_ZONES: false,       // Boss encounter zones (100% rate)
+      ENABLE_SPECIAL_MOB_ZONES: false, // Special monster lairs (15% rate)
+      ENABLE_HIGH_FREQUENCY_ZONES: false, // High encounter corridors (8% rate)
+      ENABLE_TREASURE_ZONES: false,   // Treasure rooms with guardian encounters
+      ENABLE_AMBUSH_ZONES: false,     // Guaranteed encounter traps
+    },
   },
 
   CHARACTER: {

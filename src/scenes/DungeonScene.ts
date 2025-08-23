@@ -264,10 +264,14 @@ export class DungeonScene extends Scene {
       floor: this.gameState.currentFloor
     };
 
+    console.log(`[ENCOUNTER DEBUG] Current pos: (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.floor})`);
+    console.log(`[ENCOUNTER DEBUG] Last encounter pos:`, this.lastEncounterPosition);
+
     if (this.lastEncounterPosition &&
         this.lastEncounterPosition.x === currentPosition.x &&
         this.lastEncounterPosition.y === currentPosition.y &&
         this.lastEncounterPosition.floor === currentPosition.floor) {
+      console.log(`[ENCOUNTER DEBUG] Blocking encounter - same position as last encounter`);
       return; // Don't trigger encounter at same position
     }
 
@@ -311,8 +315,13 @@ export class DungeonScene extends Scene {
       }
     }
 
+    // Debug the encounter rate being used
+    console.log(`[ENCOUNTER DEBUG] Zone type: ${currentZone?.type || 'normal'}, Rate: ${encounterRate}, Should force: ${shouldTriggerEncounter}`);
+
     // Roll for encounter (always allow encounters unless in safe zone)
     if (shouldTriggerEncounter || Math.random() < encounterRate) {
+      console.log(`[ENCOUNTER DEBUG] Triggering encounter at (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.floor})`);
+      
       // Store zone information for combat scene to use for proper messaging
       this.gameState.encounterContext = {
         zoneType: currentZone?.type || 'normal',
@@ -323,6 +332,7 @@ export class DungeonScene extends Scene {
 
       // Store encounter position to prevent re-encounters at same spot
       this.lastEncounterPosition = { ...currentPosition };
+      console.log(`[ENCOUNTER DEBUG] Stored encounter position:`, this.lastEncounterPosition);
       
       this.gameState.inCombat = true;
       this.sceneManager.switchTo('combat');

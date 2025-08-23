@@ -1,4 +1,5 @@
 import { DungeonEvent, DungeonLevel, DungeonTile, OverrideZone } from '../types/GameTypes';
+import { GAME_CONFIG } from '../config/GameConstants';
 
 export class DungeonGenerator {
   private width: number;
@@ -221,74 +222,82 @@ export class DungeonGenerator {
   private generateOverrideZones(tiles: DungeonTile[][]): OverrideZone[] {
     const zones: OverrideZone[] = [];
 
-    // Generate safe zone around starting position
-    const startPos = this.findValidStartPosition(tiles);
-    zones.push({
-      x1: Math.max(0, startPos.x - 2),
-      y1: Math.max(0, startPos.y - 2),
-      x2: Math.min(this.width - 1, startPos.x + 2),
-      y2: Math.min(this.height - 1, startPos.y + 2),
-      type: 'safe',
-      data: { description: 'Starting area - safe from encounters' }
-    });
-
-    // Generate boss zones in largest rooms
-    const largeRooms = this.rooms.filter(room => room.width * room.height >= 16);
-    for (const room of largeRooms.slice(0, 2)) {
+    // Generate safe zone around starting position (if enabled)
+    if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_SAFE_ZONES) {
+      const startPos = this.findValidStartPosition(tiles);
       zones.push({
-        x1: room.x,
-        y1: room.y,
-        x2: room.x + room.width - 1,
-        y2: room.y + room.height - 1,
-        type: 'boss',
-        data: {
-          bossType: 'floor_guardian',
-          encounterRate: 1.0,
-          monsterGroups: [`boss_level_${this.level}`],
-          description: 'Guardian chamber'
-        }
+        x1: Math.max(0, startPos.x - 2),
+        y1: Math.max(0, startPos.y - 2),
+        x2: Math.min(this.width - 1, startPos.x + 2),
+        y2: Math.min(this.height - 1, startPos.y + 2),
+        type: 'safe',
+        data: { description: 'Starting area - safe from encounters' }
       });
     }
 
-    // Generate special mob zones based on level theme
-    const numSpecialZones = 1 + Math.floor(Math.random() * 2);
-    for (let i = 0; i < numSpecialZones; i++) {
-      const room = this.rooms[Math.floor(Math.random() * this.rooms.length)];
-      if (room) {
+    // Generate boss zones in largest rooms (if enabled)
+    if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_BOSS_ZONES) {
+      const largeRooms = this.rooms.filter(room => room.width * room.height >= 16);
+      for (const room of largeRooms.slice(0, 2)) {
         zones.push({
           x1: room.x,
           y1: room.y,
           x2: room.x + room.width - 1,
           y2: room.y + room.height - 1,
-          type: 'special_mobs',
+          type: 'boss',
           data: {
-            monsterGroups: this.getSpecialMonsterGroupsForLevel(),
-            encounterRate: 0.15,
-            description: `Lair of ${this.getSpecialMonsterGroupsForLevel()[0]}s`
+            bossType: 'floor_guardian',
+            encounterRate: 1.0,
+            monsterGroups: [`boss_level_${this.level}`],
+            description: 'Guardian chamber'
           }
         });
       }
     }
 
-    // Generate high frequency zones in corridors
-    const numHighFreq = 2 + Math.floor(Math.random() * 2);
-    for (let i = 0; i < numHighFreq; i++) {
-      const x1 = Math.floor(Math.random() * (this.width - 4));
-      const y1 = Math.floor(Math.random() * (this.height - 4));
-      const x2 = x1 + 2 + Math.floor(Math.random() * 3);
-      const y2 = y1 + 2 + Math.floor(Math.random() * 3);
-
-      zones.push({
-        x1,
-        y1,
-        x2: Math.min(x2, this.width - 1),
-        y2: Math.min(y2, this.height - 1),
-        type: 'high_frequency',
-        data: {
-          encounterRate: 0.08,
-          description: 'Dangerous corridor - high monster activity'
+    // Generate special mob zones based on level theme (if enabled)
+    if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_SPECIAL_MOB_ZONES) {
+      const numSpecialZones = 1 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < numSpecialZones; i++) {
+        const room = this.rooms[Math.floor(Math.random() * this.rooms.length)];
+        if (room) {
+          zones.push({
+            x1: room.x,
+            y1: room.y,
+            x2: room.x + room.width - 1,
+            y2: room.y + room.height - 1,
+            type: 'special_mobs',
+            data: {
+              monsterGroups: this.getSpecialMonsterGroupsForLevel(),
+              encounterRate: 0.15,
+              description: `Lair of ${this.getSpecialMonsterGroupsForLevel()[0]}s`
+            }
+          });
         }
-      });
+      }
+    }
+
+    // Generate high frequency zones in corridors (if enabled)
+    if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_HIGH_FREQUENCY_ZONES) {
+      const numHighFreq = 2 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < numHighFreq; i++) {
+        const x1 = Math.floor(Math.random() * (this.width - 4));
+        const y1 = Math.floor(Math.random() * (this.height - 4));
+        const x2 = x1 + 2 + Math.floor(Math.random() * 3);
+        const y2 = y1 + 2 + Math.floor(Math.random() * 3);
+
+        zones.push({
+          x1,
+          y1,
+          x2: Math.min(x2, this.width - 1),
+          y2: Math.min(y2, this.height - 1),
+          type: 'high_frequency',
+          data: {
+            encounterRate: 0.08,
+            description: 'Dangerous corridor - high monster activity'
+          }
+        });
+      }
     }
 
     return zones;
