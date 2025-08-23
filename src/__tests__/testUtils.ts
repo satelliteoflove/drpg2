@@ -127,12 +127,6 @@ export class TestUtils {
     return jest.fn(implementation);
   }
 
-  /**
-   * Waits for a specified number of milliseconds (useful for async tests)
-   */
-  static async wait(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
 
   /**
    * Advances Jest fake timers by specified milliseconds

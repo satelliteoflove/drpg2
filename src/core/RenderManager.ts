@@ -1,6 +1,6 @@
 import { RenderingOptimizer, SpriteCache, SpatialPartition, LayerConfig } from './RenderingOptimizer';
 import { GAME_CONFIG } from '../config/GameConstants';
-import { ErrorHandler, ErrorSeverity } from '../utils/ErrorHandler';
+import { ErrorHandler } from '../utils/ErrorHandler';
 import { Scene } from './Scene';
 
 export interface RenderStats {
@@ -245,28 +245,6 @@ export class RenderManager {
     this.spriteCache.set(key, sprite);
   }
 
-  public preloadSprites(sprites: Array<{key: string, url: string}>): Promise<void> {
-    const promises = sprites.map(({key, url}) => {
-      return new Promise<void>((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          this.addSpriteToCache(key, img);
-          resolve();
-        };
-        img.onerror = () => {
-          ErrorHandler.logError(
-            `Failed to load sprite: ${url}`,
-            ErrorSeverity.MEDIUM,
-            'RenderManager.preloadSprites'
-          );
-          reject();
-        };
-        img.src = url;
-      });
-    });
-
-    return Promise.allSettled(promises).then(() => undefined);
-  }
 
   public getStats(): RenderStats {
     return { ...this.stats };
