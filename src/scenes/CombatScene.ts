@@ -524,22 +524,15 @@ export class CombatScene extends Scene {
         this.gameState.party.distributeExperience(rewards.experience);
         this.gameState.party.distributeGold(rewards.gold);
         
-        // Handle item drops - place on floor at current position
+        // Handle item drops - store for distribution after scene switch
         if (rewards.items && rewards.items.length > 0) {
-          const currentFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
-          if (!currentFloor.floorItems) {
-            currentFloor.floorItems = new Map();
-          }
-          
-          const position = `${this.gameState.party.x},${this.gameState.party.y}`;
-          const existingItems = currentFloor.floorItems.get(position) || [];
-          existingItems.push(...rewards.items);
-          currentFloor.floorItems.set(position, existingItems);
-          
-          this.messageLog.addSystemMessage(`Found ${rewards.items.length} item(s)! Press G to pick up.`);
+          this.messageLog.addSystemMessage(`Found ${rewards.items.length} item(s)!`);
           rewards.items.forEach(item => {
             this.messageLog.addSystemMessage(`- ${item.identified ? item.name : item.unidentifiedName || '?Item'}`);
           });
+          
+          // Store items to be distributed when returning to dungeon
+          this.gameState.pendingLoot = rewards.items;
         }
         
         console.log('Rewards distributed successfully');

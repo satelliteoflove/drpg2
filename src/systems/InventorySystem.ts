@@ -486,7 +486,7 @@ export class InventorySystem {
             }
           }
         });
-      } else {
+      } else if (monster.itemDrops && monster.itemDrops.length > 0) {
         // Fall back to old system
         monster.itemDrops.forEach(drop => {
           // Roll for drop chance

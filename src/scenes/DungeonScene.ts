@@ -20,6 +20,12 @@ export class DungeonScene extends Scene {
   private moveDelay: number = 350;
   private lastTileEventPosition: { x: number; y: number; floor: number } | null = null;
   private lastEncounterPosition: { x: number; y: number; floor: number } | null = null;
+  
+  // Item pickup state
+  private itemPickupState: 'none' | 'selecting_character' = 'none';
+  private itemsToPickup: Item[] = [];
+  private currentItemIndex = 0;
+  private selectedCharacterIndex = 0;
 
   constructor(gameState: GameState, sceneManager: SceneManager, inputManager: InputManager) {
     super('Dungeon');
@@ -44,6 +50,26 @@ export class DungeonScene extends Scene {
       this.gameState.hasEnteredDungeon = true;
     }
     this.lastTileEventPosition = null;
+    
+    // Check for pending loot from combat
+    if (this.gameState.pendingLoot && this.gameState.pendingLoot.length > 0) {
+      const aliveCharacters = this.gameState.party.getAliveCharacters();
+      if (aliveCharacters.length > 0) {
+        // Start item distribution immediately
+        this.itemsToPickup = this.gameState.pendingLoot;
+        this.currentItemIndex = 0;
+        this.selectedCharacterIndex = 0;
+        this.itemPickupState = 'selecting_character';
+        
+        const currentItem = this.itemsToPickup[this.currentItemIndex];
+        this.messageLog.addSystemMessage(
+          `Distributing loot: ${currentItem.identified ? currentItem.name : currentItem.unidentifiedName || '?Item'}. Who should take it?`
+        );
+        
+        // Clear pending loot
+        this.gameState.pendingLoot = undefined;
+      }
+    }
   }
 
   public exit(): void {}
@@ -125,6 +151,7 @@ export class DungeonScene extends Scene {
           this.statusPanel.render(this.gameState.party, ctx);
           this.messageLog.render(ctx);
           this.renderControls(ctx);
+          this.renderItemPickupUI(ctx);
         }
         this.dungeonMapView.render(ctx);
       });
@@ -457,6 +484,11 @@ export class DungeonScene extends Scene {
 
   public handleInput(key: string): boolean {
     // const actions = this.inputManager.getActionKeys();
+    
+    // Handle item pickup selection state first
+    if (this.itemPickupState === 'selecting_character') {
+      return this.handleItemPickupSelection(key);
+    }
 
     if (key === 'enter' || key === ' ') {
       this.handleInteraction();
@@ -470,10 +502,6 @@ export class DungeonScene extends Scene {
       return true;
     }
 
-    if (key === 'g') {
-      this.pickupItems();
-      return true;
-    }
 
     if (key === 'c') {
       this.toggleCombat();
@@ -567,61 +595,109 @@ export class DungeonScene extends Scene {
     }
   }
 
-  private pickupItems(): void {
-    const currentFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
-    if (!currentFloor.floorItems) {
-      currentFloor.floorItems = new Map();
-    }
 
-    const position = `${this.gameState.party.x},${this.gameState.party.y}`;
-    const items = currentFloor.floorItems.get(position);
-
-    if (!items || items.length === 0) {
-      this.messageLog.addSystemMessage('There are no items here.');
-      return;
-    }
-
+  private handleItemPickupSelection(key: string): boolean {
     const aliveCharacters = this.gameState.party.getAliveCharacters();
-    if (aliveCharacters.length === 0) {
-      this.messageLog.addWarningMessage('No alive characters to carry items!');
-      return;
-    }
-
-    // Try to pick up all items, distributing among party members
-    const pickedUp: Item[] = [];
-    const remaining: Item[] = [];
     
-    for (const item of items) {
-      let picked = false;
-      // Try to give to each character until someone can carry it
-      for (const character of aliveCharacters) {
-        // Check inventory capacity (simplified - could add weight limits later)
-        if (character.inventory.length < GAME_CONFIG.ITEMS.INVENTORY.MAX_ITEMS_PER_CHARACTER) {
-          InventorySystem.addItemToInventory(character, item.id);
-          this.messageLog.addItemMessage(
-            `${character.name} picks up ${item.identified ? item.name : item.unidentifiedName || '?Item'}`
-          );
-          picked = true;
-          pickedUp.push(item);
-          break;
-        }
+    if (key === 'escape' || key === 'l') {
+      // Discard current item permanently
+      const item = this.itemsToPickup[this.currentItemIndex];
+      this.messageLog.addSystemMessage(`Discarded ${item.identified ? item.name : item.unidentifiedName || '?Item'}.`);
+      
+      // Move to next item or finish
+      this.currentItemIndex++;
+      if (this.currentItemIndex >= this.itemsToPickup.length) {
+        this.itemPickupState = 'none';
+        this.itemsToPickup = [];
+        this.messageLog.addSystemMessage('Finished distributing items.');
+      } else {
+        // Show next item
+        const nextItem = this.itemsToPickup[this.currentItemIndex];
+        this.messageLog.addSystemMessage(
+          `Found ${nextItem.identified ? nextItem.name : nextItem.unidentifiedName || '?Item'}. Who should take it?`
+        );
+        this.selectedCharacterIndex = 0;
       }
-      if (!picked) {
-        remaining.push(item);
+      return true;
+    }
+    
+    if (key === 'arrowup' || key === 'w') {
+      this.selectedCharacterIndex = Math.max(0, this.selectedCharacterIndex - 1);
+      return true;
+    } else if (key === 'arrowdown' || key === 's') {
+      this.selectedCharacterIndex = Math.min(aliveCharacters.length - 1, this.selectedCharacterIndex + 1);
+      return true;
+    } else if (key === 'enter' || key === ' ') {
+      // Give item to selected character
+      const character = aliveCharacters[this.selectedCharacterIndex];
+      const item = this.itemsToPickup[this.currentItemIndex];
+      
+      if (character.inventory.length >= GAME_CONFIG.ITEMS.INVENTORY.MAX_ITEMS_PER_CHARACTER) {
+        this.messageLog.addWarningMessage(`${character.name}'s inventory is full!`);
+        return true;
       }
+      
+      // Add item to character's inventory
+      InventorySystem.addItemToInventory(character, item.id);
+      this.messageLog.addItemMessage(
+        `${character.name} takes ${item.identified ? item.name : item.unidentifiedName || '?Item'}`
+      );
+      
+      // Move to next item or finish
+      this.currentItemIndex++;
+      if (this.currentItemIndex >= this.itemsToPickup.length) {
+        // All items distributed
+        this.itemPickupState = 'none';
+        this.itemsToPickup = [];
+        this.messageLog.addSystemMessage('All items distributed.');
+      } else {
+        // Show next item
+        const nextItem = this.itemsToPickup[this.currentItemIndex];
+        this.messageLog.addSystemMessage(
+          `Found ${nextItem.identified ? nextItem.name : nextItem.unidentifiedName || '?Item'}. Who should take it?`
+        );
+        this.selectedCharacterIndex = 0;
+      }
+      return true;
     }
-
-    // Update floor items
-    if (remaining.length > 0) {
-      currentFloor.floorItems.set(position, remaining);
-      this.messageLog.addWarningMessage(`${remaining.length} item(s) could not be picked up (inventory full).`);
-    } else {
-      currentFloor.floorItems.delete(position);
+    
+    // Number keys for quick character selection
+    const num = parseInt(key);
+    if (!isNaN(num) && num >= 1 && num <= aliveCharacters.length) {
+      this.selectedCharacterIndex = num - 1;
+      const character = aliveCharacters[this.selectedCharacterIndex];
+      const item = this.itemsToPickup[this.currentItemIndex];
+      
+      if (character.inventory.length >= GAME_CONFIG.ITEMS.INVENTORY.MAX_ITEMS_PER_CHARACTER) {
+        this.messageLog.addWarningMessage(`${character.name}'s inventory is full!`);
+        return true;
+      }
+      
+      // Add item to character's inventory
+      InventorySystem.addItemToInventory(character, item.id);
+      this.messageLog.addItemMessage(
+        `${character.name} takes ${item.identified ? item.name : item.unidentifiedName || '?Item'}`
+      );
+      
+      // Move to next item or finish
+      this.currentItemIndex++;
+      if (this.currentItemIndex >= this.itemsToPickup.length) {
+        // All items distributed
+        this.itemPickupState = 'none';
+        this.itemsToPickup = [];
+        this.messageLog.addSystemMessage('All items distributed.');
+      } else {
+        // Show next item
+        const nextItem = this.itemsToPickup[this.currentItemIndex];
+        this.messageLog.addSystemMessage(
+          `Found ${nextItem.identified ? nextItem.name : nextItem.unidentifiedName || '?Item'}. Who should take it?`
+        );
+        this.selectedCharacterIndex = 0;
+      }
+      return true;
     }
-
-    if (pickedUp.length > 0) {
-      this.messageLog.addSystemMessage(`Picked up ${pickedUp.length} item(s).`);
-    }
+    
+    return false;
   }
 
   private renderControls(ctx: CanvasRenderingContext2D): void {
@@ -629,19 +705,80 @@ export class DungeonScene extends Scene {
     ctx.font = '10px monospace';
     const y = ctx.canvas.height - 45;
     
-    // Check if there are items on ground
-    const currentFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
-    const position = `${this.gameState.party.x},${this.gameState.party.y}`;
-    const hasItems = currentFloor?.floorItems?.has(position) && 
-                     currentFloor.floorItems.get(position)!.length > 0;
-    
-    let controls = 'TAB: Inventory | R: Rest | M: Map | C: Toggle Combat';
-    if (hasItems) {
-      controls = 'G: Pick Up Items | ' + controls;
-    }
+    const controls = 'TAB: Inventory | R: Rest | M: Map | C: Toggle Combat';
     
     ctx.fillText(controls, 10, y);
     ctx.fillText('WASD/Arrows: Move | SPACE/ENTER: Interact | ESC: Menu', 10, y + 12);
+  }
+  
+  private renderItemPickupUI(ctx: CanvasRenderingContext2D): void {
+    if (this.itemPickupState !== 'selecting_character') return;
+    
+    const aliveCharacters = this.gameState.party.getAliveCharacters();
+    if (aliveCharacters.length === 0 || this.itemsToPickup.length === 0) return;
+    
+    // Draw semi-transparent overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    
+    // Draw selection window
+    const windowX = 200;
+    const windowY = 150;
+    const windowWidth = 400;
+    const windowHeight = 300;
+    
+    // Window background
+    ctx.fillStyle = '#222';
+    ctx.fillRect(windowX, windowY, windowWidth, windowHeight);
+    ctx.strokeStyle = '#aaa';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(windowX, windowY, windowWidth, windowHeight);
+    
+    // Title
+    ctx.fillStyle = '#fff';
+    ctx.font = '16px monospace';
+    ctx.textAlign = 'center';
+    const currentItem = this.itemsToPickup[this.currentItemIndex];
+    const itemName = currentItem.identified ? currentItem.name : currentItem.unidentifiedName || '?Item';
+    ctx.fillText(`Select character to receive:`, windowX + windowWidth / 2, windowY + 30);
+    ctx.fillText(`${itemName}`, windowX + windowWidth / 2, windowY + 50);
+    
+    // Item counter
+    ctx.font = '12px monospace';
+    ctx.fillText(`Item ${this.currentItemIndex + 1} of ${this.itemsToPickup.length}`, windowX + windowWidth / 2, windowY + 70);
+    
+    // Character list
+    ctx.textAlign = 'left';
+    ctx.font = '14px monospace';
+    const startY = windowY + 100;
+    const lineHeight = 25;
+    
+    aliveCharacters.forEach((character: any, index: number) => {
+      const y = startY + (index * lineHeight);
+      
+      // Highlight selected character
+      if (index === this.selectedCharacterIndex) {
+        ctx.fillStyle = '#444';
+        ctx.fillRect(windowX + 20, y - 15, windowWidth - 40, 20);
+      }
+      
+      // Character info
+      ctx.fillStyle = index === this.selectedCharacterIndex ? '#ff0' : '#fff';
+      const inventorySpace = GAME_CONFIG.ITEMS.INVENTORY.MAX_ITEMS_PER_CHARACTER - character.inventory.length;
+      const spacesText = inventorySpace > 0 ? `${inventorySpace} spaces` : 'FULL';
+      ctx.fillText(`${index + 1}. ${character.name} (${spacesText})`, windowX + 30, y);
+    });
+    
+    // Show "Discard" option after all characters
+    const discardY = startY + (aliveCharacters.length * lineHeight);
+    ctx.fillStyle = '#888';
+    ctx.fillText(`L. Discard it`, windowX + 30, discardY);
+    
+    // Instructions
+    ctx.fillStyle = '#888';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('UP/DOWN: Select | ENTER/1-6: Confirm | L: Discard', windowX + windowWidth / 2, windowY + windowHeight - 20);
   }
 
   private handleInteraction(): void {

@@ -180,7 +180,6 @@ export interface DungeonLevel {
   events: DungeonEvent[];
   startX: number;
   startY: number;
-  floorItems?: Map<string, Item[]>; // Items on the floor at coordinates "x,y"
 }
 
 export interface OverrideZone {
@@ -243,6 +242,7 @@ export interface GameState {
     description?: string;
     monsterGroups?: string[];
   };
+  pendingLoot?: Item[]; // Items waiting to be distributed after combat
 }
 
 export interface Encounter {
