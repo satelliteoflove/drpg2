@@ -367,7 +367,8 @@ export class CombatSystem {
         return sum + m.gold;
       }, 0);
 
-      const droppedItems = this.calculateItemDrops(this.encounter.monsters);
+      const partyLevel = this.getAveragePartyLevel();
+      const droppedItems = InventorySystem.generateMonsterLoot(this.encounter.monsters, partyLevel);
       
       console.log(`Total rewards: ${totalExp} experience, ${totalGold} gold, ${droppedItems.length} items`);
       this.endCombat(true, { experience: totalExp, gold: totalGold, items: droppedItems });
@@ -377,24 +378,14 @@ export class CombatSystem {
     return false;
   }
 
-  private calculateItemDrops(monsters: Monster[]): Item[] {
-    const droppedItems: Item[] = [];
-
-    monsters.forEach(monster => {
-      if (monster.itemDrops && monster.itemDrops.length > 0) {
-        monster.itemDrops.forEach(drop => {
-          if (Math.random() < drop.chance) {
-            const item = InventorySystem.getItem(drop.itemId);
-            if (item) {
-              droppedItems.push(item);
-              console.log(`${monster.name} dropped ${item.name}!`);
-            }
-          }
-        });
-      }
-    });
-
-    return droppedItems;
+  private getAveragePartyLevel(): number {
+    if (!this.encounter) return 1;
+    
+    const partyMembers = this.encounter.turnOrder.filter(unit => 'class' in unit) as Character[];
+    if (partyMembers.length === 0) return 1;
+    
+    const totalLevel = partyMembers.reduce((sum, character) => sum + character.level, 0);
+    return Math.floor(totalLevel / partyMembers.length);
   }
 
   private endCombat(victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }): void {

@@ -33,6 +33,9 @@ export class InventoryScene extends Scene {
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
+    // Fallback for direct rendering - should not be used since we have layered rendering
+    console.warn('[INVENTORY] Using direct rendering fallback - layered rendering preferred');
+    
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -60,11 +63,47 @@ export class InventoryScene extends Scene {
     // Instructions
     ctx.fillStyle = '#888';
     ctx.font = '12px monospace';
-    ctx.fillText('ESC: Back/Exit | ENTER: Select | UP/DOWN: Navigate', 10, ctx.canvas.height - 10);
+    ctx.fillText('ESC: Back/Exit | ENTER: Select | UP/DOWN: Navigate', 10, ctx.canvas.height - 60);
   }
 
-  public renderLayered(_renderContext: SceneRenderContext): void {
-    // Not using layered rendering for inventory
+  public renderLayered(renderContext: SceneRenderContext): void {
+    // Use layered rendering for inventory screen
+    const { renderManager } = renderContext;
+    
+    // Render background layer
+    renderManager.renderBackground((ctx) => {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    });
+    
+    // Render UI layer
+    renderManager.renderUI((ctx) => {
+      ctx.fillStyle = '#fff';
+      ctx.font = '16px monospace';
+
+      switch (this.mode) {
+        case 'character_select':
+          this.renderCharacterSelect(ctx);
+          break;
+        case 'inventory':
+          this.renderInventory(ctx);
+          break;
+        case 'equipment':
+          this.renderEquipment(ctx);
+          break;
+        case 'trade_select':
+          this.renderTradeSelect(ctx);
+          break;
+        case 'trade_target':
+          this.renderTradeTarget(ctx);
+          break;
+      }
+
+      // Instructions
+      ctx.fillStyle = '#888';
+      ctx.font = '12px monospace';
+      ctx.fillText('ESC: Back/Exit | ENTER: Select | UP/DOWN: Navigate', 10, ctx.canvas.height - 10);
+    });
   }
 
   private renderCharacterSelect(ctx: CanvasRenderingContext2D): void {
@@ -94,7 +133,7 @@ export class InventoryScene extends Scene {
 
     ctx.fillStyle = '#aaa';
     ctx.font = '12px monospace';
-    ctx.fillText('I: View Inventory | E: View Equipment | T: Trade Items', 10, ctx.canvas.height - 30);
+    ctx.fillText('I: View Inventory | E: View Equipment | T: Trade Items', 10, ctx.canvas.height - 45);
   }
 
   private renderInventory(ctx: CanvasRenderingContext2D): void {
@@ -108,11 +147,32 @@ export class InventoryScene extends Scene {
 
     character.inventory.forEach((item: Item, index: number) => {
       const y = 70 + index * 25;
-      ctx.fillStyle = index === this.selectedItem ? '#ffff00' : '#fff';
       
       const description = InventorySystem.getItemDescription(item);
-      const equipped = item.equipped ? ' [EQUIPPED]' : '';
-      ctx.fillText(`${index + 1}. ${description}${equipped}`, 20, y);
+      let suffix = '';
+      
+      if (!item.identified) {
+        suffix = ' (?)';
+      } else if (item.equipped) {
+        suffix = ' [EQUIPPED]';
+      } else if (item.cursed && item.identified) {
+        suffix = ' [CURSED]';
+      }
+      
+      if (item.type !== 'consumable' && !character.canEquipItem(item)) {
+        ctx.fillStyle = index === this.selectedItem ? '#ff8800' : '#888';
+      } else {
+        // Use rarity color for identified items, or selection color for unidentified
+        if (index === this.selectedItem) {
+          ctx.fillStyle = '#ffff00'; // Yellow for selection
+        } else if (item.identified && item.rarity) {
+          ctx.fillStyle = InventorySystem.getRarityColor(item.rarity);
+        } else {
+          ctx.fillStyle = '#fff'; // White for unidentified/common items
+        }
+      }
+      
+      ctx.fillText(`${index + 1}. ${description}${suffix}`, 20, y);
     });
 
     ctx.fillStyle = '#aaa';
@@ -121,15 +181,17 @@ export class InventoryScene extends Scene {
     if (selectedItem) {
       const canEquip = selectedItem.type !== 'consumable' && !selectedItem.equipped;
       const canUnequip = selectedItem.equipped;
-      const canUse = selectedItem.type === 'consumable';
+      const canUse = selectedItem.type === 'consumable' || selectedItem.invokable;
+      const canIdentify = !selectedItem.identified;
       
       let actions = '';
       if (canEquip) actions += 'Q: Equip | ';
       if (canUnequip) actions += 'U: Unequip | ';
       if (canUse) actions += 'SPACE: Use | ';
+      if (canIdentify) actions += 'I: Identify | ';
       actions += 'D: Drop';
       
-      ctx.fillText(actions, 10, ctx.canvas.height - 30);
+      ctx.fillText(actions, 10, ctx.canvas.height - 45);
     }
   }
 
@@ -256,6 +318,18 @@ export class InventoryScene extends Scene {
         const equipSlot = this.getEquipSlot(item.type);
         if (equipSlot && InventorySystem.unequipItem(character, equipSlot)) {
           this.gameState.messageLog?.addSystemMessage(`${character.name} unequipped ${item.name}`);
+        } else if (item.cursed) {
+          this.gameState.messageLog?.addWarningMessage(`Cannot remove ${item.name} - it is cursed!`);
+        }
+      }
+      return true;
+    } else if (key === 'i' && items.length > 0) {
+      const item = items[this.selectedItem];
+      if (item && !item.identified) {
+        const result = InventorySystem.identifyItem(character, item.id);
+        this.gameState.messageLog?.addSystemMessage(result.message);
+        if (result.cursed) {
+          this.gameState.messageLog?.addWarningMessage('The item is cursed!');
         }
       }
       return true;

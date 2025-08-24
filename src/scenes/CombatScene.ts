@@ -2,7 +2,6 @@ import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState, Monster, Item } from '../types/GameTypes';
 import { CombatSystem } from '../systems/CombatSystem';
 import { StatusPanel } from '../ui/StatusPanel';
-import { InventorySystem } from '../systems/InventorySystem';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
@@ -74,7 +73,14 @@ export class CombatScene extends Scene {
         attacks: [{ name: 'Slime Attack', damage: '1d4+1', effect: '', chance: 0.8 }],
         experience: 10,
         gold: 5,
-        itemDrops: [{ itemId: 'dagger', chance: 0.05 }],
+        itemDrops: [
+          { itemId: 'potion', chance: 0.08 },
+          { itemId: 'short_sword', chance: 0.01 }
+        ],
+        lootDrops: [
+          { itemId: 'potion', chance: 0.08 },
+          { itemId: 'short_sword', chance: 0.01, minLevel: 1, maxLevel: 3 } // Early game drop
+        ],
         resistances: [],
         weaknesses: ['fire'],
       },
@@ -87,7 +93,16 @@ export class CombatScene extends Scene {
         attacks: [{ name: 'Club', damage: '1d6+1', effect: '', chance: 0.9 }],
         experience: 15,
         gold: 8,
-        itemDrops: [{ itemId: 'dagger', chance: 0.1 }],
+        itemDrops: [
+          { itemId: 'leather_armor', chance: 0.03 },
+          { itemId: 'potion', chance: 0.10 },
+          { itemId: 'scroll_of_sleep', chance: 0.02 }
+        ],
+        lootDrops: [
+          { itemId: 'leather_armor', chance: 0.05, minLevel: 1, maxLevel: 5 },
+          { itemId: 'potion', chance: 0.12 },
+          { itemId: 'scroll_of_sleep', chance: 0.03, minLevel: 2 } // Requires level 2+
+        ],
         resistances: [],
         weaknesses: [],
       },
@@ -103,7 +118,19 @@ export class CombatScene extends Scene {
         ],
         experience: 25,
         gold: 15,
-        itemDrops: [{ itemId: 'dagger', chance: 0.15 }],
+        itemDrops: [
+          { itemId: 'muramasa', chance: 0.001 }, // Very rare cursed sword
+          { itemId: 'shadow_cape', chance: 0.05 },
+          { itemId: 'ring_of_healing', chance: 0.02 },
+          { itemId: 'dios_stone', chance: 0.03 }
+        ],
+        lootDrops: [
+          { itemId: 'muramasa', chance: 0.002, minLevel: 3 }, // Higher chance but level gated
+          { itemId: 'shadow_cape', chance: 0.08, minLevel: 2 },
+          { itemId: 'ring_of_healing', chance: 0.04, minLevel: 1, maxLevel: 8 },
+          { itemId: 'dios_stone', chance: 0.06 }, // Higher base chance with rarity system
+          { itemId: 'staff_of_mogref', chance: 0.01, minLevel: 4 } // High level drop
+        ],
         resistances: [],
         weaknesses: [],
       },
@@ -206,6 +233,7 @@ export class CombatScene extends Scene {
     renderManager.renderUI((ctx) => {
       this.renderUI(ctx);
       this.renderCombatInfo(ctx);
+      this.renderCombatControls(ctx);
     });
   }
 
@@ -496,15 +524,22 @@ export class CombatScene extends Scene {
         this.gameState.party.distributeExperience(rewards.experience);
         this.gameState.party.distributeGold(rewards.gold);
         
-        // Handle item drops
+        // Handle item drops - place on floor at current position
         if (rewards.items && rewards.items.length > 0) {
-          const firstCharacter = this.gameState.party.getAliveCharacters()[0];
-          if (firstCharacter) {
-            rewards.items.forEach(item => {
-              InventorySystem.addItemToInventory(firstCharacter, item.id);
-              this.messageLog.addSystemMessage(`Found ${item.name}! Added to ${firstCharacter.name}'s inventory.`);
-            });
+          const currentFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
+          if (!currentFloor.floorItems) {
+            currentFloor.floorItems = new Map();
           }
+          
+          const position = `${this.gameState.party.x},${this.gameState.party.y}`;
+          const existingItems = currentFloor.floorItems.get(position) || [];
+          existingItems.push(...rewards.items);
+          currentFloor.floorItems.set(position, existingItems);
+          
+          this.messageLog.addSystemMessage(`Found ${rewards.items.length} item(s)! Press G to pick up.`);
+          rewards.items.forEach(item => {
+            this.messageLog.addSystemMessage(`- ${item.identified ? item.name : item.unidentifiedName || '?Item'}`);
+          });
         }
         
         console.log('Rewards distributed successfully');
@@ -518,6 +553,23 @@ export class CombatScene extends Scene {
       this.messageLog.addWarningMessage('Error processing combat results');
       this.isProcessingAction = false; // Ensure flag is reset even on error
       this.sceneManager.switchTo('dungeon');
+    }
+  }
+
+  private renderCombatControls(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    const y = ctx.canvas.height - 30;
+    
+    if (this.actionState === 'select_action' && this.combatSystem.canPlayerAct()) {
+      let controls = 'UP/DOWN: Select Action | ENTER: Confirm';
+      if (this.selectedAction === 0) { // Attack action
+        controls += ' | LEFT/RIGHT: Select Target';
+      }
+      ctx.fillText(controls, 10, y);
+      ctx.fillText('1: Attack | 2: Defend | 3: Run | K: Instant Kill (debug)', 10, y + 12);
+    } else {
+      ctx.fillText('Processing turn... please wait', 10, y);
     }
   }
 }

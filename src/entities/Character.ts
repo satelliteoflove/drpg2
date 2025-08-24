@@ -322,4 +322,35 @@ export class Character implements ICharacter {
     }
     return false;
   }
+
+  public getIdentificationChance(_item: Item): number {
+    let identifyChance = 0.5;
+    
+    if (this.class === 'Bishop') {
+      identifyChance += 0.25 + (this.level * 0.02);
+    } else {
+      identifyChance += this.level * 0.01;
+    }
+    
+    const intBonus = Math.floor((this.stats.intelligence - 10) / 2) * 0.05;
+    identifyChance += intBonus;
+    
+    return Math.min(0.95, identifyChance);
+  }
+
+  public canEquipItem(item: Item): boolean {
+    if (item.classRestrictions && item.classRestrictions.length > 0) {
+      if (!item.classRestrictions.includes(this.class)) {
+        return false;
+      }
+    }
+    
+    if (item.alignmentRestrictions && item.alignmentRestrictions.length > 0) {
+      if (!item.alignmentRestrictions.includes(this.alignment)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
 }

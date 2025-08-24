@@ -1,11 +1,12 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { InputManager } from '../core/Input';
-import { DungeonTile, GameState } from '../types/GameTypes';
+import { DungeonTile, GameState, Item } from '../types/GameTypes';
 import { DungeonView } from '../ui/DungeonView';
 import { StatusPanel } from '../ui/StatusPanel';
 import { DungeonMapView } from '../ui/DungeonMapView';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { safeConfirm } from '../utils/ErrorHandler';
+import { InventorySystem } from '../systems/InventorySystem';
 
 export class DungeonScene extends Scene {
   private gameState: GameState;
@@ -123,6 +124,7 @@ export class DungeonScene extends Scene {
         if (!this.dungeonMapView.getIsVisible()) {
           this.statusPanel.render(this.gameState.party, ctx);
           this.messageLog.render(ctx);
+          this.renderControls(ctx);
         }
         this.dungeonMapView.render(ctx);
       });
@@ -468,6 +470,11 @@ export class DungeonScene extends Scene {
       return true;
     }
 
+    if (key === 'g') {
+      this.pickupItems();
+      return true;
+    }
+
     if (key === 'c') {
       this.toggleCombat();
       return true;
@@ -484,6 +491,7 @@ export class DungeonScene extends Scene {
     }
 
     if (key === 'tab') {
+      console.log('[DEBUG] Tab pressed - switching to inventory scene');
       this.sceneManager.switchTo('inventory');
       return true;
     }
@@ -557,6 +565,83 @@ export class DungeonScene extends Scene {
     } else {
       this.messageLog.addSystemMessage('Map closed');
     }
+  }
+
+  private pickupItems(): void {
+    const currentFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
+    if (!currentFloor.floorItems) {
+      currentFloor.floorItems = new Map();
+    }
+
+    const position = `${this.gameState.party.x},${this.gameState.party.y}`;
+    const items = currentFloor.floorItems.get(position);
+
+    if (!items || items.length === 0) {
+      this.messageLog.addSystemMessage('There are no items here.');
+      return;
+    }
+
+    const aliveCharacters = this.gameState.party.getAliveCharacters();
+    if (aliveCharacters.length === 0) {
+      this.messageLog.addWarningMessage('No alive characters to carry items!');
+      return;
+    }
+
+    // Try to pick up all items, distributing among party members
+    const pickedUp: Item[] = [];
+    const remaining: Item[] = [];
+    
+    for (const item of items) {
+      let picked = false;
+      // Try to give to each character until someone can carry it
+      for (const character of aliveCharacters) {
+        // Check inventory capacity (simplified - could add weight limits later)
+        if (character.inventory.length < GAME_CONFIG.ITEMS.INVENTORY.MAX_ITEMS_PER_CHARACTER) {
+          InventorySystem.addItemToInventory(character, item.id);
+          this.messageLog.addItemMessage(
+            `${character.name} picks up ${item.identified ? item.name : item.unidentifiedName || '?Item'}`
+          );
+          picked = true;
+          pickedUp.push(item);
+          break;
+        }
+      }
+      if (!picked) {
+        remaining.push(item);
+      }
+    }
+
+    // Update floor items
+    if (remaining.length > 0) {
+      currentFloor.floorItems.set(position, remaining);
+      this.messageLog.addWarningMessage(`${remaining.length} item(s) could not be picked up (inventory full).`);
+    } else {
+      currentFloor.floorItems.delete(position);
+    }
+
+    if (pickedUp.length > 0) {
+      this.messageLog.addSystemMessage(`Picked up ${pickedUp.length} item(s).`);
+    }
+  }
+
+  private renderControls(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    const y = ctx.canvas.height - 45;
+    
+    // Check if there are items on ground
+    const currentFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
+    const position = `${this.gameState.party.x},${this.gameState.party.y}`;
+    const hasItems = currentFloor?.floorItems?.has(position) && 
+                     currentFloor.floorItems.get(position)!.length > 0;
+    
+    let controls = 'TAB: Inventory | R: Rest | M: Map | C: Toggle Combat';
+    if (hasItems) {
+      controls = 'G: Pick Up Items | ' + controls;
+    }
+    
+    ctx.fillText(controls, 10, y);
+    ctx.fillText('WASD/Arrows: Move | SPACE/ENTER: Interact | ESC: Menu', 10, y + 12);
   }
 
   private handleInteraction(): void {

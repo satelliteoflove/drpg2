@@ -56,19 +56,27 @@ export class SceneManager {
   }
 
   public switchTo(sceneName: string): void {
+    console.log('[SCENE DEBUG] Switching to scene:', sceneName);
     this.nextScene = sceneName;
   }
 
   public update(deltaTime: number): void {
     if (this.nextScene) {
+      console.log('[SCENE DEBUG] Processing scene switch to:', this.nextScene);
+      
       if (this.currentScene) {
+        console.log('[SCENE DEBUG] Exiting current scene:', this.currentScene.getName());
         this.currentScene.exit();
       }
 
-      this.currentScene = this.scenes.get(this.nextScene) || null;
+      const newScene = this.scenes.get(this.nextScene);
+      console.log('[SCENE DEBUG] Found new scene:', newScene ? newScene.getName() : 'null');
+      
+      this.currentScene = newScene || null;
       this.nextScene = null;
 
       if (this.currentScene) {
+        console.log('[SCENE DEBUG] Entering new scene:', this.currentScene.getName());
         // Reset layers for the new scene
         if (this.renderManager) {
           this.renderManager.resetForSceneChange();
@@ -84,7 +92,10 @@ export class SceneManager {
 
   public render(ctx: CanvasRenderingContext2D): void {
     if (this.currentScene) {
+      console.log('[SCENE DEBUG] Rendering scene:', this.currentScene.getName());
       this.currentScene.render(ctx);
+    } else {
+      console.log('[SCENE DEBUG] No current scene to render');
     }
   }
 

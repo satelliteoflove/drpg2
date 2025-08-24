@@ -45,6 +45,32 @@ export const GAME_CONFIG = {
     LEVEL_UP_STAT_CHANCE: 0.3,
   },
 
+  ITEMS: {
+    IDENTIFICATION: {
+      BASE_CHANCE: 0.5,                // Base 50% chance to identify
+      BISHOP_BONUS: 0.25,              // Bishop gets +25% base bonus
+      LEVEL_BONUS_BISHOP: 0.02,        // Bishop gets +2% per level
+      LEVEL_BONUS_OTHER: 0.01,         // Other classes get +1% per level
+      INT_BONUS_PER_2_POINTS: 0.05,   // +5% per 2 INT points over 10
+      MAX_CHANCE: 0.95,                // Max 95% chance to identify
+      CRITICAL_FAIL_THRESHOLD: 0.95,  // Roll > 95% causes curse
+    },
+    GENERATION: {
+      CURSED_CHANCE: 0.1,              // 10% chance for cursed items
+      BLESSED_CHANCE: 0.05,            // 5% chance for blessed items (0.10 to 0.15)
+      ENCHANTMENT_CHANCE: 0.15,        // 15% chance for enchantment (0.15 to 0.30)
+      ENCHANTMENT_VALUE_MULT: 0.5,     // Value increases by 50% per enchantment level
+    },
+    INVENTORY: {
+      MAX_ITEMS_PER_CHARACTER: 20,     // Maximum items per character
+    },
+    SHOP: {
+      IDENTIFY_COST_MULTIPLIER: 0.5,
+      SELL_PRICE_MULTIPLIER: 0.5,
+      UNCURSE_COST_MULTIPLIER: 1.0,
+    },
+  },
+
   COMBAT: {
     MONSTER_TURN_DELAY: 200, // Reduced from 1000ms to 200ms for more responsive combat
     MAX_RECURSION_DEPTH: 100,
@@ -102,6 +128,8 @@ export const GAME_CONFIG = {
     CORRIDOR_ATTEMPTS: 10,
     MIN_SPECIAL_TILES: 3,
     MAX_EXTRA_SPECIAL_TILES: 3,
+    ENABLE_TREASURE_CHESTS: false,    // Generate treasure chests in dungeon
+    ENABLE_DOORS: false,              // Generate doors in dungeon
     CHEST_CHANCE: 0.3,
     TRAP_CHANCE: 0.5,
     DOOR_CHANCE: 0.7,
@@ -124,6 +152,27 @@ export const GAME_CONFIG = {
   INVENTORY: {
     IDENTIFICATION_CHANCE: 0.1,
     VALUE_VARIATION: 0.1,
+  },
+
+  LOOT_SYSTEM: {
+    RARITY_CHANCES: {
+      common: 0.70,              // 70% of drops are common
+      uncommon: 0.25,            // 25% are uncommon  
+      rare: 0.04,                // 4% are rare
+      legendary: 0.01            // 1% are legendary
+    },
+    RARITY_ENCHANTMENT_LEVELS: {
+      common: { min: 0, max: 0 },       // No enchantment
+      uncommon: { min: 1, max: 2 },     // +1 to +2
+      rare: { min: 3, max: 4 },         // +3 to +4
+      legendary: { min: 5, max: 7 }     // +5 to +7
+    },
+    RARITY_VALUE_MULTIPLIERS: {
+      common: 1.0,
+      uncommon: 2.0,
+      rare: 4.0,
+      legendary: 8.0
+    },
   },
 
   AUTO_SAVE: {

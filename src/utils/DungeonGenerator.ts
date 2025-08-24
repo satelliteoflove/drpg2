@@ -172,17 +172,36 @@ export class DungeonGenerator {
 
   private placeSpecialTiles(tiles: DungeonTile[][]): void {
     const floorTiles = this.getFloorTiles(tiles);
-    const numSpecial = Math.min(3 + Math.floor(Math.random() * 3), floorTiles.length);
+    const numSpecial = Math.min(
+      GAME_CONFIG.DUNGEON.MIN_SPECIAL_TILES + Math.floor(Math.random() * GAME_CONFIG.DUNGEON.MAX_EXTRA_SPECIAL_TILES), 
+      floorTiles.length
+    );
 
     for (let i = 0; i < numSpecial; i++) {
       const tile = floorTiles[Math.floor(Math.random() * floorTiles.length)];
       const rand = Math.random();
 
-      if (rand < 0.3) {
+      // Build probability ranges based on enabled features
+      let chestThreshold = 0;
+      let trapThreshold = 0;
+      let doorThreshold = 0;
+      
+      if (GAME_CONFIG.DUNGEON.ENABLE_TREASURE_CHESTS) {
+        chestThreshold = GAME_CONFIG.DUNGEON.CHEST_CHANCE;
+        trapThreshold = chestThreshold + GAME_CONFIG.DUNGEON.TRAP_CHANCE;
+      } else {
+        trapThreshold = GAME_CONFIG.DUNGEON.TRAP_CHANCE;
+      }
+      
+      if (GAME_CONFIG.DUNGEON.ENABLE_DOORS) {
+        doorThreshold = trapThreshold + GAME_CONFIG.DUNGEON.DOOR_CHANCE;
+      }
+
+      if (GAME_CONFIG.DUNGEON.ENABLE_TREASURE_CHESTS && rand < chestThreshold) {
         tile.type = 'chest';
-      } else if (rand < 0.5) {
+      } else if (rand < trapThreshold) {
         tile.type = 'trap';
-      } else if (rand < 0.7) {
+      } else if (GAME_CONFIG.DUNGEON.ENABLE_DOORS && rand < doorThreshold) {
         tile.type = 'door';
       } else {
         tile.type = 'event';

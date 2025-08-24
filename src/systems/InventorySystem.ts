@@ -1,5 +1,12 @@
 import { Character } from '../entities/Character';
-import { Equipment, Item } from '../types/GameTypes';
+import { Equipment, Item, ItemRarity, Monster } from '../types/GameTypes';
+import { 
+  canClassEquipItem, 
+  canAlignmentUseItem, 
+  generateRandomItem,
+  ITEM_TEMPLATES 
+} from '../config/ItemProperties';
+import { GAME_CONFIG } from '../config/GameConstants';
 
 export class InventorySystem {
   private static items: Map<string, Item> = new Map();
@@ -9,92 +16,29 @@ export class InventorySystem {
   }
 
   private static initializeItems(): void {
-    const items: Item[] = [
-      {
-        id: 'dagger',
-        name: 'Dagger',
-        type: 'weapon',
-        value: 50,
-        weight: 1,
-        identified: true,
-        cursed: false,
-        equipped: false,
-        quantity: 1,
-        effects: [{ type: 'damage', value: 4 }],
-      },
-      {
-        id: 'sword',
-        name: 'Sword',
-        type: 'weapon',
-        value: 200,
-        weight: 3,
-        identified: true,
-        cursed: false,
-        equipped: false,
-        quantity: 1,
-        effects: [{ type: 'damage', value: 8 }],
-      },
-      {
-        id: 'leather_armor',
-        name: 'Leather Armor',
-        type: 'armor',
-        value: 100,
-        weight: 5,
-        identified: true,
-        cursed: false,
-        equipped: false,
-        quantity: 1,
-        effects: [{ type: 'ac', value: 2 }],
-      },
-      {
-        id: 'chain_mail',
-        name: 'Chain Mail',
-        type: 'armor',
-        value: 300,
-        weight: 15,
-        identified: true,
-        cursed: false,
-        equipped: false,
-        quantity: 1,
-        effects: [{ type: 'ac', value: 4 }],
-      },
-      {
-        id: 'small_shield',
-        name: 'Small Shield',
-        type: 'shield',
-        value: 75,
-        weight: 3,
-        identified: true,
-        cursed: false,
-        equipped: false,
-        quantity: 1,
-        effects: [{ type: 'ac', value: 1 }],
-      },
-      {
-        id: 'healing_potion',
-        name: 'Healing Potion',
-        type: 'consumable',
-        value: 25,
-        weight: 1,
-        identified: true,
-        cursed: false,
-        equipped: false,
-        quantity: 1,
-        effects: [{ type: 'heal', value: 20 }],
-      },
-      {
-        id: 'strength_ring',
-        name: 'Ring of Strength',
-        type: 'accessory',
-        value: 500,
-        weight: 0,
-        identified: false,
-        cursed: false,
-        equipped: false,
-        quantity: 1,
-        effects: [{ type: 'stat', value: 2, target: 'strength' }],
-      },
-    ];
+    // Convert templates to full items with default values
+    const items: Item[] = ITEM_TEMPLATES.map(template => ({
+      id: template.id || 'unknown',
+      name: template.name || 'Unknown Item',
+      unidentifiedName: template.unidentifiedName,
+      type: template.type || 'special',
+      value: template.value || 10,
+      weight: template.weight || 1,
+      identified: template.identified !== undefined ? template.identified : false, // Preserve template setting
+      cursed: template.cursed || false,
+      blessed: template.blessed || false,
+      enchantment: template.enchantment || 0,
+      equipped: false,
+      quantity: 1,
+      effects: template.effects || [],
+      classRestrictions: template.classRestrictions,
+      alignmentRestrictions: template.alignmentRestrictions,
+      invokable: template.invokable,
+      spellId: template.spellId,
+      charges: template.charges,
+      maxCharges: template.maxCharges,
+      description: template.description,
+    }));
 
     items.forEach(item => {
       this.items.set(item.id, item);
@@ -143,17 +87,36 @@ export class InventorySystem {
     const item = character.inventory[itemIndex];
     if (item.type === 'consumable') return false;
 
+    // Check class restrictions
+    if (!canClassEquipItem(character.class, item)) {
+      return false; // Character's class cannot equip this item
+    }
+
+    // Check alignment restrictions
+    if (!canAlignmentUseItem(character.alignment, item)) {
+      return false; // Character's alignment cannot use this item
+    }
+
     const equipSlot = this.getEquipSlot(item.type);
     if (!equipSlot) return false;
 
     const currentEquipped = character.equipment[equipSlot];
     if (currentEquipped) {
+      // Cannot unequip cursed items to replace them
+      if (currentEquipped.cursed) {
+        return false; // Cursed item blocks new equipment
+      }
       this.unequipItem(character, equipSlot);
     }
 
     character.equipment[equipSlot] = item;
     item.equipped = true;
     character.inventory.splice(itemIndex, 1);
+
+    // If item is cursed and unidentified, identify it upon equipping
+    if (item.cursed && !item.identified) {
+      item.identified = true; // Curse reveals itself when equipped
+    }
 
     this.applyItemEffects(character, item, true);
     this.recalculateStats(character);
@@ -164,6 +127,11 @@ export class InventorySystem {
   public static unequipItem(character: Character, equipSlot: keyof Equipment): boolean {
     const item = character.equipment[equipSlot];
     if (!item) return false;
+    
+    // Cannot unequip cursed items
+    if (item.cursed) {
+      return false; // Cursed items cannot be removed
+    }
 
     character.equipment[equipSlot] = undefined;
     item.equipped = false;
@@ -221,10 +189,17 @@ export class InventorySystem {
     if (itemIndex === -1) return 'Item not found';
 
     const item = character.inventory[itemIndex];
-    if (item.type !== 'consumable') return 'Item cannot be used';
+    if (item.type !== 'consumable' && !item.invokable) return 'Item cannot be used';
 
     let result = `${character.name} uses ${item.name}`;
 
+    // Handle spell scrolls or invokable items
+    if (item.spellId) {
+      result += ` and casts ${item.spellId}`;
+      // TODO: Implement spell casting logic here
+    }
+
+    // Handle regular item effects
     if (item.effects) {
       item.effects.forEach(effect => {
         switch (effect.type) {
@@ -244,7 +219,21 @@ export class InventorySystem {
       });
     }
 
-    this.removeItemFromInventory(character, itemId);
+    // Handle charges
+    if (item.charges !== undefined && item.charges > 0) {
+      item.charges--;
+      if (item.charges === 0) {
+        // Remove item if out of charges
+        this.removeItemFromInventory(character, itemId);
+        result += ' (depleted)';
+      } else {
+        result += ` (${item.charges} charges remaining)`;
+      }
+    } else if (item.type === 'consumable' && !item.maxCharges) {
+      // Single-use consumables without charges
+      this.removeItemFromInventory(character, itemId);
+    }
+
     return result + '!';
   }
 
@@ -260,14 +249,37 @@ export class InventorySystem {
   }
 
   public static getItemDescription(item: Item): string {
-    let description = item.name;
-
-    if (!item.identified && Math.random() < 0.5) {
-      return 'Unidentified Item';
+    // If not identified, show the unidentified name
+    if (!item.identified) {
+      return item.unidentifiedName || '?Unknown';
     }
 
-    if (item.cursed) {
-      description += ' (Cursed)';
+    // Build the full name with enchantment and properties
+    let description = item.name;
+    
+    // Add rarity indicator if identified and not common
+    if (item.identified && item.rarity && item.rarity !== 'common') {
+      description = `[${item.rarity.toUpperCase()}] ${description}`;
+    }
+    
+    // Add enchantment level
+    if (item.enchantment !== 0) {
+      const sign = item.enchantment > 0 ? '+' : '';
+      description = description.replace(item.name, `${item.name} ${sign}${item.enchantment}`);
+    }
+    
+    // Add status indicators
+    const statuses = [];
+    if (item.cursed) statuses.push('Cursed');
+    if (item.blessed) statuses.push('Blessed');
+    
+    if (statuses.length > 0) {
+      description += ` (${statuses.join(', ')})`;
+    }
+    
+    // Add charges for consumables/invokables
+    if (item.charges !== undefined && item.maxCharges !== undefined) {
+      description += ` [${item.charges}/${item.maxCharges}]`;
     }
 
     if (item.effects && item.effects.length > 0) {
@@ -316,12 +328,75 @@ export class InventorySystem {
     return this.getInventoryWeight(character) > this.getCarryCapacity(character);
   }
 
-  public static identifyItem(character: Character, itemId: string): boolean {
+  public static identifyItem(character: Character, itemId: string): { 
+    success: boolean; 
+    cursed?: boolean; 
+    message: string 
+  } {
     const item = character.inventory.find(i => i.id === itemId);
-    if (!item || item.identified) return false;
+    
+    if (!item) {
+      return { success: false, message: 'Item not found' };
+    }
+    
+    if (item.identified) {
+      return { success: false, message: 'Item already identified' };
+    }
 
-    item.identified = true;
-    return true;
+    // Calculate identification chance based on character
+    let identifyChance: number = GAME_CONFIG.ITEMS.IDENTIFICATION.BASE_CHANCE;
+    
+    // Bishop class gets bonus to identification
+    if (character.class === 'Bishop') {
+      identifyChance += GAME_CONFIG.ITEMS.IDENTIFICATION.BISHOP_BONUS + 
+                       (character.level * GAME_CONFIG.ITEMS.IDENTIFICATION.LEVEL_BONUS_BISHOP);
+    } else {
+      identifyChance += character.level * GAME_CONFIG.ITEMS.IDENTIFICATION.LEVEL_BONUS_OTHER;
+    }
+    
+    // Intelligence bonus
+    const intBonus = Math.floor((character.stats.intelligence - 10) / 2) * 
+                    GAME_CONFIG.ITEMS.IDENTIFICATION.INT_BONUS_PER_2_POINTS;
+    identifyChance += intBonus;
+    
+    // Cap at maximum chance
+    identifyChance = Math.min(GAME_CONFIG.ITEMS.IDENTIFICATION.MAX_CHANCE, identifyChance);
+    
+    const roll = Math.random();
+    
+    if (roll < identifyChance) {
+      // Success!
+      item.identified = true;
+      return { 
+        success: true, 
+        cursed: item.cursed, 
+        message: `Identified: ${this.getItemDescription(item)}` 
+      };
+    } else if (roll > GAME_CONFIG.ITEMS.IDENTIFICATION.CRITICAL_FAIL_THRESHOLD) {
+      // Critical failure - character gets cursed by the item!
+      if (item.cursed && !item.equipped) {
+        // Force equip the cursed item
+        const equipped = this.equipItem(character, itemId);
+        if (equipped) {
+          item.identified = true; // Curse reveals itself
+          return { 
+            success: false, 
+            cursed: true, 
+            message: `The ${item.name} is cursed and bonds to ${character.name}!` 
+          };
+        }
+      }
+      return { 
+        success: false, 
+        message: 'Failed to identify the item' 
+      };
+    } else {
+      // Normal failure
+      return { 
+        success: false, 
+        message: 'Failed to identify the item' 
+      };
+    }
   }
 
   public static tradeItem(
@@ -383,36 +458,106 @@ export class InventorySystem {
     const loot: Item[] = [];
     const numItems = 1 + Math.floor(Math.random() * 3);
 
-    const availableItems = [
-      'dagger',
-      'sword',
-      'leather_armor',
-      'chain_mail',
-      'small_shield',
-      'healing_potion',
-      'strength_ring',
-    ];
-
     for (let i = 0; i < numItems; i++) {
-      const itemId = availableItems[Math.floor(Math.random() * availableItems.length)];
-      const item = this.getItem(itemId);
-
-      if (item) {
-        if (Math.random() < 0.3) {
-          item.identified = false;
-        }
-
-        if (Math.random() < 0.1) {
-          item.cursed = true;
-          item.identified = false;
-        }
-
-        item.value += Math.floor(Math.random() * level * 10);
-
-        loot.push(item);
-      }
+      const item = generateRandomItem(level);
+      loot.push(item);
     }
 
     return loot;
   }
+
+  // New loot system with rarity and level scaling
+  public static generateMonsterLoot(monsters: Monster[], partyLevel: number): Item[] {
+    const loot: Item[] = [];
+
+    monsters.forEach(monster => {
+      // Use new loot system if available, fall back to old system
+      if (monster.lootDrops && monster.lootDrops.length > 0) {
+        monster.lootDrops.forEach(drop => {
+          // Check level requirements
+          if (drop.minLevel && partyLevel < drop.minLevel) return;
+          if (drop.maxLevel && partyLevel > drop.maxLevel) return;
+
+          // Roll for drop chance
+          if (Math.random() < drop.chance) {
+            const item = this.createDroppedItem(drop.itemId);
+            if (item) {
+              loot.push(item);
+            }
+          }
+        });
+      } else {
+        // Fall back to old system
+        monster.itemDrops.forEach(drop => {
+          // Roll for drop chance
+          if (Math.random() < drop.chance) {
+            const item = this.createDroppedItem(drop.itemId);
+            if (item) {
+              loot.push(item);
+            }
+          }
+        });
+      }
+    });
+
+    return loot;
+  }
+
+  private static createDroppedItem(itemId: string): Item | null {
+    const baseItem = this.getItem(itemId);
+    if (!baseItem) return null;
+
+    // Assign random rarity
+    const rarity = this.rollItemRarity();
+    const item = { ...baseItem, rarity };
+
+    // Apply rarity effects
+    this.applyRarityEffects(item, rarity);
+
+    return item;
+  }
+
+  private static rollItemRarity(): ItemRarity {
+    const rand = Math.random();
+    const chances = GAME_CONFIG.LOOT_SYSTEM.RARITY_CHANCES;
+
+    if (rand < chances.common) return 'common';
+    if (rand < chances.common + chances.uncommon) return 'uncommon';
+    if (rand < chances.common + chances.uncommon + chances.rare) return 'rare';
+    return 'legendary';
+  }
+
+  private static applyRarityEffects(item: Item, rarity: ItemRarity): void {
+    const config = GAME_CONFIG.LOOT_SYSTEM;
+
+    // Apply enchantment level based on rarity
+    const enchantRange = config.RARITY_ENCHANTMENT_LEVELS[rarity];
+    item.enchantment = enchantRange.min + Math.floor(Math.random() * (enchantRange.max - enchantRange.min + 1));
+
+    // Apply value multiplier
+    item.value = Math.floor(item.value * config.RARITY_VALUE_MULTIPLIERS[rarity]);
+
+    // Update item name to reflect enchantment and rarity
+    if (item.enchantment > 0) {
+      item.name = `${item.name} +${item.enchantment}`;
+    }
+
+    // Update effects based on enchantment
+    if (item.effects && item.enchantment > 0) {
+      item.effects = item.effects.map(effect => ({
+        ...effect,
+        value: effect.value + item.enchantment
+      }));
+    }
+  }
+
+  public static getRarityColor(rarity?: ItemRarity): string {
+    switch (rarity) {
+      case 'uncommon': return '#00ff00';  // Green
+      case 'rare': return '#0080ff';      // Blue
+      case 'legendary': return '#ff8000'; // Orange
+      default: return '#ffffff';          // White (common)
+    }
+  }
+
 }
