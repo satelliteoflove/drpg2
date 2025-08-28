@@ -1,12 +1,16 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { InputManager } from '../core/Input';
 import { DungeonTile, GameState, Item } from '../types/GameTypes';
+import { Character } from '../entities/Character';
 import { DungeonView } from '../ui/DungeonView';
 import { StatusPanel } from '../ui/StatusPanel';
 import { DungeonMapView } from '../ui/DungeonMapView';
+import { DebugOverlay } from '../ui/DebugOverlay';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { safeConfirm } from '../utils/ErrorHandler';
 import { InventorySystem } from '../systems/InventorySystem';
+import { KEY_BINDINGS } from '../config/KeyBindings';
+import { CombatSystem } from '../systems/CombatSystem';
 
 export class DungeonScene extends Scene {
   private gameState: GameState;
@@ -16,6 +20,7 @@ export class DungeonScene extends Scene {
   private statusPanel!: StatusPanel;
   private messageLog: any; // Shared from gameState
   private dungeonMapView!: DungeonMapView;
+  private debugOverlay!: DebugOverlay;
   private lastMoveTime: number = 0;
   private moveDelay: number = 350;
   private lastTileEventPosition: { x: number; y: number; floor: number } | null = null;
@@ -43,6 +48,9 @@ export class DungeonScene extends Scene {
   }
 
   public enter(): void {
+    // Set debug overlay scene name
+    this.debugOverlay?.setCurrentScene('Dungeon');
+    
     // Only show "Entered the dungeon..." message when truly entering for the first time,
     // not when returning from combat, inventory, etc.
     if (!this.gameState.inCombat && !this.gameState.hasEnteredDungeon) {
@@ -107,6 +115,12 @@ export class DungeonScene extends Scene {
       }
 
       this.dungeonMapView.render();
+      
+      // Update debug overlay with current system data
+      this.updateDebugData();
+      
+      // Always render debug overlay last so it appears on top
+      this.debugOverlay.render(this.gameState);
     }
   }
 
@@ -154,6 +168,12 @@ export class DungeonScene extends Scene {
           this.renderItemPickupUI(ctx);
         }
         this.dungeonMapView.render(ctx);
+        
+        // Update debug overlay with current system data
+        this.updateDebugData();
+        
+        // Always render debug overlay last so it appears on top
+        this.debugOverlay.render(this.gameState);
       });
     } else {
       // Fallback if no dungeon data
@@ -170,6 +190,7 @@ export class DungeonScene extends Scene {
     this.dungeonView = new DungeonView(canvas);
     this.statusPanel = new StatusPanel(canvas, 624, 0, 400, 500);
     this.dungeonMapView = new DungeonMapView(canvas);
+    this.debugOverlay = new DebugOverlay(canvas);
   }
 
   private handleMovement(): void {
@@ -485,7 +506,25 @@ export class DungeonScene extends Scene {
   public handleInput(key: string): boolean {
     // const actions = this.inputManager.getActionKeys();
     
-    // Handle item pickup selection state first
+    // Debug: Log the key and expected binding
+    if (key.includes('ctrl')) {
+      console.log('[DEBUG] Key pressed:', key);
+      console.log('[DEBUG] Expected debug overlay key:', KEY_BINDINGS.dungeonActions.debugOverlay);
+    }
+    
+    // Handle debug scene key combination first
+    if (key === KEY_BINDINGS.dungeonActions.debugOverlay) {
+      console.log('[DEBUG] Switching to debug scene');
+      const debugScene = this.sceneManager.getScene('debug') as any;
+      if (debugScene && debugScene.setPreviousScene) {
+        debugScene.setPreviousScene('dungeon');
+      }
+      this.sceneManager.switchTo('debug');
+      return true;
+    }
+    
+    
+    // Handle item pickup selection state
     if (this.itemPickupState === 'selecting_character') {
       return this.handleItemPickupSelection(key);
     }
@@ -495,7 +534,7 @@ export class DungeonScene extends Scene {
       return true;
     }
 
-    if (key === 'r') {
+    if (key === KEY_BINDINGS.dungeonActions.rest) {
       this.gameState.party.rest();
       this.messageLog.addSystemMessage('Party rests and recovers some health and mana');
       this.checkRandomEncounter(); // Check for encounters when resting
@@ -503,7 +542,7 @@ export class DungeonScene extends Scene {
     }
 
 
-    if (key === 'c') {
+    if (key === KEY_BINDINGS.dungeonActions.toggleCombat) {
       this.toggleCombat();
       return true;
     }
@@ -513,12 +552,12 @@ export class DungeonScene extends Scene {
       return true;
     }
 
-    if (key === 'm') {
+    if (key === KEY_BINDINGS.dungeonActions.map) {
       this.toggleMap();
       return true;
     }
 
-    if (key === 'tab') {
+    if (key === KEY_BINDINGS.dungeonActions.inventory) {
       console.log('[DEBUG] Tab pressed - switching to inventory scene');
       this.sceneManager.switchTo('inventory');
       return true;
@@ -638,7 +677,13 @@ export class DungeonScene extends Scene {
       }
       
       // Add item to character's inventory
-      InventorySystem.addItemToInventory(character, item.id);
+      // Check if it's a stackable consumable
+      const existingItem = character.inventory.find((i: Item) => i.id === item.id && i.type === 'consumable');
+      if (existingItem && item.type === 'consumable') {
+        existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1);
+      } else {
+        character.inventory.push(item);
+      }
       this.messageLog.addItemMessage(
         `${character.name} takes ${item.identified ? item.name : item.unidentifiedName || '?Item'}`
       );
@@ -674,7 +719,13 @@ export class DungeonScene extends Scene {
       }
       
       // Add item to character's inventory
-      InventorySystem.addItemToInventory(character, item.id);
+      // Check if it's a stackable consumable
+      const existingItem = character.inventory.find((i: Item) => i.id === item.id && i.type === 'consumable');
+      if (existingItem && item.type === 'consumable') {
+        existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1);
+      } else {
+        character.inventory.push(item);
+      }
       this.messageLog.addItemMessage(
         `${character.name} takes ${item.identified ? item.name : item.unidentifiedName || '?Item'}`
       );
@@ -705,7 +756,7 @@ export class DungeonScene extends Scene {
     ctx.font = '10px monospace';
     const y = ctx.canvas.height - 45;
     
-    const controls = 'TAB: Inventory | R: Rest | M: Map | C: Toggle Combat';
+    const controls = 'TAB: Inventory | R: Rest | M: Map | C: Toggle Combat | Ctrl+D: Debug';
     
     ctx.fillText(controls, 10, y);
     ctx.fillText('WASD/Arrows: Move | SPACE/ENTER: Interact | ESC: Menu', 10, y + 12);
@@ -827,5 +878,30 @@ export class DungeonScene extends Scene {
 
     // Check for encounters after any interaction
     this.checkRandomEncounter();
+  }
+
+  private updateDebugData(): void {
+    if (!this.debugOverlay) return;
+
+    // Get current loot system debug data
+    const lootData = InventorySystem.getLootDebugData();
+    
+    // Calculate party stats
+    const totalLuck = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.stats.luck, 0);
+    const averageLevel = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.level, 0) / this.gameState.party.characters.length;
+    
+    // Get combat debug data
+    const combatData = CombatSystem.getCombatDebugData();
+
+    // Update debug overlay with current data
+    this.debugOverlay.updateDebugData({
+      lootSystem: lootData,
+      partyStats: {
+        totalLuck,
+        luckMultiplier: lootData.luckMultiplier,
+        averageLevel
+      },
+      combatSystem: combatData
+    });
   }
 }

@@ -118,4 +118,8 @@ export class SceneManager {
   public getCurrentScene(): Scene | null {
     return this.currentScene;
   }
+
+  public getScene(name: string): Scene | null {
+    return this.scenes.get(name) || null;
+  }
 }

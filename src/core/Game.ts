@@ -7,6 +7,7 @@ import { DungeonScene } from '../scenes/DungeonScene';
 import { CharacterCreationScene } from '../scenes/CharacterCreationScene';
 import { CombatScene } from '../scenes/CombatScene';
 import { InventoryScene } from '../scenes/InventoryScene';
+import { DebugScene } from '../scenes/DebugScene';
 import { Party } from '../entities/Party';
 import { Character } from '../entities/Character';
 import { GameState } from '../types/GameTypes';
@@ -210,6 +211,7 @@ export class Game {
     );
     this.sceneManager.addScene('combat', new CombatScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('inventory', new InventoryScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('debug', new DebugScene(this.gameState, this.sceneManager));
 
     this.sceneManager.switchTo('main_menu');
   }

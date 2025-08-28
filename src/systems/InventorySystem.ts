@@ -7,9 +7,25 @@ import {
   ITEM_TEMPLATES 
 } from '../config/ItemProperties';
 import { GAME_CONFIG } from '../config/GameConstants';
+import { DataLoader } from '../utils/DataLoader';
+
+interface LootDebugData {
+  dungeonLevel: number;
+  dungeonMultiplier: number;
+  luckMultiplier: number;
+  totalMultiplier: number;
+  lastRarityRolls: string[];
+}
 
 export class InventorySystem {
   private static items: Map<string, Item> = new Map();
+  private static debugData: LootDebugData = {
+    dungeonLevel: 1,
+    dungeonMultiplier: 1.0,
+    luckMultiplier: 1.0,
+    totalMultiplier: 1.0,
+    lastRarityRolls: []
+  };
 
   static {
     this.initializeItems();
@@ -52,13 +68,19 @@ export class InventorySystem {
     return { ...template };
   }
 
-  public static addItemToInventory(character: Character, itemId: string): boolean {
-    const item = this.getItem(itemId);
-    if (!item) return false;
+  public static addItemToInventory(character: Character, itemOrId: string | Item): boolean {
+    let item: Item | null;
+    
+    if (typeof itemOrId === 'string') {
+      item = this.getItem(itemOrId);
+      if (!item) return false;
+    } else {
+      item = itemOrId;
+    }
 
-    const existingItem = character.inventory.find(i => i.id === itemId && i.type === 'consumable');
-    if (existingItem) {
-      existingItem.quantity++;
+    const existingItem = character.inventory.find(i => i.id === item.id && i.type === 'consumable');
+    if (existingItem && item.type === 'consumable') {
+      existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1);
     } else {
       character.inventory.push(item);
     }
@@ -467,64 +489,134 @@ export class InventorySystem {
   }
 
   // New loot system with rarity and level scaling
-  public static generateMonsterLoot(monsters: Monster[], partyLevel: number): Item[] {
+  public static async generateMonsterLoot(
+    monsters: Monster[], 
+    partyLevel: number, 
+    dungeonLevel: number, 
+    partyCharacters: Character[]
+  ): Promise<Item[]> {
     const loot: Item[] = [];
+    
+    // Calculate loot multipliers
+    const dungeonMultiplier = await this.getDungeonLevelMultiplier(dungeonLevel);
+    const luckMultiplier = this.calculatePartyLuckMultiplier(partyCharacters);
+    const totalDropRateMultiplier = dungeonMultiplier * luckMultiplier;
 
-    monsters.forEach(monster => {
+    // Update debug data instead of console logging
+    this.debugData = {
+      dungeonLevel,
+      dungeonMultiplier,
+      luckMultiplier,
+      totalMultiplier: totalDropRateMultiplier,
+      lastRarityRolls: []
+    };
+
+    for (const monster of monsters) {
       // Use new loot system if available, fall back to old system
       if (monster.lootDrops && monster.lootDrops.length > 0) {
-        monster.lootDrops.forEach(drop => {
+        for (const drop of monster.lootDrops) {
           // Check level requirements
-          if (drop.minLevel && partyLevel < drop.minLevel) return;
-          if (drop.maxLevel && partyLevel > drop.maxLevel) return;
+          if (drop.minLevel && partyLevel < drop.minLevel) continue;
+          if (drop.maxLevel && partyLevel > drop.maxLevel) continue;
+
+          // Apply multipliers to drop chance
+          const modifiedChance = Math.min(1.0, drop.chance * totalDropRateMultiplier);
 
           // Roll for drop chance
-          if (Math.random() < drop.chance) {
-            const item = this.createDroppedItem(drop.itemId);
+          if (Math.random() < modifiedChance) {
+            const item = await this.createDroppedItem(drop.itemId, partyCharacters);
             if (item) {
               loot.push(item);
             }
           }
-        });
+        }
       } else if (monster.itemDrops && monster.itemDrops.length > 0) {
         // Fall back to old system
-        monster.itemDrops.forEach(drop => {
+        for (const drop of monster.itemDrops) {
+          // Apply multipliers to drop chance
+          const modifiedChance = Math.min(1.0, drop.chance * totalDropRateMultiplier);
+
           // Roll for drop chance
-          if (Math.random() < drop.chance) {
-            const item = this.createDroppedItem(drop.itemId);
+          if (Math.random() < modifiedChance) {
+            const item = await this.createDroppedItem(drop.itemId, partyCharacters);
             if (item) {
               loot.push(item);
             }
           }
-        });
+        }
       }
-    });
+    }
 
     return loot;
   }
 
-  private static createDroppedItem(itemId: string): Item | null {
-    const baseItem = this.getItem(itemId);
+  private static async createDroppedItem(itemId: string, partyCharacters?: Character[]): Promise<Item | null> {
+    const baseItem = await DataLoader.createItemInstance(itemId);
     if (!baseItem) return null;
 
-    // Assign random rarity
-    const rarity = this.rollItemRarity();
-    const item = { ...baseItem, rarity };
+    // Assign random rarity with luck bonus
+    const rarity = this.rollItemRarity(partyCharacters);
+    baseItem.rarity = rarity;
 
     // Apply rarity effects
-    this.applyRarityEffects(item, rarity);
+    this.applyRarityEffects(baseItem, rarity);
 
-    return item;
+    return baseItem;
   }
 
-  private static rollItemRarity(): ItemRarity {
+  private static rollItemRarity(partyCharacters?: Character[]): ItemRarity {
     const rand = Math.random();
-    const chances = GAME_CONFIG.LOOT_SYSTEM.RARITY_CHANCES;
+    const baseChances = GAME_CONFIG.LOOT_SYSTEM.RARITY_CHANCES;
+    
+    // Create mutable chances object with number types
+    let chances: {
+      common: number;
+      uncommon: number;
+      rare: number;
+      legendary: number;
+    } = {
+      common: baseChances.common,
+      uncommon: baseChances.uncommon,
+      rare: baseChances.rare,
+      legendary: baseChances.legendary
+    };
 
-    if (rand < chances.common) return 'common';
-    if (rand < chances.common + chances.uncommon) return 'uncommon';
-    if (rand < chances.common + chances.uncommon + chances.rare) return 'rare';
-    return 'legendary';
+    // Apply luck-based rarity shifting
+    if (partyCharacters) {
+      const totalLuck = partyCharacters.reduce((sum, char) => sum + (char.stats?.luck || 10), 0);
+      const luckConfig = GAME_CONFIG.LOOT_SYSTEM.LUCK_SYSTEM;
+      const luckBonus = (totalLuck - luckConfig.BASE_PARTY_LUCK) * luckConfig.RARITY_LUCK_FACTOR;
+      const clampedLuckBonus = Math.max(-luckConfig.MAX_RARITY_SHIFT, Math.min(luckConfig.MAX_RARITY_SHIFT, luckBonus));
+
+      // Shift chances toward better rarities
+      if (clampedLuckBonus > 0) {
+        chances.common = Math.max(0.1, chances.common - clampedLuckBonus);
+        chances.uncommon = Math.min(0.8, chances.uncommon + clampedLuckBonus * 0.3);
+        chances.rare = Math.min(0.3, chances.rare + clampedLuckBonus * 0.4);
+        chances.legendary = Math.min(0.2, chances.legendary + clampedLuckBonus * 0.3);
+      }
+    }
+
+    let result: ItemRarity;
+    if (rand < chances.common) {
+      result = 'common';
+    } else if (rand < chances.common + chances.uncommon) {
+      result = 'uncommon';
+    } else if (rand < chances.common + chances.uncommon + chances.rare) {
+      result = 'rare';
+    } else {
+      result = 'legendary';
+    }
+
+    // Track rarity roll for debugging (keep only last 10)
+    const totalLuck = partyCharacters?.reduce((sum, char) => sum + (char.stats?.luck || 10), 0) || 60;
+    const rollInfo = `Roll: ${(rand * 100).toFixed(1)}% → ${result} (luck: ${totalLuck})`;
+    this.debugData.lastRarityRolls.unshift(rollInfo);
+    if (this.debugData.lastRarityRolls.length > 10) {
+      this.debugData.lastRarityRolls.pop();
+    }
+
+    return result;
   }
 
   private static applyRarityEffects(item: Item, rarity: ItemRarity): void {
@@ -558,6 +650,34 @@ export class InventorySystem {
       case 'legendary': return '#ff8000'; // Orange
       default: return '#ffffff';          // White (common)
     }
+  }
+
+  // Helper method to get dungeon level drop rate multiplier from level data
+  private static async getDungeonLevelMultiplier(dungeonLevel: number): Promise<number> {
+    try {
+      const levelData = await DataLoader.loadEncounters(dungeonLevel);
+      return levelData.dropRateMultiplier || 1.0; // Default to 1.0 if not specified
+    } catch (error) {
+      console.warn(`Could not load drop multiplier for dungeon level ${dungeonLevel}, using default 1.0`, error);
+      return 1.0;
+    }
+  }
+
+  // Helper method to calculate party luck multiplier for drop rates
+  private static calculatePartyLuckMultiplier(partyCharacters: Character[]): number {
+    const totalLuck = partyCharacters.reduce((sum, char) => sum + (char.stats?.luck || 10), 0);
+    const luckConfig = GAME_CONFIG.LOOT_SYSTEM.LUCK_SYSTEM;
+    
+    const luckDifference = totalLuck - luckConfig.BASE_PARTY_LUCK;
+    const luckMultiplier = 1.0 + (luckDifference * luckConfig.DROP_RATE_PER_LUCK);
+    
+    // Cap the luck multiplier at the maximum
+    return Math.min(luckConfig.MAX_LUCK_BONUS, Math.max(0.1, luckMultiplier));
+  }
+
+  // Public method to get current loot debug data
+  public static getLootDebugData(): LootDebugData {
+    return { ...this.debugData };
   }
 
 }
