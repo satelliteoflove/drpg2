@@ -155,6 +155,18 @@ export const GAME_CONFIG = {
   },
 
   LOOT_SYSTEM: {
+    // Party luck system configuration
+    LUCK_SYSTEM: {
+      // Drop rate bonus: +1% drop rate per point of total party luck above base
+      DROP_RATE_PER_LUCK: 0.01,
+      BASE_PARTY_LUCK: 60,     // 6 characters * 10 luck = baseline
+      MAX_LUCK_BONUS: 2.0,     // Cap at 2x multiplier from luck
+
+      // Rarity bonus: shifts rarity chances toward better items
+      RARITY_LUCK_FACTOR: 0.002, // +0.2% rare/legendary chance per luck point
+      MAX_RARITY_SHIFT: 0.15,     // Max 15% shift toward better rarities
+    },
+
     RARITY_CHANCES: {
       common: 0.70,              // 70% of drops are common
       uncommon: 0.25,            // 25% are uncommon  
