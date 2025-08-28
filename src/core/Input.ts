@@ -18,9 +18,16 @@ export class InputManager {
     this.keyDownHandler = event => {
       let key = event.key.toLowerCase();
       
+      // Debug logging for ctrl combinations
+      if (event.ctrlKey) {
+        console.log('[INPUT DEBUG] Original key:', event.key);
+        console.log('[INPUT DEBUG] After lowercase:', key);
+      }
+      
       // Handle modifier keys
       if (event.ctrlKey && key !== 'control') {
         key = 'ctrl+' + key;
+        console.log('[INPUT DEBUG] Final key string:', key);
       }
       
       this.keys.add(key);

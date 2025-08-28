@@ -1,13 +1,19 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState, Monster, Item } from '../types/GameTypes';
+import { Character } from '../entities/Character';
 import { CombatSystem } from '../systems/CombatSystem';
 import { StatusPanel } from '../ui/StatusPanel';
+import { DebugOverlay } from '../ui/DebugOverlay';
+import { DataLoader } from '../utils/DataLoader';
+import { InventorySystem } from '../systems/InventorySystem';
+import { KEY_BINDINGS } from '../config/KeyBindings';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
   private sceneManager: SceneManager;
   private combatSystem: CombatSystem;
   private statusPanel!: StatusPanel;
+  private debugOverlay!: DebugOverlay;
   private messageLog: any; // Shared from gameState
   private selectedAction: number = 0;
   private selectedTarget: number = 0;
@@ -31,8 +37,11 @@ export class CombatScene extends Scene {
     }
   }
 
-  public enter(): void {
-    this.initializeCombat();
+  public async enter(): Promise<void> {
+    // Set debug overlay scene name
+    this.debugOverlay?.setCurrentScene('Combat');
+    
+    await this.initializeCombat();
     this.actionState = 'select_action';
     this.selectedAction = 0;
     this.selectedTarget = 0;
@@ -45,15 +54,15 @@ export class CombatScene extends Scene {
     this.gameState.inCombat = false;
   }
 
-  private initializeCombat(): void {
-    const monsters = this.generateMonsters();
+  private async initializeCombat(): Promise<void> {
+    const monsters = await this.generateMonsters();
     const aliveCharacters = this.gameState.party.getAliveCharacters();
 
     // Generate appropriate encounter message based on monsters and context
     this.generateEncounterMessage(monsters);
 
-    this.combatSystem.startCombat(monsters, aliveCharacters, (victory: boolean, rewards) => {
-      this.endCombat(victory, rewards);
+    this.combatSystem.startCombat(monsters, aliveCharacters, this.gameState.currentFloor, (victory: boolean, rewards, escaped) => {
+      this.endCombat(victory, rewards, escaped);
     }, (message: string) => {
       // Callback for monster turn messages
       if (message) {
@@ -62,89 +71,19 @@ export class CombatScene extends Scene {
     });
   }
 
-  private generateMonsters(): Monster[] {
-    const monsterTypes: Monster[] = [
-      {
-        id: 'slime',
-        name: 'Slime',
-        hp: 15,
-        maxHp: 15,
-        ac: 8,
-        attacks: [{ name: 'Slime Attack', damage: '1d4+1', effect: '', chance: 0.8 }],
-        experience: 10,
-        gold: 5,
-        itemDrops: [
-          { itemId: 'potion', chance: 0.08 },
-          { itemId: 'short_sword', chance: 0.01 }
-        ],
-        lootDrops: [
-          { itemId: 'potion', chance: 0.08 },
-          { itemId: 'short_sword', chance: 0.01, minLevel: 1, maxLevel: 3 } // Early game drop
-        ],
-        resistances: [],
-        weaknesses: ['fire'],
-      },
-      {
-        id: 'goblin',
-        name: 'Goblin',
-        hp: 20,
-        maxHp: 20,
-        ac: 6,
-        attacks: [{ name: 'Club', damage: '1d6+1', effect: '', chance: 0.9 }],
-        experience: 15,
-        gold: 8,
-        itemDrops: [
-          { itemId: 'leather_armor', chance: 0.03 },
-          { itemId: 'potion', chance: 0.10 },
-          { itemId: 'scroll_of_sleep', chance: 0.02 }
-        ],
-        lootDrops: [
-          { itemId: 'leather_armor', chance: 0.05, minLevel: 1, maxLevel: 5 },
-          { itemId: 'potion', chance: 0.12 },
-          { itemId: 'scroll_of_sleep', chance: 0.03, minLevel: 2 } // Requires level 2+
-        ],
-        resistances: [],
-        weaknesses: [],
-      },
-      {
-        id: 'orc',
-        name: 'Orc',
-        hp: 35,
-        maxHp: 35,
-        ac: 4,
-        attacks: [
-          { name: 'Sword', damage: '1d8+2', effect: '', chance: 0.8 },
-          { name: 'Bash', damage: '1d6+3', effect: '', chance: 0.6 },
-        ],
-        experience: 25,
-        gold: 15,
-        itemDrops: [
-          { itemId: 'muramasa', chance: 0.001 }, // Very rare cursed sword
-          { itemId: 'shadow_cape', chance: 0.05 },
-          { itemId: 'ring_of_healing', chance: 0.02 },
-          { itemId: 'dios_stone', chance: 0.03 }
-        ],
-        lootDrops: [
-          { itemId: 'muramasa', chance: 0.002, minLevel: 3 }, // Higher chance but level gated
-          { itemId: 'shadow_cape', chance: 0.08, minLevel: 2 },
-          { itemId: 'ring_of_healing', chance: 0.04, minLevel: 1, maxLevel: 8 },
-          { itemId: 'dios_stone', chance: 0.06 }, // Higher base chance with rarity system
-          { itemId: 'staff_of_mogref', chance: 0.01, minLevel: 4 } // High level drop
-        ],
-        resistances: [],
-        weaknesses: [],
-      },
-    ];
+  private async generateMonsters(): Promise<Monster[]> {
+    const dungeonLevel = this.gameState.currentFloor;
+    const partyLevel = this.getAveragePartyLevel();
+    
+    return await DataLoader.generateMonstersForLevel(dungeonLevel, partyLevel);
+  }
 
-    const numMonsters = 1 + Math.floor(Math.random() * 3);
-    const monsters: Monster[] = [];
-
-    for (let i = 0; i < numMonsters; i++) {
-      const template = monsterTypes[Math.floor(Math.random() * monsterTypes.length)];
-      monsters.push({ ...template, name: `${template.name} ${i + 1}` });
-    }
-
-    return monsters;
+  private getAveragePartyLevel(): number {
+    const aliveCharacters = this.gameState.party.getAliveCharacters();
+    if (aliveCharacters.length === 0) return 1;
+    
+    const totalLevel = aliveCharacters.reduce((sum: number, character: any) => sum + character.level, 0);
+    return Math.floor(totalLevel / aliveCharacters.length);
   }
 
   private generateEncounterMessage(monsters: Monster[]): void {
@@ -189,7 +128,7 @@ export class CombatScene extends Scene {
     if (this.gameState.party.isWiped()) {
       this.messageLog.addDeathMessage('Party defeated!');
       this.isProcessingAction = false;
-      this.endCombat(false);
+      this.endCombat(false, undefined, false);
       return;
     }
     
@@ -212,6 +151,10 @@ export class CombatScene extends Scene {
     this.renderCombatArea(ctx);
     this.renderUI(ctx);
     this.renderCombatInfo(ctx);
+    
+    // Update and render debug overlay
+    this.updateDebugData();
+    this.debugOverlay.render(this.gameState);
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
@@ -234,11 +177,16 @@ export class CombatScene extends Scene {
       this.renderUI(ctx);
       this.renderCombatInfo(ctx);
       this.renderCombatControls(ctx);
+      
+      // Update and render debug overlay
+      this.updateDebugData();
+      this.debugOverlay.render(this.gameState);
     });
   }
 
   private initializeUI(canvas: HTMLCanvasElement): void {
     this.statusPanel = new StatusPanel(canvas, 650, 0, 374, 300);
+    this.debugOverlay = new DebugOverlay(canvas);
     
     // Only add combat message, don't create a new log
     this.messageLog.addCombatMessage('Combat begins!');
@@ -371,6 +319,17 @@ export class CombatScene extends Scene {
 
 
   public handleInput(key: string): boolean {
+    // Handle debug scene key combination
+    if (key === KEY_BINDINGS.dungeonActions.debugOverlay) {
+      console.log('[DEBUG] Switching to debug scene from combat');
+      const debugScene = this.sceneManager.getScene('debug') as any;
+      if (debugScene && debugScene.setPreviousScene) {
+        debugScene.setPreviousScene('combat');
+      }
+      this.sceneManager.switchTo('debug');
+      return true;
+    }
+
     // Debug instant kill - Ctrl+K kills all enemies
     if (key === 'ctrl+k') {
       this.executeInstantKill();
@@ -392,20 +351,20 @@ export class CombatScene extends Scene {
   private handleActionSelection(key: string): boolean {
     const actions = this.combatSystem.getPlayerOptions();
 
-    if (key === 'arrowup' || key === 'w') {
+    if (key === KEY_BINDINGS.combat.selectUp) {
       this.selectedAction = Math.max(0, this.selectedAction - 1);
       return true;
-    } else if (key === 'arrowdown' || key === 's') {
+    } else if (key === KEY_BINDINGS.combat.selectDown) {
       this.selectedAction = Math.min(actions.length - 1, this.selectedAction + 1);
       return true;
-    } else if (key === 'enter') {
+    } else if (key === KEY_BINDINGS.combat.confirm) {
       const selectedActionText = actions[this.selectedAction];
 
       if (selectedActionText === 'Attack') {
         this.actionState = 'select_target';
         this.selectedTarget = 0;
       } else {
-        this.executeAction(selectedActionText);
+        this.executeAction(selectedActionText).catch(error => console.error('Action execution error:', error));
       }
       return true;
     }
@@ -419,16 +378,16 @@ export class CombatScene extends Scene {
 
     const aliveMonsters = encounter.monsters.filter(m => m.hp > 0);
 
-    if (key === 'arrowleft' || key === 'a') {
+    if (key === KEY_BINDINGS.combat.selectLeft) {
       this.selectedTarget = Math.max(0, this.selectedTarget - 1);
       return true;
-    } else if (key === 'arrowright' || key === 'd') {
+    } else if (key === KEY_BINDINGS.combat.selectRight) {
       this.selectedTarget = Math.min(aliveMonsters.length - 1, this.selectedTarget + 1);
       return true;
-    } else if (key === 'enter') {
-      this.executeAction('Attack');
+    } else if (key === KEY_BINDINGS.combat.confirm) {
+      this.executeAction('Attack').catch(error => console.error('Action execution error:', error));
       return true;
-    } else if (key === 'escape') {
+    } else if (key === KEY_BINDINGS.combat.cancel) {
       this.actionState = 'select_action';
       return true;
     }
@@ -436,7 +395,7 @@ export class CombatScene extends Scene {
     return false;
   }
 
-  private executeAction(action: string): void {
+  private async executeAction(action: string): Promise<void> {
     const now = Date.now();
     
     // Debounce rapid input - ignore if pressed too quickly
@@ -457,9 +416,9 @@ export class CombatScene extends Scene {
 
     let result = '';
     if (action === 'Attack') {
-      result = this.combatSystem.executePlayerAction(action, this.selectedTarget);
+      result = await this.combatSystem.executePlayerAction(action, this.selectedTarget);
     } else {
-      result = this.combatSystem.executePlayerAction(action);
+      result = await this.combatSystem.executePlayerAction(action);
     }
 
     console.log(`[DEBUG] Action result: "${result}"`);
@@ -508,7 +467,7 @@ export class CombatScene extends Scene {
     this.combatSystem.forceCheckCombatEnd();
   }
 
-  private endCombat(victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }): void {
+  private endCombat(victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }, escaped?: boolean): void {
     try {
       console.log('endCombat called:', { victory, rewards });
       
@@ -536,6 +495,8 @@ export class CombatScene extends Scene {
         }
         
         console.log('Rewards distributed successfully');
+      } else if (escaped) {
+        this.messageLog.addSystemMessage('Successfully ran away!');
       } else {
         this.messageLog.addDeathMessage('Defeated...');
       }
@@ -564,5 +525,28 @@ export class CombatScene extends Scene {
     } else {
       ctx.fillText('Processing turn... please wait', 10, y);
     }
+  }
+
+  private updateDebugData(): void {
+    if (!this.debugOverlay) return;
+
+    // Get current system debug data
+    const lootData = InventorySystem.getLootDebugData();
+    const combatData = CombatSystem.getCombatDebugData();
+    
+    // Calculate party stats
+    const totalLuck = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.stats.luck, 0);
+    const averageLevel = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.level, 0) / this.gameState.party.characters.length;
+    
+    // Update debug overlay with current data
+    this.debugOverlay.updateDebugData({
+      lootSystem: lootData,
+      partyStats: {
+        totalLuck,
+        luckMultiplier: lootData.luckMultiplier,
+        averageLevel
+      },
+      combatSystem: combatData
+    });
   }
 }

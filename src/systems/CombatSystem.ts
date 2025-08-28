@@ -3,26 +3,46 @@ import { Encounter, Monster, Spell, Item } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { InventorySystem } from './InventorySystem';
 
+interface CombatDebugData {
+  currentTurn: string;
+  turnOrder: string[];
+  escapeChances: { name: string; chance: number }[];
+  isActive: boolean;
+}
+
 export class CombatSystem {
   private encounter: Encounter | null = null;
-  private onCombatEnd?: (victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }) => void;
+  private dungeonLevel: number = 1;
+  private party: Character[] = [];
+  private onCombatEnd?: (victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }, escaped?: boolean) => void;
   private onMessage?: (message: string) => void;
   private isProcessingTurn: boolean = false; // Prevent simultaneous turn processing
+  
+  // Debug data
+  private static debugData: CombatDebugData = {
+    currentTurn: '',
+    turnOrder: [],
+    escapeChances: [],
+    isActive: false
+  };
 
   public startCombat(
     monsters: Monster[],
     party: Character[],
-    onCombatEnd: (victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }) => void,
+    dungeonLevel: number,
+    onCombatEnd: (victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }, escaped?: boolean) => void,
     onMessage?: (message: string) => void
   ): void {
     this.onCombatEnd = onCombatEnd;
     this.onMessage = onMessage;
+    this.dungeonLevel = dungeonLevel;
+    this.party = party;
     this.resetTurnState(); // Ensure clean state
 
     this.encounter = {
       monsters: monsters.map(m => ({ ...m })),
       surprise: Math.random() < GAME_CONFIG.ENCOUNTER.SURPRISE_CHANCE,
-      canRun: true,
+      canRun: true, // Keep for compatibility, no longer used
       turnOrder: this.calculateTurnOrder(party, monsters),
       currentTurn: 0,
     };
@@ -30,6 +50,9 @@ export class CombatSystem {
     if (this.encounter.surprise) {
       this.encounter.turnOrder = this.encounter.turnOrder.filter(unit => 'class' in unit);
     }
+
+    // Update debug data
+    this.updateCombatDebugData();
   }
 
   private resetTurnState(): void {
@@ -62,20 +85,16 @@ export class CombatSystem {
     const currentUnit = this.getCurrentUnit();
     if (!currentUnit || !('class' in currentUnit)) return [];
 
-    const options = ['Attack', 'Defend', 'Use Item'];
+    const options = ['Attack', 'Defend', 'Use Item', 'Escape'];
 
     if (currentUnit.spells.length > 0 && currentUnit.mp > 0) {
       options.push('Cast Spell');
     }
 
-    if (this.encounter?.canRun) {
-      options.push('Run');
-    }
-
     return options;
   }
 
-  public executePlayerAction(action: string, targetIndex?: number, spellId?: string): string {
+  public async executePlayerAction(action: string, targetIndex?: number, spellId?: string): Promise<string> {
     const currentUnit = this.getCurrentUnit();
     if (!currentUnit || !('class' in currentUnit) || !this.encounter) {
       return 'Invalid action';
@@ -104,20 +123,20 @@ export class CombatSystem {
       case 'Use Item':
         result = `${currentUnit.name} uses an item!`;
         break;
-      case 'Run':
-        if (this.attemptRun()) {
+      case 'Escape':
+        if (this.attemptEscape(currentUnit)) {
           this.isProcessingTurn = false;
-          this.endCombat(false);
-          return 'Successfully ran away!';
+          this.endCombat(false, undefined, true); // Pass escaped = true
+          return `${currentUnit.name} successfully leads the party to safety!`;
         } else {
-          result = 'Could not escape!';
+          result = `${currentUnit.name} could not escape!`;
         }
         break;
       default:
         result = 'Invalid action';
     }
 
-    this.nextTurn();
+    await this.nextTurn();
     
     // Additional safety: if we end up back at a player turn immediately, reset processing flag
     if (this.canPlayerAct()) {
@@ -277,20 +296,25 @@ export class CombatSystem {
     return total + (bonus ? parseInt(bonus) : 0);
   }
 
-  private attemptRun(): boolean {
+  private attemptEscape(character: Character): boolean {
     if (!this.encounter) return false;
 
-    const escapeChance = 0.5;
+    // Base escape chance is 50%
+    let escapeChance = 0.5;
+    
+    // Character agility affects escape chance
+    // Higher agility = better escape chance
+    const agilityBonus = (character.stats.agility - 10) * 0.02; // +/-2% per point above/below 10
+    escapeChance = Math.max(0.1, Math.min(0.9, escapeChance + agilityBonus));
+    
     const success = Math.random() < escapeChance;
-
-    if (!success) {
-      this.encounter.canRun = false;
-    }
-
+    
+    console.log(`${character.name} attempts escape: ${Math.round(escapeChance * 100)}% chance, ${success ? 'SUCCESS' : 'FAILED'}`);
+    
     return success;
   }
 
-  private nextTurn(): void {
+  private async nextTurn(): Promise<void> {
     if (!this.encounter) {
       this.resetTurnState();
       return;
@@ -303,7 +327,7 @@ export class CombatSystem {
     this.cleanupDeadUnits();
 
     // Check if combat should end
-    if (this.checkCombatEnd()) {
+    if (await this.checkCombatEnd()) {
       this.resetTurnState();
       return;
     }
@@ -319,10 +343,13 @@ export class CombatSystem {
       }
       
       // Continue to next turn immediately
-      this.nextTurn();
+      await this.nextTurn();
     } else {
       // Player turn - reset state to allow player input
       this.isProcessingTurn = false;
+      
+      // Update debug data for current turn
+      this.updateCombatDebugData();
     }
   }
 
@@ -342,7 +369,7 @@ export class CombatSystem {
     }
   }
 
-  private checkCombatEnd(): boolean {
+  private async checkCombatEnd(): Promise<boolean> {
     if (!this.encounter) return true;
 
     const alivePlayers = this.encounter.turnOrder.filter(unit => 'class' in unit && !unit.isDead);
@@ -368,7 +395,12 @@ export class CombatSystem {
       }, 0);
 
       const partyLevel = this.getAveragePartyLevel();
-      const droppedItems = InventorySystem.generateMonsterLoot(this.encounter.monsters, partyLevel);
+      const droppedItems = await InventorySystem.generateMonsterLoot(
+        this.encounter.monsters, 
+        partyLevel, 
+        this.dungeonLevel, 
+        this.party
+      );
       
       console.log(`Total rewards: ${totalExp} experience, ${totalGold} gold, ${droppedItems.length} items`);
       this.endCombat(true, { experience: totalExp, gold: totalGold, items: droppedItems });
@@ -388,12 +420,20 @@ export class CombatSystem {
     return Math.floor(totalLevel / partyMembers.length);
   }
 
-  private endCombat(victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }): void {
+  private endCombat(victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }, escaped?: boolean): void {
     if (this.onCombatEnd) {
-      this.onCombatEnd(victory, rewards);
+      this.onCombatEnd(victory, rewards, escaped);
     }
     this.encounter = null;
     this.isProcessingTurn = false;
+
+    // Update debug data to reflect combat ended
+    CombatSystem.debugData = {
+      currentTurn: '',
+      turnOrder: [],
+      escapeChances: [],
+      isActive: false
+    };
   }
 
   public getEncounter(): Encounter | null {
@@ -411,7 +451,45 @@ export class CombatSystem {
     return `Players: ${alivePlayers} | Monsters: ${aliveMonsters.length}`;
   }
 
-  public forceCheckCombatEnd(): void {
-    this.checkCombatEnd();
+  public async forceCheckCombatEnd(): Promise<void> {
+    await this.checkCombatEnd();
+  }
+
+  private updateCombatDebugData(): void {
+    const currentUnit = this.getCurrentUnit();
+    const currentTurnName = currentUnit ? 
+      ('class' in currentUnit ? currentUnit.name : currentUnit.name) : 
+      'No active unit';
+
+    const turnOrderNames = this.encounter?.turnOrder.map(unit => 
+      'class' in unit ? `${unit.name} (${unit.class})` : unit.name
+    ) || [];
+
+    CombatSystem.debugData = {
+      currentTurn: currentTurnName,
+      turnOrder: turnOrderNames,
+      escapeChances: this.calculateEscapeChances(),
+      isActive: this.encounter !== null
+    };
+  }
+
+  private calculateEscapeChances(): { name: string; chance: number }[] {
+    if (!this.encounter) return [];
+
+    const partyMembers = this.encounter.turnOrder.filter(unit => 'class' in unit) as Character[];
+    return partyMembers.map(char => {
+      let escapeChance = 0.5;
+      const agilityBonus = (char.stats.agility - 10) * 0.02;
+      escapeChance = Math.max(0.1, Math.min(0.9, escapeChance + agilityBonus));
+      
+      return {
+        name: char.name,
+        chance: escapeChance
+      };
+    });
+  }
+
+  public static getCombatDebugData(): CombatDebugData {
+    return { ...CombatSystem.debugData };
   }
 }
