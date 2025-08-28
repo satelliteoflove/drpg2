@@ -1,0 +1,37 @@
+{
+  "movement": {
+    "up": "arrowup",
+    "down": "arrowdown", 
+    "left": "arrowleft",
+    "right": "arrowright"
+  },
+  "dungeonActions": {
+    "inventory": "tab",
+    "rest": "r",
+    "map": "m",
+    "toggleCombat": "c",
+    "debugOverlay": "ctrl+d"
+  },
+  "combat": {
+    "selectUp": "arrowup",
+    "selectDown": "arrowdown",
+    "selectLeft": "arrowleft", 
+    "selectRight": "arrowright",
+    "confirm": "enter",
+    "cancel": "escape"
+  },
+  "ui": {
+    "scrollUp": "pageup",
+    "scrollDown": "pagedown",
+    "close": "escape"
+  },
+  "inventory": {
+    "moveUp": "arrowup",
+    "moveDown": "arrowdown",
+    "select": "enter",
+    "drop": "d",
+    "identify": "i",
+    "use": "u",
+    "close": "escape"
+  }
+}
