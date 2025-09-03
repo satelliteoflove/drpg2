@@ -37,11 +37,11 @@ export class CombatScene extends Scene {
     }
   }
 
-  public async enter(): Promise<void> {
+  public enter(): void {
     // Set debug overlay scene name
     this.debugOverlay?.setCurrentScene('Combat');
     
-    await this.initializeCombat();
+    this.initializeCombat();
     this.actionState = 'select_action';
     this.selectedAction = 0;
     this.selectedTarget = 0;
@@ -54,8 +54,8 @@ export class CombatScene extends Scene {
     this.gameState.inCombat = false;
   }
 
-  private async initializeCombat(): Promise<void> {
-    const monsters = await this.generateMonsters();
+  private initializeCombat(): void {
+    const monsters = this.generateMonsters();
     const aliveCharacters = this.gameState.party.getAliveCharacters();
 
     // Generate appropriate encounter message based on monsters and context
@@ -71,11 +71,11 @@ export class CombatScene extends Scene {
     });
   }
 
-  private async generateMonsters(): Promise<Monster[]> {
+  private generateMonsters(): Monster[] {
     const dungeonLevel = this.gameState.currentFloor;
     const partyLevel = this.getAveragePartyLevel();
     
-    return await DataLoader.generateMonstersForLevel(dungeonLevel, partyLevel);
+    return DataLoader.generateMonstersForLevel(dungeonLevel, partyLevel);
   }
 
   private getAveragePartyLevel(): number {
@@ -364,7 +364,7 @@ export class CombatScene extends Scene {
         this.actionState = 'select_target';
         this.selectedTarget = 0;
       } else {
-        this.executeAction(selectedActionText).catch(error => console.error('Action execution error:', error));
+        this.executeAction(selectedActionText);
       }
       return true;
     }
@@ -385,7 +385,7 @@ export class CombatScene extends Scene {
       this.selectedTarget = Math.min(aliveMonsters.length - 1, this.selectedTarget + 1);
       return true;
     } else if (key === KEY_BINDINGS.combat.confirm) {
-      this.executeAction('Attack').catch(error => console.error('Action execution error:', error));
+      this.executeAction('Attack');
       return true;
     } else if (key === KEY_BINDINGS.combat.cancel) {
       this.actionState = 'select_action';
@@ -395,7 +395,7 @@ export class CombatScene extends Scene {
     return false;
   }
 
-  private async executeAction(action: string): Promise<void> {
+  private executeAction(action: string): void {
     const now = Date.now();
     
     // Debounce rapid input - ignore if pressed too quickly
@@ -416,9 +416,9 @@ export class CombatScene extends Scene {
 
     let result = '';
     if (action === 'Attack') {
-      result = await this.combatSystem.executePlayerAction(action, this.selectedTarget);
+      result = this.combatSystem.executePlayerAction(action, this.selectedTarget);
     } else {
-      result = await this.combatSystem.executePlayerAction(action);
+      result = this.combatSystem.executePlayerAction(action);
     }
 
     console.log(`[DEBUG] Action result: "${result}"`);

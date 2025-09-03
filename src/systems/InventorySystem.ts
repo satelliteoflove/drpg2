@@ -501,16 +501,16 @@ export class InventorySystem {
   }
 
   // New loot system with rarity and level scaling
-  public static async generateMonsterLoot(
+  public static generateMonsterLoot(
     monsters: Monster[], 
     partyLevel: number, 
     dungeonLevel: number, 
     partyCharacters: Character[]
-  ): Promise<Item[]> {
+  ): Item[] {
     const loot: Item[] = [];
     
     // Calculate loot multipliers
-    const dungeonMultiplier = await this.getDungeonLevelMultiplier(dungeonLevel);
+    const dungeonMultiplier = this.getDungeonLevelMultiplier(dungeonLevel);
     const luckMultiplier = this.calculatePartyLuckMultiplier(partyCharacters);
     const totalDropRateMultiplier = dungeonMultiplier * luckMultiplier;
 
@@ -536,7 +536,7 @@ export class InventorySystem {
 
           // Roll for drop chance
           if (Math.random() < modifiedChance) {
-            const item = await this.createDroppedItem(drop.itemId, partyCharacters);
+            const item = this.createDroppedItem(drop.itemId, partyCharacters);
             if (item) {
               loot.push(item);
             }
@@ -550,7 +550,7 @@ export class InventorySystem {
 
           // Roll for drop chance
           if (Math.random() < modifiedChance) {
-            const item = await this.createDroppedItem(drop.itemId, partyCharacters);
+            const item = this.createDroppedItem(drop.itemId, partyCharacters);
             if (item) {
               loot.push(item);
             }
@@ -562,8 +562,8 @@ export class InventorySystem {
     return loot;
   }
 
-  private static async createDroppedItem(itemId: string, partyCharacters?: Character[]): Promise<Item | null> {
-    const baseItem = await DataLoader.createItemInstance(itemId);
+  private static createDroppedItem(itemId: string, partyCharacters?: Character[]): Item | null {
+    const baseItem = DataLoader.createItemInstance(itemId);
     if (!baseItem) return null;
 
     // Assign random rarity with luck bonus
@@ -665,9 +665,9 @@ export class InventorySystem {
   }
 
   // Helper method to get dungeon level drop rate multiplier from level data
-  private static async getDungeonLevelMultiplier(dungeonLevel: number): Promise<number> {
+  private static getDungeonLevelMultiplier(dungeonLevel: number): number {
     try {
-      const levelData = await DataLoader.loadEncounters(dungeonLevel);
+      const levelData = DataLoader.loadEncounters(dungeonLevel);
       return levelData.dropRateMultiplier || 1.0; // Default to 1.0 if not specified
     } catch (error) {
       console.warn(`Could not load drop multiplier for dungeon level ${dungeonLevel}, using default 1.0`, error);

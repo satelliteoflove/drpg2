@@ -1,240 +1,151 @@
-import { Monster, Item } from '../types/GameTypes';
-
-// Cache for loaded data to avoid repeated JSON parsing
-const dataCache = {
-  monsters: null as Record<string, any> | null,
-  items: null as Record<string, any> | null,
-  encounters: {} as Record<number, any>
-};
+import { Item, ItemEffect, Monster } from '../types/GameTypes';
+import { monstersData } from '../data/monsters/monstersData';
+import { itemsData } from '../data/items/itemsData';
+import { encountersData } from '../data/encounters/encountersData';
 
 export class DataLoader {
-  // Load monster templates
-  public static async loadMonsters(): Promise<Record<string, any>> {
-    if (dataCache.monsters) {
-      return dataCache.monsters;
-    }
+  // Static data is loaded at module load time
+  private static monsters = monstersData;
+  private static items = itemsData;
+  private static encounters = encountersData;
 
-    try {
-      const response = await fetch('/src/data/monsters/monsters.json');
-      if (!response.ok) {
-        throw new Error(`Failed to load monsters: ${response.statusText}`);
-      }
-      
-      dataCache.monsters = await response.json();
-      return dataCache.monsters!;
-    } catch (error) {
-      console.error('Error loading monsters:', error);
-      // Return fallback data for development
-      return this.getFallbackMonsters();
-    }
+  public static loadMonsters(): Record<string, any> {
+    return this.monsters;
   }
 
-  // Load item templates  
-  public static async loadItems(): Promise<Record<string, any>> {
-    if (dataCache.items) {
-      return dataCache.items;
-    }
-
-    try {
-      const response = await fetch('/src/data/items/items.json');
-      if (!response.ok) {
-        throw new Error(`Failed to load items: ${response.statusText}`);
-      }
-      
-      dataCache.items = await response.json();
-      return dataCache.items!;
-    } catch (error) {
-      console.error('Error loading items:', error);
-      // Return fallback data for development
-      return this.getFallbackItems();
-    }
+  public static loadItems(): Record<string, any> {
+    return this.items;
   }
 
-  // Load encounter table for specific level
-  public static async loadEncounters(level: number): Promise<any> {
-    if (dataCache.encounters[level]) {
-      return dataCache.encounters[level];
-    }
-
-    try {
-      const response = await fetch(`/src/data/encounters/level${level}.json`);
-      if (!response.ok) {
-        throw new Error(`Failed to load encounters for level ${level}: ${response.statusText}`);
-      }
-      
-      const encounters = await response.json();
-      dataCache.encounters[level] = encounters;
-      return encounters;
-    } catch (error) {
-      console.error(`Error loading encounters for level ${level}:`, error);
-      // Return fallback data for development
-      return this.getFallbackEncounters(level);
-    }
-  }
-
-  // Create a scaled monster instance from template
-  public static createMonsterInstance(template: any, levelRange: [number, number], instanceNumber: number = 1): Monster {
-    const [minLevel, maxLevel] = levelRange;
-    const level = minLevel + Math.floor(Math.random() * (maxLevel - minLevel + 1));
-    const levelMultiplier = 1 + (level - 1) * 0.3; // 30% increase per level
-
-    return {
-      id: template.id,
-      name: instanceNumber > 1 ? `${template.name} ${instanceNumber}` : template.name,
-      hp: Math.floor(template.baseHp * levelMultiplier),
-      maxHp: Math.floor(template.baseHp * levelMultiplier),
-      ac: Math.max(1, template.baseAc - Math.floor(level / 2)), // AC improves with level
-      attacks: template.attacks.map((attack: any) => ({ ...attack })),
-      experience: Math.floor(template.baseExperience * levelMultiplier),
-      gold: Math.floor(template.baseGold * levelMultiplier),
-      itemDrops: template.itemDrops || [],
-      lootDrops: template.lootDrops || [],
-      resistances: [...template.resistances],
-      weaknesses: [...template.weaknesses],
-      sprite: template.sprite
-    };
-  }
-
-  // Create item instance from template
-  public static async createItemInstance(itemId: string): Promise<Item | null> {
-    const itemTemplates = await this.loadItems();
-    const template = itemTemplates[itemId];
+  public static loadEncounters(level: number): any {
+    const levelKey = `level${level}` as keyof typeof encountersData;
     
-    if (!template) {
-      console.warn(`Item template not found: ${itemId}`);
+    if (!(levelKey in this.encounters)) {
+      console.warn(`No encounter data for level ${level}, using level 1`);
+      return this.encounters.level1;
+    }
+    
+    return this.encounters[levelKey];
+  }
+
+  public static createItemInstance(itemId: string): Item | null {
+    const itemTemplate = this.items[itemId as keyof typeof itemsData];
+    
+    if (!itemTemplate) {
+      console.error(`Item not found: ${itemId}`);
       return null;
     }
 
-    return {
-      id: template.id + '_' + Date.now(),
-      name: template.name,
-      unidentifiedName: template.unidentifiedName,
-      description: template.description,
-      type: template.type,
-      value: template.value,
-      weight: template.weight,
-      identified: template.identified !== undefined ? template.identified : false,
-      cursed: template.cursed || false,
-      blessed: template.blessed || false,
-      enchantment: template.enchantment || 0,
+    // Create a deep copy of the item
+    const item: Item = {
+      id: itemTemplate.id,
+      name: itemTemplate.name,
+      unidentifiedName: itemTemplate.unidentifiedName || '?Item',
+      type: itemTemplate.type as Item['type'],
+      value: itemTemplate.value,
+      weight: itemTemplate.weight,
+      identified: itemTemplate.identified || false,
+      cursed: (itemTemplate as any).cursed || false,
+      blessed: (itemTemplate as any).blessed || false,
+      enchantment: (itemTemplate as any).enchantment || 0,
       equipped: false,
       quantity: 1,
-      effects: template.effects || [],
-      classRestrictions: template.classRestrictions,
-      alignmentRestrictions: template.alignmentRestrictions,
-      invokable: template.invokable,
-      spellId: template.spellId,
-      charges: template.charges,
-      maxCharges: template.maxCharges,
-      rarity: template.rarity
+      effects: (itemTemplate.effects as ItemEffect[]) || [],
+      classRestrictions: itemTemplate.classRestrictions || [],
+      alignmentRestrictions: (itemTemplate as any).alignmentRestrictions || [],
+      rarity: 'common' as const,
+      charges: (itemTemplate as any).charges,
+      maxCharges: (itemTemplate as any).maxCharges,
+      invokable: (itemTemplate as any).invokable,
+      spellId: (itemTemplate as any).spellId,
+      description: (itemTemplate as any).description
     };
+
+    return item;
   }
 
-  // Generate monsters for a dungeon level
-  public static async generateMonstersForLevel(dungeonLevel: number, _partyLevel: number): Promise<Monster[]> {
-    const [monsterTemplates, encounters] = await Promise.all([
-      this.loadMonsters(),
-      this.loadEncounters(dungeonLevel)
-    ]);
+  public static generateMonstersForLevel(dungeonLevel: number, _partyLevel: number): Monster[] {
+    const monsterTemplates = this.monsters;
+    const encounters = this.loadEncounters(dungeonLevel);
 
-    // Create weighted list of possible monsters
-    const weightedMonsters: Array<{ template: any, levelRange: [number, number] }> = [];
-    
-    encounters.encounters.forEach((encounter: any) => {
-      const template = monsterTemplates[encounter.monsterId];
-      if (template) {
-        // Add monster multiple times based on weight
-        for (let i = 0; i < encounter.weight; i++) {
-          weightedMonsters.push({
-            template,
-            levelRange: encounter.levelRange
-          });
-        }
-      }
-    });
-
-    if (weightedMonsters.length === 0) {
-      console.warn(`No monsters found for dungeon level ${dungeonLevel}, using fallback`);
-      return this.getFallbackMonstersForCombat();
+    if (!encounters || !encounters.encounters) {
+      console.error(`No encounters defined for level ${dungeonLevel}`);
+      return [];
     }
 
-    // Generate 1-3 monsters for this encounter
-    const numMonsters = 1 + Math.floor(Math.random() * 3);
+    // Calculate number of monsters
+    const numMonsters = 1 + Math.floor(Math.random() * 4);
     const monsters: Monster[] = [];
 
     for (let i = 0; i < numMonsters; i++) {
-      const randomIndex = Math.floor(Math.random() * weightedMonsters.length);
-      const { template, levelRange } = weightedMonsters[randomIndex];
-      const monster = this.createMonsterInstance(template, levelRange, i + 1);
+      // Select a monster type based on weights
+      const totalWeight = encounters.encounters.reduce((sum: number, enc: any) => sum + enc.weight, 0);
+      let roll = Math.random() * totalWeight;
+      let selectedEncounter = encounters.encounters[0];
+
+      for (const encounter of encounters.encounters) {
+        roll -= encounter.weight;
+        if (roll <= 0) {
+          selectedEncounter = encounter;
+          break;
+        }
+      }
+
+      const monsterTemplate = monsterTemplates[selectedEncounter.monsterId as keyof typeof monstersData];
+      if (!monsterTemplate) {
+        console.error(`Monster template not found: ${selectedEncounter.monsterId}`);
+        continue;
+      }
+
+      // Calculate monster level within the encounter's range
+      const [minLevel, maxLevel] = selectedEncounter.levelRange;
+      const monsterLevel = minLevel + Math.floor(Math.random() * (maxLevel - minLevel + 1));
+
+      // Scale HP based on level
+      const hpMultiplier = 1 + (monsterLevel - 1) * 0.2;
+      const scaledHp = Math.floor(monsterTemplate.baseHp * hpMultiplier);
+
+      const monster: Monster = {
+        id: `${monsterTemplate.id}_${i}`,
+        name: monsterTemplate.name,
+        hp: scaledHp,
+        maxHp: scaledHp,
+        ac: monsterTemplate.baseAc - Math.floor(monsterLevel / 2),
+        attacks: [],
+        experience: 0,
+        gold: 0,
+        itemDrops: [],
+        lootDrops: [],
+        resistances: [],
+        weaknesses: []
+      };
+
+      // Add attacks
+      for (const attack of monsterTemplate.attacks) {
+        const scaledDamage = attack.damage.replace(/d(\d+)/, (_match: string, p1: string) => {
+          const baseDie = parseInt(p1);
+          const scaledDie = baseDie + Math.floor(monsterLevel / 3);
+          return `d${scaledDie}`;
+        });
+
+        monster.attacks.push({
+          name: attack.name,
+          damage: scaledDamage,
+          effect: attack.effect,
+          chance: attack.chance
+        });
+      }
+
+      monster.experience = Math.floor(monsterTemplate.baseExperience * (1 + (monsterLevel - 1) * 0.3));
+      monster.gold = Math.floor(monsterTemplate.baseGold * (1 + (monsterLevel - 1) * 0.25));
+      monster.itemDrops = monsterTemplate.itemDrops || [];
+      monster.lootDrops = monsterTemplate.lootDrops || [];
+      monster.resistances = monsterTemplate.resistances || [];
+      monster.weaknesses = monsterTemplate.weaknesses || [];
+
       monsters.push(monster);
     }
 
     return monsters;
-  }
-
-  // Fallback data for development/testing
-  private static getFallbackMonsters(): Record<string, any> {
-    return {
-      slime: {
-        id: "slime",
-        name: "Slime",
-        baseHp: 15,
-        baseAc: 8,
-        attacks: [{ name: "Slime Attack", damage: "1d4+1", effect: "", chance: 0.8 }],
-        baseExperience: 10,
-        baseGold: 5,
-        itemDrops: [{ itemId: "potion", chance: 0.08 }],
-        lootDrops: [{ itemId: "potion", chance: 0.08 }],
-        resistances: [],
-        weaknesses: ["fire"]
-      }
-    };
-  }
-
-  private static getFallbackItems(): Record<string, any> {
-    return {
-      potion: {
-        id: "potion",
-        name: "Potion",
-        unidentifiedName: "?Potion",
-        type: "consumable",
-        value: 50,
-        weight: 0.5,
-        effects: [{ type: "heal", value: 5 }],
-        classRestrictions: [],
-        identified: false,
-        charges: 1,
-        maxCharges: 1,
-        description: "A basic healing potion"
-      }
-    };
-  }
-
-  private static getFallbackEncounters(level: number): any {
-    return {
-      level,
-      encounters: [
-        { monsterId: "slime", levelRange: [1, 2], weight: 100 }
-      ]
-    };
-  }
-
-  private static getFallbackMonstersForCombat(): Monster[] {
-    return [
-      {
-        id: 'slime',
-        name: 'Slime',
-        hp: 15,
-        maxHp: 15,
-        ac: 8,
-        attacks: [{ name: 'Slime Attack', damage: '1d4+1', effect: '', chance: 0.8 }],
-        experience: 10,
-        gold: 5,
-        itemDrops: [{ itemId: 'potion', chance: 0.08 }],
-        lootDrops: [{ itemId: 'potion', chance: 0.08 }],
-        resistances: [],
-        weaknesses: ['fire'],
-      }
-    ];
   }
 }

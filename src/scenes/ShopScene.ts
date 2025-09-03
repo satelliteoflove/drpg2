@@ -2,6 +2,7 @@ import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState, Item } from '../types/GameTypes';
 import { ShopSystem, ShopInventory } from '../systems/ShopSystem';
 import { Character } from '../entities/Character';
+import { RenderingUtils } from '../utils/RenderingUtils';
 
 type ShopState = 'main_menu' | 'buying_category' | 'buying_items' | 'buying_character_select' | 'selling_character_select' | 'selling_items' | 'selling_confirmation';
 
@@ -53,9 +54,24 @@ export class ShopScene extends Scene {
   public update(_deltaTime: number): void {}
 
   public render(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    this.renderShopContent(ctx);
+  }
 
+  public renderLayered(renderContext: SceneRenderContext): void {
+    const { renderManager } = renderContext;
+
+    renderManager.renderBackground((ctx) => {
+      RenderingUtils.clearCanvas(ctx);
+    });
+
+    renderManager.renderUI((ctx) => {
+      this.renderShopContent(ctx);
+    });
+  }
+
+  private renderShopContent(ctx: CanvasRenderingContext2D): void {
+    RenderingUtils.clearCanvas(ctx);
+    
     switch (this.currentState) {
       case 'main_menu':
         this.renderMainMenu(ctx);
@@ -81,41 +97,6 @@ export class ShopScene extends Scene {
     }
   }
 
-  public renderLayered(renderContext: SceneRenderContext): void {
-    const { renderManager } = renderContext;
-
-    renderManager.renderBackground((ctx) => {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    });
-
-    renderManager.renderUI((ctx) => {
-      switch (this.currentState) {
-        case 'main_menu':
-          this.renderMainMenu(ctx);
-          break;
-        case 'buying_category':
-          this.renderCategorySelection(ctx);
-          break;
-        case 'buying_items':
-          this.renderItemList(ctx);
-          break;
-        case 'buying_character_select':
-          this.renderCharacterSelection(ctx);
-          break;
-        case 'selling_character_select':
-          this.renderSellingCharacterSelection(ctx);
-          break;
-        case 'selling_items':
-          this.renderSellingItemList(ctx);
-          break;
-        case 'selling_confirmation':
-          this.renderSellingConfirmation(ctx);
-          break;
-      }
-    });
-  }
-
   public handleInput(key: string): boolean {
     switch (this.currentState) {
       case 'main_menu':
@@ -138,61 +119,82 @@ export class ShopScene extends Scene {
   }
 
   private renderMainMenu(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#fff';
-    ctx.font = '24px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('BOLTAC\'S TRADING POST', ctx.canvas.width / 2, 60);
+    RenderingUtils.renderCenteredText(ctx, 'BOLTAC\'S TRADING POST', 60, {
+      color: RenderingUtils.COLORS.WHITE,
+      font: RenderingUtils.FONTS.TITLE_LARGE
+    });
 
-    ctx.font = '14px monospace';
-    ctx.fillText('"Welcome, adventurers! What can I do for you today?"', ctx.canvas.width / 2, 90);
+    RenderingUtils.renderCenteredText(ctx, '"Welcome, adventurers! What can I do for you today?"', 90, {
+      color: RenderingUtils.COLORS.WHITE,
+      font: RenderingUtils.FONTS.SMALL
+    });
 
     // Show party gold
     const totalGold = this.gameState.party.getTotalGold();
-    ctx.font = '16px monospace';
-    ctx.fillStyle = '#ffaa00';
-    ctx.fillText(`Party Gold: ${totalGold}`, ctx.canvas.width / 2, 120);
-
-    const startY = 170;
-    const lineHeight = 40;
-
-    this.menuOptions.forEach((option, index) => {
-      const y = startY + index * lineHeight;
-
-      if (index === this.selectedOption) {
-        ctx.fillStyle = '#ffaa00';
-        ctx.fillText('> ' + option + ' <', ctx.canvas.width / 2, y);
-      } else {
-        ctx.fillStyle = '#fff';
-        ctx.fillText(option, ctx.canvas.width / 2, y);
-      }
+    RenderingUtils.renderCenteredText(ctx, `Party Gold: ${totalGold}`, 120, {
+      color: RenderingUtils.COLORS.GOLD,
+      font: RenderingUtils.FONTS.NORMAL
     });
 
-    ctx.fillStyle = '#aaa';
-    ctx.font = '14px monospace';
-    ctx.textAlign = 'left';
+    RenderingUtils.renderMenu(
+      ctx,
+      this.menuOptions,
+      this.selectedOption,
+      0,
+      170,
+      40,
+      { centered: true }
+    );
+
+    // Detail text setup
 
     if (this.selectedOption === 0) {
-      ctx.fillText('Purchase weapons, armor, and supplies', 50, 400);
-      ctx.fillText(`Available items: ${this.shopInventory.items.length}`, 50, 420);
+      RenderingUtils.renderText(ctx, 'Purchase weapons, armor, and supplies', 50, 400, {
+        color: RenderingUtils.COLORS.GRAY,
+        font: RenderingUtils.FONTS.SMALL
+      });
+      RenderingUtils.renderText(ctx, `Available items: ${this.shopInventory.items.length}`, 50, 420, {
+        color: RenderingUtils.COLORS.GRAY,
+        font: RenderingUtils.FONTS.SMALL
+      });
     } else if (this.selectedOption === 1) {
-      ctx.fillText('Sell your unwanted items for gold', 50, 400);
+      RenderingUtils.renderText(ctx, 'Sell your unwanted items for gold', 50, 400, {
+        color: RenderingUtils.COLORS.GRAY,
+        font: RenderingUtils.FONTS.SMALL
+      });
     } else if (this.selectedOption === 2) {
-      ctx.fillText('Identify unknown magical items', 50, 400);
-      ctx.fillText('Cost: 50% of item value', 50, 420);
+      RenderingUtils.renderText(ctx, 'Identify unknown magical items', 50, 400, {
+        color: RenderingUtils.COLORS.GRAY,
+        font: RenderingUtils.FONTS.SMALL
+      });
+      RenderingUtils.renderText(ctx, 'Cost: 50% of item value', 50, 420, {
+        color: RenderingUtils.COLORS.GRAY,
+        font: RenderingUtils.FONTS.SMALL
+      });
     } else if (this.selectedOption === 3) {
-      ctx.fillText('Remove curses from cursed items', 50, 400);
-      ctx.fillText('Cost: 100% of item value', 50, 420);
+      RenderingUtils.renderText(ctx, 'Remove curses from cursed items', 50, 400, {
+        color: RenderingUtils.COLORS.GRAY,
+        font: RenderingUtils.FONTS.SMALL
+      });
+      RenderingUtils.renderText(ctx, 'Cost: 100% of item value', 50, 420, {
+        color: RenderingUtils.COLORS.GRAY,
+        font: RenderingUtils.FONTS.SMALL
+      });
     } else {
-      ctx.fillText('Return to the town', 50, 400);
+      RenderingUtils.renderText(ctx, 'Return to the town', 50, 400, {
+        color: RenderingUtils.COLORS.GRAY,
+        font: RenderingUtils.FONTS.SMALL
+      });
     }
 
-    ctx.fillStyle = '#666';
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(
+    RenderingUtils.renderCenteredText(
+      ctx,
       'UP/DOWN to select, ENTER to choose, ESC to leave',
-      ctx.canvas.width / 2,
-      ctx.canvas.height - 20
+      ctx.canvas.height - 20,
+      {
+        color: RenderingUtils.COLORS.MUTED,
+        font: RenderingUtils.FONTS.TINY
+      }
     );
   }
 

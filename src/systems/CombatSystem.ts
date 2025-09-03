@@ -94,7 +94,7 @@ export class CombatSystem {
     return options;
   }
 
-  public async executePlayerAction(action: string, targetIndex?: number, spellId?: string): Promise<string> {
+  public executePlayerAction(action: string, targetIndex?: number, spellId?: string): string {
     const currentUnit = this.getCurrentUnit();
     if (!currentUnit || !('class' in currentUnit) || !this.encounter) {
       return 'Invalid action';
@@ -136,7 +136,7 @@ export class CombatSystem {
         result = 'Invalid action';
     }
 
-    await this.nextTurn();
+    this.nextTurn();
     
     // Additional safety: if we end up back at a player turn immediately, reset processing flag
     if (this.canPlayerAct()) {
@@ -314,7 +314,7 @@ export class CombatSystem {
     return success;
   }
 
-  private async nextTurn(): Promise<void> {
+  private nextTurn(): void {
     if (!this.encounter) {
       this.resetTurnState();
       return;
@@ -327,7 +327,7 @@ export class CombatSystem {
     this.cleanupDeadUnits();
 
     // Check if combat should end
-    if (await this.checkCombatEnd()) {
+    if (this.checkCombatEnd()) {
       this.resetTurnState();
       return;
     }
@@ -343,7 +343,7 @@ export class CombatSystem {
       }
       
       // Continue to next turn immediately
-      await this.nextTurn();
+      this.nextTurn();
     } else {
       // Player turn - reset state to allow player input
       this.isProcessingTurn = false;
@@ -369,7 +369,7 @@ export class CombatSystem {
     }
   }
 
-  private async checkCombatEnd(): Promise<boolean> {
+  private checkCombatEnd(): boolean {
     if (!this.encounter) return true;
 
     const alivePlayers = this.encounter.turnOrder.filter(unit => 'class' in unit && !unit.isDead);
@@ -395,7 +395,7 @@ export class CombatSystem {
       }, 0);
 
       const partyLevel = this.getAveragePartyLevel();
-      const droppedItems = await InventorySystem.generateMonsterLoot(
+      const droppedItems = InventorySystem.generateMonsterLoot(
         this.encounter.monsters, 
         partyLevel, 
         this.dungeonLevel, 
@@ -451,8 +451,8 @@ export class CombatSystem {
     return `Players: ${alivePlayers} | Monsters: ${aliveMonsters.length}`;
   }
 
-  public async forceCheckCombatEnd(): Promise<void> {
-    await this.checkCombatEnd();
+  public forceCheckCombatEnd(): void {
+    this.checkCombatEnd();
   }
 
   private updateCombatDebugData(): void {
