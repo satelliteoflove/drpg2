@@ -4,6 +4,7 @@ import { ShopSystem, ShopInventory } from '../systems/ShopSystem';
 import { Character } from '../entities/Character';
 import { RenderingUtils } from '../utils/RenderingUtils';
 import { GameUtilities } from '../utils/GameUtilities';
+import { UI_CONSTANTS } from '../config/UIConstants';
 import { DebugLogger } from '../utils/DebugLogger';
 
 type ShopState = 'main_menu' | 'buying_category' | 'buying_items' | 'buying_character_select' | 'selling_character_select' | 'selling_items' | 'selling_confirmation';
@@ -121,19 +122,19 @@ export class ShopScene extends Scene {
   }
 
   private renderMainMenu(ctx: CanvasRenderingContext2D): void {
-    RenderingUtils.renderCenteredText(ctx, 'BOLTAC\'S TRADING POST', 60, {
+    RenderingUtils.renderCenteredText(ctx, 'BOLTAC\'S TRADING POST', UI_CONSTANTS.LAYOUT.HEADER_HEIGHT, {
       color: RenderingUtils.COLORS.WHITE,
       font: RenderingUtils.FONTS.TITLE_LARGE
     });
 
-    RenderingUtils.renderCenteredText(ctx, '"Welcome, adventurers! What can I do for you today?"', 90, {
+    RenderingUtils.renderCenteredText(ctx, '"Welcome, adventurers! What can I do for you today?"', UI_CONSTANTS.LAYOUT.HEADER_HEIGHT + 30, {
       color: RenderingUtils.COLORS.WHITE,
       font: RenderingUtils.FONTS.SMALL
     });
 
     // Show party gold
     const totalGold = this.gameState.party.getTotalGold();
-    RenderingUtils.renderCenteredText(ctx, `Party Gold: ${totalGold}`, 120, {
+    RenderingUtils.renderCenteredText(ctx, `Party Gold: ${totalGold}`, UI_CONSTANTS.LAYOUT.CONTENT_START_Y, {
       color: RenderingUtils.COLORS.GOLD,
       font: RenderingUtils.FONTS.NORMAL
     });
@@ -144,7 +145,7 @@ export class ShopScene extends Scene {
       this.selectedOption,
       0,
       170,
-      40,
+      UI_CONSTANTS.LAYOUT.MENU_ITEM_HEIGHT,
       { centered: true }
     );
 

@@ -12,6 +12,7 @@ import { InventorySystem } from '../systems/InventorySystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
 import { CombatSystem } from '../systems/CombatSystem';
 import { DebugLogger } from '../utils/DebugLogger';
+import { UI_CONSTANTS } from '../config/UIConstants';
 
 export class DungeonScene extends Scene {
   private gameState: GameState;
@@ -23,7 +24,7 @@ export class DungeonScene extends Scene {
   private dungeonMapView!: DungeonMapView;
   private debugOverlay!: DebugOverlay;
   private lastMoveTime: number = 0;
-  private moveDelay: number = 350;
+  private moveDelay: number = UI_CONSTANTS.TIMING.MOVE_DELAY;
   private lastTileEventPosition: { x: number; y: number; floor: number } | null = null;
   private lastEncounterPosition: { x: number; y: number; floor: number } | null = null;
   
