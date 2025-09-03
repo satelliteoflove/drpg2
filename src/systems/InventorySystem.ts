@@ -8,6 +8,7 @@ import {
 } from '../config/ItemProperties';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { DataLoader } from '../utils/DataLoader';
+import { DebugLogger } from '../utils/DebugLogger';
 
 interface LootDebugData {
   dungeonLevel: number;
@@ -670,7 +671,7 @@ export class InventorySystem {
       const levelData = DataLoader.loadEncounters(dungeonLevel);
       return levelData.dropRateMultiplier || 1.0; // Default to 1.0 if not specified
     } catch (error) {
-      console.warn(`Could not load drop multiplier for dungeon level ${dungeonLevel}, using default 1.0`, error);
+      DebugLogger.warn('InventorySystem', `Could not load drop multiplier for dungeon level ${dungeonLevel}, using default 1.0`, error);
       return 1.0;
     }
   }

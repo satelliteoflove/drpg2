@@ -7,6 +7,7 @@ import { DebugOverlay } from '../ui/DebugOverlay';
 import { DataLoader } from '../utils/DataLoader';
 import { InventorySystem } from '../systems/InventorySystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
@@ -33,7 +34,7 @@ export class CombatScene extends Scene {
     
     // Safety check - if messageLog is still undefined, create a temporary one
     if (!this.messageLog) {
-      console.warn('MessageLog not found in gameState, this should not happen');
+      DebugLogger.warn('CombatScene', 'MessageLog not found in gameState, this should not happen');
     }
   }
 
@@ -47,7 +48,7 @@ export class CombatScene extends Scene {
     this.selectedTarget = 0;
     this.isProcessingAction = false;
     this.lastActionTime = 0;
-    console.log(`[DEBUG] Combat scene entered - UI state reset`);
+    DebugLogger.debug('CombatScene', 'Combat scene entered - UI state reset');
   }
 
   public exit(): void {
@@ -321,7 +322,7 @@ export class CombatScene extends Scene {
   public handleInput(key: string): boolean {
     // Handle debug scene key combination
     if (key === KEY_BINDINGS.dungeonActions.debugOverlay) {
-      console.log('[DEBUG] Switching to debug scene from combat');
+      DebugLogger.debug('CombatScene', 'Switching to debug scene from combat');
       const debugScene = this.sceneManager.getScene('debug') as any;
       if (debugScene && debugScene.setPreviousScene) {
         debugScene.setPreviousScene('combat');
@@ -400,14 +401,14 @@ export class CombatScene extends Scene {
     
     // Debounce rapid input - ignore if pressed too quickly
     if (now - this.lastActionTime < 100) {
-      console.log(`[DEBUG] Action debounced - pressed too quickly`);
+      DebugLogger.debug('CombatScene', 'Action debounced - pressed too quickly');
       return;
     }
     this.lastActionTime = now;
     
     // Prevent multiple simultaneous executions
     if (this.isProcessingAction) {
-      console.log(`[DEBUG] Action blocked - already processing`);
+      DebugLogger.debug('CombatScene', 'Action blocked - already processing');
       return;
     }
     
@@ -421,18 +422,18 @@ export class CombatScene extends Scene {
       result = this.combatSystem.executePlayerAction(action);
     }
 
-    console.log(`[DEBUG] Action result: "${result}"`);
+    DebugLogger.debug('CombatScene', `Action result: "${result}"`);
 
     // Handle different result types
     if (result === 'Action already in progress') {
       // CombatSystem is busy - reset UI immediately
-      console.log(`[DEBUG] CombatSystem busy - resetting UI`);
+      DebugLogger.debug('CombatScene', 'CombatSystem busy - resetting UI');
       this.isProcessingAction = false;
       this.actionState = 'select_action';
       return;
     } else if (result === 'Combat state invalid') {
       // Combat ended unexpectedly
-      console.log(`[DEBUG] Combat state invalid - resetting UI`);
+      DebugLogger.debug('CombatScene', 'Combat state invalid - resetting UI');
       this.isProcessingAction = false;
       this.actionState = 'select_action';
       return;
@@ -446,7 +447,7 @@ export class CombatScene extends Scene {
     this.actionState = canAct ? 'select_action' : 'waiting';
     this.selectedAction = 0;
     this.isProcessingAction = false;
-    console.log(`[DEBUG] UI state reset - canPlayerAct: ${canAct}, actionState: ${this.actionState}`);
+    DebugLogger.debug('CombatScene', `UI state reset - canPlayerAct: ${canAct}, actionState: ${this.actionState}`);
   }
 
   private executeInstantKill(): void {
@@ -469,7 +470,7 @@ export class CombatScene extends Scene {
 
   private endCombat(victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }, escaped?: boolean): void {
     try {
-      console.log('endCombat called:', { victory, rewards });
+      DebugLogger.debug('CombatScene', 'endCombat called', { victory, rewards });
       
       // Reset processing flag to prevent lockups
       this.isProcessingAction = false;
@@ -479,7 +480,7 @@ export class CombatScene extends Scene {
           `Victory! Gained ${rewards.experience} experience and ${rewards.gold} gold!`
         );
         
-        console.log('Distributing rewards to party...');
+        DebugLogger.debug('CombatScene', 'Distributing rewards to party...');
         this.gameState.party.distributeExperience(rewards.experience);
         this.gameState.party.distributeGold(rewards.gold);
         
@@ -494,7 +495,7 @@ export class CombatScene extends Scene {
           this.gameState.pendingLoot = rewards.items;
         }
         
-        console.log('Rewards distributed successfully');
+        DebugLogger.debug('CombatScene', 'Rewards distributed successfully');
       } else if (escaped) {
         this.messageLog.addSystemMessage('Successfully ran away!');
       } else {
@@ -503,7 +504,7 @@ export class CombatScene extends Scene {
 
       this.sceneManager.switchTo('dungeon');
     } catch (error) {
-      console.error('Error in endCombat:', error);
+      DebugLogger.error('CombatScene', 'Error in endCombat', error);
       this.messageLog.addWarningMessage('Error processing combat results');
       this.isProcessingAction = false; // Ensure flag is reset even on error
       this.sceneManager.switchTo('dungeon');

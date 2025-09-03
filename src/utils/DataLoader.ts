@@ -2,6 +2,7 @@ import { Item, ItemEffect, Monster } from '../types/GameTypes';
 import { monstersData } from '../data/monsters/monstersData';
 import { itemsData } from '../data/items/itemsData';
 import { encountersData } from '../data/encounters/encountersData';
+import { DebugLogger } from './DebugLogger';
 
 export class DataLoader {
   // Static data is loaded at module load time
@@ -21,7 +22,7 @@ export class DataLoader {
     const levelKey = `level${level}` as keyof typeof encountersData;
     
     if (!(levelKey in this.encounters)) {
-      console.warn(`No encounter data for level ${level}, using level 1`);
+      DebugLogger.warn('DataLoader', `No encounter data for level ${level}, using level 1`);
       return this.encounters.level1;
     }
     
@@ -32,7 +33,7 @@ export class DataLoader {
     const itemTemplate = this.items[itemId as keyof typeof itemsData];
     
     if (!itemTemplate) {
-      console.error(`Item not found: ${itemId}`);
+      DebugLogger.error('DataLoader', `Item not found: ${itemId}`);
       return null;
     }
 
@@ -69,7 +70,7 @@ export class DataLoader {
     const encounters = this.loadEncounters(dungeonLevel);
 
     if (!encounters || !encounters.encounters) {
-      console.error(`No encounters defined for level ${dungeonLevel}`);
+      DebugLogger.error('DataLoader', `No encounters defined for level ${dungeonLevel}`);
       return [];
     }
 
@@ -93,7 +94,7 @@ export class DataLoader {
 
       const monsterTemplate = monsterTemplates[selectedEncounter.monsterId as keyof typeof monstersData];
       if (!monsterTemplate) {
-        console.error(`Monster template not found: ${selectedEncounter.monsterId}`);
+        DebugLogger.error('DataLoader', `Monster template not found: ${selectedEncounter.monsterId}`);
         continue;
       }
 

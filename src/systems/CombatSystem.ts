@@ -2,6 +2,7 @@ import { Character } from '../entities/Character';
 import { Encounter, Monster, Spell, Item } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { InventorySystem } from './InventorySystem';
+import { DebugLogger } from '../utils/DebugLogger';
 
 interface CombatDebugData {
   currentTurn: string;
@@ -102,7 +103,7 @@ export class CombatSystem {
 
     // Prevent multiple simultaneous actions
     if (this.isProcessingTurn) {
-      console.log(`[DEBUG] Action rejected - already processing turn`);
+      DebugLogger.debug('CombatSystem', 'Action rejected - already processing turn');
       return 'Action already in progress';
     }
 
@@ -274,7 +275,7 @@ export class CombatSystem {
       const damageEffect = weapon.effects.find(effect => effect.type === 'damage');
       if (damageEffect) {
         baseDamage += damageEffect.value;
-        console.log(`${attacker.name} attacks with ${weapon.name} for +${damageEffect.value} damage!`);
+        DebugLogger.info('CombatSystem', `${attacker.name} attacks with ${weapon.name} for +${damageEffect.value} damage!`);
       }
     }
     
@@ -309,7 +310,7 @@ export class CombatSystem {
     
     const success = Math.random() < escapeChance;
     
-    console.log(`${character.name} attempts escape: ${Math.round(escapeChance * 100)}% chance, ${success ? 'SUCCESS' : 'FAILED'}`);
+    DebugLogger.info('CombatSystem', `${character.name} attempts escape: ${Math.round(escapeChance * 100)}% chance, ${success ? 'SUCCESS' : 'FAILED'}`);
     
     return success;
   }
@@ -381,16 +382,15 @@ export class CombatSystem {
     }
 
     if (aliveMonsters.length === 0) {
-      console.log('All monsters defeated! Calculating rewards...');
-      console.log('Monsters:', this.encounter.monsters);
+      DebugLogger.info('CombatSystem', 'All monsters defeated! Calculating rewards...', { monsters: this.encounter.monsters });
       
       const totalExp = this.encounter.monsters.reduce((sum, m) => {
-        console.log(`Monster ${m.name} gives ${m.experience} experience`);
+        DebugLogger.debug('CombatSystem', `Monster ${m.name} gives ${m.experience} experience`);
         return sum + m.experience;
       }, 0);
       
       const totalGold = this.encounter.monsters.reduce((sum, m) => {
-        console.log(`Monster ${m.name} gives ${m.gold} gold`);
+        DebugLogger.debug('CombatSystem', `Monster ${m.name} gives ${m.gold} gold`);
         return sum + m.gold;
       }, 0);
 
@@ -402,7 +402,7 @@ export class CombatSystem {
         this.party
       );
       
-      console.log(`Total rewards: ${totalExp} experience, ${totalGold} gold, ${droppedItems.length} items`);
+      DebugLogger.info('CombatSystem', `Total rewards: ${totalExp} experience, ${totalGold} gold, ${droppedItems.length} items`);
       this.endCombat(true, { experience: totalExp, gold: totalGold, items: droppedItems });
       return true;
     }

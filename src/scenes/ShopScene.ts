@@ -3,6 +3,8 @@ import { GameState, Item } from '../types/GameTypes';
 import { ShopSystem, ShopInventory } from '../systems/ShopSystem';
 import { Character } from '../entities/Character';
 import { RenderingUtils } from '../utils/RenderingUtils';
+import { GameUtilities } from '../utils/GameUtilities';
+import { DebugLogger } from '../utils/DebugLogger';
 
 type ShopState = 'main_menu' | 'buying_category' | 'buying_items' | 'buying_character_select' | 'selling_character_select' | 'selling_items' | 'selling_confirmation';
 
@@ -365,53 +367,43 @@ export class ShopScene extends Scene {
   }
 
   private handleMainMenuInput(key: string): boolean {
-    switch (key) {
-      case 'arrowup':
-      case 'w':
-        this.selectedOption = Math.max(0, this.selectedOption - 1);
-        return true;
-
-      case 'arrowdown':
-      case 's':
-        this.selectedOption = Math.min(this.menuOptions.length - 1, this.selectedOption + 1);
-        return true;
-
-      case 'enter':
-      case ' ':
-        this.selectMainMenuOption();
-        return true;
-
-      case 'escape':
-        this.sceneManager.switchTo('town');
-        return true;
+    const nav = GameUtilities.handleMenuNavigation(key, this.selectedOption, this.menuOptions.length - 1);
+    if (nav.handled) {
+      this.selectedOption = nav.newIndex;
+      return true;
     }
+
+    const action = GameUtilities.isActionKey(key);
+    if (action === 'confirm') {
+      this.selectMainMenuOption();
+      return true;
+    } else if (action === 'cancel') {
+      this.sceneManager.switchTo('town');
+      return true;
+    }
+    
     return false;
   }
 
   private handleCategoryInput(key: string): boolean {
-    switch (key) {
-      case 'arrowup':
-      case 'w':
-        this.selectedOption = Math.max(0, this.selectedOption - 1);
-        return true;
-
-      case 'arrowdown':
-      case 's':
-        this.selectedOption = Math.min(this.categoryOptions.length - 1, this.selectedOption + 1);
-        return true;
-
-      case 'enter':
-      case ' ':
-        this.selectedCategory = this.categoryOptions[this.selectedOption].key;
-        this.currentState = 'buying_items';
-        this.selectedOption = 0;
-        return true;
-
-      case 'escape':
-        this.currentState = 'main_menu';
-        this.selectedOption = 0;
-        return true;
+    const nav = GameUtilities.handleMenuNavigation(key, this.selectedOption, this.categoryOptions.length - 1);
+    if (nav.handled) {
+      this.selectedOption = nav.newIndex;
+      return true;
     }
+
+    const action = GameUtilities.isActionKey(key);
+    if (action === 'confirm') {
+      this.selectedCategory = this.categoryOptions[this.selectedOption].key;
+      this.currentState = 'buying_items';
+      this.selectedOption = 0;
+      return true;
+    } else if (action === 'cancel') {
+      this.currentState = 'main_menu';
+      this.selectedOption = 0;
+      return true;
+    }
+    
     return false;
   }
 
@@ -484,11 +476,11 @@ export class ShopScene extends Scene {
         break;
         
       case 2: // Identify Items
-        console.log('Identify Items not yet implemented');
+        DebugLogger.info('ShopScene', 'Identify Items not yet implemented');
         break;
         
       case 3: // Remove Curses
-        console.log('Remove Curses not yet implemented');
+        DebugLogger.info('ShopScene', 'Remove Curses not yet implemented');
         break;
         
       case 4: // Leave Shop

@@ -19,6 +19,7 @@ import { ErrorHandler, ErrorSeverity, createSafeCanvas } from '../utils/ErrorHan
 import { GameServices } from '../services/GameServices';
 import { LayerTestUtils } from '../utils/LayerTestUtils';
 import { MessageLog } from '../ui/MessageLog';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -293,13 +294,13 @@ export class Game {
             this.renderManager.debugLayers();
             // Run comprehensive layer tests
             const testResults = LayerTestUtils.runLayerTests(this.renderManager, this.canvas);
-            console.log('Layer Test Results:', testResults.summary);
+            DebugLogger.debug('Game', 'Layer Test Results', testResults.summary);
             if (testResults.failed > 0) {
-              console.warn('Layer test failures:', testResults.results.filter(r => !r.passed));
+              DebugLogger.warn('Game', 'Layer test failures', testResults.results.filter(r => !r.passed));
             }
             // Debug layer content analysis
             const layerAnalysis = LayerTestUtils.analyzeLayers(this.renderManager);
-            console.log('Layer Analysis:', layerAnalysis);
+            DebugLogger.debug('Game', 'Layer Analysis', layerAnalysis);
           }
           this.sceneManager.renderLayered(this.ctx);
           
@@ -314,7 +315,7 @@ export class Game {
           this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
           
           if (GAME_CONFIG.DEBUG_MODE && this.frameCount % 600 === 0) { // Every 10 seconds
-            console.log('Using direct rendering (layered rendering not available)');
+            DebugLogger.debug('Game', 'Using direct rendering (layered rendering not available)');
           }
           this.sceneManager.render(this.ctx);
           

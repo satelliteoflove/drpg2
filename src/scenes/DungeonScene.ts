@@ -11,6 +11,7 @@ import { safeConfirm } from '../utils/ErrorHandler';
 import { InventorySystem } from '../systems/InventorySystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
 import { CombatSystem } from '../systems/CombatSystem';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export class DungeonScene extends Scene {
   private gameState: GameState;
@@ -46,7 +47,7 @@ export class DungeonScene extends Scene {
     
     // Safety check - if messageLog is still undefined, create a temporary one
     if (!this.messageLog) {
-      console.warn('MessageLog not found in gameState, this should not happen');
+      DebugLogger.warn('DungeonScene', 'MessageLog not found in gameState, this should not happen');
     }
   }
 
@@ -317,14 +318,14 @@ export class DungeonScene extends Scene {
       floor: this.gameState.currentFloor
     };
 
-    console.log(`[ENCOUNTER DEBUG] Current pos: (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.floor})`);
-    console.log(`[ENCOUNTER DEBUG] Last encounter pos:`, this.lastEncounterPosition);
+    DebugLogger.debug('DungeonScene', `Current pos: (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.floor})`);
+    DebugLogger.debug('DungeonScene', 'Last encounter pos', this.lastEncounterPosition);
 
     if (this.lastEncounterPosition &&
         this.lastEncounterPosition.x === currentPosition.x &&
         this.lastEncounterPosition.y === currentPosition.y &&
         this.lastEncounterPosition.floor === currentPosition.floor) {
-      console.log(`[ENCOUNTER DEBUG] Blocking encounter - same position as last encounter`);
+      DebugLogger.debug('DungeonScene', 'Blocking encounter - same position as last encounter');
       return; // Don't trigger encounter at same position
     }
 
@@ -369,11 +370,11 @@ export class DungeonScene extends Scene {
     }
 
     // Debug the encounter rate being used
-    console.log(`[ENCOUNTER DEBUG] Zone type: ${currentZone?.type || 'normal'}, Rate: ${encounterRate}, Should force: ${shouldTriggerEncounter}`);
+    DebugLogger.debug('DungeonScene', `Zone type: ${currentZone?.type || 'normal'}, Rate: ${encounterRate}, Should force: ${shouldTriggerEncounter}`);
 
     // Roll for encounter (always allow encounters unless in safe zone)
     if (shouldTriggerEncounter || Math.random() < encounterRate) {
-      console.log(`[ENCOUNTER DEBUG] Triggering encounter at (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.floor})`);
+      DebugLogger.debug('DungeonScene', `Triggering encounter at (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.floor})`);
       
       // Store zone information for combat scene to use for proper messaging
       this.gameState.encounterContext = {
@@ -385,7 +386,7 @@ export class DungeonScene extends Scene {
 
       // Store encounter position to prevent re-encounters at same spot
       this.lastEncounterPosition = { ...currentPosition };
-      console.log(`[ENCOUNTER DEBUG] Stored encounter position:`, this.lastEncounterPosition);
+      DebugLogger.debug('DungeonScene', 'Stored encounter position', this.lastEncounterPosition);
       
       this.gameState.inCombat = true;
       this.sceneManager.switchTo('combat');
@@ -511,8 +512,8 @@ export class DungeonScene extends Scene {
     
     // Debug: Log the key and expected binding
     if (key.includes('ctrl')) {
-      console.log('[DEBUG] Key pressed:', key);
-      console.log('[DEBUG] Expected debug overlay key:', KEY_BINDINGS.dungeonActions.debugOverlay);
+      DebugLogger.debug('DungeonScene', 'Key pressed: ' + key);
+      DebugLogger.debug('DungeonScene', 'Expected debug overlay key: ' + KEY_BINDINGS.dungeonActions.debugOverlay);
     }
     
     // Handle castle stairs response
@@ -522,7 +523,7 @@ export class DungeonScene extends Scene {
     
     // Handle debug scene key combination first
     if (key === KEY_BINDINGS.dungeonActions.debugOverlay) {
-      console.log('[DEBUG] Switching to debug scene');
+      DebugLogger.debug('DungeonScene', 'Switching to debug scene');
       const debugScene = this.sceneManager.getScene('debug') as any;
       if (debugScene && debugScene.setPreviousScene) {
         debugScene.setPreviousScene('dungeon');
@@ -566,7 +567,7 @@ export class DungeonScene extends Scene {
     }
 
     if (key === KEY_BINDINGS.dungeonActions.inventory) {
-      console.log('[DEBUG] Tab pressed - switching to inventory scene');
+      DebugLogger.debug('DungeonScene', 'Tab pressed - switching to inventory scene');
       this.sceneManager.switchTo('inventory');
       return true;
     }
