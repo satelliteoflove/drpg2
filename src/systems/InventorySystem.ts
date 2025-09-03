@@ -365,52 +365,64 @@ export class InventorySystem {
       return { success: false, message: 'Item already identified' };
     }
 
-    // Calculate identification chance based on character
-    let identifyChance: number = GAME_CONFIG.ITEMS.IDENTIFICATION.BASE_CHANCE;
+    // Only Bishops can identify items (authentic Wizardry mechanic)
+    if (character.class !== 'Bishop') {
+      return { 
+        success: false, 
+        message: 'Only Bishops can identify items. Visit a shop for identification service.' 
+      };
+    }
+
+    // Calculate success rate using authentic Wizardry formula: (Level × 5%) + 10%
+    const successRate = Math.min(
+      GAME_CONFIG.ITEMS.IDENTIFICATION.MAX_CHANCE,
+      (character.level * GAME_CONFIG.ITEMS.IDENTIFICATION.BISHOP_LEVEL_MULTIPLIER) + 
+      GAME_CONFIG.ITEMS.IDENTIFICATION.BISHOP_BASE_CHANCE
+    );
     
-    // Bishop class gets bonus to identification
-    if (character.class === 'Bishop') {
-      identifyChance += GAME_CONFIG.ITEMS.IDENTIFICATION.BISHOP_BONUS + 
-                       (character.level * GAME_CONFIG.ITEMS.IDENTIFICATION.LEVEL_BONUS_BISHOP);
-    } else {
-      identifyChance += character.level * GAME_CONFIG.ITEMS.IDENTIFICATION.LEVEL_BONUS_OTHER;
+    // Calculate curse risk using authentic Wizardry formula: 35% - (Level × 3%)
+    const curseRisk = Math.max(
+      0,
+      GAME_CONFIG.ITEMS.IDENTIFICATION.CURSE_BASE_RISK - 
+      (character.level * GAME_CONFIG.ITEMS.IDENTIFICATION.CURSE_LEVEL_REDUCTION)
+    );
+    
+    const identifyRoll = Math.random();
+    const curseRoll = Math.random();
+    
+    // Check for curse risk (happens regardless of identification success)
+    if (item.cursed && curseRoll < curseRisk && !item.equipped) {
+      // Force equip the cursed item
+      const equipped = this.equipItem(character, itemId);
+      if (equipped) {
+        item.identified = true; // Curse reveals itself
+        
+        if (identifyRoll < successRate) {
+          // Identified successfully but still got cursed
+          return { 
+            success: true, 
+            cursed: true, 
+            message: `Identified ${item.name} but it's cursed and bonds to ${character.name}!` 
+          };
+        } else {
+          // Failed to identify and got cursed
+          return { 
+            success: false, 
+            cursed: true, 
+            message: `Failed to identify, but the ${item.name} is cursed and bonds to ${character.name}!` 
+          };
+        }
+      }
     }
     
-    // Intelligence bonus
-    const intBonus = Math.floor((character.stats.intelligence - 10) / 2) * 
-                    GAME_CONFIG.ITEMS.IDENTIFICATION.INT_BONUS_PER_2_POINTS;
-    identifyChance += intBonus;
-    
-    // Cap at maximum chance
-    identifyChance = Math.min(GAME_CONFIG.ITEMS.IDENTIFICATION.MAX_CHANCE, identifyChance);
-    
-    const roll = Math.random();
-    
-    if (roll < identifyChance) {
+    // Check identification success
+    if (identifyRoll < successRate) {
       // Success!
       item.identified = true;
       return { 
         success: true, 
         cursed: item.cursed, 
         message: `Identified: ${this.getItemDescription(item)}` 
-      };
-    } else if (roll > GAME_CONFIG.ITEMS.IDENTIFICATION.CRITICAL_FAIL_THRESHOLD) {
-      // Critical failure - character gets cursed by the item!
-      if (item.cursed && !item.equipped) {
-        // Force equip the cursed item
-        const equipped = this.equipItem(character, itemId);
-        if (equipped) {
-          item.identified = true; // Curse reveals itself
-          return { 
-            success: false, 
-            cursed: true, 
-            message: `The ${item.name} is cursed and bonds to ${character.name}!` 
-          };
-        }
-      }
-      return { 
-        success: false, 
-        message: 'Failed to identify the item' 
       };
     } else {
       // Normal failure

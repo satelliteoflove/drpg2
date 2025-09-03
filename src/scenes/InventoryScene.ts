@@ -182,7 +182,7 @@ export class InventoryScene extends Scene {
       const canEquip = selectedItem.type !== 'consumable' && !selectedItem.equipped;
       const canUnequip = selectedItem.equipped;
       const canUse = selectedItem.type === 'consumable' || selectedItem.invokable;
-      const canIdentify = !selectedItem.identified;
+      const canIdentify = !selectedItem.identified && character.class === 'Bishop';
       
       let actions = '';
       if (canEquip) actions += 'Q: Equip | ';

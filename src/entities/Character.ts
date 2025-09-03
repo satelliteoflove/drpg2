@@ -324,18 +324,18 @@ export class Character implements ICharacter {
   }
 
   public getIdentificationChance(_item: Item): number {
-    let identifyChance = 0.5;
-    
-    if (this.class === 'Bishop') {
-      identifyChance += 0.25 + (this.level * 0.02);
-    } else {
-      identifyChance += this.level * 0.01;
+    // Only Bishops can identify items (authentic Wizardry mechanic)
+    if (this.class !== 'Bishop') {
+      return 0;
     }
     
-    const intBonus = Math.floor((this.stats.intelligence - 10) / 2) * 0.05;
-    identifyChance += intBonus;
+    // Authentic Wizardry formula: (Level × 5%) + 10%
+    const successRate = Math.min(
+      1.0,
+      (this.level * 0.05) + 0.10
+    );
     
-    return Math.min(0.95, identifyChance);
+    return successRate;
   }
 
   public canEquipItem(item: Item): boolean {

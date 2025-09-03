@@ -47,13 +47,11 @@ export const GAME_CONFIG = {
 
   ITEMS: {
     IDENTIFICATION: {
-      BASE_CHANCE: 0.5,                // Base 50% chance to identify
-      BISHOP_BONUS: 0.25,              // Bishop gets +25% base bonus
-      LEVEL_BONUS_BISHOP: 0.02,        // Bishop gets +2% per level
-      LEVEL_BONUS_OTHER: 0.01,         // Other classes get +1% per level
-      INT_BONUS_PER_2_POINTS: 0.05,   // +5% per 2 INT points over 10
-      MAX_CHANCE: 0.95,                // Max 95% chance to identify
-      CRITICAL_FAIL_THRESHOLD: 0.95,  // Roll > 95% causes curse
+      BISHOP_BASE_CHANCE: 0.10,           // Bishop base 10% chance (authentic Wizardry)
+      BISHOP_LEVEL_MULTIPLIER: 0.05,     // Bishop gets 5% per level (authentic Wizardry)
+      CURSE_BASE_RISK: 0.35,              // Base 35% curse risk (authentic Wizardry)
+      CURSE_LEVEL_REDUCTION: 0.03,       // Reduce curse risk by 3% per level (authentic Wizardry)
+      MAX_CHANCE: 1.0,                    // Max 100% chance at level 18
     },
     GENERATION: {
       CURSED_CHANCE: 0.1,              // 10% chance for cursed items
