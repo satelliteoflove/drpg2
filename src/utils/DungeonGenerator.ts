@@ -157,25 +157,24 @@ export class DungeonGenerator {
   }
 
   private placeStairs(tiles: DungeonTile[][]): void {
+    const floorTiles = this.getFloorTiles(tiles);
+    
     if (this.level === 1) {
-      // Floor 1: Place castle stairs at 0,0 (authentic Wizardry mechanic)
-      // Ensure 0,0 is passable floor tile for castle stairs
-      tiles[0][0].type = 'stairs_up';
-      tiles[0][0].northWall = false;
-      tiles[0][0].southWall = false;
-      tiles[0][0].eastWall = false;
-      tiles[0][0].westWall = false;
-      
-      // Still place random down stairs for Floor 1
-      const floorTiles = this.getFloorTiles(tiles);
-      if (floorTiles.length > 0) {
-        const downStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-        downStairs.type = 'stairs_down';
+      // Floor 1: Place castle stairs (up to town) at a valid floor location
+      if (floorTiles.length >= 2) {
+        // Place stairs up (to castle/town) at a random floor tile
+        const upStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+        upStairs.type = 'stairs_up';
+        
+        // Place stairs down at a different floor tile
+        const remainingTiles = floorTiles.filter(t => t !== upStairs);
+        if (remainingTiles.length > 0) {
+          const downStairs = remainingTiles[Math.floor(Math.random() * remainingTiles.length)];
+          downStairs.type = 'stairs_down';
+        }
       }
     } else {
       // Other floors: Use existing random placement
-      const floorTiles = this.getFloorTiles(tiles);
-
       if (floorTiles.length >= 2) {
         const upStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
         upStairs.type = 'stairs_up';
@@ -421,9 +420,15 @@ export class DungeonGenerator {
   }
 
   private findValidStartPosition(tiles: DungeonTile[][]): { x: number; y: number } {
-    // Floor 1 always starts at castle stairs (0,0)
+    // Floor 1: Start at the stairs up position
     if (this.level === 1) {
-      return { x: 0, y: 0 };
+      for (let y = 0; y < this.height; y++) {
+        for (let x = 0; x < this.width; x++) {
+          if (tiles[y][x].type === 'stairs_up') {
+            return { x, y };
+          }
+        }
+      }
     }
 
     // Other floors use existing logic
