@@ -28,6 +28,9 @@ export class DungeonScene extends Scene {
   
   // Item pickup state
   private itemPickupState: 'none' | 'selecting_character' = 'none';
+  
+  // Castle stairs state
+  private isAwaitingCastleStairsResponse: boolean = false;
   private itemsToPickup: Item[] = [];
   private currentItemIndex = 0;
   private selectedCharacterIndex = 0;
@@ -512,6 +515,11 @@ export class DungeonScene extends Scene {
       console.log('[DEBUG] Expected debug overlay key:', KEY_BINDINGS.dungeonActions.debugOverlay);
     }
     
+    // Handle castle stairs response
+    if (this.isAwaitingCastleStairsResponse) {
+      return this.handleCastleStairsInput(key);
+    }
+    
     // Handle debug scene key combination first
     if (key === KEY_BINDINGS.dungeonActions.debugOverlay) {
       console.log('[DEBUG] Switching to debug scene');
@@ -848,7 +856,8 @@ export class DungeonScene extends Scene {
           this.lastTileEventPosition = null;
           this.gameState.hasEnteredDungeon = false; // Allow "Entered the dungeon..." for new floor
         } else {
-          this.messageLog.addSystemMessage('You have escaped the dungeon!');
+          // Castle stairs at 0,0 on Floor 1 - authentic Wizardry mechanic
+          this.showCastleStairsPrompt();
         }
         break;
 
@@ -903,5 +912,28 @@ export class DungeonScene extends Scene {
       },
       combatSystem: combatData
     });
+  }
+
+  private showCastleStairsPrompt(): void {
+    this.isAwaitingCastleStairsResponse = true;
+    this.messageLog.addSystemMessage('You see stairs leading up to the castle.');
+    this.messageLog.addSystemMessage('Do you wish to climb the steps to the castle? (Y/N)');
+  }
+
+  private handleCastleStairsInput(key: string): boolean {
+    const lowerKey = key.toLowerCase();
+    
+    if (lowerKey === 'y' || key === 'enter') {
+      this.isAwaitingCastleStairsResponse = false;
+      this.messageLog.addSystemMessage('You climb the steps and enter the castle.');
+      this.sceneManager.switchTo('town');
+      return true;
+    } else if (lowerKey === 'n' || key === 'escape') {
+      this.isAwaitingCastleStairsResponse = false;
+      this.messageLog.addSystemMessage('You remain in the dungeon.');
+      return true;
+    }
+    
+    return false;
   }
 }
