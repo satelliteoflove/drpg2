@@ -157,15 +157,33 @@ export class DungeonGenerator {
   }
 
   private placeStairs(tiles: DungeonTile[][]): void {
-    const floorTiles = this.getFloorTiles(tiles);
-
-    if (floorTiles.length >= 2) {
-      const upStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-      upStairs.type = 'stairs_up';
-
-      const downStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-      if (downStairs !== upStairs) {
+    if (this.level === 1) {
+      // Floor 1: Place castle stairs at 0,0 (authentic Wizardry mechanic)
+      // Ensure 0,0 is passable floor tile for castle stairs
+      tiles[0][0].type = 'stairs_up';
+      tiles[0][0].northWall = false;
+      tiles[0][0].southWall = false;
+      tiles[0][0].eastWall = false;
+      tiles[0][0].westWall = false;
+      
+      // Still place random down stairs for Floor 1
+      const floorTiles = this.getFloorTiles(tiles);
+      if (floorTiles.length > 0) {
+        const downStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
         downStairs.type = 'stairs_down';
+      }
+    } else {
+      // Other floors: Use existing random placement
+      const floorTiles = this.getFloorTiles(tiles);
+
+      if (floorTiles.length >= 2) {
+        const upStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+        upStairs.type = 'stairs_up';
+
+        const downStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+        if (downStairs !== upStairs) {
+          downStairs.type = 'stairs_down';
+        }
       }
     }
   }
@@ -403,6 +421,12 @@ export class DungeonGenerator {
   }
 
   private findValidStartPosition(tiles: DungeonTile[][]): { x: number; y: number } {
+    // Floor 1 always starts at castle stairs (0,0)
+    if (this.level === 1) {
+      return { x: 0, y: 0 };
+    }
+
+    // Other floors use existing logic
     if (this.rooms.length > 0) {
       const firstRoom = this.rooms[0];
       const centerX = firstRoom.x + Math.floor(firstRoom.width / 2);
