@@ -57,8 +57,8 @@ export class NewGameScene extends Scene {
     if (this.selectedOption === 0) {
       ctx.fillText('Create characters one by one with full customization', 50, 400);
     } else {
-      ctx.fillText('Automatically generate a balanced party of 4 characters', 50, 400);
-      ctx.fillText('Classes: Fighter, Mage, Priest, Thief', 50, 420);
+      ctx.fillText('Automatically generate a balanced party of 5 characters', 50, 400);
+      ctx.fillText('Classes: Fighter, Mage, Priest, Thief, Bishop', 50, 420);
     }
 
     ctx.fillStyle = '#666';
@@ -110,8 +110,8 @@ export class NewGameScene extends Scene {
       if (this.selectedOption === 0) {
         ctx.fillText('Create characters one by one with full customization', 50, 400);
       } else {
-        ctx.fillText('Automatically generate a balanced party of 4 characters', 50, 400);
-        ctx.fillText('Classes: Fighter, Mage, Priest, Thief', 50, 420);
+        ctx.fillText('Automatically generate a balanced party of 5 characters', 50, 400);
+        ctx.fillText('Classes: Fighter, Mage, Priest, Thief, Bishop', 50, 420);
       }
 
       ctx.fillStyle = '#666';
@@ -167,6 +167,7 @@ export class NewGameScene extends Scene {
       { race: 'Elf', class: 'Mage', alignment: 'Neutral' },
       { race: 'Human', class: 'Priest', alignment: 'Good' },
       { race: 'Hobbit', class: 'Thief', alignment: 'Neutral' },
+      { race: 'Dwarf', class: 'Bishop', alignment: 'Good' },
     ];
 
     const names = [
