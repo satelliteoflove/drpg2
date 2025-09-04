@@ -1,4 +1,5 @@
 import { DungeonEvent, DungeonLevel, DungeonTile, OverrideZone } from '../types/GameTypes';
+import { GAME_CONFIG } from '../config/GameConstants';
 
 export class DungeonGenerator {
   private width: number;
@@ -157,31 +158,67 @@ export class DungeonGenerator {
 
   private placeStairs(tiles: DungeonTile[][]): void {
     const floorTiles = this.getFloorTiles(tiles);
+    
+    if (this.level === 1) {
+      // Floor 1: Place castle stairs (up to town) at a valid floor location
+      if (floorTiles.length >= 2) {
+        // Place stairs up (to castle/town) at a random floor tile
+        const upStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+        upStairs.type = 'stairs_up';
+        
+        // Place stairs down at a different floor tile
+        const remainingTiles = floorTiles.filter(t => t !== upStairs);
+        if (remainingTiles.length > 0) {
+          const downStairs = remainingTiles[Math.floor(Math.random() * remainingTiles.length)];
+          downStairs.type = 'stairs_down';
+        }
+      }
+    } else {
+      // Other floors: Use existing random placement
+      if (floorTiles.length >= 2) {
+        const upStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+        upStairs.type = 'stairs_up';
 
-    if (floorTiles.length >= 2) {
-      const upStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-      upStairs.type = 'stairs_up';
-
-      const downStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-      if (downStairs !== upStairs) {
-        downStairs.type = 'stairs_down';
+        const downStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+        if (downStairs !== upStairs) {
+          downStairs.type = 'stairs_down';
+        }
       }
     }
   }
 
   private placeSpecialTiles(tiles: DungeonTile[][]): void {
     const floorTiles = this.getFloorTiles(tiles);
-    const numSpecial = Math.min(3 + Math.floor(Math.random() * 3), floorTiles.length);
+    const numSpecial = Math.min(
+      GAME_CONFIG.DUNGEON.MIN_SPECIAL_TILES + Math.floor(Math.random() * GAME_CONFIG.DUNGEON.MAX_EXTRA_SPECIAL_TILES), 
+      floorTiles.length
+    );
 
     for (let i = 0; i < numSpecial; i++) {
       const tile = floorTiles[Math.floor(Math.random() * floorTiles.length)];
       const rand = Math.random();
 
-      if (rand < 0.3) {
+      // Build probability ranges based on enabled features
+      let chestThreshold = 0;
+      let trapThreshold = 0;
+      let doorThreshold = 0;
+      
+      if (GAME_CONFIG.DUNGEON.ENABLE_TREASURE_CHESTS) {
+        chestThreshold = GAME_CONFIG.DUNGEON.CHEST_CHANCE;
+        trapThreshold = chestThreshold + GAME_CONFIG.DUNGEON.TRAP_CHANCE;
+      } else {
+        trapThreshold = GAME_CONFIG.DUNGEON.TRAP_CHANCE;
+      }
+      
+      if (GAME_CONFIG.DUNGEON.ENABLE_DOORS) {
+        doorThreshold = trapThreshold + GAME_CONFIG.DUNGEON.DOOR_CHANCE;
+      }
+
+      if (GAME_CONFIG.DUNGEON.ENABLE_TREASURE_CHESTS && rand < chestThreshold) {
         tile.type = 'chest';
-      } else if (rand < 0.5) {
+      } else if (rand < trapThreshold) {
         tile.type = 'trap';
-      } else if (rand < 0.7) {
+      } else if (GAME_CONFIG.DUNGEON.ENABLE_DOORS && rand < doorThreshold) {
         tile.type = 'door';
       } else {
         tile.type = 'event';
@@ -221,74 +258,82 @@ export class DungeonGenerator {
   private generateOverrideZones(tiles: DungeonTile[][]): OverrideZone[] {
     const zones: OverrideZone[] = [];
 
-    // Generate safe zone around starting position
-    const startPos = this.findValidStartPosition(tiles);
-    zones.push({
-      x1: Math.max(0, startPos.x - 2),
-      y1: Math.max(0, startPos.y - 2),
-      x2: Math.min(this.width - 1, startPos.x + 2),
-      y2: Math.min(this.height - 1, startPos.y + 2),
-      type: 'safe',
-      data: { description: 'Starting area - safe from encounters' }
-    });
-
-    // Generate boss zones in largest rooms
-    const largeRooms = this.rooms.filter(room => room.width * room.height >= 16);
-    for (const room of largeRooms.slice(0, 2)) {
+    // Generate safe zone around starting position (if enabled)
+    if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_SAFE_ZONES) {
+      const startPos = this.findValidStartPosition(tiles);
       zones.push({
-        x1: room.x,
-        y1: room.y,
-        x2: room.x + room.width - 1,
-        y2: room.y + room.height - 1,
-        type: 'boss',
-        data: {
-          bossType: 'floor_guardian',
-          encounterRate: 1.0,
-          monsterGroups: [`boss_level_${this.level}`],
-          description: 'Guardian chamber'
-        }
+        x1: Math.max(0, startPos.x - 2),
+        y1: Math.max(0, startPos.y - 2),
+        x2: Math.min(this.width - 1, startPos.x + 2),
+        y2: Math.min(this.height - 1, startPos.y + 2),
+        type: 'safe',
+        data: { description: 'Starting area - safe from encounters' }
       });
     }
 
-    // Generate special mob zones based on level theme
-    const numSpecialZones = 1 + Math.floor(Math.random() * 2);
-    for (let i = 0; i < numSpecialZones; i++) {
-      const room = this.rooms[Math.floor(Math.random() * this.rooms.length)];
-      if (room) {
+    // Generate boss zones in largest rooms (if enabled)
+    if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_BOSS_ZONES) {
+      const largeRooms = this.rooms.filter(room => room.width * room.height >= 16);
+      for (const room of largeRooms.slice(0, 2)) {
         zones.push({
           x1: room.x,
           y1: room.y,
           x2: room.x + room.width - 1,
           y2: room.y + room.height - 1,
-          type: 'special_mobs',
+          type: 'boss',
           data: {
-            monsterGroups: this.getSpecialMonsterGroupsForLevel(),
-            encounterRate: 0.15,
-            description: `Lair of ${this.getSpecialMonsterGroupsForLevel()[0]}s`
+            bossType: 'floor_guardian',
+            encounterRate: 1.0,
+            monsterGroups: [`boss_level_${this.level}`],
+            description: 'Guardian chamber'
           }
         });
       }
     }
 
-    // Generate high frequency zones in corridors
-    const numHighFreq = 2 + Math.floor(Math.random() * 2);
-    for (let i = 0; i < numHighFreq; i++) {
-      const x1 = Math.floor(Math.random() * (this.width - 4));
-      const y1 = Math.floor(Math.random() * (this.height - 4));
-      const x2 = x1 + 2 + Math.floor(Math.random() * 3);
-      const y2 = y1 + 2 + Math.floor(Math.random() * 3);
-
-      zones.push({
-        x1,
-        y1,
-        x2: Math.min(x2, this.width - 1),
-        y2: Math.min(y2, this.height - 1),
-        type: 'high_frequency',
-        data: {
-          encounterRate: 0.08,
-          description: 'Dangerous corridor - high monster activity'
+    // Generate special mob zones based on level theme (if enabled)
+    if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_SPECIAL_MOB_ZONES) {
+      const numSpecialZones = 1 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < numSpecialZones; i++) {
+        const room = this.rooms[Math.floor(Math.random() * this.rooms.length)];
+        if (room) {
+          zones.push({
+            x1: room.x,
+            y1: room.y,
+            x2: room.x + room.width - 1,
+            y2: room.y + room.height - 1,
+            type: 'special_mobs',
+            data: {
+              monsterGroups: this.getSpecialMonsterGroupsForLevel(),
+              encounterRate: 0.15,
+              description: `Lair of ${this.getSpecialMonsterGroupsForLevel()[0]}s`
+            }
+          });
         }
-      });
+      }
+    }
+
+    // Generate high frequency zones in corridors (if enabled)
+    if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_HIGH_FREQUENCY_ZONES) {
+      const numHighFreq = 2 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < numHighFreq; i++) {
+        const x1 = Math.floor(Math.random() * (this.width - 4));
+        const y1 = Math.floor(Math.random() * (this.height - 4));
+        const x2 = x1 + 2 + Math.floor(Math.random() * 3);
+        const y2 = y1 + 2 + Math.floor(Math.random() * 3);
+
+        zones.push({
+          x1,
+          y1,
+          x2: Math.min(x2, this.width - 1),
+          y2: Math.min(y2, this.height - 1),
+          type: 'high_frequency',
+          data: {
+            encounterRate: 0.08,
+            description: 'Dangerous corridor - high monster activity'
+          }
+        });
+      }
     }
 
     return zones;
@@ -375,6 +420,18 @@ export class DungeonGenerator {
   }
 
   private findValidStartPosition(tiles: DungeonTile[][]): { x: number; y: number } {
+    // Floor 1: Start at the stairs up position
+    if (this.level === 1) {
+      for (let y = 0; y < this.height; y++) {
+        for (let x = 0; x < this.width; x++) {
+          if (tiles[y][x].type === 'stairs_up') {
+            return { x, y };
+          }
+        }
+      }
+    }
+
+    // Other floors use existing logic
     if (this.rooms.length > 0) {
       const firstRoom = this.rooms[0];
       const centerX = firstRoom.x + Math.floor(firstRoom.width / 2);

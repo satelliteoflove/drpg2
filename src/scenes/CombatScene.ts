@@ -1,13 +1,20 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
-import { GameState, Monster } from '../types/GameTypes';
+import { GameState, Monster, Item } from '../types/GameTypes';
+import { Character } from '../entities/Character';
 import { CombatSystem } from '../systems/CombatSystem';
 import { StatusPanel } from '../ui/StatusPanel';
+import { DebugOverlay } from '../ui/DebugOverlay';
+import { DataLoader } from '../utils/DataLoader';
+import { InventorySystem } from '../systems/InventorySystem';
+import { KEY_BINDINGS } from '../config/KeyBindings';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
   private sceneManager: SceneManager;
   private combatSystem: CombatSystem;
   private statusPanel!: StatusPanel;
+  private debugOverlay!: DebugOverlay;
   private messageLog: any; // Shared from gameState
   private selectedAction: number = 0;
   private selectedTarget: number = 0;
@@ -27,18 +34,21 @@ export class CombatScene extends Scene {
     
     // Safety check - if messageLog is still undefined, create a temporary one
     if (!this.messageLog) {
-      console.warn('MessageLog not found in gameState, this should not happen');
+      DebugLogger.warn('CombatScene', 'MessageLog not found in gameState, this should not happen');
     }
   }
 
   public enter(): void {
+    // Set debug overlay scene name
+    this.debugOverlay?.setCurrentScene('Combat');
+    
     this.initializeCombat();
     this.actionState = 'select_action';
     this.selectedAction = 0;
     this.selectedTarget = 0;
     this.isProcessingAction = false;
     this.lastActionTime = 0;
-    console.log(`[DEBUG] Combat scene entered - UI state reset`);
+    DebugLogger.debug('CombatScene', 'Combat scene entered - UI state reset');
   }
 
   public exit(): void {
@@ -52,8 +62,8 @@ export class CombatScene extends Scene {
     // Generate appropriate encounter message based on monsters and context
     this.generateEncounterMessage(monsters);
 
-    this.combatSystem.startCombat(monsters, aliveCharacters, (victory: boolean, rewards) => {
-      this.endCombat(victory, rewards);
+    this.combatSystem.startCombat(monsters, aliveCharacters, this.gameState.currentFloor, (victory: boolean, rewards, escaped) => {
+      this.endCombat(victory, rewards, escaped);
     }, (message: string) => {
       // Callback for monster turn messages
       if (message) {
@@ -63,60 +73,18 @@ export class CombatScene extends Scene {
   }
 
   private generateMonsters(): Monster[] {
-    const monsterTypes: Monster[] = [
-      {
-        id: 'slime',
-        name: 'Slime',
-        hp: 15,
-        maxHp: 15,
-        ac: 8,
-        attacks: [{ name: 'Slime Attack', damage: '1d4+1', effect: '', chance: 0.8 }],
-        experience: 10,
-        gold: 5,
-        itemDrops: [],
-        resistances: [],
-        weaknesses: ['fire'],
-      },
-      {
-        id: 'goblin',
-        name: 'Goblin',
-        hp: 20,
-        maxHp: 20,
-        ac: 6,
-        attacks: [{ name: 'Club', damage: '1d6+1', effect: '', chance: 0.9 }],
-        experience: 15,
-        gold: 8,
-        itemDrops: [],
-        resistances: [],
-        weaknesses: [],
-      },
-      {
-        id: 'orc',
-        name: 'Orc',
-        hp: 35,
-        maxHp: 35,
-        ac: 4,
-        attacks: [
-          { name: 'Sword', damage: '1d8+2', effect: '', chance: 0.8 },
-          { name: 'Bash', damage: '1d6+3', effect: '', chance: 0.6 },
-        ],
-        experience: 25,
-        gold: 15,
-        itemDrops: [],
-        resistances: [],
-        weaknesses: [],
-      },
-    ];
+    const dungeonLevel = this.gameState.currentFloor;
+    const partyLevel = this.getAveragePartyLevel();
+    
+    return DataLoader.generateMonstersForLevel(dungeonLevel, partyLevel);
+  }
 
-    const numMonsters = 1 + Math.floor(Math.random() * 3);
-    const monsters: Monster[] = [];
-
-    for (let i = 0; i < numMonsters; i++) {
-      const template = monsterTypes[Math.floor(Math.random() * monsterTypes.length)];
-      monsters.push({ ...template, name: `${template.name} ${i + 1}` });
-    }
-
-    return monsters;
+  private getAveragePartyLevel(): number {
+    const aliveCharacters = this.gameState.party.getAliveCharacters();
+    if (aliveCharacters.length === 0) return 1;
+    
+    const totalLevel = aliveCharacters.reduce((sum: number, character: any) => sum + character.level, 0);
+    return Math.floor(totalLevel / aliveCharacters.length);
   }
 
   private generateEncounterMessage(monsters: Monster[]): void {
@@ -161,7 +129,7 @@ export class CombatScene extends Scene {
     if (this.gameState.party.isWiped()) {
       this.messageLog.addDeathMessage('Party defeated!');
       this.isProcessingAction = false;
-      setTimeout(() => this.endCombat(false), 2000);
+      this.endCombat(false, undefined, false);
       return;
     }
     
@@ -184,6 +152,10 @@ export class CombatScene extends Scene {
     this.renderCombatArea(ctx);
     this.renderUI(ctx);
     this.renderCombatInfo(ctx);
+    
+    // Update and render debug overlay
+    this.updateDebugData();
+    this.debugOverlay.render(this.gameState);
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
@@ -205,11 +177,17 @@ export class CombatScene extends Scene {
     renderManager.renderUI((ctx) => {
       this.renderUI(ctx);
       this.renderCombatInfo(ctx);
+      this.renderCombatControls(ctx);
+      
+      // Update and render debug overlay
+      this.updateDebugData();
+      this.debugOverlay.render(this.gameState);
     });
   }
 
   private initializeUI(canvas: HTMLCanvasElement): void {
     this.statusPanel = new StatusPanel(canvas, 650, 0, 374, 300);
+    this.debugOverlay = new DebugOverlay(canvas);
     
     // Only add combat message, don't create a new log
     this.messageLog.addCombatMessage('Combat begins!');
@@ -333,10 +311,32 @@ export class CombatScene extends Scene {
         ctx
       );
     }
+
+    // Show debug hint
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    ctx.fillText('[DEBUG: Press Ctrl+K for instant kill]', ctx.canvas.width - 200, ctx.canvas.height - 10);
   }
 
 
   public handleInput(key: string): boolean {
+    // Handle debug scene key combination
+    if (key === KEY_BINDINGS.dungeonActions.debugOverlay) {
+      DebugLogger.debug('CombatScene', 'Switching to debug scene from combat');
+      const debugScene = this.sceneManager.getScene('debug') as any;
+      if (debugScene && debugScene.setPreviousScene) {
+        debugScene.setPreviousScene('combat');
+      }
+      this.sceneManager.switchTo('debug');
+      return true;
+    }
+
+    // Debug instant kill - Ctrl+K kills all enemies
+    if (key === 'ctrl+k') {
+      this.executeInstantKill();
+      return true;
+    }
+
     // Ignore all input if we're processing an action or waiting
     if (this.isProcessingAction || this.actionState === 'waiting') return true;
 
@@ -352,13 +352,13 @@ export class CombatScene extends Scene {
   private handleActionSelection(key: string): boolean {
     const actions = this.combatSystem.getPlayerOptions();
 
-    if (key === 'arrowup' || key === 'w') {
+    if (key === KEY_BINDINGS.combat.selectUp) {
       this.selectedAction = Math.max(0, this.selectedAction - 1);
       return true;
-    } else if (key === 'arrowdown' || key === 's') {
+    } else if (key === KEY_BINDINGS.combat.selectDown) {
       this.selectedAction = Math.min(actions.length - 1, this.selectedAction + 1);
       return true;
-    } else if (key === 'enter') {
+    } else if (key === KEY_BINDINGS.combat.confirm) {
       const selectedActionText = actions[this.selectedAction];
 
       if (selectedActionText === 'Attack') {
@@ -379,16 +379,16 @@ export class CombatScene extends Scene {
 
     const aliveMonsters = encounter.monsters.filter(m => m.hp > 0);
 
-    if (key === 'arrowleft' || key === 'a') {
+    if (key === KEY_BINDINGS.combat.selectLeft) {
       this.selectedTarget = Math.max(0, this.selectedTarget - 1);
       return true;
-    } else if (key === 'arrowright' || key === 'd') {
+    } else if (key === KEY_BINDINGS.combat.selectRight) {
       this.selectedTarget = Math.min(aliveMonsters.length - 1, this.selectedTarget + 1);
       return true;
-    } else if (key === 'enter') {
+    } else if (key === KEY_BINDINGS.combat.confirm) {
       this.executeAction('Attack');
       return true;
-    } else if (key === 'escape') {
+    } else if (key === KEY_BINDINGS.combat.cancel) {
       this.actionState = 'select_action';
       return true;
     }
@@ -401,14 +401,14 @@ export class CombatScene extends Scene {
     
     // Debounce rapid input - ignore if pressed too quickly
     if (now - this.lastActionTime < 100) {
-      console.log(`[DEBUG] Action debounced - pressed too quickly`);
+      DebugLogger.debug('CombatScene', 'Action debounced - pressed too quickly');
       return;
     }
     this.lastActionTime = now;
     
     // Prevent multiple simultaneous executions
     if (this.isProcessingAction) {
-      console.log(`[DEBUG] Action blocked - already processing`);
+      DebugLogger.debug('CombatScene', 'Action blocked - already processing');
       return;
     }
     
@@ -422,18 +422,18 @@ export class CombatScene extends Scene {
       result = this.combatSystem.executePlayerAction(action);
     }
 
-    console.log(`[DEBUG] Action result: "${result}"`);
+    DebugLogger.debug('CombatScene', `Action result: "${result}"`);
 
     // Handle different result types
     if (result === 'Action already in progress') {
       // CombatSystem is busy - reset UI immediately
-      console.log(`[DEBUG] CombatSystem busy - resetting UI`);
+      DebugLogger.debug('CombatScene', 'CombatSystem busy - resetting UI');
       this.isProcessingAction = false;
       this.actionState = 'select_action';
       return;
     } else if (result === 'Combat state invalid') {
       // Combat ended unexpectedly
-      console.log(`[DEBUG] Combat state invalid - resetting UI`);
+      DebugLogger.debug('CombatScene', 'Combat state invalid - resetting UI');
       this.isProcessingAction = false;
       this.actionState = 'select_action';
       return;
@@ -442,19 +442,35 @@ export class CombatScene extends Scene {
       this.messageLog.addCombatMessage(result);
     }
 
-    // Schedule UI state check to happen after CombatSystem settles
-    setTimeout(() => {
-      const canAct = this.combatSystem.canPlayerAct();
-      this.actionState = canAct ? 'select_action' : 'waiting';
-      this.selectedAction = 0;
-      this.isProcessingAction = false;
-      console.log(`[DEBUG] UI state reset - canPlayerAct: ${canAct}, actionState: ${this.actionState}`);
-    }, 50);
+    // Update UI state immediately
+    const canAct = this.combatSystem.canPlayerAct();
+    this.actionState = canAct ? 'select_action' : 'waiting';
+    this.selectedAction = 0;
+    this.isProcessingAction = false;
+    DebugLogger.debug('CombatScene', `UI state reset - canPlayerAct: ${canAct}, actionState: ${this.actionState}`);
   }
 
-  private endCombat(victory: boolean, rewards?: { experience: number; gold: number }): void {
+  private executeInstantKill(): void {
+    const encounter = this.combatSystem.getEncounter();
+    if (!encounter) return;
+
+    // Deal 999 damage to all enemies
+    this.messageLog.addSystemMessage('[DEBUG] Instant Kill activated! Dealing 999 damage to all enemies.');
+    
+    encounter.monsters.forEach(monster => {
+      if (monster.hp > 0) {
+        monster.hp = 0;
+        this.messageLog.addCombatMessage(`${monster.name} takes 999 damage and is defeated!`);
+      }
+    });
+
+    // Force check combat end to trigger rewards
+    this.combatSystem.forceCheckCombatEnd();
+  }
+
+  private endCombat(victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }, escaped?: boolean): void {
     try {
-      console.log('endCombat called:', { victory, rewards });
+      DebugLogger.debug('CombatScene', 'endCombat called', { victory, rewards });
       
       // Reset processing flag to prevent lockups
       this.isProcessingAction = false;
@@ -464,24 +480,74 @@ export class CombatScene extends Scene {
           `Victory! Gained ${rewards.experience} experience and ${rewards.gold} gold!`
         );
         
-        console.log('Distributing rewards to party...');
+        DebugLogger.debug('CombatScene', 'Distributing rewards to party...');
         this.gameState.party.distributeExperience(rewards.experience);
         this.gameState.party.distributeGold(rewards.gold);
-        console.log('Rewards distributed successfully');
+        
+        // Handle item drops - store for distribution after scene switch
+        if (rewards.items && rewards.items.length > 0) {
+          this.messageLog.addSystemMessage(`Found ${rewards.items.length} item(s)!`);
+          rewards.items.forEach(item => {
+            this.messageLog.addSystemMessage(`- ${item.identified ? item.name : item.unidentifiedName || '?Item'}`);
+          });
+          
+          // Store items to be distributed when returning to dungeon
+          this.gameState.pendingLoot = rewards.items;
+        }
+        
+        DebugLogger.debug('CombatScene', 'Rewards distributed successfully');
+      } else if (escaped) {
+        this.messageLog.addSystemMessage('Successfully ran away!');
       } else {
         this.messageLog.addDeathMessage('Defeated...');
       }
 
-      setTimeout(() => {
-        this.sceneManager.switchTo('dungeon');
-      }, 3000);
+      this.sceneManager.switchTo('dungeon');
     } catch (error) {
-      console.error('Error in endCombat:', error);
+      DebugLogger.error('CombatScene', 'Error in endCombat', error);
       this.messageLog.addWarningMessage('Error processing combat results');
       this.isProcessingAction = false; // Ensure flag is reset even on error
-      setTimeout(() => {
-        this.sceneManager.switchTo('dungeon');
-      }, 1000);
+      this.sceneManager.switchTo('dungeon');
     }
+  }
+
+  private renderCombatControls(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    const y = ctx.canvas.height - 30;
+    
+    if (this.actionState === 'select_action' && this.combatSystem.canPlayerAct()) {
+      let controls = 'UP/DOWN: Select Action | ENTER: Confirm';
+      if (this.selectedAction === 0) { // Attack action
+        controls += ' | LEFT/RIGHT: Select Target';
+      }
+      ctx.fillText(controls, 10, y);
+      ctx.fillText('1: Attack | 2: Defend | 3: Run | K: Instant Kill (debug)', 10, y + 12);
+    } else {
+      ctx.fillText('Processing turn... please wait', 10, y);
+    }
+  }
+
+  private updateDebugData(): void {
+    if (!this.debugOverlay) return;
+
+    // Get current system debug data
+    const lootData = InventorySystem.getLootDebugData();
+    const combatData = CombatSystem.getCombatDebugData();
+    
+    // Calculate party stats
+    const totalLuck = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.stats.luck, 0);
+    const averageLevel = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.level, 0) / this.gameState.party.characters.length;
+    
+    // Update debug overlay with current data
+    this.debugOverlay.updateDebugData({
+      lootSystem: lootData,
+      partyStats: {
+        totalLuck,
+        luckMultiplier: lootData.luckMultiplier,
+        averageLevel
+      },
+      combatSystem: combatData
+    });
   }
 }

@@ -10,6 +10,7 @@ import {
   Spell,
 } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
+import { GAME_VALUES } from '../config/UIConstants';
 import { TypeValidation } from '../utils/TypeValidation';
 
 export class Character implements ICharacter {
@@ -308,7 +309,7 @@ export class Character implements ICharacter {
   }
 
   public getExperienceForNextLevel(): number {
-    return Math.floor(1000 * Math.pow(1.5, this.level - 1));
+    return Math.floor(GAME_VALUES.CHARACTER.BASE_EXPERIENCE * Math.pow(GAME_VALUES.CHARACTER.EXPERIENCE_MULTIPLIER, this.level - 1));
   }
 
   public addExperience(amount: number): boolean {
@@ -321,5 +322,36 @@ export class Character implements ICharacter {
       return true;
     }
     return false;
+  }
+
+  public getIdentificationChance(_item: Item): number {
+    // Only Bishops can identify items (authentic Wizardry mechanic)
+    if (this.class !== 'Bishop') {
+      return 0;
+    }
+    
+    // Authentic Wizardry formula: (Level × 5%) + 10%
+    const successRate = Math.min(
+      1.0,
+      (this.level * 0.05) + 0.10
+    );
+    
+    return successRate;
+  }
+
+  public canEquipItem(item: Item): boolean {
+    if (item.classRestrictions && item.classRestrictions.length > 0) {
+      if (!item.classRestrictions.includes(this.class)) {
+        return false;
+      }
+    }
+    
+    if (item.alignmentRestrictions && item.alignmentRestrictions.length > 0) {
+      if (!item.alignmentRestrictions.includes(this.alignment)) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 }

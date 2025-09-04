@@ -1,4 +1,5 @@
 import { GameState, Character as ICharacter } from '../types/GameTypes';
+import { DebugLogger } from './DebugLogger';
 
 export interface SaveData {
   version: string;
@@ -27,7 +28,7 @@ export class SaveManager {
       this.addToSaveHistory(saveData);
       return true;
     } catch (error) {
-      console.error('Failed to save game:', error);
+      DebugLogger.error('SaveManager', 'Failed to save game', error);
       return false;
     }
   }
@@ -40,13 +41,13 @@ export class SaveManager {
       const saveData: SaveData = JSON.parse(saved);
 
       if (!this.isValidSave(saveData)) {
-        console.warn('Invalid save data detected');
+        DebugLogger.warn('SaveManager', 'Invalid save data detected');
         return null;
       }
 
       return saveData;
     } catch (error) {
-      console.error('Failed to load game:', error);
+      DebugLogger.error('SaveManager', 'Failed to load game', error);
       return null;
     }
   }
@@ -56,7 +57,7 @@ export class SaveManager {
       localStorage.removeItem(this.SAVE_KEY);
       return true;
     } catch (error) {
-      console.error('Failed to delete save:', error);
+      DebugLogger.error('SaveManager', 'Failed to delete save', error);
       return false;
     }
   }
@@ -139,7 +140,7 @@ export class SaveManager {
 
       localStorage.setItem(historyKey, JSON.stringify(history));
     } catch (error) {
-      console.warn('Failed to save history:', error);
+      DebugLogger.warn('SaveManager', 'Failed to save history', error);
     }
   }
 
@@ -148,7 +149,7 @@ export class SaveManager {
       const historyKey = 'drpg2_save_history';
       return JSON.parse(localStorage.getItem(historyKey) || '[]');
     } catch (error) {
-      console.warn('Failed to load save history:', error);
+      DebugLogger.warn('SaveManager', 'Failed to load save history', error);
       return [];
     }
   }
@@ -160,7 +161,7 @@ export class SaveManager {
 
       return btoa(JSON.stringify(saveData));
     } catch (error) {
-      console.error('Failed to export save:', error);
+      DebugLogger.error('SaveManager', 'Failed to export save', error);
       return null;
     }
   }
@@ -177,7 +178,7 @@ export class SaveManager {
       localStorage.setItem(this.SAVE_KEY, JSON.stringify(saveData));
       return true;
     } catch (error) {
-      console.error('Failed to import save:', error);
+      DebugLogger.error('SaveManager', 'Failed to import save', error);
       return false;
     }
   }
@@ -193,7 +194,7 @@ export class SaveManager {
       this.cleanupOldBackups();
       return true;
     } catch (error) {
-      console.error('Failed to create backup:', error);
+      DebugLogger.error('SaveManager', 'Failed to create backup', error);
       return false;
     }
   }
@@ -210,7 +211,7 @@ export class SaveManager {
           localStorage.removeItem(key);
         });
     } catch (error) {
-      console.warn('Failed to cleanup backups:', error);
+      DebugLogger.warn('SaveManager', 'Failed to cleanup backups', error);
     }
   }
 

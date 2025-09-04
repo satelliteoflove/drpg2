@@ -6,6 +6,10 @@ import { NewGameScene } from '../scenes/NewGameScene';
 import { DungeonScene } from '../scenes/DungeonScene';
 import { CharacterCreationScene } from '../scenes/CharacterCreationScene';
 import { CombatScene } from '../scenes/CombatScene';
+import { InventoryScene } from '../scenes/InventoryScene';
+import { DebugScene } from '../scenes/DebugScene';
+import { TownScene } from '../scenes/TownScene';
+import { ShopScene } from '../scenes/ShopScene';
 import { Party } from '../entities/Party';
 import { Character } from '../entities/Character';
 import { GameState } from '../types/GameTypes';
@@ -15,6 +19,7 @@ import { ErrorHandler, ErrorSeverity, createSafeCanvas } from '../utils/ErrorHan
 import { GameServices } from '../services/GameServices';
 import { LayerTestUtils } from '../utils/LayerTestUtils';
 import { MessageLog } from '../ui/MessageLog';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -28,6 +33,7 @@ export class Game {
   private gameState!: GameState;
   private playtimeStart: number = Date.now();
   private frameCount: number = 0;
+  private autoSaveFrameCounter: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -207,6 +213,10 @@ export class Game {
       new DungeonScene(this.gameState, this.sceneManager, this.inputManager)
     );
     this.sceneManager.addScene('combat', new CombatScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('inventory', new InventoryScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('debug', new DebugScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('town', new TownScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('shop', new ShopScene(this.gameState, this.sceneManager));
 
     this.sceneManager.switchTo('main_menu');
   }
@@ -236,11 +246,8 @@ export class Game {
   }
 
   private setupAutoSave(): void {
-    setInterval(() => {
-      if (this.isRunning && !this.gameState.inCombat) {
-        this.saveGame();
-      }
-    }, GAME_CONFIG.AUTO_SAVE.INTERVAL_MS);
+    // Auto-save is now handled in the game loop using frame-based counting
+    this.autoSaveFrameCounter = 0;
   }
 
   private gameLoop = (currentTime: number = 0): void => {
@@ -259,6 +266,16 @@ export class Game {
     this.gameState.gameTime += deltaTime;
     this.frameCount++;
     this.sceneManager.update(deltaTime);
+    
+    // Handle auto-save using frame-based counting
+    this.autoSaveFrameCounter++;
+    // Auto-save every 1800 frames (approximately 30 seconds at 60fps)
+    if (this.autoSaveFrameCounter >= 1800) {
+      if (this.isRunning && !this.gameState.inCombat) {
+        this.saveGame();
+      }
+      this.autoSaveFrameCounter = 0;
+    }
   }
 
   private render(): void {
@@ -277,13 +294,13 @@ export class Game {
             this.renderManager.debugLayers();
             // Run comprehensive layer tests
             const testResults = LayerTestUtils.runLayerTests(this.renderManager, this.canvas);
-            console.log('Layer Test Results:', testResults.summary);
+            DebugLogger.debug('Game', 'Layer Test Results', testResults.summary);
             if (testResults.failed > 0) {
-              console.warn('Layer test failures:', testResults.results.filter(r => !r.passed));
+              DebugLogger.warn('Game', 'Layer test failures', testResults.results.filter(r => !r.passed));
             }
             // Debug layer content analysis
             const layerAnalysis = LayerTestUtils.analyzeLayers(this.renderManager);
-            console.log('Layer Analysis:', layerAnalysis);
+            DebugLogger.debug('Game', 'Layer Analysis', layerAnalysis);
           }
           this.sceneManager.renderLayered(this.ctx);
           
@@ -298,7 +315,7 @@ export class Game {
           this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
           
           if (GAME_CONFIG.DEBUG_MODE && this.frameCount % 600 === 0) { // Every 10 seconds
-            console.log('Using direct rendering (layered rendering not available)');
+            DebugLogger.debug('Game', 'Using direct rendering (layered rendering not available)');
           }
           this.sceneManager.render(this.ctx);
           

@@ -1,4 +1,5 @@
 import { RenderManager } from './RenderManager';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export interface SceneRenderContext {
   renderManager: RenderManager;
@@ -56,19 +57,27 @@ export class SceneManager {
   }
 
   public switchTo(sceneName: string): void {
+    DebugLogger.debug('SceneManager', 'Switching to scene: ' + sceneName);
     this.nextScene = sceneName;
   }
 
   public update(deltaTime: number): void {
     if (this.nextScene) {
+      DebugLogger.debug('SceneManager', 'Processing scene switch to: ' + this.nextScene);
+      
       if (this.currentScene) {
+        DebugLogger.debug('SceneManager', 'Exiting current scene: ' + this.currentScene.getName());
         this.currentScene.exit();
       }
 
-      this.currentScene = this.scenes.get(this.nextScene) || null;
+      const newScene = this.scenes.get(this.nextScene);
+      DebugLogger.debug('SceneManager', 'Found new scene: ' + (newScene ? newScene.getName() : 'null'));
+      
+      this.currentScene = newScene || null;
       this.nextScene = null;
 
       if (this.currentScene) {
+        DebugLogger.debug('SceneManager', 'Entering new scene: ' + this.currentScene.getName());
         // Reset layers for the new scene
         if (this.renderManager) {
           this.renderManager.resetForSceneChange();
@@ -84,7 +93,10 @@ export class SceneManager {
 
   public render(ctx: CanvasRenderingContext2D): void {
     if (this.currentScene) {
+      DebugLogger.debug('SceneManager', 'Rendering scene: ' + this.currentScene.getName());
       this.currentScene.render(ctx);
+    } else {
+      DebugLogger.debug('SceneManager', 'No current scene to render');
     }
   }
 
@@ -106,5 +118,9 @@ export class SceneManager {
 
   public getCurrentScene(): Scene | null {
     return this.currentScene;
+  }
+
+  public getScene(name: string): Scene | null {
+    return this.scenes.get(name) || null;
   }
 }

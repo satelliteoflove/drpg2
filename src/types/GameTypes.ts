@@ -66,6 +66,8 @@ export interface Equipment {
 export interface Item {
   id: string;
   name: string;
+  unidentifiedName?: string; // Display name when unidentified (e.g., "?Sword", "?Armor")
+  description?: string; // Optional lore/flavor text for the item
   type:
     | 'weapon'
     | 'armor'
@@ -80,9 +82,18 @@ export interface Item {
   weight: number;
   identified: boolean;
   cursed: boolean;
+  blessed: boolean; // Blessed items have enhanced properties
+  enchantment: number; // +0, +1, +2, etc. (negative for cursed)
   equipped: boolean;
   quantity: number;
   effects?: ItemEffect[];
+  classRestrictions?: string[]; // Classes that can use this item (empty = all)
+  alignmentRestrictions?: ('Good' | 'Neutral' | 'Evil')[]; // Alignments that can use (empty = all)
+  invokable?: boolean; // Can be invoked/used for special effect
+  spellId?: string; // Spell cast when invoked
+  charges?: number; // Number of uses remaining (for consumables/invokables)
+  maxCharges?: number; // Maximum charges for reference
+  rarity?: ItemRarity; // Item rarity (assigned at drop time)
 }
 
 export interface ItemEffect {
@@ -120,6 +131,7 @@ export interface Monster {
   experience: number;
   gold: number;
   itemDrops: ItemDrop[];
+  lootDrops?: LootDrop[];  // New loot system (takes precedence if present)
   resistances: string[];
   weaknesses: string[];
   sprite?: string;
@@ -135,6 +147,15 @@ export interface Attack {
 export interface ItemDrop {
   itemId: string;
   chance: number;
+}
+
+export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+
+export interface LootDrop {
+  itemId: string;
+  chance: number;              // Base drop chance
+  minLevel?: number;           // Level requirements
+  maxLevel?: number;
 }
 
 export interface DungeonTile {
@@ -214,12 +235,14 @@ export interface GameState {
   turnCount: number;
   combatEnabled: boolean;
   messageLog?: any; // MessageLog instance that persists across scenes
+  hasEnteredDungeon?: boolean; // Track if player has entered dungeon to prevent duplicate messages
   encounterContext?: {
     zoneType: string;
     bossType?: string;
     description?: string;
     monsterGroups?: string[];
   };
+  pendingLoot?: Item[]; // Items waiting to be distributed after combat
 }
 
 export interface Encounter {

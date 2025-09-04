@@ -16,7 +16,20 @@ export class InputManager {
 
   private setupEventListeners(): void {
     this.keyDownHandler = event => {
-      const key = event.key.toLowerCase();
+      let key = event.key.toLowerCase();
+      
+      // Debug logging for ctrl combinations
+      if (event.ctrlKey) {
+        console.log('[INPUT DEBUG] Original key:', event.key);
+        console.log('[INPUT DEBUG] After lowercase:', key);
+      }
+      
+      // Handle modifier keys
+      if (event.ctrlKey && key !== 'control') {
+        key = 'ctrl+' + key;
+        console.log('[INPUT DEBUG] Final key string:', key);
+      }
+      
       this.keys.add(key);
 
       // Check if enough time has passed since the last press of this key
@@ -45,7 +58,13 @@ export class InputManager {
     };
 
     this.keyUpHandler = event => {
-      const key = event.key.toLowerCase();
+      let key = event.key.toLowerCase();
+      
+      // Handle modifier keys
+      if (event.ctrlKey && key !== 'control') {
+        key = 'ctrl+' + key;
+      }
+      
       this.keys.delete(key);
       this.lastKeyPressTime.delete(key);
     };

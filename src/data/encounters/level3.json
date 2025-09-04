@@ -1,0 +1,16 @@
+{
+  "level": 3,
+  "dropRateMultiplier": 1.2,
+  "encounters": [
+    {
+      "monsterId": "goblin",
+      "levelRange": [3, 4],
+      "weight": 25
+    },
+    {
+      "monsterId": "orc",
+      "levelRange": [3, 5],
+      "weight": 45
+    }
+  ]
+}
