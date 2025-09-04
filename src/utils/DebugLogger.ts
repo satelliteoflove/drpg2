@@ -4,6 +4,7 @@ interface LogEntry {
   module: string;
   message: string;
   data?: any;
+  asciiSnapshot?: string;
 }
 
 export class DebugLogger {
@@ -11,6 +12,7 @@ export class DebugLogger {
   private static maxLogs = 10000; // Maximum logs to keep in memory
   private static isEnabled = true; // Can be toggled via localStorage
   private static logLevel: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' = 'DEBUG';
+  private static asciiStateCallback: (() => string) | null = null;
   
   static {
     // Check localStorage for debug settings
@@ -189,5 +191,71 @@ export class DebugLogger {
         this.info('DebugLogger', 'Logs exported via keyboard shortcut');
       }
     });
+  }
+
+  /**
+   * Set ASCII state provider for capturing snapshots
+   */
+  public static setASCIIStateProvider(provider: () => string): void {
+    this.asciiStateCallback = provider;
+    this.info('DebugLogger', 'ASCII state provider registered');
+  }
+
+  /**
+   * Log with ASCII snapshot
+   */
+  public static logWithASCII(
+    level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR',
+    module: string,
+    message: string,
+    data?: any
+  ): void {
+    if (!this.shouldLog(level)) return;
+    
+    const asciiSnapshot = this.asciiStateCallback ? this.asciiStateCallback() : undefined;
+    
+    this.addLog({
+      timestamp: this.formatTimestamp(),
+      level,
+      module,
+      message,
+      data,
+      asciiSnapshot
+    });
+  }
+
+  /**
+   * Get logs with ASCII snapshots
+   */
+  public static getLogsWithASCII(): LogEntry[] {
+    return this.logs.filter(log => log.asciiSnapshot !== undefined);
+  }
+
+  /**
+   * Export logs with ASCII snapshots to file
+   */
+  public static exportASCIILogs(): void {
+    if (typeof window === 'undefined') return;
+    
+    const asciiLogs = this.getLogsWithASCII();
+    const content = asciiLogs
+      .map(log => `${log.timestamp} [${log.level}] ${log.module}: ${log.message}
+ASCII State:
+${log.asciiSnapshot}
+${log.data ? 'Data: ' + JSON.stringify(log.data, null, 2) : ''}
+${'='.repeat(80)}`)
+      .join('\n\n');
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `drpg2-ascii-debug-${new Date().toISOString().replace(/:/g, '-')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    this.info('DebugLogger', 'ASCII logs exported');
   }
 }

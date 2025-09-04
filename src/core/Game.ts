@@ -20,6 +20,7 @@ import { GameServices } from '../services/GameServices';
 import { LayerTestUtils } from '../utils/LayerTestUtils';
 import { MessageLog } from '../ui/MessageLog';
 import { DebugLogger } from '../utils/DebugLogger';
+import { PerformanceMonitor } from '../utils/PerformanceMonitor';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -34,6 +35,7 @@ export class Game {
   private playtimeStart: number = Date.now();
   private frameCount: number = 0;
   private autoSaveFrameCounter: number = 0;
+  private performanceMonitor: PerformanceMonitor;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -50,6 +52,7 @@ export class Game {
     this.renderManager = this.services.getRenderManager();
     this.sceneManager = this.services.getSceneManager();
     this.inputManager = this.services.getInputManager();
+    this.performanceMonitor = PerformanceMonitor.getInstance();
     
     this.initializeManagers();
     this.initializeGameState();
@@ -218,6 +221,11 @@ export class Game {
     this.sceneManager.addScene('town', new TownScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('shop', new ShopScene(this.gameState, this.sceneManager));
 
+    // Set up scene change listener for performance monitoring
+    this.sceneManager.onSceneChange = (sceneName: string) => {
+      this.performanceMonitor.startMonitoring(sceneName);
+    };
+
     this.sceneManager.switchTo('main_menu');
   }
 
@@ -263,6 +271,8 @@ export class Game {
   };
 
   private update(deltaTime: number): void {
+    this.performanceMonitor.markUpdateStart();
+    
     this.gameState.gameTime += deltaTime;
     this.frameCount++;
     this.sceneManager.update(deltaTime);
@@ -276,9 +286,13 @@ export class Game {
       }
       this.autoSaveFrameCounter = 0;
     }
+    
+    this.performanceMonitor.markUpdateEnd();
   }
 
   private render(): void {
+    this.performanceMonitor.markRenderStart();
+    
     ErrorHandler.safeCanvasOperation(
       () => {
         // Start frame timing and skip if needed for performance
@@ -331,6 +345,9 @@ export class Game {
       undefined,
       'Game.render'
     );
+    
+    this.performanceMonitor.markRenderEnd();
+    this.performanceMonitor.recordFrame();
   }
 
   private renderDebugInfo(): void {

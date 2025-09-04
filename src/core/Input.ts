@@ -1,4 +1,5 @@
 import { GAME_CONFIG } from '../config/GameConstants';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export class InputManager {
   private keys: Set<string> = new Set();
@@ -19,15 +20,16 @@ export class InputManager {
       let key = event.key.toLowerCase();
       
       // Debug logging for ctrl combinations
-      if (event.ctrlKey) {
-        console.log('[INPUT DEBUG] Original key:', event.key);
-        console.log('[INPUT DEBUG] After lowercase:', key);
+      if (event.ctrlKey && GAME_CONFIG.DEBUG_MODE) {
+        DebugLogger.debug('InputManager', `Original key: ${event.key}, After lowercase: ${key}`);
       }
       
       // Handle modifier keys
       if (event.ctrlKey && key !== 'control') {
         key = 'ctrl+' + key;
-        console.log('[INPUT DEBUG] Final key string:', key);
+        if (GAME_CONFIG.DEBUG_MODE) {
+          DebugLogger.debug('InputManager', `Final key string: ${key}`);
+        }
       }
       
       this.keys.add(key);
