@@ -2,6 +2,7 @@ import { Party } from '../entities/Party';
 import { Character } from '../entities/Character';
 import { Item } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export interface ShopTransaction {
   success: boolean;
@@ -246,7 +247,7 @@ export class ShopSystem {
     };
   }
 
-  public static poolGold(party: Party): { totalGold: number; goldByCharacter: Array<{name: string, gold: number}> } {
+  public static viewGoldDistribution(party: Party): { totalGold: number; goldByCharacter: Array<{name: string, gold: number}> } {
     const goldByCharacter = party.characters.map(char => ({
       name: char.name,
       gold: char.gold
@@ -255,6 +256,75 @@ export class ShopSystem {
     return {
       totalGold: party.getTotalGold(),
       goldByCharacter
+    };
+  }
+
+  public static poolGold(party: Party, targetCharacter?: Character): ShopTransaction {
+    const totalGold = party.getTotalGold();
+    
+    if (totalGold === 0) {
+      return {
+        success: false,
+        message: 'No gold to pool!'
+      };
+    }
+
+    // If no target specified, pool to first character
+    const recipient = targetCharacter || party.characters[0];
+    
+    // Collect all gold
+    let collectedGold = 0;
+    for (const char of party.characters) {
+      if (char !== recipient) {
+        collectedGold += char.gold;
+        char.gold = 0;
+      }
+    }
+    
+    // Give all gold to recipient
+    recipient.gold += collectedGold;
+    
+    return {
+      success: true,
+      message: `Pooled ${totalGold} gold to ${recipient.name}.`,
+      cost: totalGold
+    };
+  }
+
+  public static distributeGoldEvenly(party: Party): ShopTransaction {
+    const totalGold = party.getTotalGold();
+    const aliveChars = party.characters.filter(char => !char.isDead);
+    
+    if (aliveChars.length === 0) {
+      return {
+        success: false,
+        message: 'No living characters to distribute gold to!'
+      };
+    }
+    
+    if (totalGold === 0) {
+      return {
+        success: false,
+        message: 'No gold to distribute!'
+      };
+    }
+    
+    // Calculate even distribution
+    const goldPerChar = Math.floor(totalGold / aliveChars.length);
+    const remainder = totalGold % aliveChars.length;
+    
+    // Reset all gold
+    party.characters.forEach(char => { char.gold = 0; });
+    
+    // Distribute evenly
+    aliveChars.forEach((char, index) => {
+      char.gold = goldPerChar + (index < remainder ? 1 : 0);
+    });
+    
+    return {
+      success: true,
+      message: `Distributed ${totalGold} gold evenly among party members.`,
+      cost: totalGold
     };
   }
 
@@ -275,7 +345,7 @@ export class ShopSystem {
     }
 
     if (remaining > 0) {
-      console.warn(`Could not deduct full amount! ${remaining} gold remaining after deduction.`);
+      DebugLogger.warn('ShopSystem', `Could not deduct full amount! ${remaining} gold remaining after deduction.`);
     }
   }
 

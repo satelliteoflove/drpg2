@@ -7,7 +7,7 @@ import { GameUtilities } from '../utils/GameUtilities';
 import { UI_CONSTANTS } from '../config/UIConstants';
 import { DebugLogger } from '../utils/DebugLogger';
 
-type ShopState = 'main_menu' | 'buying_category' | 'buying_items' | 'buying_character_select' | 'selling_character_select' | 'selling_items' | 'selling_confirmation';
+type ShopState = 'main_menu' | 'buying_category' | 'buying_items' | 'buying_character_select' | 'selling_character_select' | 'selling_items' | 'selling_confirmation' | 'pooling_gold';
 
 export class ShopScene extends Scene {
   private gameState: GameState;
@@ -24,6 +24,7 @@ export class ShopScene extends Scene {
     'Buy Items',
     'Sell Items', 
     'Identify Items',
+    'Pool Gold',
     'Remove Curses',
     'Leave Shop'
   ];
@@ -97,6 +98,9 @@ export class ShopScene extends Scene {
       case 'selling_confirmation':
         this.renderSellingConfirmation(ctx);
         break;
+      case 'pooling_gold':
+        this.renderPoolingGold(ctx);
+        break;
     }
   }
 
@@ -116,6 +120,8 @@ export class ShopScene extends Scene {
         return this.handleSellingItemListInput(key);
       case 'selling_confirmation':
         return this.handleSellingConfirmationInput(key);
+      case 'pooling_gold':
+        return this.handlePoolingGoldInput(key);
       default:
         return false;
     }
@@ -175,6 +181,15 @@ export class ShopScene extends Scene {
         font: RenderingUtils.FONTS.SMALL
       });
     } else if (this.selectedOption === 3) {
+      RenderingUtils.renderText(ctx, 'Pool all party gold to one character', 50, 400, {
+        color: RenderingUtils.COLORS.GRAY,
+        font: RenderingUtils.FONTS.SMALL
+      });
+      RenderingUtils.renderText(ctx, 'Or distribute gold evenly among party', 50, 420, {
+        color: RenderingUtils.COLORS.GRAY,
+        font: RenderingUtils.FONTS.SMALL
+      });
+    } else if (this.selectedOption === 4) {
       RenderingUtils.renderText(ctx, 'Remove curses from cursed items', 50, 400, {
         color: RenderingUtils.COLORS.GRAY,
         font: RenderingUtils.FONTS.SMALL
@@ -480,14 +495,61 @@ export class ShopScene extends Scene {
         DebugLogger.info('ShopScene', 'Identify Items not yet implemented');
         break;
         
-      case 3: // Remove Curses
+      case 3: // Pool Gold
+        this.currentState = 'pooling_gold';
+        this.selectedCharacterIndex = 0;
+        break;
+        
+      case 4: // Remove Curses
         DebugLogger.info('ShopScene', 'Remove Curses not yet implemented');
         break;
         
-      case 4: // Leave Shop
+      case 5: // Leave Shop
         this.sceneManager.switchTo('town');
         break;
     }
+  }
+
+  private handlePoolingGoldInput(key: string): boolean {
+    switch (key) {
+      case 'arrowup':
+      case 'w':
+        this.selectedCharacterIndex = Math.max(0, this.selectedCharacterIndex - 1);
+        return true;
+
+      case 'arrowdown':
+      case 's':
+        this.selectedCharacterIndex = Math.min(
+          this.gameState.party.characters.length - 1,
+          this.selectedCharacterIndex
+        );
+        return true;
+
+      case 'enter':
+      case ' ':
+        // Pool all gold to selected character
+        const targetChar = this.gameState.party.characters[this.selectedCharacterIndex];
+        const result = ShopSystem.poolGold(this.gameState.party, targetChar);
+        DebugLogger.info('ShopScene', result.message);
+        this.currentState = 'main_menu';
+        this.selectedOption = 3; // Stay on Pool Gold option
+        return true;
+        
+      case 'd':
+        // Distribute evenly
+        const distResult = ShopSystem.distributeGoldEvenly(this.gameState.party);
+        DebugLogger.info('ShopScene', distResult.message);
+        this.currentState = 'main_menu';
+        this.selectedOption = 3; // Stay on Pool Gold option
+        return true;
+
+      case 'escape':
+        this.currentState = 'main_menu';
+        this.selectedOption = 3; // Stay on Pool Gold option
+        return true;
+    }
+    
+    return false;
   }
 
   private attemptPurchase(): void {
@@ -639,6 +701,55 @@ export class ShopScene extends Scene {
       ctx.canvas.width / 2,
       ctx.canvas.height - 20
     );
+  }
+
+  private renderPoolingGold(ctx: CanvasRenderingContext2D): void {
+    RenderingUtils.renderCenteredText(ctx, 'POOL PARTY GOLD', UI_CONSTANTS.LAYOUT.HEADER_HEIGHT, {
+      color: RenderingUtils.COLORS.WHITE,
+      font: RenderingUtils.FONTS.TITLE_LARGE
+    });
+
+    // Show current gold distribution
+    const goldInfo = ShopSystem.viewGoldDistribution(this.gameState.party);
+    
+    let yPos = UI_CONSTANTS.LAYOUT.CONTENT_START_Y;
+    RenderingUtils.renderCenteredText(ctx, `Total Party Gold: ${goldInfo.totalGold}`, yPos, {
+      color: RenderingUtils.COLORS.GOLD,
+      font: RenderingUtils.FONTS.NORMAL
+    });
+    
+    yPos += 40;
+    RenderingUtils.renderCenteredText(ctx, 'Current Distribution:', yPos, {
+      color: RenderingUtils.COLORS.WHITE,
+      font: RenderingUtils.FONTS.NORMAL
+    });
+    
+    yPos += 30;
+    goldInfo.goldByCharacter.forEach((charGold, index) => {
+      const isSelected = index === this.selectedCharacterIndex;
+      const prefix = isSelected ? '> ' : '  ';
+      RenderingUtils.renderCenteredText(
+        ctx, 
+        `${prefix}${charGold.name}: ${charGold.gold} gold`,
+        yPos + (index * 25),
+        {
+          color: isSelected ? RenderingUtils.COLORS.GOLD : RenderingUtils.COLORS.WHITE,
+          font: RenderingUtils.FONTS.NORMAL
+        }
+      );
+    });
+    
+    yPos += (this.gameState.party.characters.length * 25) + 40;
+    RenderingUtils.renderCenteredText(ctx, 'Select character to receive all gold', yPos, {
+      color: RenderingUtils.COLORS.GRAY,
+      font: RenderingUtils.FONTS.SMALL
+    });
+    
+    yPos += 30;
+    RenderingUtils.renderCenteredText(ctx, '[Enter] Pool to selected | [D] Distribute evenly | [Escape] Cancel', yPos, {
+      color: RenderingUtils.COLORS.GRAY,
+      font: RenderingUtils.FONTS.SMALL
+    });
   }
 
   private renderSellingConfirmation(ctx: CanvasRenderingContext2D): void {
