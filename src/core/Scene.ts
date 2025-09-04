@@ -39,6 +39,7 @@ export class SceneManager {
   private currentScene: Scene | null = null;
   private nextScene: string | null = null;
   private renderManager?: RenderManager;
+  public onSceneChange?: (sceneName: string) => void;
 
   public setRenderManager(renderManager: RenderManager): void {
     this.renderManager = renderManager;
@@ -81,6 +82,10 @@ export class SceneManager {
         // Reset layers for the new scene
         if (this.renderManager) {
           this.renderManager.resetForSceneChange();
+        }
+        // Notify about scene change for performance monitoring
+        if (this.onSceneChange) {
+          this.onSceneChange(this.currentScene.getName());
         }
         this.currentScene.enter();
       }
