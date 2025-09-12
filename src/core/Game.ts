@@ -387,4 +387,8 @@ export class Game {
   public getGameState(): GameState {
     return this.gameState;
   }
+
+  public getSceneManager(): SceneManager {
+    return this.sceneManager;
+  }
 }

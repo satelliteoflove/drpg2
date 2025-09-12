@@ -270,6 +270,7 @@ if (typeof window !== 'undefined') {
     disable: (key: string) => FeatureFlags.setOverride(key, false),
     clear: (key: string) => FeatureFlags.clearOverride(key),
     clearAll: () => FeatureFlags.clearAllOverrides(),
+    isEnabled: (key: string) => FeatureFlags.isEnabled(key),
     status: () => console.table(FeatureFlags.getStatus()),
     export: () => console.log(FeatureFlags.exportConfig())
   };

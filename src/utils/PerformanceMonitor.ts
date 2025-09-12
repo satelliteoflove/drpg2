@@ -195,10 +195,11 @@ export class PerformanceMonitor {
         this.lastFrameTime = currentTime;
 
         // Log warnings for performance issues
-        if (fps < MIN_ACCEPTABLE_FPS) {
-            DebugLogger.warn('PerformanceMonitor', 
-                `Low FPS detected in ${this.currentScene}: ${fps.toFixed(1)} FPS`);
-        }
+        // Commented out - too verbose
+        // if (fps < MIN_ACCEPTABLE_FPS) {
+        //     DebugLogger.warn('PerformanceMonitor', 
+        //         `Low FPS detected in ${this.currentScene}: ${fps.toFixed(1)} FPS`);
+        // }
     }
 
     public getCurrentFPS(): number {
