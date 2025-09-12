@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manual Rotation Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #222;
+            color: #0f0;
+        }
+        #status {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        #log {
+            border: 1px solid #0f0;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 16px;
+            background: #333;
+            color: #0f0;
+            border: 1px solid #0f0;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body>
+    <h1>Manual Rotation Test</h1>
+    <div id="status">Click "Start Test" to begin</div>
+    <div>
+        <button onclick="startTest()">Start Test</button>
+        <button onclick="testKeyboard()">Test Keyboard Input</button>
+    </div>
+    <div id="log"></div>
+    
+    <script>
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        
+        function addLog(message) {
+            log.textContent += message + '\n';
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function startTest() {
+            addLog('=== Starting Manual Rotation Test ===');
+            
+            // Check if game exists
+            if (!window.parent.game) {
+                addLog('ERROR: No game object found. Make sure game is loaded.');
+                return;
+            }
+            
+            const game = window.parent.game;
+            addLog('Game object found.');
+            
+            // Check gameState
+            if (!game.gameState) {
+                addLog('ERROR: No gameState found.');
+                return;
+            }
+            
+            addLog('GameState found.');
+            
+            // Check party
+            if (!game.gameState.party) {
+                addLog('ERROR: No party found.');
+                return;
+            }
+            
+            const party = game.gameState.party;
+            addLog('Party found. Current facing: ' + party.facing);
+            
+            // Test party.move function
+            addLog('\n=== Testing party.move() directly ===');
+            
+            party.facing = 'north';
+            addLog('Set facing to north');
+            
+            party.move('right');
+            addLog('Called party.move("right") - facing is now: ' + party.facing);
+            
+            party.move('right');
+            addLog('Called party.move("right") - facing is now: ' + party.facing);
+            
+            party.move('right');
+            addLog('Called party.move("right") - facing is now: ' + party.facing);
+            
+            party.move('right');
+            addLog('Called party.move("right") - facing is now: ' + party.facing);
+            
+            addLog('\nTesting left turns:');
+            party.move('left');
+            addLog('Called party.move("left") - facing is now: ' + party.facing);
+            
+            party.move('left');
+            addLog('Called party.move("left") - facing is now: ' + party.facing);
+            
+            status.textContent = 'Test complete - check log for results';
+        }
+        
+        function testKeyboard() {
+            addLog('\n=== Testing Keyboard Input ===');
+            
+            if (!window.parent.game) {
+                addLog('ERROR: No game object found.');
+                return;
+            }
+            
+            const game = window.parent.game;
+            const scene = game.sceneManager?.currentScene;
+            
+            if (!scene) {
+                addLog('ERROR: No current scene found.');
+                return;
+            }
+            
+            addLog('Current scene: ' + scene.constructor.name);
+            
+            // Check if we're in DungeonScene
+            if (scene.constructor.name !== 'DungeonScene') {
+                addLog('Not in DungeonScene. Switching...');
+                game.sceneManager.switchTo('dungeon');
+                setTimeout(testKeyboard, 500);
+                return;
+            }
+            
+            const party = game.gameState.party;
+            addLog('Initial facing: ' + party.facing);
+            
+            // Simulate key presses
+            addLog('\nSimulating key presses:');
+            
+            const initialFacing = party.facing;
+            
+            // Simulate 'd' key
+            scene.handleInput('d');
+            addLog('Pressed "d" - facing is now: ' + party.facing);
+            
+            // Simulate arrow right
+            scene.handleInput('arrowright');
+            addLog('Pressed "arrowright" - facing is now: ' + party.facing);
+            
+            // Simulate 'a' key
+            scene.handleInput('a');
+            addLog('Pressed "a" - facing is now: ' + party.facing);
+            
+            // Simulate arrow left
+            scene.handleInput('arrowleft');
+            addLog('Pressed "arrowleft" - facing is now: ' + party.facing);
+            
+            status.textContent = 'Keyboard test complete';
+        }
+        
+        // Auto-run if opened in iframe
+        if (window !== window.parent) {
+            setTimeout(startTest, 1000);
+        }
+    </script>
+</body>
+</html>
