@@ -12,6 +12,9 @@ import { KEY_BINDINGS } from '../config/KeyBindings';
 import { CombatSystem } from '../systems/CombatSystem';
 import { DebugLogger } from '../utils/DebugLogger';
 import { UI_CONSTANTS } from '../config/UIConstants';
+import { DungeonASCIIState } from '../rendering/scenes/DungeonASCIIState';
+import { CanvasRenderer, RendererConfig } from '../rendering/CanvasRenderer';
+import { FeatureFlags, FeatureFlagKey } from '../config/FeatureFlags';
 
 export class DungeonScene extends Scene {
   private gameState: GameState;
@@ -26,6 +29,10 @@ export class DungeonScene extends Scene {
   private moveDelay: number = UI_CONSTANTS.TIMING.MOVE_DELAY;
   private lastTileEventPosition: { x: number; y: number; floor: number } | null = null;
   private lastEncounterPosition: { x: number; y: number; floor: number } | null = null;
+  
+  // ASCII rendering components
+  private dungeonASCIIState: DungeonASCIIState | null = null;
+  private canvasRenderer: CanvasRenderer | null = null;
   
   // Item pickup state
   private itemPickupState: 'none' | 'selecting_character' = 'none';
@@ -92,6 +99,77 @@ export class DungeonScene extends Scene {
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
+    if (this.shouldUseASCIIRendering()) {
+      this.renderASCII(ctx);
+    } else {
+      this.renderImperative(ctx);
+    }
+  }
+
+  private shouldUseASCIIRendering(): boolean {
+    return FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) || 
+           FeatureFlags.isEnabled('DUNGEON_ASCII', 'Dungeon');
+  }
+
+  private renderASCII(ctx: CanvasRenderingContext2D): void {
+    if (!this.dungeonASCIIState) {
+      this.initializeASCIIComponents(ctx.canvas);
+    }
+
+    const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
+    if (!currentDungeon) return;
+
+    // Update ASCII state with current game data
+    this.dungeonASCIIState!.setDungeon(currentDungeon);
+    this.dungeonASCIIState!.setPlayerPosition(
+      this.gameState.party.x,
+      this.gameState.party.y,
+      this.gameState.party.facing
+    );
+
+    // Update view based on map visibility
+    this.dungeonASCIIState!.setMapVisible(this.dungeonMapView?.getIsVisible() || false);
+    this.dungeonASCIIState!.updateDungeonView();
+
+    // Render status and messages
+    this.dungeonASCIIState!.renderStatusPanel(this.gameState.party);
+    
+    // Get recent messages from log
+    const messages: string[] = [];
+    if (this.messageLog && this.messageLog.messages) {
+      const recentMessages = this.messageLog.messages.slice(-4);
+      recentMessages.forEach((msg: any) => {
+        messages.push(msg.text || msg);
+      });
+    }
+    this.dungeonASCIIState!.renderMessageLog(messages);
+    
+    // Render controls
+    this.dungeonASCIIState!.renderControls();
+
+    // Handle special UI states
+    if (this.itemPickupState === 'selecting_character') {
+      const aliveCharacters = this.gameState.party.getAliveCharacters();
+      const currentItem = this.itemsToPickup[this.currentItemIndex];
+      const itemName = currentItem.identified ? currentItem.name : currentItem.unidentifiedName || '?Item';
+      this.dungeonASCIIState!.renderItemPickupUI(itemName, aliveCharacters, this.selectedCharacterIndex);
+    }
+
+    if (this.isAwaitingCastleStairsResponse) {
+      this.dungeonASCIIState!.renderCastleStairsPrompt();
+    }
+
+    // Render to canvas
+    if (this.canvasRenderer) {
+      this.canvasRenderer.renderASCIIGrid(this.dungeonASCIIState!.getGrid());
+    }
+
+    // Update debug overlay
+    this.updateDebugData();
+    this.debugOverlay?.render(this.gameState);
+  }
+
+  private renderImperative(ctx: CanvasRenderingContext2D): void {
     if (!this.dungeonView) {
       this.initializeUI(ctx.canvas);
     }
@@ -129,64 +207,70 @@ export class DungeonScene extends Scene {
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
-    const { renderManager } = renderContext;
-    
-    if (!this.dungeonView) {
-      this.initializeUI(renderContext.mainContext.canvas);
-    }
-
-    // Render background layer - CRITICAL for preventing black screen
-    renderManager.renderBackground((ctx) => {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    });
-
-    const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
-    if (currentDungeon) {
-      this.dungeonView.setDungeon(currentDungeon);
-      this.dungeonView.setPlayerPosition(
-        this.gameState.party.x,
-        this.gameState.party.y,
-        this.gameState.party.facing
-      );
-
-      this.dungeonMapView.setDungeon(currentDungeon);
-      this.dungeonMapView.setPlayerPosition(
-        this.gameState.party.x,
-        this.gameState.party.y,
-        this.gameState.party.facing
-      );
-
-      renderManager.renderDungeon((ctx) => {
-        if (!this.dungeonMapView.getIsVisible()) {
-          // Pass the layer context to dungeonView
-          this.dungeonView.render(ctx);
-        }
-      });
-
-      renderManager.renderUI((ctx) => {
-        if (!this.dungeonMapView.getIsVisible()) {
-          this.statusPanel.render(this.gameState.party, ctx);
-          this.messageLog.render(ctx);
-          this.renderControls(ctx);
-          this.renderItemPickupUI(ctx);
-        }
-        this.dungeonMapView.render(ctx);
-        
-        // Update debug overlay with current system data
-        this.updateDebugData();
-        
-        // Always render debug overlay last so it appears on top
-        this.debugOverlay.render(this.gameState);
-      });
+    if (this.shouldUseASCIIRendering()) {
+      // ASCII rendering uses single layer
+      this.render(renderContext.mainContext);
     } else {
-      // Fallback if no dungeon data
-      renderManager.renderUI((ctx) => {
-        ctx.fillStyle = '#fff';
-        ctx.font = '24px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('No dungeon data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+      // Original layered rendering
+      const { renderManager } = renderContext;
+      
+      if (!this.dungeonView) {
+        this.initializeUI(renderContext.mainContext.canvas);
+      }
+
+      // Render background layer - CRITICAL for preventing black screen
+      renderManager.renderBackground((ctx) => {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       });
+
+      const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
+      if (currentDungeon) {
+        this.dungeonView.setDungeon(currentDungeon);
+        this.dungeonView.setPlayerPosition(
+          this.gameState.party.x,
+          this.gameState.party.y,
+          this.gameState.party.facing
+        );
+
+        this.dungeonMapView.setDungeon(currentDungeon);
+        this.dungeonMapView.setPlayerPosition(
+          this.gameState.party.x,
+          this.gameState.party.y,
+          this.gameState.party.facing
+        );
+
+        renderManager.renderDungeon((ctx) => {
+          if (!this.dungeonMapView.getIsVisible()) {
+            // Pass the layer context to dungeonView
+            this.dungeonView.render(ctx);
+          }
+        });
+
+        renderManager.renderUI((ctx) => {
+          if (!this.dungeonMapView.getIsVisible()) {
+            this.statusPanel.render(this.gameState.party, ctx);
+            this.messageLog.render(ctx);
+            this.renderControls(ctx);
+            this.renderItemPickupUI(ctx);
+          }
+          this.dungeonMapView.render(ctx);
+          
+          // Update debug overlay with current system data
+          this.updateDebugData();
+          
+          // Always render debug overlay last so it appears on top
+          this.debugOverlay.render(this.gameState);
+        });
+      } else {
+        // Fallback if no dungeon data
+        renderManager.renderUI((ctx) => {
+          ctx.fillStyle = '#fff';
+          ctx.font = '24px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('No dungeon data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+        });
+      }
     }
   }
 
@@ -195,6 +279,26 @@ export class DungeonScene extends Scene {
     this.statusPanel = new StatusPanel(canvas, 624, 0, 400, 500);
     this.dungeonMapView = new DungeonMapView(canvas);
     this.debugOverlay = new DebugOverlay(canvas);
+  }
+
+  private initializeASCIIComponents(canvas: HTMLCanvasElement): void {
+    const rendererConfig: RendererConfig = {
+      charWidth: 10,
+      charHeight: 20,
+      fontFamily: 'monospace',
+      fontSize: 16,
+      antialiasing: false
+    };
+    
+    this.dungeonASCIIState = new DungeonASCIIState();
+    this.canvasRenderer = new CanvasRenderer(canvas, rendererConfig);
+    
+    // Also initialize imperative components for fallback
+    if (!this.dungeonView) {
+      this.initializeUI(canvas);
+    }
+    
+    DebugLogger.info('DungeonScene', 'ASCII rendering components initialized');
   }
 
   private handleMovement(): void {
@@ -228,22 +332,26 @@ export class DungeonScene extends Scene {
     } else if (movement.left) {
       attempted = true;
       this.gameState.party.move('left');
-      moved = true;
+      // Turning is not actual movement, don't set moved = true
       // Remove verbose turning message - let important events speak for themselves
     } else if (movement.right) {
       attempted = true;
       this.gameState.party.move('right');
-      moved = true;
+      // Turning is not actual movement, don't set moved = true
       // Remove verbose turning message - let important events speak for themselves
     }
 
     if (attempted) {
       this.lastMoveTime = now;
       if (moved) {
+        // Only for actual movement (forward/backward)
         this.gameState.turnCount++;
         this.markCurrentTileDiscovered();
         this.lastTileEventPosition = null;
         this.checkRandomEncounter(); // Only check encounters when player actually moves
+      } else if (movement.left || movement.right) {
+        // For turning only - increment turn count but don't check encounters
+        this.gameState.turnCount++;
       }
     }
   }
@@ -536,6 +644,26 @@ export class DungeonScene extends Scene {
     // Handle item pickup selection state
     if (this.itemPickupState === 'selecting_character') {
       return this.handleItemPickupSelection(key);
+    }
+    
+    // Handle movement keys directly for immediate response (especially in tests)
+    // But only for turning - forward/backward needs collision checking from handleMovement
+    if (key === 'a' || key === 'arrowleft') {
+      const now = Date.now();
+      if (now - this.lastMoveTime >= this.moveDelay) {
+        this.gameState.party.move('left');
+        this.gameState.turnCount++;
+        this.lastMoveTime = now;
+      }
+      return true;
+    } else if (key === 'd' || key === 'arrowright') {
+      const now = Date.now();
+      if (now - this.lastMoveTime >= this.moveDelay) {
+        this.gameState.party.move('right');
+        this.gameState.turnCount++;
+        this.lastMoveTime = now;
+      }
+      return true;
     }
 
     if (key === 'enter' || key === ' ') {
@@ -935,5 +1063,18 @@ export class DungeonScene extends Scene {
     }
     
     return false;
+  }
+
+  // Testing helpers - expose private properties for Playwright tests
+  public getASCIIState(): DungeonASCIIState | null {
+    return this.dungeonASCIIState;
+  }
+
+  public getCanvasRenderer(): CanvasRenderer | null {
+    return this.canvasRenderer;
+  }
+
+  public getDungeonView(): DungeonView | null {
+    return this.dungeonView;
   }
 }
