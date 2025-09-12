@@ -1,0 +1,275 @@
+import { BaseASCIIScene } from '../BaseASCIIScene';
+import { ASCIIState, ASCII_GRID_WIDTH, ASCII_GRID_HEIGHT } from '../ASCIIState';
+import { ASCII_SYMBOLS } from '../ASCIISymbols';
+import { SceneDeclaration, InputZone } from '../SceneDeclaration';
+import { GameState } from '../../types/GameTypes';
+import { SceneManager } from '../../core/Scene';
+import { DebugLogger } from '../../utils/DebugLogger';
+
+export class TownASCIIState extends BaseASCIIScene {
+  private sceneManager: SceneManager;
+  private selectedOption: number = 0;
+  private menuOptions: Array<{
+    name: string;
+    description: string;
+    available: boolean;
+    sceneId?: string;
+  }> = [
+    {
+      name: "Boltac's Trading Post",
+      description: 'Buy, sell, and identify items. Pool your gold for better purchases.',
+      available: true,
+      sceneId: 'shop'
+    },
+    {
+      name: 'Temple of Cant',
+      description: 'Heal your party and remove curses',
+      available: false
+    },
+    {
+      name: "Adventurer's Inn",
+      description: 'Rest and recover your party',
+      available: false
+    },
+    {
+      name: 'Gilgamesh Tavern',
+      description: 'Gather information and recruit party members',
+      available: false
+    },
+    {
+      name: 'Training Grounds',
+      description: 'Create and manage characters',
+      available: false
+    },
+    {
+      name: 'Edge of Town',
+      description: 'Return to the dungeon depths',
+      available: true,
+      sceneId: 'dungeon'
+    }
+  ];
+
+  constructor(_gameState: GameState, sceneManager: SceneManager) {
+    super('Town', 'ascii_town_scene');
+    this.sceneManager = sceneManager;
+    this.initializeTownLayout();
+  }
+
+  public updateSelectedIndex(index: number): void {
+    this.selectedOption = index;
+    this.initializeTownLayout();
+  }
+
+  public getGrid(): ASCIIState {
+    return this.asciiState;
+  }
+
+  public render(): void {
+    this.initializeTownLayout();
+  }
+
+  private initializeTownLayout(): void {
+    const grid = this.asciiState;
+    
+    // Draw town border (leave room at bottom for help text)
+    grid.drawBox(0, 0, ASCII_GRID_WIDTH, ASCII_GRID_HEIGHT - 3);
+    
+    // Title - Add [ASCII MODE] indicator
+    const title = 'TOWN OF LLYLGAMYN [ASCII MODE]';
+    const titleX = Math.floor((ASCII_GRID_WIDTH - title.length) / 2);
+    grid.writeText(titleX, 2, title, { foreground: '#FFFF00', bold: true });
+    
+    // Subtitle
+    const subtitle = 'Welcome to the castle town!';
+    const subtitleX = Math.floor((ASCII_GRID_WIDTH - subtitle.length) / 2);
+    grid.writeText(subtitleX, 4, subtitle, { foreground: '#AAAAAA' });
+    
+    // Draw ASCII art representation of town
+    this.drawTownArt(grid);
+    
+    // Draw menu
+    this.drawMenu(grid);
+    
+    // Draw help text
+    const helpText = 'UP/DOWN: Select   ENTER: Choose   ESC: Leave Town';
+    const helpX = Math.floor((ASCII_GRID_WIDTH - helpText.length) / 2);
+    grid.writeText(helpX, ASCII_GRID_HEIGHT - 2, helpText, { foreground: '#666666' });
+  }
+
+  private drawTownArt(grid: ASCIIState): void {
+    // Simple ASCII art representation of town buildings
+    const artLines = [
+      '     /\\           [][]    ___        /\\      ___     ',
+      '    /  \\    B    [][][]  |INN|      /  \\    | T |    ',
+      '   /    \\  ===   [][][]  |___|     /____\\   |___|    ',
+      '  |CASTLE| |B|   [][][]            |TAVERN|           ',
+      '  |______|_|_|___[][][]____________|______|___________',
+      '                                                       ',
+      '              === Training Grounds ===                ',
+      '         [E] Edge of Town - To the Dungeon            '
+    ];
+    
+    const artStartY = 6;
+    const artStartX = Math.floor((ASCII_GRID_WIDTH - artLines[0].length) / 2);
+    
+    artLines.forEach((line, index) => {
+      grid.writeText(artStartX, artStartY + index, line, { foreground: '#888888' });
+    });
+  }
+
+  private drawMenu(grid: ASCIIState): void {
+    const menuStartY = 12;  // Moved up to make room for description
+    const menuStartX = 20;
+    
+    // Draw menu box
+    grid.drawBox(menuStartX - 2, menuStartY - 1, 42, this.menuOptions.length + 2);
+    
+    // Draw menu options
+    this.menuOptions.forEach((option, index) => {
+      const y = menuStartY + index;
+      const isSelected = index === this.selectedOption;
+      
+      // Draw cursor
+      if (isSelected) {
+        grid.writeText(menuStartX, y, ASCII_SYMBOLS.MENU_CURSOR, { foreground: '#FFAA00' });
+      }
+      
+      // Draw option text
+      const textColor = option.available ? (isSelected ? '#FFAA00' : '#FFFFFF') : '#666666';
+      const optionText = option.name + (option.available ? '' : ' (Unavailable)');
+      grid.writeText(menuStartX + 2, y, optionText, { foreground: textColor });
+    });
+    
+    // Draw description for selected option
+    const descStartY = menuStartY + this.menuOptions.length + 2;
+    grid.drawBox(10, descStartY, 60, 3);
+    const selectedDesc = this.menuOptions[this.selectedOption].description;
+    const descX = Math.floor((ASCII_GRID_WIDTH - selectedDesc.length) / 2);
+    grid.writeText(descX, descStartY + 1, selectedDesc, { foreground: '#AAAAAA' });
+  }
+
+  public override enter(): void {
+    super.enter();
+    this.selectedOption = 0;
+    this.initializeTownLayout();
+    DebugLogger.info('TownASCIIState', 'Entered Town scene');
+  }
+
+  public override update(deltaTime: number): void {
+    super.update(deltaTime);
+    
+    // Refresh menu display if selection changed
+    if (this.shouldRefreshMenu()) {
+      const grid = this.asciiState;
+      this.drawMenu(grid);
+    }
+  }
+
+  private shouldRefreshMenu(): boolean {
+    // This would check if selection has changed
+    return false;
+  }
+
+  public override handleInput(key: string): boolean {
+    switch (key) {
+      case 'arrowup':
+      case 'w':
+        this.selectPreviousOption();
+        return true;
+      case 'arrowdown':
+      case 's':
+        this.selectNextOption();
+        return true;
+      case 'enter':
+      case ' ':
+        this.activateSelectedOption();
+        return true;
+      case 'escape':
+        this.returnToDungeon();
+        return true;
+    }
+    return false;
+  }
+
+  private selectPreviousOption(): void {
+    this.selectedOption = (this.selectedOption - 1 + this.menuOptions.length) % this.menuOptions.length;
+    const grid = this.asciiState;
+    this.drawMenu(grid);
+    DebugLogger.info('TownASCIIState', `Selected option: ${this.menuOptions[this.selectedOption].name}`);
+  }
+
+  private selectNextOption(): void {
+    this.selectedOption = (this.selectedOption + 1) % this.menuOptions.length;
+    const grid = this.asciiState;
+    this.drawMenu(grid);
+    DebugLogger.info('TownASCIIState', `Selected option: ${this.menuOptions[this.selectedOption].name}`);
+  }
+
+  private activateSelectedOption(): void {
+    const option = this.menuOptions[this.selectedOption];
+    
+    if (!option.available) {
+      DebugLogger.warn('TownASCIIState', `Option ${option.name} is not available`);
+      return;
+    }
+    
+    if (option.sceneId) {
+      DebugLogger.info('TownASCIIState', `Transitioning to scene: ${option.sceneId}`);
+      this.sceneManager.switchTo(option.sceneId);
+    }
+  }
+
+  private returnToDungeon(): void {
+    DebugLogger.info('TownASCIIState', 'Returning to dungeon');
+    this.sceneManager.switchTo('dungeon');
+  }
+
+  protected setupInputHandlers(): void {
+    // Input handlers are managed through handleInput method
+  }
+
+  protected updateASCIIState(_deltaTime: number): void {
+    // Update animation or dynamic elements if needed
+  }
+
+  protected setupScene(): void {
+    this.initializeTownLayout();
+  }
+
+  public getSceneDeclaration(): SceneDeclaration {
+    return this.generateSceneDeclaration();
+  }
+  
+  protected generateSceneDeclaration(): SceneDeclaration {
+    const inputZones: InputZone[] = this.menuOptions.map((option, index) => ({
+      id: `menu-option-${index}`,
+      bounds: {
+        x: 18,
+        y: 15 + index,
+        width: 40,
+        height: 1
+      },
+      type: 'menu-item',
+      enabled: option.available,
+      onActivate: option.available ? () => {
+        this.selectedOption = index;
+        this.activateSelectedOption();
+      } : undefined
+    }));
+    
+    return {
+      id: 'town',
+      name: 'Town',
+      layers: [
+        {
+          id: 'main',
+          grid: this.asciiState.getGrid(),
+          zIndex: 0,
+          visible: true
+        }
+      ],
+      uiElements: [],
+      inputZones
+    };
+  }
+}
