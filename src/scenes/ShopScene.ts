@@ -19,6 +19,7 @@ export class ShopScene extends Scene {
   private selectedItem: Item | null = null;
   private selectedCharacterIndex: number = 0;
   private selectedSellingCharacter: Character | null = null;
+  private renderCount: number = 0;
   
   private menuOptions: string[] = [
     'Buy Items',
@@ -62,6 +63,12 @@ export class ShopScene extends Scene {
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
+    this.renderCount++;
+    
+    // ASCII rendering temporarily disabled during migration
+    // Will be re-enabled once ASCII system is fully migrated
+
+    // Original rendering code
     const { renderManager } = renderContext;
 
     renderManager.renderBackground((ctx) => {

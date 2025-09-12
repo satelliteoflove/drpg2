@@ -8,6 +8,9 @@ import { DataLoader } from '../utils/DataLoader';
 import { InventorySystem } from '../systems/InventorySystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
 import { DebugLogger } from '../utils/DebugLogger';
+import { FeatureFlags, FeatureFlagKey } from '../config/FeatureFlags';
+import { CombatASCIIState } from '../rendering/scenes/CombatASCIIState';
+import { CanvasRenderer } from '../rendering/CanvasRenderer';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
@@ -22,6 +25,9 @@ export class CombatScene extends Scene {
     'select_action';
   private isProcessingAction: boolean = false; // Prevent multiple simultaneous actions
   private lastActionTime: number = 0; // Debounce rapid input
+  private asciiState: CombatASCIIState | null = null;
+  private canvasRenderer: CanvasRenderer | null = null;
+  private useASCII: boolean = false;
 
   constructor(gameState: GameState, sceneManager: SceneManager) {
     super('Combat');
@@ -36,6 +42,20 @@ export class CombatScene extends Scene {
     if (!this.messageLog) {
       DebugLogger.warn('CombatScene', 'MessageLog not found in gameState, this should not happen');
     }
+    
+    // Check if ASCII rendering should be used
+    this.useASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING);
+    if (this.useASCII) {
+      this.asciiState = new CombatASCIIState(gameState, sceneManager, this.combatSystem);
+      this.canvasRenderer = new CanvasRenderer(null as any, {
+        charWidth: 10,
+        charHeight: 20,
+        fontFamily: 'monospace',
+        fontSize: 16,
+        antialiasing: false
+      });
+      DebugLogger.info('CombatScene', 'ASCII rendering enabled for combat');
+    }
   }
 
   public enter(): void {
@@ -48,6 +68,13 @@ export class CombatScene extends Scene {
     this.selectedTarget = 0;
     this.isProcessingAction = false;
     this.lastActionTime = 0;
+    
+    // Initialize ASCII state if enabled
+    if (this.useASCII && this.asciiState) {
+      this.asciiState.enter();
+      this.asciiState.setActionState(this.actionState);
+    }
+    
     DebugLogger.debug('CombatScene', 'Combat scene entered - UI state reset');
   }
 
@@ -139,6 +166,12 @@ export class CombatScene extends Scene {
       this.actionState = 'select_action';
       this.isProcessingAction = false;
     }
+    
+    // Update ASCII state if enabled
+    if (this.useASCII && this.asciiState) {
+      this.asciiState.update(_deltaTime);
+      this.asciiState.setActionState(this.actionState);
+    }
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
@@ -146,16 +179,44 @@ export class CombatScene extends Scene {
       this.initializeUI(ctx.canvas);
     }
 
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    // Use ASCII rendering if enabled
+    if (this.useASCII && this.asciiState) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      
+      // Initialize canvas renderer with the context if needed
+      if (!this.canvasRenderer) {
+        this.canvasRenderer = new CanvasRenderer(ctx.canvas, {
+          charWidth: 10,
+          charHeight: 20,
+          fontFamily: 'monospace',
+          fontSize: 16,
+          antialiasing: false
+        });
+      }
+      
+      // Render ASCII state
+      this.asciiState.render();
+      const sceneDeclaration = this.asciiState.getSceneDeclaration();
+      this.canvasRenderer.renderScene(sceneDeclaration);
+      
+      // Still render message log and debug overlay in regular mode
+      this.messageLog.render(ctx);
+      this.updateDebugData();
+      this.debugOverlay.render(this.gameState);
+    } else {
+      // Original rendering code
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-    this.renderCombatArea(ctx);
-    this.renderUI(ctx);
-    this.renderCombatInfo(ctx);
-    
-    // Update and render debug overlay
-    this.updateDebugData();
-    this.debugOverlay.render(this.gameState);
+      this.renderCombatArea(ctx);
+      this.renderUI(ctx);
+      this.renderCombatInfo(ctx);
+      
+      // Update and render debug overlay
+      this.updateDebugData();
+      this.debugOverlay.render(this.gameState);
+    }
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
@@ -335,6 +396,27 @@ export class CombatScene extends Scene {
     if (key === 'ctrl+k') {
       this.executeInstantKill();
       return true;
+    }
+
+    // If ASCII rendering is enabled, delegate input handling to ASCII state
+    if (this.useASCII && this.asciiState) {
+      const handled = this.asciiState.handleInput(key);
+      if (handled) {
+        // Sync state from ASCII back to main scene
+        const asciiActionState = this.asciiState.getActionState();
+        if (asciiActionState === 'waiting') {
+          const asciiSelectedAction = this.asciiState.getSelectedAction();
+          const actions = this.combatSystem.getPlayerOptions();
+          const selectedActionText = actions[asciiSelectedAction];
+          
+          if (selectedActionText === 'Attack') {
+            this.selectedTarget = this.asciiState.getSelectedTarget();
+          }
+          
+          this.executeAction(selectedActionText);
+        }
+        return true;
+      }
     }
 
     // Ignore all input if we're processing an action or waiting
