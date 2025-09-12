@@ -337,6 +337,14 @@ export class CharacterCreationScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
+    // Allow Escape to skip character creation and create a default party
+    if (key === 'escape') {
+      this.createDefaultParty();
+      this.generateNewDungeon();
+      this.sceneManager.switchTo('dungeon');
+      return true;
+    }
+    
     switch (this.currentStep) {
       case 'name':
         return this.handleNameInput(key);
@@ -365,7 +373,8 @@ export class CharacterCreationScene extends Scene {
       this.nameInput = this.nameInput.slice(0, -1);
       return true;
     } else if (key === 'escape') {
-      return false;
+      // Handled at the top level
+      return true;
     } else if (key.length === 1 && key.match(/[a-zA-Z]/)) {
       if (this.nameInput.length < 12) {
         this.nameInput += key.toUpperCase();
@@ -527,5 +536,23 @@ export class CharacterCreationScene extends Scene {
     this.gameState.party.y = firstLevel.startY;
     this.gameState.party.floor = 1;
     this.gameState.party.facing = 'north';
+  }
+
+  private createDefaultParty(): void {
+    // Create a default party for testing
+    if (this.gameState.party.characters.length === 0) {
+      const defaultCharacters = [
+        new Character('Fighter', 'Human', 'Fighter', 'Good'),
+        new Character('Mage', 'Elf', 'Mage', 'Good'),
+        new Character('Priest', 'Human', 'Priest', 'Good'),
+        new Character('Thief', 'Hobbit', 'Thief', 'Neutral')
+      ];
+      
+      // Add default characters to party
+      defaultCharacters.forEach(char => {
+        char.gold = 100; // Give some starting gold for testing
+        this.gameState.party.addCharacter(char);
+      });
+    }
   }
 }

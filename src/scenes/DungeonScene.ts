@@ -7,7 +7,6 @@ import { StatusPanel } from '../ui/StatusPanel';
 import { DungeonMapView } from '../ui/DungeonMapView';
 import { DebugOverlay } from '../ui/DebugOverlay';
 import { GAME_CONFIG } from '../config/GameConstants';
-import { safeConfirm } from '../utils/ErrorHandler';
 import { InventorySystem } from '../systems/InventorySystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
 import { CombatSystem } from '../systems/CombatSystem';
@@ -574,9 +573,8 @@ export class DungeonScene extends Scene {
     }
 
     if (key === 'escape') {
-      if (safeConfirm('Return to main menu? (Progress will be saved)', false)) {
-        this.sceneManager.switchTo('main_menu');
-      }
+      // Go to Town instead of main menu for better game flow
+      this.sceneManager.switchTo('town');
       return true;
     }
 
