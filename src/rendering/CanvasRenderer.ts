@@ -69,19 +69,26 @@ export class CanvasRenderer {
   }
 
   private setupCanvas(): void {
-    // Set canvas size based on ASCII grid dimensions
-    const width = this.config.charWidth * ASCII_GRID_WIDTH;
-    const height = this.config.charHeight * ASCII_GRID_HEIGHT;
+    // DO NOT resize the canvas - use existing dimensions
+    // The game expects a specific canvas size
+    const currentWidth = this.canvas.width;
+    const currentHeight = this.canvas.height;
     
-    this.canvas.width = width;
-    this.canvas.height = height;
+    // Calculate character size based on current canvas size
+    this.config.charWidth = Math.floor(currentWidth / ASCII_GRID_WIDTH);
+    this.config.charHeight = Math.floor(currentHeight / ASCII_GRID_HEIGHT);
+    
+    // Adjust font size to fit
+    this.config.fontSize = Math.floor(this.config.charHeight * 0.8);
 
     // Configure context
     this.ctx.imageSmoothingEnabled = this.config.antialiasing;
     this.ctx.font = `${this.config.fontSize}px ${this.config.fontFamily}`;
     this.ctx.textBaseline = 'top';
+    this.ctx.fillStyle = this.config.defaultForeground;
     
-    DebugLogger.info('CanvasRenderer', `Canvas initialized: ${width}x${height}px`);
+    DebugLogger.info('CanvasRenderer', `Canvas using existing size: ${currentWidth}x${currentHeight}px`);
+    DebugLogger.info('CanvasRenderer', `Char size: ${this.config.charWidth}x${this.config.charHeight}, font: ${this.config.fontSize}px`);
   }
 
   private createOffscreenCanvas(): void {
@@ -157,6 +164,11 @@ export class CanvasRenderer {
     // Calculate pixel position
     const x = gridX * this.config.charWidth;
     const y = gridY * this.config.charHeight;
+    
+    // Debug first few characters
+    if (this.frameCount < 5 && char !== ' ' && char !== '') {
+      DebugLogger.debug('CanvasRenderer', `Rendering '${char}' at grid(${gridX},${gridY}) pixel(${x},${y})`);
+    }
 
     // Get style with symbol-based color fallback
     const style = metadata?.style || {};
