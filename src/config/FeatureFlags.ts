@@ -18,6 +18,7 @@ export enum FeatureFlagKey {
   ASCII_SHOP_SCENE = 'ascii_shop_scene',
   ASCII_COMBAT_SCENE = 'ascii_combat_scene',
   ASCII_DUNGEON_SCENE = 'ascii_dungeon_scene',
+  ASCII_INVENTORY_SCENE = 'ascii_inventory_scene',
   ASCII_DEBUG_OVERLAY = 'ascii_debug_overlay',
   PERFORMANCE_MONITORING = 'performance_monitoring',
   SAVE_ASCII_STATE = 'save_ascii_state',
@@ -86,6 +87,14 @@ class FeatureFlagsManager {
       enabled: false,
       experimental: true,
       enabledScenes: ['dungeon']
+    });
+
+    this.registerFlag({
+      name: FeatureFlagKey.ASCII_INVENTORY_SCENE,
+      description: 'Use ASCII rendering for Inventory scene',
+      enabled: false,
+      experimental: true,
+      enabledScenes: ['inventory']
     });
 
     this.registerFlag({
