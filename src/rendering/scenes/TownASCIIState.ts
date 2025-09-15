@@ -22,27 +22,17 @@ export class TownASCIIState extends BaseASCIIScene {
       sceneId: 'shop'
     },
     {
-      name: 'Temple of Cant',
-      description: 'Heal your party and remove curses',
+      name: 'Temple',
+      description: 'Heal your party and remove curses (not yet available)',
       available: false
     },
     {
-      name: "Adventurer's Inn",
-      description: 'Rest and recover your party',
+      name: 'Inn',
+      description: 'Rest and recover your party (not yet available)',
       available: false
     },
     {
-      name: 'Gilgamesh Tavern',
-      description: 'Gather information and recruit party members',
-      available: false
-    },
-    {
-      name: 'Training Grounds',
-      description: 'Create and manage characters',
-      available: false
-    },
-    {
-      name: 'Edge of Town',
+      name: 'Return to Dungeon',
       description: 'Return to the dungeon depths',
       available: true,
       sceneId: 'dungeon'
@@ -62,6 +52,10 @@ export class TownASCIIState extends BaseASCIIScene {
 
   public getGrid(): ASCIIState {
     return this.asciiState;
+  }
+
+  public getSelectedOption(): number {
+    return this.selectedOption;
   }
 
   public render(): void {
@@ -99,14 +93,14 @@ export class TownASCIIState extends BaseASCIIScene {
   private drawTownArt(grid: ASCIIState): void {
     // Simple ASCII art representation of town buildings
     const artLines = [
-      '     /\\           [][]    ___        /\\      ___     ',
-      '    /  \\    B    [][][]  |INN|      /  \\    | T |    ',
-      '   /    \\  ===   [][][]  |___|     /____\\   |___|    ',
-      '  |CASTLE| |B|   [][][]            |TAVERN|           ',
-      '  |______|_|_|___[][][]____________|______|___________',
+      '     /\\           [][]    ___                 ___     ',
+      '    /  \\   SHOP  [][][]  |INN|               | T |    ',
+      '   /    \\  ===   [][][]  |___|              |TEMPLE|  ',
+      '  |CASTLE| |$|   [][][]                     |_____|   ',
+      '  |______|_|_|___[][][]________________________________',
       '                                                       ',
-      '              === Training Grounds ===                ',
-      '         [E] Edge of Town - To the Dungeon            '
+      '         === Welcome to Llylgamyn ===                 ',
+      '                                                       '
     ];
     
     const artStartY = 6;
@@ -150,9 +144,12 @@ export class TownASCIIState extends BaseASCIIScene {
 
   public override enter(): void {
     super.enter();
-    this.selectedOption = 0;
+    // Don't reset selectedOption if it's already set
+    if (this.selectedOption === undefined || this.selectedOption === null) {
+      this.selectedOption = 0;
+    }
     this.initializeTownLayout();
-    DebugLogger.info('TownASCIIState', 'Entered Town scene');
+    DebugLogger.info('TownASCIIState', `Entered Town scene with selection: ${this.selectedOption}`);
   }
 
   public override update(deltaTime: number): void {
