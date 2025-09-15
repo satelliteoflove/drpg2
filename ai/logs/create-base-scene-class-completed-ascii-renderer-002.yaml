@@ -1,0 +1,57 @@
+node_id: create-base-scene-class
+checklist:
+  unit_tests: false
+  integration_tests: false
+  e2e_tests: false
+outcome: |
+  Successfully implemented BaseASCIIScene class that extends the core Scene class and provides
+  comprehensive ASCII rendering functionality. The class includes:
+  - ASCII state management with dirty region tracking
+  - Declarative and imperative rendering modes with feature flag support
+  - Input zone and key binding management
+  - UI element rendering (text, boxes, lists, bars)
+  - State serialization/deserialization for save games
+  - Helper methods for common patterns (borders, centered text, regions)
+  
+  The implementation is fully TypeScript strict mode compliant and integrates properly with
+  the existing rendering infrastructure.
+manual_test_instructions: |
+  1. Run 'npm run dev' to start the development server
+  2. Open browser to http://localhost:8080
+  3. Open browser console and enable ASCII rendering: window.FeatureFlags.enable('ascii_rendering')
+  4. Create a test scene that extends BaseASCIIScene
+  5. Override setupScene() to add UI elements and ASCII content
+  6. Override updateASCIIState() to handle dynamic updates
+  7. Override generateSceneDeclaration() to return scene structure
+  8. Test that the scene renders ASCII content to canvas
+  9. Verify input zones respond to clicks and keyboard input
+  10. Check that feature flag toggling switches between rendering modes
+surprises_or_notes: |
+  - CanvasRenderer already had a renderScene method instead of renderDeclaration
+  - InputHandler already had all required methods for zone and binding management  
+  - TypeScript strict mode required underscore prefixes for unused parameters
+  - The existing infrastructure was well-designed and easy to extend
+suggested_follow_ups:
+  - Migrate TownScene to use BaseASCIIScene
+  - Add performance monitoring to track ASCII rendering efficiency
+  - Create example scenes demonstrating BaseASCIIScene usage
+  - Add integration tests for BaseASCIIScene with actual canvas
+reimplementation_prompt: |
+  Create a base class for ASCII-enabled scenes in a TypeScript game engine.
+  
+  Requirements:
+  - Extend existing Scene class from src/core/Scene.ts
+  - Manage ASCIIState for 80x25 character grid
+  - Support both declarative ASCII rendering and imperative canvas fallback
+  - Integrate with FeatureFlags for runtime mode switching
+  - Provide input zone and key binding management
+  - Include UI element helpers (text, boxes, lists, progress bars)
+  - Support state serialization for save games
+  - Use TypeScript strict mode throughout
+  - Integrate with existing CanvasRenderer and InputHandler classes
+  
+  Key design patterns:
+  - Abstract methods for scene-specific implementation
+  - Dirty region tracking for render optimization
+  - Feature flag checking for rendering mode selection
+  - Helper methods for common ASCII patterns

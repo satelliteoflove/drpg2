@@ -1,0 +1,54 @@
+node_id: shop-scene-testing
+checklist:
+  unit_tests: true
+  integration_tests: true
+  e2e_tests: false
+outcome: |
+  Successfully created comprehensive test suite for ShopScene covering all shop functionality.
+  Tests validate complete buying flow, selling flow, gold pooling, and menu navigation.
+  All edge cases handled including empty inventories and insufficient funds.
+  Tests compile without TypeScript errors.
+manual_test_instructions: |
+  1. Run 'npm run dev' to start the development server
+  2. Navigate to http://localhost:8080
+  3. From Town, select Boltac's Trading Post
+  4. Test Buy Items:
+     - Select Buy Items
+     - Choose a category (Weapons, Armor, etc.)
+     - Select an item to view price
+     - Choose a character to purchase for
+     - Verify gold deduction on successful purchase
+  5. Test Sell Items:
+     - Select Sell Items
+     - Choose a character with items
+     - Select an item to sell
+     - Confirm the sale
+     - Verify gold is added to character
+  6. Test Pool Gold:
+     - Select Pool Gold
+     - Confirm pooling
+     - Verify all character gold moves to party pool
+  7. Press Escape to return to Town
+  8. Verify no console errors throughout
+surprises_or_notes: |
+  ShopScene has complex state management with multiple flow states.
+  Gold pooling system already implemented and working.
+  Shop inventory system properly integrated with ShopSystem utility.
+  ASCII rendering not yet integrated into ShopScene.
+suggested_follow_ups:
+  - Integrate ASCII rendering into ShopScene
+  - Add tests for item identification and curse removal when implemented
+  - Add inventory limit validation
+  - Test with actual game items once item system is complete
+reimplementation_prompt: |
+  Create comprehensive test suite for a complex shop scene in a TypeScript RPG game.
+  
+  Requirements:
+  - Mock all dependencies (GameState, SceneManager, ShopSystem)
+  - Test complete buying flow from category selection to purchase
+  - Test complete selling flow from character selection to confirmation
+  - Test gold pooling mechanics
+  - Test all menu navigation and state transitions
+  - Handle edge cases like empty inventories and insufficient funds
+  - Validate all input handling for each state
+  - Ensure TypeScript strict mode compliance

@@ -1,0 +1,41 @@
+node_id: town-scene-migration
+checklist:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+outcome: |
+  Successfully migrated TownScene to support ASCII rendering while maintaining backward compatibility.
+  Created TownASCIIState class that extends BaseASCIIScene with full town layout and menu system.
+  Integrated feature flag system to toggle between standard and ASCII rendering modes.
+  All existing functionality preserved with new ASCII visualization option.
+manual_test_instructions: |
+  1. Start the development server with npm run dev
+  2. Open browser console and enable ASCII town: window.FeatureFlags.enable('ascii_town_scene')
+  3. Navigate to the town scene
+  4. Verify ASCII art displays town buildings and menu
+  5. Test keyboard navigation with arrow keys
+  6. Press Enter to select menu options
+  7. Press ESC to return to dungeon
+  8. Disable flag to test standard rendering: window.FeatureFlags.disable('ascii_town_scene')
+  9. Run tests: npm test src/scenes/__tests__/TownScene.test.ts
+surprises_or_notes: |
+  The implementation required creating a bridge between the existing key input system and the 
+  ASCII state's KeyboardEvent-based input. Created a key conversion utility to handle this.
+  The ASCII art representation provides a more immersive text-based experience while maintaining
+  all original functionality.
+suggested_follow_ups:
+  - Enhance ASCII art with more detailed building representations
+  - Add animation effects for menu selection
+  - Implement hover effects for mouse support
+  - Add sound effects for menu navigation
+reimplementation_prompt: |
+  Migrate a menu-based scene to support ASCII rendering in a Wizardry-like game:
+  
+  Requirements:
+  - Create an ASCII state class extending BaseASCIIScene
+  - Design 80x25 ASCII layout with decorative art
+  - Implement menu navigation with cursor
+  - Support feature flag toggling between rendering modes
+  - Maintain backward compatibility with canvas rendering
+  - Handle keyboard input for menu navigation
+  - Create comprehensive unit tests
