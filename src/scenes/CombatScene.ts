@@ -72,7 +72,7 @@ export class CombatScene extends Scene {
     // Initialize ASCII state if enabled
     if (this.useASCII && this.asciiState) {
       this.asciiState.enter();
-      this.asciiState.setActionState(this.actionState);
+      this.syncToASCII();
     }
     
     DebugLogger.debug('CombatScene', 'Combat scene entered - UI state reset');
@@ -170,7 +170,7 @@ export class CombatScene extends Scene {
     // Update ASCII state if enabled
     if (this.useASCII && this.asciiState) {
       this.asciiState.update(_deltaTime);
-      this.asciiState.setActionState(this.actionState);
+      this.syncToASCII();
     }
   }
 
@@ -403,18 +403,7 @@ export class CombatScene extends Scene {
       const handled = this.asciiState.handleInput(key);
       if (handled) {
         // Sync state from ASCII back to main scene
-        const asciiActionState = this.asciiState.getActionState();
-        if (asciiActionState === 'waiting') {
-          const asciiSelectedAction = this.asciiState.getSelectedAction();
-          const actions = this.combatSystem.getPlayerOptions();
-          const selectedActionText = actions[asciiSelectedAction];
-          
-          if (selectedActionText === 'Attack') {
-            this.selectedTarget = this.asciiState.getSelectedTarget();
-          }
-          
-          this.executeAction(selectedActionText);
-        }
+        this.syncFromASCII();
         return true;
       }
     }
@@ -530,6 +519,40 @@ export class CombatScene extends Scene {
     this.selectedAction = 0;
     this.isProcessingAction = false;
     DebugLogger.debug('CombatScene', `UI state reset - canPlayerAct: ${canAct}, actionState: ${this.actionState}`);
+  }
+
+  private syncFromASCII(): void {
+    if (!this.asciiState) return;
+
+    const asciiActionState = this.asciiState.getActionState();
+    const asciiSelectedAction = this.asciiState.getSelectedAction();
+    const asciiSelectedTarget = this.asciiState.getSelectedTarget();
+
+    // Update local state
+    this.actionState = asciiActionState as any;
+    this.selectedAction = asciiSelectedAction;
+    this.selectedTarget = asciiSelectedTarget;
+
+    // Check if ASCII state executed an action
+    const pendingAction = this.asciiState.getPendingAction();
+    if (pendingAction) {
+      // Execute the action in the main scene
+      if (pendingAction.action === 'Attack') {
+        this.executeAction('Attack');
+      } else {
+        this.executeAction(pendingAction.action);
+      }
+      // Clear the pending action
+      this.asciiState.clearPendingAction();
+    }
+  }
+
+  private syncToASCII(): void {
+    if (!this.asciiState) return;
+
+    this.asciiState.setActionState(this.actionState);
+    this.asciiState.setSelectedAction(this.selectedAction);
+    this.asciiState.setSelectedTarget(this.selectedTarget);
   }
 
   private executeInstantKill(): void {

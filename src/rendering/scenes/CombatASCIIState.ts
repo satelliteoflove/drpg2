@@ -13,6 +13,7 @@ export class CombatASCIIState extends BaseASCIIScene {
   private selectedAction: number = 0;
   private selectedTarget: number = 0;
   private actionState: 'select_action' | 'select_target' | 'select_spell' | 'waiting' = 'select_action';
+  private pendingAction: { action: string; target?: number } | null = null;
   
   private actionOptions = [
     { name: 'Attack', symbol: ASCII_SYMBOLS.ITEM_WEAPON, enabled: true },
@@ -406,9 +407,13 @@ export class CombatASCIIState extends BaseASCIIScene {
   private executeAction(action: string): void {
     this.actionState = 'waiting';
     this.initializeCombatLayout();
-    
-    // This would trigger the actual combat action
-    // The parent CombatScene would handle the actual execution
+
+    // Store the pending action for the parent scene to execute
+    this.pendingAction = {
+      action: action,
+      target: action === 'Attack' ? this.selectedTarget : undefined
+    };
+
     DebugLogger.info('CombatASCIIState', `Executing action: ${action} on target: ${this.selectedTarget}`);
   }
 
@@ -517,5 +522,21 @@ export class CombatASCIIState extends BaseASCIIScene {
 
   public getActionState(): string {
     return this.actionState;
+  }
+
+  public setSelectedAction(action: number): void {
+    this.selectedAction = action;
+  }
+
+  public setSelectedTarget(target: number): void {
+    this.selectedTarget = target;
+  }
+
+  public getPendingAction(): { action: string; target?: number } | null {
+    return this.pendingAction;
+  }
+
+  public clearPendingAction(): void {
+    this.pendingAction = null;
   }
 }
