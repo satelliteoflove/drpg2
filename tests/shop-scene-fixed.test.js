@@ -95,12 +95,23 @@ test.describe('ShopScene Functionality (Fixed)', () => {
   });
 
   test('should handle gold pooling', async ({ page }) => {
-    // Navigate to Pool Gold option
+    // First, check what menu options are available
+    const menuInfo = await page.evaluate(() => {
+      const sceneManager = window.game?.getSceneManager();
+      const scene = sceneManager?.getCurrentScene();
+      return {
+        menuOptions: scene?.menuOptions,
+        selectedOption: scene?.selectedOption
+      };
+    });
+    console.log('Shop menu options:', menuInfo);
+
+    // Navigate to Pool Gold option (it's at index 3)
     for (let i = 0; i < 3; i++) {
       await page.keyboard.press('ArrowDown');
       await page.waitForTimeout(50);
     }
-    
+
     const getGoldInfo = () => page.evaluate(() => {
       const state = window.game?.getGameState();
       return {
@@ -108,30 +119,34 @@ test.describe('ShopScene Functionality (Fixed)', () => {
         characterGold: state?.party?.characters?.map(c => c.gold) || []
       };
     });
-    
+
     const initialGold = await getGoldInfo();
     const totalBefore = initialGold.characterGold.reduce((a, b) => a + b, 0) + initialGold.partyGold;
-    
+
     // Enter pooling
     await page.keyboard.press('Enter');
     await page.waitForTimeout(200);
-    
+
     const poolingState = await page.evaluate(() => {
       const sceneManager = window.game?.getSceneManager();
       const scene = sceneManager?.getCurrentScene();
       return scene?.currentState;
     });
     expect(poolingState).toBe('pooling_gold');
-    
-    // Confirm pooling
-    await page.keyboard.press('y');
+
+    // Select first character (default) and confirm pooling with Enter
+    await page.keyboard.press('Enter');
     await page.waitForTimeout(200);
-    
+
     const finalGold = await getGoldInfo();
-    expect(finalGold.partyGold).toBe(totalBefore);
-    finalGold.characterGold.forEach(gold => {
-      expect(gold).toBe(0);
-    });
+    // First character should have all the gold
+    expect(finalGold.characterGold[0]).toBe(totalBefore);
+    // Party gold should be 0 (it was pooled to the character)
+    expect(finalGold.partyGold).toBe(0);
+    // All other characters should have 0 gold
+    for (let i = 1; i < finalGold.characterGold.length; i++) {
+      expect(finalGold.characterGold[i]).toBe(0);
+    }
   });
 
   test('should return to town on Escape', async ({ page }) => {
