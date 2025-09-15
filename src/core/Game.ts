@@ -388,6 +388,11 @@ export class Game {
     return this.gameState;
   }
 
+  public getCurrentSceneName(): string {
+    const currentScene = this.sceneManager.getCurrentScene();
+    return currentScene ? currentScene.getName() : 'unknown';
+  }
+
   public getSceneManager(): SceneManager {
     return this.sceneManager;
   }
