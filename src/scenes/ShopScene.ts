@@ -23,7 +23,7 @@ export class ShopScene extends Scene {
   private selectedCharacterIndex: number = 0;
   private selectedSellingCharacter: Character | null = null;
   private renderCount: number = 0;
-  private asciiState?: ShopASCIIState;
+  public shopASCIIState?: ShopASCIIState;
   private asciiRenderer?: CanvasRenderer;
   private useASCII: boolean = false;
   
@@ -55,7 +55,7 @@ export class ShopScene extends Scene {
                     FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
 
     if (this.useASCII) {
-      this.asciiState = new ShopASCIIState(gameState, sceneManager);
+      this.shopASCIIState = new ShopASCIIState(gameState, sceneManager);
       DebugLogger.info('ShopScene', 'ASCII rendering enabled for Shop scene');
     }
   }
@@ -72,37 +72,71 @@ export class ShopScene extends Scene {
     const shouldUseASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
                             FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
 
-    if (shouldUseASCII && !this.asciiState) {
-      this.asciiState = new ShopASCIIState(this.gameState, this.sceneManager);
+    if (shouldUseASCII && !this.shopASCIIState) {
+      this.shopASCIIState = new ShopASCIIState(this.gameState, this.sceneManager);
       this.useASCII = true;
       DebugLogger.info('ShopScene', 'ASCII rendering enabled on enter');
-    } else if (!shouldUseASCII && this.asciiState) {
-      this.asciiState = undefined;
+    } else if (!shouldUseASCII && this.shopASCIIState) {
+      this.shopASCIIState = undefined;
       this.asciiRenderer = undefined;
       this.useASCII = false;
       DebugLogger.info('ShopScene', 'ASCII rendering disabled on enter');
     }
 
     // Initialize ASCII state if enabled
-    if (this.asciiState) {
-      this.asciiState.enter();
+    if (this.shopASCIIState) {
+      this.shopASCIIState.enter();
       this.syncASCIIState();
     }
   }
 
   public exit(): void {
-    if (this.asciiState) {
-      this.asciiState.exit();
+    if (this.shopASCIIState) {
+      this.shopASCIIState.exit();
     }
   }
 
   public update(_deltaTime: number): void {
-    if (this.asciiState) {
-      this.asciiState.update(_deltaTime);
+    if (this.shopASCIIState) {
+      this.shopASCIIState.update(_deltaTime);
     }
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
+    // Check if ASCII should be enabled at runtime (same as renderLayered)
+    const shouldUseASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+                            FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
+
+    if (shouldUseASCII && !this.shopASCIIState) {
+      DebugLogger.info('ShopScene', 'Initializing ASCII state in render');
+      this.shopASCIIState = new ShopASCIIState(this.gameState, this.sceneManager);
+      this.shopASCIIState.enter();
+      this.syncASCIIState();
+      this.useASCII = true;
+    } else if (!shouldUseASCII && this.shopASCIIState) {
+      DebugLogger.info('ShopScene', 'Disabling ASCII state in render');
+      this.shopASCIIState.exit();
+      this.shopASCIIState = undefined;
+      this.asciiRenderer = undefined;
+      this.useASCII = false;
+    }
+
+    if (shouldUseASCII && this.shopASCIIState) {
+      // Use ASCII rendering
+      if (!this.asciiRenderer) {
+        this.asciiRenderer = new CanvasRenderer(ctx.canvas);
+      }
+
+      this.syncASCIIState();
+      this.shopASCIIState.render();
+
+      const state = this.shopASCIIState.getGrid();
+      const grid = state.getGrid();
+      this.asciiRenderer.renderASCIIGrid(grid);
+      return;
+    }
+
+    // Original rendering
     this.renderShopContent(ctx);
   }
 
@@ -113,21 +147,21 @@ export class ShopScene extends Scene {
     const shouldUseASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
                             FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
 
-    if (shouldUseASCII && !this.asciiState) {
+    if (shouldUseASCII && !this.shopASCIIState) {
       DebugLogger.info('ShopScene', 'Initializing ASCII state in renderLayered');
-      this.asciiState = new ShopASCIIState(this.gameState, this.sceneManager);
-      this.asciiState.enter();
+      this.shopASCIIState = new ShopASCIIState(this.gameState, this.sceneManager);
+      this.shopASCIIState.enter();
       this.syncASCIIState();
       this.useASCII = true;
-    } else if (!shouldUseASCII && this.asciiState) {
+    } else if (!shouldUseASCII && this.shopASCIIState) {
       DebugLogger.info('ShopScene', 'Disabling ASCII state in renderLayered');
-      this.asciiState.exit();
-      this.asciiState = undefined;
+      this.shopASCIIState.exit();
+      this.shopASCIIState = undefined;
       this.asciiRenderer = undefined;
       this.useASCII = false;
     }
 
-    if (shouldUseASCII && this.asciiState) {
+    if (shouldUseASCII && this.shopASCIIState) {
       // ASCII rendering
       const { renderManager } = renderContext;
 
@@ -145,8 +179,8 @@ export class ShopScene extends Scene {
         this.syncASCIIState();
 
         // Render ASCII grid
-        if (this.asciiState && this.asciiRenderer) {
-          const asciiGrid = this.asciiState.getGrid();
+        if (this.shopASCIIState && this.asciiRenderer) {
+          const asciiGrid = this.shopASCIIState.getGrid();
           this.asciiRenderer.renderASCIIGrid(asciiGrid.getGrid());
         }
       });
@@ -204,7 +238,7 @@ export class ShopScene extends Scene {
     const handled = this.handleShopInput(key);
 
     // Sync with ASCII state after handling input
-    if (shouldUseASCII && this.asciiState && handled) {
+    if (shouldUseASCII && this.shopASCIIState && handled) {
       this.syncASCIIState();
     }
 
@@ -1046,14 +1080,14 @@ export class ShopScene extends Scene {
   }
 
   private syncASCIIState(): void {
-    if (!this.asciiState) return;
+    if (!this.shopASCIIState) return;
 
     // Sync state with ASCII renderer
-    this.asciiState.updateState(this.currentState);
-    this.asciiState.updateSelectedIndex(this.selectedOption);
-    this.asciiState.updateSelectedCategory(this.selectedCategory);
-    this.asciiState.updateSelectedItem(this.selectedItem);
-    this.asciiState.updateSelectedCharacter(this.selectedCharacterIndex);
-    this.asciiState.updateSellingCharacter(this.selectedSellingCharacter);
+    this.shopASCIIState.updateState(this.currentState);
+    this.shopASCIIState.updateSelectedIndex(this.selectedOption);
+    this.shopASCIIState.updateSelectedCategory(this.selectedCategory);
+    this.shopASCIIState.updateSelectedItem(this.selectedItem);
+    this.shopASCIIState.updateSelectedCharacter(this.selectedCharacterIndex);
+    this.shopASCIIState.updateSellingCharacter(this.selectedSellingCharacter);
   }
 }

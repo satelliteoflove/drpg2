@@ -31,7 +31,7 @@ export class DungeonScene extends Scene {
   private lastEncounterPosition: { x: number; y: number; floor: number } | null = null;
   
   // ASCII rendering components
-  private dungeonASCIIState: DungeonASCIIState | null = null;
+  public dungeonASCIIState: DungeonASCIIState | null = null;
   private canvasRenderer: CanvasRenderer | null = null;
   
   // Item pickup state
@@ -61,7 +61,16 @@ export class DungeonScene extends Scene {
   public enter(): void {
     // Set debug overlay scene name
     this.debugOverlay?.setCurrentScene('Dungeon');
-    
+
+    // Check if ASCII should be enabled
+    if (this.shouldUseASCIIRendering() && !this.dungeonASCIIState) {
+      // Initialize ASCII components early if the flag is enabled
+      const canvas = (window as any).game?.canvas;
+      if (canvas) {
+        this.initializeASCIIComponents(canvas);
+      }
+    }
+
     // Only show "Entered the dungeon..." message when truly entering for the first time,
     // not when returning from combat, inventory, etc.
     if (!this.gameState.inCombat && !this.gameState.hasEnteredDungeon) {
