@@ -6,9 +6,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     const game = new Game(canvas);
     game.start();
-    
-    // Expose game to window for testing
+
+    // Expose game and feature flags to window for testing
     if (typeof window !== 'undefined') {
+        (window as any).drpg = {
+            game: game,
+            featureFlags: (window as any).featureFlags
+        };
+        // Also keep direct reference for backward compatibility
         (window as any).game = game;
     }
 });
