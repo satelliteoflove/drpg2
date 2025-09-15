@@ -1,0 +1,49 @@
+node_id: combat-scene-testing
+events:
+  - sequence: 1
+    type: status-update
+    content: Started reviewing CombatScene and CombatASCIIState implementation
+  - sequence: 2
+    type: important-finding
+    content: |
+      CombatScene has partial ASCII integration:
+      - ASCII state is initialized (lines 46-59)
+      - Update method syncs state (lines 170-174)
+      - Render method shows ASCII when enabled (lines 177-207)
+      - Input handling partially delegates to ASCII (lines 401-420)
+      - However, action execution doesn't properly flow back from ASCII to main scene
+  - sequence: 3
+    type: problem-encountered
+    content: |
+      The executeAction method in CombatASCIIState doesn't actually trigger
+      combat actions - it just logs them. Need to fix bidirectional communication.
+  - sequence: 4
+    type: milestone-reached
+    content: Starting to complete CombatScene ASCII integration
+  - sequence: 5
+    type: status-update
+    content: |
+      Implemented bidirectional sync between CombatScene and CombatASCIIState:
+      - Added syncFromASCII() and syncToASCII() methods
+      - Added pendingAction tracking in ASCII state
+      - Modified executeAction to properly queue actions
+      - Updated all sync points in enter(), update(), and handleInput()
+  - sequence: 6
+    type: milestone-reached
+    content: TypeScript compilation successful - 0 errors
+  - sequence: 7
+    type: status-update
+    content: Created Playwright tests for CombatScene ASCII rendering
+  - sequence: 8
+    type: problem-encountered
+    content: |
+      Tests are unable to trigger combat naturally through dungeon movement.
+      Created basic tests that force switch to combat scene directly.
+      Tests show combat scene can be initialized but scene switching needs
+      to be triggered through actual game mechanics.
+  - sequence: 9
+    type: workaround
+    content: |
+      Created combat-ascii-basic.test.js that directly switches to combat scene
+      for testing purposes. This allows testing of ASCII rendering in combat
+      without relying on triggering combat through dungeon exploration.
