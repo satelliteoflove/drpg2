@@ -71,6 +71,9 @@ export class DungeonScene extends Scene {
       }
     }
 
+    // Also check if ASCII was enabled after scene creation
+    this.checkAndInitializeASCII()
+
     // Only show "Entered the dungeon..." message when truly entering for the first time,
     // not when returning from combat, inventory, etc.
     if (!this.gameState.inCombat && !this.gameState.hasEnteredDungeon) {
@@ -108,6 +111,9 @@ export class DungeonScene extends Scene {
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
+    // Check if ASCII needs to be initialized (in case it was enabled after scene creation)
+    this.checkAndInitializeASCII();
+
     if (this.shouldUseASCIIRendering()) {
       this.renderASCII(ctx);
     } else {
@@ -298,16 +304,29 @@ export class DungeonScene extends Scene {
       fontSize: 16,
       antialiasing: false
     };
-    
+
     this.dungeonASCIIState = new DungeonASCIIState();
     this.canvasRenderer = new CanvasRenderer(canvas, rendererConfig);
-    
+
     // Also initialize imperative components for fallback
     if (!this.dungeonView) {
       this.initializeUI(canvas);
     }
-    
+
     DebugLogger.info('DungeonScene', 'ASCII rendering components initialized');
+  }
+
+  private checkAndInitializeASCII(): void {
+    // This method ensures ASCII is initialized even if the flag was enabled after scene creation
+    if (this.shouldUseASCIIRendering() && !this.dungeonASCIIState) {
+      const canvas = (window as any).game?.canvas;
+      if (canvas) {
+        console.log('[DungeonScene] Initializing ASCII components dynamically');
+        this.initializeASCIIComponents(canvas);
+      } else {
+        console.log('[DungeonScene] No canvas available for ASCII initialization');
+      }
+    }
   }
 
   private handleMovement(): void {
