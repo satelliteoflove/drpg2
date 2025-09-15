@@ -64,9 +64,11 @@ export class TownASCIIState extends BaseASCIIScene {
 
   private initializeTownLayout(): void {
     const grid = this.asciiState;
-    
+    console.log('[TownASCIIState.initializeTownLayout] Called, grid:', grid);
+
     // Draw town border (leave room at bottom for help text)
     grid.drawBox(0, 0, ASCII_GRID_WIDTH, ASCII_GRID_HEIGHT - 3);
+    console.log('[TownASCIIState.initializeTownLayout] After drawBox');
     
     // Title - Add [ASCII MODE] indicator
     const title = 'TOWN OF LLYLGAMYN [ASCII MODE]';
@@ -143,12 +145,15 @@ export class TownASCIIState extends BaseASCIIScene {
   }
 
   public override enter(): void {
+    console.log('[TownASCIIState.enter] Called');
     super.enter();
     // Don't reset selectedOption if it's already set
     if (this.selectedOption === undefined || this.selectedOption === null) {
       this.selectedOption = 0;
     }
+    console.log('[TownASCIIState.enter] About to call initializeTownLayout');
     this.initializeTownLayout();
+    console.log('[TownASCIIState.enter] After initializeTownLayout');
     DebugLogger.info('TownASCIIState', `Entered Town scene with selection: ${this.selectedOption}`);
   }
 
@@ -168,7 +173,9 @@ export class TownASCIIState extends BaseASCIIScene {
   }
 
   public override handleInput(key: string): boolean {
-    switch (key) {
+    console.log('[TownASCIIState.handleInput] Key:', key);
+    const lowerKey = key.toLowerCase();
+    switch (lowerKey) {
       case 'arrowup':
       case 'w':
         this.selectPreviousOption();
@@ -179,6 +186,7 @@ export class TownASCIIState extends BaseASCIIScene {
         return true;
       case 'enter':
       case ' ':
+        console.log('[TownASCIIState.handleInput] Enter pressed, activating option');
         this.activateSelectedOption();
         return true;
       case 'escape':
@@ -204,14 +212,16 @@ export class TownASCIIState extends BaseASCIIScene {
 
   private activateSelectedOption(): void {
     const option = this.menuOptions[this.selectedOption];
-    
+    console.log('[TownASCIIState] Activating option:', this.selectedOption, option.name, option.sceneId);
+
     if (!option.available) {
       DebugLogger.warn('TownASCIIState', `Option ${option.name} is not available`);
       return;
     }
-    
+
     if (option.sceneId) {
       DebugLogger.info('TownASCIIState', `Transitioning to scene: ${option.sceneId}`);
+      console.log('[TownASCIIState] Calling sceneManager.switchTo:', option.sceneId);
       this.sceneManager.switchTo(option.sceneId);
     }
   }

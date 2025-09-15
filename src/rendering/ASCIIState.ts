@@ -76,9 +76,9 @@ export class ASCIIState {
 
   // Set a single cell
   public setCell(
-    x: number, 
-    y: number, 
-    char: string, 
+    x: number,
+    y: number,
+    char: string,
     metadata?: Partial<CellMetadata>
   ): void {
     if (!this.isValidPosition(x, y)) {
@@ -90,6 +90,10 @@ export class ASCIIState {
     if (oldChar !== char) {
       this.grid.cells[y][x] = char;
       this.markDirty(x, y);
+      // Log first few cell writes
+      if (x < 5 && y < 5) {
+        console.log(`[ASCIIState.setCell] Set (${x},${y}) to '${char}'`);
+      }
     }
 
     if (metadata) {
