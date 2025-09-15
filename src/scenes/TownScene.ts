@@ -98,7 +98,9 @@ export class TownScene extends Scene {
     if (shouldUseASCII && !this.asciiState) {
       DebugLogger.info('TownScene', 'Initializing ASCII state - feature flag enabled');
       this.asciiState = new TownASCIIState(this.gameState, this.sceneManager);
+      this.asciiState.updateSelectedIndex(this.selectedOption); // Set selection before enter
       this.asciiState.enter();
+      this.asciiState.updateSelectedIndex(this.selectedOption); // Sync current selection again after enter
       this.useASCII = true;
     } 
     // Clean up ASCII state if feature was disabled
@@ -188,7 +190,9 @@ export class TownScene extends Scene {
     if (shouldUseASCII && !this.asciiState) {
       DebugLogger.info('TownScene', 'Initializing ASCII state in renderLayered');
       this.asciiState = new TownASCIIState(this.gameState, this.sceneManager);
+      this.asciiState.updateSelectedIndex(this.selectedOption); // Set selection before enter
       this.asciiState.enter();
+      this.asciiState.updateSelectedIndex(this.selectedOption); // Sync current selection again after enter
       this.useASCII = true;
     } else if (!shouldUseASCII && this.asciiState) {
       DebugLogger.info('TownScene', 'Cleaning up ASCII state in renderLayered');
@@ -289,7 +293,12 @@ export class TownScene extends Scene {
     
     // If using ASCII rendering, delegate to ASCII state
     if (shouldUseASCII && this.asciiState) {
-      return this.asciiState.handleInput(key);
+      const handled = this.asciiState.handleInput(key);
+      // Sync the selected option from ASCII state back to main scene
+      if (handled) {
+        this.selectedOption = this.asciiState.getSelectedOption();
+      }
+      return handled;
     }
     
     // Original key handling
