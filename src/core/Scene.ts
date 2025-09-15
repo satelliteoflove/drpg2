@@ -35,11 +35,15 @@ export abstract class Scene {
 }
 
 export class SceneManager {
-  private scenes: Map<string, Scene> = new Map();
-  private currentScene: Scene | null = null;
+  public scenes: Map<string, Scene> = new Map();
+  private _currentScene: Scene | null = null;
   private nextScene: string | null = null;
   private renderManager?: RenderManager;
   public onSceneChange?: (sceneName: string) => void;
+
+  public get currentScene(): Scene | null {
+    return this._currentScene;
+  }
 
   public setRenderManager(renderManager: RenderManager): void {
     this.renderManager = renderManager;
@@ -66,48 +70,50 @@ export class SceneManager {
     if (this.nextScene) {
       DebugLogger.debug('SceneManager', 'Processing scene switch to: ' + this.nextScene);
       
-      if (this.currentScene) {
-        DebugLogger.debug('SceneManager', 'Exiting current scene: ' + this.currentScene.getName());
-        this.currentScene.exit();
+      if (this._currentScene) {
+        DebugLogger.debug('SceneManager', 'Exiting current scene: ' + this._currentScene.getName());
+        this._currentScene.exit();
       }
 
       const newScene = this.scenes.get(this.nextScene);
       DebugLogger.debug('SceneManager', 'Found new scene: ' + (newScene ? newScene.getName() : 'null'));
       
-      this.currentScene = newScene || null;
+      this._currentScene = newScene || null;
       this.nextScene = null;
 
-      if (this.currentScene) {
-        DebugLogger.debug('SceneManager', 'Entering new scene: ' + this.currentScene.getName());
+      if (this._currentScene) {
+        DebugLogger.debug('SceneManager', 'Entering new scene: ' + this._currentScene.getName());
+        console.log('[SceneManager] About to call enter() on scene:', this._currentScene.getName());
         // Reset layers for the new scene
         if (this.renderManager) {
           this.renderManager.resetForSceneChange();
         }
         // Notify about scene change for performance monitoring
         if (this.onSceneChange) {
-          this.onSceneChange(this.currentScene.getName());
+          this.onSceneChange(this._currentScene.getName());
         }
-        this.currentScene.enter();
+        this._currentScene.enter();
+        console.log('[SceneManager] Called enter() on scene:', this._currentScene.getName());
       }
     }
 
-    if (this.currentScene) {
-      this.currentScene.update(deltaTime);
+    if (this._currentScene) {
+      this._currentScene.update(deltaTime);
     }
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
-    if (this.currentScene) {
-      DebugLogger.debug('SceneManager', 'Rendering scene: ' + this.currentScene.getName());
-      this.currentScene.render(ctx);
+    if (this._currentScene) {
+      DebugLogger.debug('SceneManager', 'Rendering scene: ' + this._currentScene.getName());
+      this._currentScene.render(ctx);
     } else {
       DebugLogger.debug('SceneManager', 'No current scene to render');
     }
   }
 
   public renderLayered(ctx: CanvasRenderingContext2D): void {
-    if (this.currentScene && this.renderManager) {
-      this.currentScene.renderLayered({
+    if (this._currentScene && this.renderManager) {
+      this._currentScene.renderLayered({
         renderManager: this.renderManager,
         mainContext: ctx,
       });
@@ -115,14 +121,14 @@ export class SceneManager {
   }
 
   public handleInput(key: string): boolean {
-    if (this.currentScene) {
-      return this.currentScene.handleInput(key);
+    if (this._currentScene) {
+      return this._currentScene.handleInput(key);
     }
     return false;
   }
 
   public getCurrentScene(): Scene | null {
-    return this.currentScene;
+    return this._currentScene;
   }
 
   public getScene(name: string): Scene | null {

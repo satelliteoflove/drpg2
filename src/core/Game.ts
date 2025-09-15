@@ -374,7 +374,7 @@ export class Game {
     }
   }
 
-  private saveGame(): void {
+  public saveGame(): void {
     const playtimeSeconds = Math.floor((Date.now() - this.playtimeStart) / 1000);
     const saveManager = this.services.getSaveManager();
     saveManager.saveGame(this.gameState, playtimeSeconds);
