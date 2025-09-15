@@ -4,7 +4,6 @@ import { TownASCIIState } from '../rendering/scenes/TownASCIIState';
 import { FeatureFlags, FeatureFlagKey } from '../config/FeatureFlags';
 import { CanvasRenderer } from '../rendering/CanvasRenderer';
 import { DebugLogger } from '../utils/DebugLogger';
-import './test-ascii'; // Load test helper
 
 export class TownScene extends Scene {
   private gameState: GameState;
