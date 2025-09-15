@@ -6,6 +6,9 @@ import { RenderingUtils } from '../utils/RenderingUtils';
 import { GameUtilities } from '../utils/GameUtilities';
 import { UI_CONSTANTS } from '../config/UIConstants';
 import { DebugLogger } from '../utils/DebugLogger';
+import { ShopASCIIState } from '../rendering/scenes/ShopASCIIState';
+import { FeatureFlags, FeatureFlagKey } from '../config/FeatureFlags';
+import { CanvasRenderer } from '../rendering/CanvasRenderer';
 
 type ShopState = 'main_menu' | 'buying_category' | 'buying_items' | 'buying_character_select' | 'selling_character_select' | 'selling_items' | 'selling_confirmation' | 'pooling_gold';
 
@@ -20,6 +23,9 @@ export class ShopScene extends Scene {
   private selectedCharacterIndex: number = 0;
   private selectedSellingCharacter: Character | null = null;
   private renderCount: number = 0;
+  private asciiState?: ShopASCIIState;
+  private asciiRenderer?: CanvasRenderer;
+  private useASCII: boolean = false;
   
   private menuOptions: string[] = [
     'Buy Items',
@@ -43,6 +49,15 @@ export class ShopScene extends Scene {
     this.gameState = gameState;
     this.sceneManager = sceneManager;
     this.shopInventory = ShopSystem.getShopInventory();
+
+    // Check if ASCII rendering should be enabled
+    this.useASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+                    FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
+
+    if (this.useASCII) {
+      this.asciiState = new ShopASCIIState(gameState, sceneManager);
+      DebugLogger.info('ShopScene', 'ASCII rendering enabled for Shop scene');
+    }
   }
 
   public enter(): void {
@@ -52,11 +67,40 @@ export class ShopScene extends Scene {
     this.selectedCharacterIndex = 0;
     this.selectedSellingCharacter = null;
     this.shopInventory = ShopSystem.getShopInventory();
+
+    // Check if ASCII should be enabled on enter
+    const shouldUseASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+                            FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
+
+    if (shouldUseASCII && !this.asciiState) {
+      this.asciiState = new ShopASCIIState(this.gameState, this.sceneManager);
+      this.useASCII = true;
+      DebugLogger.info('ShopScene', 'ASCII rendering enabled on enter');
+    } else if (!shouldUseASCII && this.asciiState) {
+      this.asciiState = undefined;
+      this.asciiRenderer = undefined;
+      this.useASCII = false;
+      DebugLogger.info('ShopScene', 'ASCII rendering disabled on enter');
+    }
+
+    // Initialize ASCII state if enabled
+    if (this.asciiState) {
+      this.asciiState.enter();
+      this.syncASCIIState();
+    }
   }
 
-  public exit(): void {}
+  public exit(): void {
+    if (this.asciiState) {
+      this.asciiState.exit();
+    }
+  }
 
-  public update(_deltaTime: number): void {}
+  public update(_deltaTime: number): void {
+    if (this.asciiState) {
+      this.asciiState.update(_deltaTime);
+    }
+  }
 
   public render(ctx: CanvasRenderingContext2D): void {
     this.renderShopContent(ctx);
@@ -64,20 +108,60 @@ export class ShopScene extends Scene {
 
   public renderLayered(renderContext: SceneRenderContext): void {
     this.renderCount++;
-    
-    // ASCII rendering temporarily disabled during migration
-    // Will be re-enabled once ASCII system is fully migrated
 
-    // Original rendering code
-    const { renderManager } = renderContext;
+    // Check if ASCII should be enabled at runtime
+    const shouldUseASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+                            FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
 
-    renderManager.renderBackground((ctx) => {
-      RenderingUtils.clearCanvas(ctx);
-    });
+    if (shouldUseASCII && !this.asciiState) {
+      DebugLogger.info('ShopScene', 'Initializing ASCII state in renderLayered');
+      this.asciiState = new ShopASCIIState(this.gameState, this.sceneManager);
+      this.asciiState.enter();
+      this.syncASCIIState();
+      this.useASCII = true;
+    } else if (!shouldUseASCII && this.asciiState) {
+      DebugLogger.info('ShopScene', 'Disabling ASCII state in renderLayered');
+      this.asciiState.exit();
+      this.asciiState = undefined;
+      this.asciiRenderer = undefined;
+      this.useASCII = false;
+    }
 
-    renderManager.renderUI((ctx) => {
-      this.renderShopContent(ctx);
-    });
+    if (shouldUseASCII && this.asciiState) {
+      // ASCII rendering
+      const { renderManager } = renderContext;
+
+      renderManager.renderBackground((ctx) => {
+        RenderingUtils.clearCanvas(ctx);
+      });
+
+      renderManager.renderUI((ctx) => {
+        // Create ASCII renderer if needed
+        if (!this.asciiRenderer) {
+          this.asciiRenderer = new CanvasRenderer(ctx.canvas);
+        }
+
+        // Update ASCII state with latest data
+        this.syncASCIIState();
+
+        // Render ASCII grid
+        if (this.asciiState && this.asciiRenderer) {
+          const asciiGrid = this.asciiState.getGrid();
+          this.asciiRenderer.renderASCIIGrid(asciiGrid.getGrid());
+        }
+      });
+    } else {
+      // Original rendering code
+      const { renderManager } = renderContext;
+
+      renderManager.renderBackground((ctx) => {
+        RenderingUtils.clearCanvas(ctx);
+      });
+
+      renderManager.renderUI((ctx) => {
+        this.renderShopContent(ctx);
+      });
+    }
   }
 
   private renderShopContent(ctx: CanvasRenderingContext2D): void {
@@ -112,6 +196,23 @@ export class ShopScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
+    // Check if ASCII rendering is currently active
+    const shouldUseASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+                            FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
+
+    // Handle input through main logic since ShopASCIIState doesn't have its own input handling
+    const handled = this.handleShopInput(key);
+
+    // Sync with ASCII state after handling input
+    if (shouldUseASCII && this.asciiState && handled) {
+      this.syncASCIIState();
+    }
+
+    return handled;
+  }
+
+  private handleShopInput(key: string): boolean {
+    // Handle input and sync with ASCII state if needed
     switch (this.currentState) {
       case 'main_menu':
         return this.handleMainMenuInput(key);
@@ -492,29 +593,30 @@ export class ShopScene extends Scene {
         this.currentState = 'buying_category';
         this.selectedOption = 0;
         break;
-        
+
       case 1: // Sell Items
         this.currentState = 'selling_character_select';
         this.selectedCharacterIndex = 0;
         break;
-        
+
       case 2: // Identify Items
         DebugLogger.info('ShopScene', 'Identify Items not yet implemented');
         break;
-        
+
       case 3: // Pool Gold
         this.currentState = 'pooling_gold';
         this.selectedCharacterIndex = 0;
         break;
-        
+
       case 4: // Remove Curses
         DebugLogger.info('ShopScene', 'Remove Curses not yet implemented');
         break;
-        
+
       case 5: // Leave Shop
         this.sceneManager.switchTo('town');
         break;
     }
+    this.syncASCIIState();
   }
 
   private handlePoolingGoldInput(key: string): boolean {
@@ -541,7 +643,7 @@ export class ShopScene extends Scene {
         this.currentState = 'main_menu';
         this.selectedOption = 3; // Stay on Pool Gold option
         return true;
-        
+
       case 'd':
         // Distribute evenly
         const distResult = ShopSystem.distributeGoldEvenly(this.gameState.party);
@@ -576,6 +678,7 @@ export class ShopScene extends Scene {
       // Update shop inventory if needed (for now, items are unlimited)
       this.shopInventory = ShopSystem.getShopInventory();
     }
+    this.syncASCIIState();
     // If purchase failed, stay on character selection screen to show the error message
   }
 
@@ -816,11 +919,13 @@ export class ShopScene extends Scene {
       case 'arrowup':
       case 'w':
         this.selectedCharacterIndex = Math.max(0, this.selectedCharacterIndex - 1);
+        this.syncASCIIState();
         return true;
 
       case 'arrowdown':
       case 's':
         this.selectedCharacterIndex = Math.min(this.gameState.party.characters.length - 1, this.selectedCharacterIndex + 1);
+        this.syncASCIIState();
         return true;
 
       case 'enter':
@@ -828,11 +933,13 @@ export class ShopScene extends Scene {
         this.selectedSellingCharacter = this.gameState.party.characters[this.selectedCharacterIndex];
         this.currentState = 'selling_items';
         this.selectedOption = 0;
+        this.syncASCIIState();
         return true;
 
       case 'escape':
         this.currentState = 'main_menu';
         this.selectedOption = 1; // Return to "Sell Items" option
+        this.syncASCIIState();
         return true;
     }
     return false;
@@ -847,11 +954,13 @@ export class ShopScene extends Scene {
       case 'arrowup':
       case 'w':
         this.selectedOption = Math.max(0, this.selectedOption - 1);
+        this.syncASCIIState();
         return true;
 
       case 'arrowdown':
       case 's':
         this.selectedOption = Math.min(sellableItems.length - 1, this.selectedOption + 1);
+        this.syncASCIIState();
         return true;
 
       case 'enter':
@@ -860,6 +969,7 @@ export class ShopScene extends Scene {
           this.selectedItem = sellableItems[this.selectedOption];
           this.currentState = 'selling_confirmation';
           this.selectedOption = 0;
+          this.syncASCIIState();
         }
         return true;
 
@@ -867,6 +977,7 @@ export class ShopScene extends Scene {
         this.currentState = 'selling_character_select';
         this.selectedOption = this.gameState.party.characters.indexOf(this.selectedSellingCharacter);
         this.selectedSellingCharacter = null;
+        this.syncASCIIState();
         return true;
     }
     return false;
@@ -877,11 +988,13 @@ export class ShopScene extends Scene {
       case 'arrowup':
       case 'w':
         this.selectedOption = Math.max(0, this.selectedOption - 1);
+        this.syncASCIIState();
         return true;
 
       case 'arrowdown':
       case 's':
         this.selectedOption = Math.min(1, this.selectedOption + 1); // 0 = Confirm, 1 = Cancel
+        this.syncASCIIState();
         return true;
 
       case 'enter':
@@ -891,10 +1004,12 @@ export class ShopScene extends Scene {
         } else {
           this.cancelSale();
         }
+        this.syncASCIIState();
         return true;
 
       case 'escape':
         this.cancelSale();
+        this.syncASCIIState();
         return true;
     }
     return false;
@@ -920,11 +1035,25 @@ export class ShopScene extends Scene {
       this.selectedItem = null;
       this.selectedOption = 0;
     }
+    this.syncASCIIState();
   }
 
   private cancelSale(): void {
     this.currentState = 'selling_items';
     this.selectedItem = null;
     this.selectedOption = 0;
+    this.syncASCIIState();
+  }
+
+  private syncASCIIState(): void {
+    if (!this.asciiState) return;
+
+    // Sync state with ASCII renderer
+    this.asciiState.updateState(this.currentState);
+    this.asciiState.updateSelectedIndex(this.selectedOption);
+    this.asciiState.updateSelectedCategory(this.selectedCategory);
+    this.asciiState.updateSelectedItem(this.selectedItem);
+    this.asciiState.updateSelectedCharacter(this.selectedCharacterIndex);
+    this.asciiState.updateSellingCharacter(this.selectedSellingCharacter);
   }
 }
