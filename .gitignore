@@ -11,3 +11,5 @@ dist/
 coverage/
 .nyc_output/
 temp/
+.claude/
+test-results/
