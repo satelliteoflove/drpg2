@@ -49,8 +49,10 @@ Welcome to the DRPG2 (Dungeon RPG 2) documentation. This directory contains comp
 - **Debug Visualization** with performance metrics and profiling
 
 ### 🏗️ Architecture
+- **Hybrid Architecture** combining service-oriented infrastructure with traditional OOP
 - **TypeScript Strict Mode** for type safety and reliability
-- **Entity-Component-System** patterns for game objects
+- **Dependency Injection** for engine services via IoC container
+- **Traditional OOP** for game entities and logic
 - **Error Handling** with graceful degradation and logging
 - **Testing Infrastructure** with Jest and comprehensive test coverage
 

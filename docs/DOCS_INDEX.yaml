@@ -1,0 +1,381 @@
+# Documentation Index for DRPG2
+# This file provides a searchable index for Claude Code to efficiently navigate project documentation
+# Last updated: 2025-09-15
+
+architecture:
+  file: ARCHITECTURE.md
+  topics: [hybrid architecture, system design, service-oriented, traditional OOP, dependency injection, scene management]
+  summary: Hybrid architecture combining service-oriented infrastructure with traditional OOP for game logic
+
+api_reference:
+  file: API_REFERENCE.md
+  topics: [API, classes, methods, interfaces, type definitions]
+  summary: Complete API documentation for all game classes and interfaces
+
+ascii_rendering:
+  - file: ASCII_RENDERING_GUIDE.md
+    topics: [ASCII, rendering, text display, console output, terminal graphics]
+    summary: Guide for implementing ASCII-based rendering system
+
+  - file: ASCII_RENDERING_MIGRATION_PLAN.md
+    topics: [migration, ASCII, refactoring, rendering transition]
+    summary: Plan for migrating from canvas to ASCII rendering
+
+  - file: ascii-system-documentation.md
+    topics: [ASCII system, implementation, architecture, rendering pipeline]
+    summary: Detailed documentation of the ASCII rendering system implementation
+
+performance:
+  - file: PERFORMANCE.md
+    topics: [optimization, performance, profiling, benchmarks, metrics]
+    summary: Performance optimization guidelines and benchmarking
+
+  - file: performance-baseline.md
+    topics: [baseline, metrics, performance measurements]
+    summary: Performance baseline measurements and targets
+
+  - file: performance-baseline-2025-09-04.md
+    topics: [baseline snapshot, metrics, performance history]
+    summary: Performance baseline snapshot from September 4, 2025
+
+  - file: performance-metrics-guide.md
+    topics: [metrics, monitoring, performance tracking]
+    summary: Guide for measuring and tracking performance metrics
+
+game_mechanics:
+  - file: bishop-identification-mechanics.md
+    topics: [bishop, class, identification, game mechanics, items]
+    summary: Bishop class identification mechanics and implementation
+
+  - file: wizardry-item-system.md
+    topics: [items, equipment, inventory, wizardry mechanics]
+    summary: Complete item system documentation based on Wizardry
+
+wizardry_items:
+  files_pattern: wizardry_gaiden_4_items_*.md
+  topics: [items, equipment, weapons, armor, wizardry gaiden, game data]
+  summary: Wizardry Gaiden 4 item data organized by category (01-15)
+  categories:
+    01: Basic weapons and starting equipment
+    02: Mid-tier weapons and armor
+    03: Advanced weapons
+    04: Special and unique items
+    05: Magical items and artifacts
+    06: Consumables and potions
+    07: Scrolls and spell items
+    08: Quest items
+    09: Rare equipment
+    10: Legendary items
+    11: Cursed items
+    12: Class-specific equipment
+    13: Special armor sets
+    14: Miscellaneous items
+    15: End-game equipment
+
+usage_and_setup:
+  - file: README.md
+    topics: [setup, installation, getting started, overview]
+    summary: Project overview and initial setup instructions
+
+  - file: USAGE.md
+    topics: [usage, controls, gameplay, user guide]
+    summary: How to play the game and use its features
+
+development:
+  - file: lessons-learned.md
+    topics: [development, best practices, retrospective, lessons]
+    summary: Development lessons learned and best practices discovered
+
+  - file: validation-report.md
+    topics: [validation, testing, quality assurance, test results]
+    summary: Validation and testing report for the game systems
+
+# API Documentation Root
+api_root:
+  - file: api/README.md
+    topics: [API overview, documentation structure, TypeDoc]
+    summary: Overview of the API documentation structure
+
+  - file: api/globals.md
+    topics: [global exports, module exports, API index]
+    summary: Global API exports and module index
+
+# API Classes
+api_classes:
+  - file: api/classes/Character.md
+    topics: [Character class, player character, stats, attributes]
+    summary: Character class implementation and methods
+
+  - file: api/classes/CharacterCreationScene.md
+    topics: [character creation, scene, UI, player setup]
+    summary: Scene for creating new player characters
+
+  - file: api/classes/CombatScene.md
+    topics: [combat, battle, scene, turn-based combat]
+    summary: Combat scene implementation and battle mechanics
+
+  - file: api/classes/CombatSystem.md
+    topics: [combat system, battle logic, damage calculation]
+    summary: Core combat system logic and calculations
+
+  - file: api/classes/DungeonGenerator.md
+    topics: [dungeon generation, procedural generation, maze]
+    summary: Procedural dungeon generation algorithms
+
+  - file: api/classes/DungeonScene.md
+    topics: [dungeon exploration, scene, navigation, first-person]
+    summary: Dungeon exploration scene and navigation
+
+  - file: api/classes/DungeonView.md
+    topics: [dungeon rendering, first-person view, display]
+    summary: First-person dungeon view rendering
+
+  - file: api/classes/ErrorHandler.md
+    topics: [error handling, exceptions, logging]
+    summary: Centralized error handling and logging
+
+  - file: api/classes/Game.md
+    topics: [game loop, main class, initialization, core]
+    summary: Main game class and game loop
+
+  - file: api/classes/GameServices.md
+    topics: [services, dependency injection, game services]
+    summary: Game services management and dependency injection
+
+  - file: api/classes/InputManager.md
+    topics: [input, keyboard, mouse, controls]
+    summary: Input handling and control management
+
+  - file: api/classes/InventorySystem.md
+    topics: [inventory, items, equipment management]
+    summary: Inventory and equipment management system
+
+  - file: api/classes/MainMenuScene.md
+    topics: [main menu, scene, UI, game start]
+    summary: Main menu scene implementation
+
+  - file: api/classes/MessageLog.md
+    topics: [messages, log, UI, game feedback]
+    summary: Game message log and feedback system
+
+  - file: api/classes/NewGameScene.md
+    topics: [new game, scene, game initialization]
+    summary: New game initialization scene
+
+  - file: api/classes/Party.md
+    topics: [party, group, character management]
+    summary: Party management and character groups
+
+  - file: api/classes/RenderingOptimizer.md
+    topics: [rendering, optimization, performance]
+    summary: Rendering optimization utilities
+
+  - file: api/classes/RenderManager.md
+    topics: [rendering, display, canvas, graphics]
+    summary: Main rendering management system
+
+  - file: api/classes/SaveManager.md
+    topics: [save, load, persistence, game state]
+    summary: Save game management and persistence
+
+  - file: api/classes/Scene.md
+    topics: [scene, base class, scene management]
+    summary: Base scene class for all game scenes
+
+  - file: api/classes/SceneManager.md
+    topics: [scene management, transitions, scene stack]
+    summary: Scene management and transitions
+
+  - file: api/classes/ServiceContainer.md
+    topics: [service container, IoC, dependency injection]
+    summary: Service container for dependency injection
+
+  - file: api/classes/ServiceRegistry.md
+    topics: [service registry, registration, dependencies]
+    summary: Service registration and lookup
+
+  - file: api/classes/StatusPanel.md
+    topics: [status, UI, party display, HUD]
+    summary: Status panel UI component
+
+  - file: api/classes/TypeValidation.md
+    topics: [validation, type checking, runtime validation]
+    summary: Runtime type validation utilities
+
+# API Interfaces
+api_interfaces:
+  - file: api/interfaces/Attack.md
+    topics: [attack, combat action, damage]
+    summary: Attack interface for combat actions
+
+  - file: api/interfaces/CharacterStats.md
+    topics: [stats, attributes, character properties]
+    summary: Character statistics interface
+
+  - file: api/interfaces/DungeonEvent.md
+    topics: [dungeon events, encounters, triggers]
+    summary: Dungeon event interface
+
+  - file: api/interfaces/DungeonLevel.md
+    topics: [dungeon level, floor, map data]
+    summary: Dungeon level data structure
+
+  - file: api/interfaces/DungeonTile.md
+    topics: [tile, dungeon cell, map element]
+    summary: Individual dungeon tile interface
+
+  - file: api/interfaces/Encounter.md
+    topics: [encounter, battle, monster group]
+    summary: Encounter definition interface
+
+  - file: api/interfaces/EncounterZone.md
+    topics: [encounter zone, spawn area, monster zones]
+    summary: Encounter zone definition
+
+  - file: api/interfaces/Equipment.md
+    topics: [equipment, gear, items, worn items]
+    summary: Equipment interface for wearable items
+
+  - file: api/interfaces/GameState.md
+    topics: [game state, save data, persistence]
+    summary: Complete game state interface
+
+  - file: api/interfaces/IDungeonService.md
+    topics: [dungeon service, service interface]
+    summary: Dungeon service interface
+
+  - file: api/interfaces/IInputService.md
+    topics: [input service, service interface]
+    summary: Input service interface
+
+  - file: api/interfaces/IMovementInput.md
+    topics: [movement, input, controls]
+    summary: Movement input interface
+
+  - file: api/interfaces/IParty.md
+    topics: [party interface, group management]
+    summary: Party management interface
+
+  - file: api/interfaces/IRenderService.md
+    topics: [render service, graphics service]
+    summary: Rendering service interface
+
+  - file: api/interfaces/IRenderStats.md
+    topics: [render stats, performance metrics]
+    summary: Rendering statistics interface
+
+  - file: api/interfaces/ISaveService.md
+    topics: [save service, persistence service]
+    summary: Save game service interface
+
+  - file: api/interfaces/ISceneService.md
+    topics: [scene service, scene management service]
+    summary: Scene management service interface
+
+  - file: api/interfaces/IValidationService.md
+    topics: [validation service, type checking service]
+    summary: Validation service interface
+
+  - file: api/interfaces/Item.md
+    topics: [item, inventory object, loot]
+    summary: Base item interface
+
+  - file: api/interfaces/ItemDrop.md
+    topics: [item drop, loot, treasure]
+    summary: Item drop definition
+
+  - file: api/interfaces/ItemEffect.md
+    topics: [item effect, item abilities, bonuses]
+    summary: Item effect interface
+
+  - file: api/interfaces/Monster.md
+    topics: [monster, enemy, creature]
+    summary: Monster definition interface
+
+  - file: api/interfaces/SceneRenderContext.md
+    topics: [render context, scene rendering]
+    summary: Scene rendering context interface
+
+  - file: api/interfaces/Spell.md
+    topics: [spell, magic, abilities]
+    summary: Spell definition interface
+
+  - file: api/interfaces/SpellEffect.md
+    topics: [spell effect, magic effect, spell results]
+    summary: Spell effect interface
+
+# API Enumerations
+api_enumerations:
+  - file: api/enumerations/ErrorSeverity.md
+    topics: [error severity, error levels, logging levels]
+    summary: Error severity enumeration
+
+# API Functions
+api_functions:
+  - file: api/functions/createServiceIdentifier.md
+    topics: [service identifier, dependency injection, factory]
+    summary: Service identifier factory function
+
+# API Type Aliases
+api_type_aliases:
+  - file: api/type-aliases/CharacterAlignment.md
+    topics: [alignment, character alignment, moral alignment]
+    summary: Character alignment type definition
+
+  - file: api/type-aliases/CharacterClass.md
+    topics: [character class, profession, job]
+    summary: Character class type definition
+
+  - file: api/type-aliases/CharacterRace.md
+    topics: [race, species, character race]
+    summary: Character race type definition
+
+  - file: api/type-aliases/CharacterStatus.md
+    topics: [status, character status, conditions]
+    summary: Character status type definition
+
+  - file: api/type-aliases/Direction.md
+    topics: [direction, navigation, movement]
+    summary: Direction type definition
+
+  - file: api/type-aliases/DungeonEventData.md
+    topics: [event data, dungeon events]
+    summary: Dungeon event data type
+
+  - file: api/type-aliases/Formation.md
+    topics: [formation, party formation, battle formation]
+    summary: Party formation type definition
+
+# API Variables
+api_variables:
+  - file: api/variables/GAME_CONFIG.md
+    topics: [configuration, game settings, constants]
+    summary: Game configuration constants
+
+  - file: api/variables/serviceContainer.md
+    topics: [service container, IoC container, DI]
+    summary: Global service container instance
+
+  - file: api/variables/serviceRegistry.md
+    topics: [service registry, service registration]
+    summary: Global service registry instance
+
+  - file: api/variables/ServiceIdentifiers.md
+    topics: [service identifiers, DI tokens, service keys]
+    summary: Service identifier constants
+
+# Search hints for common queries
+search_hints:
+  rendering: [ASCII_RENDERING_GUIDE.md, ascii-system-documentation.md, api/classes/RenderManager.md, api/classes/DungeonView.md]
+  performance: [PERFORMANCE.md, performance-metrics-guide.md, api/classes/RenderingOptimizer.md]
+  items: [wizardry-item-system.md, wizardry_gaiden_4_items_*.md, api/interfaces/Item.md, api/classes/InventorySystem.md]
+  architecture: [ARCHITECTURE.md, API_REFERENCE.md, api/classes/Game.md]
+  game_mechanics: [bishop-identification-mechanics.md, wizardry-item-system.md]
+  setup: [README.md, USAGE.md]
+  api: [API_REFERENCE.md, api/README.md, api/globals.md]
+  combat: [api/classes/CombatScene.md, api/classes/CombatSystem.md, api/interfaces/Attack.md]
+  dungeon: [api/classes/DungeonGenerator.md, api/classes/DungeonScene.md, api/interfaces/DungeonLevel.md]
+  services: [api/classes/GameServices.md, api/classes/ServiceContainer.md, api/classes/ServiceRegistry.md]
+  scenes: [api/classes/Scene.md, api/classes/SceneManager.md, api/interfaces/SceneRenderContext.md]
+  character: [api/classes/Character.md, api/interfaces/CharacterStats.md, api/classes/CharacterCreationScene.md]
+  save_load: [api/classes/SaveManager.md, api/interfaces/GameState.md, api/interfaces/ISaveService.md]

@@ -7,8 +7,9 @@
 DRPG2 - Dungeon Crawler Game Engine API
 
 A TypeScript-based dungeon crawler game engine inspired by classic Wizardry-style RPGs.
-Features a modular architecture with ECS patterns, canvas rendering, and comprehensive
-game systems for character management, combat, and dungeon exploration.
+Features a hybrid architecture combining service-oriented infrastructure (rendering, input, scenes)
+with traditional object-oriented game logic (characters, items, combat). Includes canvas rendering
+and comprehensive game systems for character management, combat, and dungeon exploration.
 
 ## Enumerations
 

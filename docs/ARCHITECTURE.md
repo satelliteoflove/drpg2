@@ -2,23 +2,40 @@
 
 ## Overview
 
-DRPG2 is a TypeScript-based dungeon crawler game engine inspired by classic Wizardry-style RPGs. The engine follows a modular architecture with service-oriented design patterns, Entity-Component-System (ECS) concepts, and clean separation of concerns.
+DRPG2 is a TypeScript-based dungeon crawler game engine inspired by classic Wizardry-style RPGs. The engine implements a **hybrid architecture** that combines:
+- **Service-Oriented Architecture** with dependency injection for core engine services (rendering, input, scene management)
+- **Traditional Object-Oriented Programming** for game entities (characters, items, monsters)
+- **Scene-based state management** for game flow control
+
+This pragmatic hybrid approach provides clean separation of concerns while maintaining simplicity for game logic.
 
 ## Core Architecture Principles
 
-### 1. Service-Oriented Architecture
-- **Service Container**: Centralized dependency injection using `ServiceContainer`
-- **Service Interfaces**: Abstract contracts for all major systems
-- **Service Registry**: Singleton pattern for global service access
-- **Loose Coupling**: Components depend on interfaces, not concrete implementations
+### 1. Service Layer (Infrastructure)
+- **Service Container**: IoC container for dependency injection (`ServiceContainer`)
+- **Service Registry**: Service locator pattern for global access
+- **Core Services**: RenderManager, InputManager, SceneManager, SaveManager
+- **Dependency Injection**: Services injected into Game class and scenes
+- **Used For**: Infrastructure concerns like rendering, input handling, scene transitions
 
-### 2. Scene-Based State Management
+### 2. Traditional OOP Layer (Game Logic)
+- **Entity Classes**: Character, Party, Monster use traditional class inheritance
+- **Direct Properties**: Entities contain their data as class members (not components)
+- **Method Encapsulation**: Business logic encapsulated within entity methods
+- **Static Utilities**: Systems like InventorySystem provide utility functions
+- **Used For**: Game mechanics, character stats, combat, items
+
+### 3. Scene-Based State Management
 - **Scene System**: Each game state (menu, dungeon, combat) is a separate scene
 - **Scene Manager**: Handles transitions and lifecycle management
 - **Layered Rendering**: Support for both traditional and layer-based rendering approaches
 
-### 3. Canvas Rendering Pipeline
-- **Direct Canvas Access**: 2D context for pixel-perfect retro aesthetics
+### 4. Dual Rendering System
+- **Canvas Rendering**: Traditional 2D context for pixel-perfect retro aesthetics
+- **ASCII Rendering** (Feature-Flagged): 80x25 text grid for AI-friendly visualization
+  - Designed to help AI systems understand and manipulate game state
+  - Enable via `window.FeatureFlags.enable('ascii_rendering')`
+  - Complete implementation across all major scenes
 - **Rendering Optimization**: Frame-based optimization with dirty region tracking
 - **Layer Compositing**: Separate rendering layers for background, entities, effects, UI
 - **Performance Monitoring**: Built-in FPS tracking and render statistics
@@ -28,16 +45,63 @@ DRPG2 is a TypeScript-based dungeon crawler game engine inspired by classic Wiza
 ```
 src/
 ├── core/           # Core game engine components
-├── entities/       # Game entities (characters, monsters, items)
-├── systems/        # Game logic systems (combat, movement, inventory)
+│   ├── Game.ts     # Main game loop and initialization
+│   ├── Scene.ts    # Abstract scene base class
+│   ├── Input.ts    # Input management (exports InputManager)
+│   └── RenderingOptimizer.ts # Performance optimization
+├── entities/       # Game entities
+│   ├── Character.ts # Character with stats and abilities
+│   └── Party.ts     # Party management system
+├── scenes/         # Game scenes (state management)
+│   ├── MainMenuScene.ts
+│   ├── CharacterCreationScene.ts
+│   ├── TownScene.ts
+│   ├── DungeonScene.ts
+│   ├── CombatScene.ts
+│   ├── ShopScene.ts
+│   └── InventoryScene.ts
+├── systems/        # Game logic systems
+│   ├── CombatSystem.ts
+│   ├── InventorySystem.ts
+│   ├── SceneManager.ts
+│   └── ShopSystem.ts
 ├── services/       # Service layer and dependency injection
-├── scenes/         # Game scenes (main menu, dungeon, combat)
+│   ├── ServiceContainer.ts
+│   ├── ServiceRegistry.ts
+│   ├── GameServices.ts
+│   └── interfaces/
+├── rendering/      # ASCII rendering system
+│   ├── CanvasRenderer.ts
+│   ├── ASCIIState.ts
+│   ├── BaseASCIIScene.ts
+│   └── ascii/
 ├── ui/            # User interface components
 ├── utils/         # Utility functions and helpers
 ├── types/         # TypeScript type definitions
 ├── config/        # Game configuration and constants
-└── assets/        # Game assets and data
+├── data/          # Game data files
+└── assets/        # Game assets and sprites
 ```
+
+## Architecture Rationale
+
+### Why a Hybrid Approach?
+
+This hybrid architecture is intentionally designed for a Wizardry-style dungeon crawler:
+
+1. **Service Layer for Infrastructure**: Engine concerns like rendering, input, and scene management benefit from dependency injection and loose coupling.
+
+2. **Traditional OOP for Game Logic**: Wizardry-style games have well-defined, stable entity structures (characters always have stats, HP, equipment slots). Traditional OOP provides:
+   - Simpler implementation for fixed game mechanics
+   - Better type safety with TypeScript
+   - Easier debugging and maintenance
+   - Natural fit for turn-based RPG rules
+
+3. **Not ECS Because**: Entity-Component-System architecture excels at dynamic composition and data-oriented design, but adds unnecessary complexity for a game where:
+   - Entity types are well-known and stable
+   - Components rarely change at runtime
+   - Performance isn't bottlenecked by entity iteration
+   - Game rules are turn-based, not real-time
 
 ## Core Components
 
@@ -174,7 +238,7 @@ Centralized configuration for:
 ## Future Architecture Improvements
 
 ### Planned Enhancements
-1. **Component System**: Full ECS implementation for entities
+1. **Enhanced Entity System**: More flexible entity management and behavior composition
 2. **Asset Pipeline**: Structured asset loading and management
 3. **Audio System**: Service-based audio management
 4. **Network Layer**: Multiplayer support infrastructure

@@ -91,7 +91,7 @@ When a character dies, they must be resurrected. Each death:
 - Built with TypeScript for type safety
 - HTML5 Canvas rendering for retro graphics
 - Webpack for bundling and development
-- Modular architecture with ECS patterns
+- Hybrid architecture: service-oriented infrastructure + traditional OOP game logic
 - Comprehensive save/load system
 - Auto-save every 30 seconds
 

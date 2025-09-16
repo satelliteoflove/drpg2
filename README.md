@@ -4,6 +4,13 @@ A full-featured dungeon role-playing game built with TypeScript and HTML5 Canvas
 
 ## Features
 
+### ASCII Rendering Mode (AI-Friendly)
+- **80x25 ASCII Grid Display**: Text-based rendering for AI systems to understand game state
+- **Feature Flag System**: Toggle ASCII mode via `window.FeatureFlags.enable('ascii_rendering')`
+- **Scene-Specific Toggles**: Enable ASCII for individual scenes (town, dungeon, combat, etc.)
+- **Bidirectional Sync**: Prototype changes in ASCII before implementing in canvas
+- **Full Test Coverage**: 42+ Playwright tests for ASCII functionality
+
 ### Core Gameplay
 - **Character Creation**: Create characters with different races (Human, Elf, Dwarf, Gnome, Hobbit) and classes (Fighter, Mage, Priest, Thief, Bishop, Samurai, Lord, Ninja)
 - **Party Management**: Form parties of up to 6 characters with tactical positioning
@@ -53,6 +60,13 @@ npm run build
 
 # Type checking
 npm run typecheck
+
+# Run tests
+npm test
+
+# Run specific ASCII tests
+npm test -- dungeon-ascii
+npm test -- town-ascii
 ```
 
 ## Game Mechanics
@@ -87,21 +101,70 @@ When a character dies, they must be resurrected. Each death:
 - Built with TypeScript for type safety
 - HTML5 Canvas rendering for retro graphics
 - Webpack for bundling and development
-- Modular architecture with ECS patterns
+- Hybrid architecture combining service-oriented infrastructure with traditional OOP game logic
 - Comprehensive save/load system
 - Auto-save every 30 seconds
 
 ## Architecture
 
-The game follows clean separation of concerns:
+The game uses a **hybrid architecture** that combines the best of both worlds:
 
-- **Core**: Game engine, scenes, input handling
-- **Entities**: Character, Party, and game objects
-- **Systems**: Combat, Inventory, and game mechanics
-- **UI**: Rendering components and user interface
-- **Utils**: Dungeon generation, save management
-- **Types**: TypeScript interfaces and types
+### Service-Oriented Layer (Infrastructure)
+- **Core**: Game engine with dependency injection
+- **Services**: IoC container for RenderManager, InputManager, SceneManager
+- **Rendering**: Dual rendering system (Canvas and ASCII modes)
+- **Scene Management**: State transitions and lifecycle
+
+### Traditional OOP Layer (Game Logic)
+- **Entities**: Character, Party, Monster classes with inheritance
+- **Systems**: Utility classes for Combat, Inventory, Shop mechanics
+- **Game Data**: Items, spells, and equipment as traditional objects
+- **Business Logic**: Encapsulated within entity methods
+
+### Supporting Components
+- **UI**: Interface components and rendering
+- **Utils**: Dungeon generation, save management, error handling
+- **Types**: TypeScript interfaces and type definitions
 
 ## Development
 
 The codebase is fully TypeScript with strict type checking enabled. All game systems are modular and extensible for easy modification and enhancement.
+
+### Feature Flags
+
+Enable features at runtime via the browser console:
+
+```javascript
+// Enable ASCII rendering globally
+window.FeatureFlags.enable('ascii_rendering')
+
+// Enable for specific scenes
+window.FeatureFlags.enable('ascii_town_scene')
+
+// Check feature status
+window.FeatureFlags.status()
+
+// Or use URL parameters
+// http://localhost:8080?ff_ascii_rendering=true
+```
+
+### Documentation
+
+**Important**: Always refer to `/docs/DOCS_INDEX.yaml` as the primary documentation index. This file is kept up-to-date and provides a searchable index of all available documentation with topics and summaries.
+
+```yaml
+# Example: Finding documentation about a specific topic
+# Look in docs/DOCS_INDEX.yaml for entries like:
+architecture:
+  file: ARCHITECTURE.md
+  topics: [system design, components, game architecture]
+
+ascii_rendering:
+  file: ASCII_RENDERING_GUIDE.md
+  topics: [ASCII, rendering, text display]
+```
+
+The DOCS_INDEX.yaml file should be:
+- Referenced first when looking for any documentation
+- Updated immediately when any document is added, modified, or removed
+- Used by AI systems (like Claude) to efficiently navigate documentation
