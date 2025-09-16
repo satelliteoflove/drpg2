@@ -729,7 +729,7 @@ export class ShopScene extends Scene {
         return true;
 
       case 'enter':
-      case ' ':
+      case ' ': {
         // Pool all gold to selected character
         const targetChar = this.gameState.party.characters[this.selectedCharacterIndex];
         const result = ShopSystem.poolGold(this.gameState.party, targetChar);
@@ -737,14 +737,16 @@ export class ShopScene extends Scene {
         this.currentState = 'main_menu';
         this.selectedOption = 3; // Stay on Pool Gold option
         return true;
+      }
 
-      case 'd':
+      case 'd': {
         // Distribute evenly
         const distResult = ShopSystem.distributeGoldEvenly(this.gameState.party);
         DebugLogger.info('ShopScene', distResult.message);
         this.currentState = 'main_menu';
         this.selectedOption = 3; // Stay on Pool Gold option
         return true;
+      }
 
       case 'escape':
         this.currentState = 'main_menu';

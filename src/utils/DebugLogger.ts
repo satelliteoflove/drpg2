@@ -54,7 +54,8 @@ export class DebugLogger {
     }
 
     // Also output to console in development
-    if (process.env.NODE_ENV === 'development') {
+    // eslint-disable-next-line no-undef
+    if (typeof process !== 'undefined' && (process as any).env?.NODE_ENV === 'development') {
       const consoleMethod =
         entry.level === 'ERROR' ? 'error' : entry.level === 'WARN' ? 'warn' : 'log';
       console[consoleMethod](`[${entry.level}] ${entry.module}: ${entry.message}`, entry.data);

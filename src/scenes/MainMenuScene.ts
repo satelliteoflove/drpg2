@@ -133,7 +133,7 @@ export class MainMenuScene extends Scene {
         return true;
 
       case 'escape':
-        if (confirm('Are you sure you want to quit?')) {
+        if (window.confirm('Are you sure you want to quit?')) {
           window.close();
         }
         return true;
@@ -155,7 +155,7 @@ export class MainMenuScene extends Scene {
         break;
 
       case 'Exit':
-        if (confirm('Are you sure you want to quit?')) {
+        if (window.confirm('Are you sure you want to quit?')) {
           window.close();
         }
         break;

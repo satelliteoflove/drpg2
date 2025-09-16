@@ -188,6 +188,9 @@ export class Game {
             alignment: _alignment,
             ...restData
           } = charData;
+
+          // eslint-disable-next-line no-unused-expressions
+          (void _name, void _race, void _charClass, void _alignment); // Mark as intentionally unused
           Object.assign(newChar, restData);
           party.characters.push(newChar);
         } catch (error) {

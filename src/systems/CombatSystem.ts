@@ -191,13 +191,14 @@ export class CombatSystem {
     let result = `${caster.name} casts ${spell.name}!`;
 
     switch (spell.targetType) {
-      case 'enemy':
+      case 'enemy': {
         const aliveMonsters = this.encounter.monsters.filter((m) => m.hp > 0);
         target =
           targetIndex !== undefined && targetIndex < aliveMonsters.length
             ? aliveMonsters[targetIndex]
             : aliveMonsters[Math.floor(Math.random() * aliveMonsters.length)];
         break;
+      }
       case 'ally':
       case 'self':
         target = caster;
@@ -213,13 +214,14 @@ export class CombatSystem {
 
   private applySpellEffect(spell: Spell, target: Character | Monster): string {
     switch (spell.effect.type) {
-      case 'damage':
+      case 'damage': {
         const damage = spell.effect.power + Math.floor(Math.random() * 6);
         if ('hp' in target) {
           target.hp = Math.max(0, target.hp - damage);
           return `${target.name} takes ${damage} damage!`;
         }
         break;
+      }
       case 'heal':
         if ('heal' in target) {
           const healing = spell.effect.power + Math.floor(Math.random() * 6);

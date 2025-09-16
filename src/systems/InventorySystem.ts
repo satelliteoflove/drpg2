@@ -228,11 +228,12 @@ export class InventorySystem {
     if (item.effects) {
       item.effects.forEach((effect) => {
         switch (effect.type) {
-          case 'heal':
+          case 'heal': {
             const oldHp = character.hp;
             character.heal(effect.value);
             result += ` and recovers ${character.hp - oldHp} HP`;
             break;
+          }
           case 'stat':
             if (effect.target && effect.target in character.stats) {
               const statKey = effect.target;

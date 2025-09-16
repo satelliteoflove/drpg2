@@ -116,7 +116,7 @@ export class DebugOverlay {
     currentY = this.renderLootSystemInfo(x + 10, currentY, lineHeight);
     currentY += sectionSpacing;
 
-    currentY = this.renderCombatInfo(x + 10, currentY, lineHeight);
+    this.renderCombatInfo(x + 10, currentY, lineHeight);
 
     this.ctx.restore();
   }
