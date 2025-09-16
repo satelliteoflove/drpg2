@@ -131,7 +131,7 @@ export interface Monster {
   experience: number;
   gold: number;
   itemDrops: ItemDrop[];
-  lootDrops?: LootDrop[];  // New loot system (takes precedence if present)
+  lootDrops?: LootDrop[]; // New loot system (takes precedence if present)
   resistances: string[];
   weaknesses: string[];
   sprite?: string;
@@ -153,8 +153,8 @@ export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
 
 export interface LootDrop {
   itemId: string;
-  chance: number;              // Base drop chance
-  minLevel?: number;           // Level requirements
+  chance: number; // Base drop chance
+  minLevel?: number; // Level requirements
   maxLevel?: number;
 }
 
@@ -187,7 +187,14 @@ export interface OverrideZone {
   y1: number;
   x2: number;
   y2: number;
-  type: 'safe' | 'boss' | 'special_mobs' | 'high_frequency' | 'low_frequency' | 'ambush' | 'treasure';
+  type:
+    | 'safe'
+    | 'boss'
+    | 'special_mobs'
+    | 'high_frequency'
+    | 'low_frequency'
+    | 'ambush'
+    | 'treasure';
   data?: {
     monsterGroups?: string[];
     encounterRate?: number;

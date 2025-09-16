@@ -56,7 +56,7 @@ export class DebugOverlay {
 
   public handleScroll(direction: 'up' | 'down'): void {
     if (!this.isVisible) return;
-    
+
     const scrollAmount = 20;
     if (direction === 'up') {
       this.scrollOffset = Math.max(0, this.scrollOffset - scrollAmount);
@@ -72,8 +72,8 @@ export class DebugOverlay {
     this.updateSystemInfo(gameState);
 
     const padding = 20;
-    const width = this.ctx.canvas.width - (padding * 2);
-    const height = this.ctx.canvas.height - (padding * 2);
+    const width = this.ctx.canvas.width - padding * 2;
+    const height = this.ctx.canvas.height - padding * 2;
     const x = padding;
     const y = padding;
 
@@ -109,13 +109,13 @@ export class DebugOverlay {
     // Render all debug sections
     currentY = this.renderSystemInfo(x + 10, currentY, lineHeight);
     currentY += sectionSpacing;
-    
+
     currentY = this.renderPartyStats(gameState.party, x + 10, currentY, lineHeight);
     currentY += sectionSpacing;
-    
+
     currentY = this.renderLootSystemInfo(x + 10, currentY, lineHeight);
     currentY += sectionSpacing;
-    
+
     currentY = this.renderCombatInfo(x + 10, currentY, lineHeight);
 
     this.ctx.restore();
@@ -126,7 +126,7 @@ export class DebugOverlay {
       currentScene: 'Unknown', // Will be set by the scene
       combatEnabled: gameState.combatEnabled,
       currentFloor: gameState.currentFloor,
-      gameTime: gameState.gameTime
+      gameTime: gameState.gameTime,
     };
   }
 
@@ -165,7 +165,8 @@ export class DebugOverlay {
 
     // Calculate party stats
     const totalLuck = party.characters.reduce((sum, char) => sum + char.stats.luck, 0);
-    const averageLevel = party.characters.reduce((sum, char) => sum + char.level, 0) / party.characters.length;
+    const averageLevel =
+      party.characters.reduce((sum, char) => sum + char.level, 0) / party.characters.length;
 
     this.ctx.fillText(`Total Party Luck: ${totalLuck} (Base: 60)`, x, y);
     y += lineHeight;
@@ -173,7 +174,11 @@ export class DebugOverlay {
     y += lineHeight;
 
     if (this.debugData.partyStats) {
-      this.ctx.fillText(`Luck Multiplier: ${this.debugData.partyStats.luckMultiplier.toFixed(3)}x`, x, y);
+      this.ctx.fillText(
+        `Luck Multiplier: ${this.debugData.partyStats.luckMultiplier.toFixed(3)}x`,
+        x,
+        y
+      );
       y += lineHeight;
     }
 
@@ -184,15 +189,19 @@ export class DebugOverlay {
       this.ctx.fillStyle = '#ccc';
       this.ctx.fillText(`${char.name} (${char.class}, Lvl ${char.level}):`, x, y);
       y += lineHeight;
-      
+
       this.ctx.fillStyle = '#fff';
       const stats = `  STR:${char.stats.strength} INT:${char.stats.intelligence} PIE:${char.stats.piety} VIT:${char.stats.vitality} AGI:${char.stats.agility} LUK:${char.stats.luck}`;
       this.ctx.fillText(stats, x, y);
       y += lineHeight;
-      
+
       // Equipment and status
-      const equipCount = Object.values(char.equipment).filter(item => item !== undefined).length;
-      this.ctx.fillText(`  HP:${char.hp}/${char.maxHp} MP:${char.mp}/${char.maxMp} AC:${char.ac} Equipment:${equipCount}/7`, x, y);
+      const equipCount = Object.values(char.equipment).filter((item) => item !== undefined).length;
+      this.ctx.fillText(
+        `  HP:${char.hp}/${char.maxHp} MP:${char.mp}/${char.maxMp} AC:${char.ac} Equipment:${equipCount}/7`,
+        x,
+        y
+      );
       y += lineHeight;
     });
 
@@ -225,7 +234,7 @@ export class DebugOverlay {
         this.ctx.fillText('Recent Rarity Rolls:', x, y);
         y += lineHeight;
         this.ctx.fillStyle = '#fff';
-        loot.lastRarityRolls.forEach(roll => {
+        loot.lastRarityRolls.forEach((roll) => {
           this.ctx.fillText(`  ${roll}`, x, y);
           y += lineHeight;
         });
@@ -267,7 +276,7 @@ export class DebugOverlay {
         y += lineHeight;
         this.ctx.fillText('Escape Chances (last calculated):', x, y);
         y += lineHeight;
-        combat.escapeChances.forEach(escape => {
+        combat.escapeChances.forEach((escape) => {
           this.ctx.fillText(`  ${escape.name}: ${Math.round(escape.chance * 100)}%`, x, y);
           y += lineHeight;
         });
@@ -287,7 +296,7 @@ export class DebugOverlay {
         currentScene: sceneName,
         combatEnabled: false,
         currentFloor: 1,
-        gameTime: 0
+        gameTime: 0,
       };
     } else {
       this.debugData.systemInfo.currentScene = sceneName;

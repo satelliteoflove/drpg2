@@ -60,7 +60,7 @@ test.describe('Save/Load with ASCII Rendering - Simple Tests', () => {
         const data = JSON.parse(saved);
         return {
           turnCount: data.gameState.turnCount,
-          hasSave: true
+          hasSave: true,
         };
       }
       return { hasSave: false };
@@ -111,7 +111,7 @@ test.describe('Save/Load with ASCII Rendering - Simple Tests', () => {
         sceneName: scene?.name || 'none',
         hasASCIICapability: hasASCIICapability,
         asciiEnabled: window.FeatureFlags?.isEnabled('ASCII_RENDERING'),
-        sceneType: scene?.constructor?.name || 'unknown'
+        sceneType: scene?.constructor?.name || 'unknown',
       };
     });
 
@@ -122,9 +122,13 @@ test.describe('Save/Load with ASCII Rendering - Simple Tests', () => {
 
     // The scene should have ASCII capability IF it's been implemented for that scene
     // (Not all scenes may have ASCII implementation yet)
-    if (sceneInfo.sceneName === 'Dungeon' || sceneInfo.sceneName === 'Town' ||
-        sceneInfo.sceneName === 'Combat' || sceneInfo.sceneName === 'Shop' ||
-        sceneInfo.sceneName === 'Inventory') {
+    if (
+      sceneInfo.sceneName === 'Dungeon' ||
+      sceneInfo.sceneName === 'Town' ||
+      sceneInfo.sceneName === 'Combat' ||
+      sceneInfo.sceneName === 'Shop' ||
+      sceneInfo.sceneName === 'Inventory'
+    ) {
       // These scenes have ASCII implementations
       console.log(`${sceneInfo.sceneName} scene should have ASCII capability`);
     }
@@ -166,7 +170,7 @@ test.describe('Save/Load with ASCII Rendering - Simple Tests', () => {
           hasGameState: !!data.gameState,
           hasParty: !!data.gameState?.party,
           hasDungeon: !!data.gameState?.dungeon,
-          hasCurrentFloor: data.gameState?.currentFloor !== undefined
+          hasCurrentFloor: data.gameState?.currentFloor !== undefined,
         };
       }
       return null;

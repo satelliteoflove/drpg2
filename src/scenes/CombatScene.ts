@@ -1,5 +1,5 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
-import { GameState, Monster, Item } from '../types/GameTypes';
+import { GameState, Item, Monster } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { CombatSystem } from '../systems/CombatSystem';
 import { StatusPanel } from '../ui/StatusPanel';
@@ -8,7 +8,7 @@ import { DataLoader } from '../utils/DataLoader';
 import { InventorySystem } from '../systems/InventorySystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
 import { DebugLogger } from '../utils/DebugLogger';
-import { FeatureFlags, FeatureFlagKey } from '../config/FeatureFlags';
+import { FeatureFlagKey, FeatureFlags } from '../config/FeatureFlags';
 import { CombatASCIIState } from '../rendering/scenes/CombatASCIIState';
 import { CanvasRenderer } from '../rendering/CanvasRenderer';
 
@@ -34,15 +34,15 @@ export class CombatScene extends Scene {
     this.gameState = gameState;
     this.sceneManager = sceneManager;
     this.combatSystem = new CombatSystem();
-    
+
     // Initialize messageLog immediately to avoid runtime errors
     this.messageLog = this.gameState.messageLog;
-    
+
     // Safety check - if messageLog is still undefined, create a temporary one
     if (!this.messageLog) {
       DebugLogger.warn('CombatScene', 'MessageLog not found in gameState, this should not happen');
     }
-    
+
     // Check if ASCII rendering should be used
     this.useASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING);
     if (this.useASCII) {
@@ -52,7 +52,7 @@ export class CombatScene extends Scene {
         charHeight: 20,
         fontFamily: 'monospace',
         fontSize: 16,
-        antialiasing: false
+        antialiasing: false,
       });
       DebugLogger.info('CombatScene', 'ASCII rendering enabled for combat');
     }
@@ -61,20 +61,20 @@ export class CombatScene extends Scene {
   public enter(): void {
     // Set debug overlay scene name
     this.debugOverlay?.setCurrentScene('Combat');
-    
+
     this.initializeCombat();
     this.actionState = 'select_action';
     this.selectedAction = 0;
     this.selectedTarget = 0;
     this.isProcessingAction = false;
     this.lastActionTime = 0;
-    
+
     // Initialize ASCII state if enabled
     if (this.useASCII && this.asciiState) {
       this.asciiState.enter();
       this.syncToASCII();
     }
-    
+
     DebugLogger.debug('CombatScene', 'Combat scene entered - UI state reset');
   }
 
@@ -89,60 +89,73 @@ export class CombatScene extends Scene {
     // Generate appropriate encounter message based on monsters and context
     this.generateEncounterMessage(monsters);
 
-    this.combatSystem.startCombat(monsters, aliveCharacters, this.gameState.currentFloor, (victory: boolean, rewards, escaped) => {
-      this.endCombat(victory, rewards, escaped);
-    }, (message: string) => {
-      // Callback for monster turn messages
-      if (message) {
-        this.messageLog.addCombatMessage(message);
+    this.combatSystem.startCombat(
+      monsters,
+      aliveCharacters,
+      this.gameState.currentFloor,
+      (victory: boolean, rewards, escaped) => {
+        this.endCombat(victory, rewards, escaped);
+      },
+      (message: string) => {
+        // Callback for monster turn messages
+        if (message) {
+          this.messageLog.addCombatMessage(message);
+        }
       }
-    });
+    );
   }
 
   private generateMonsters(): Monster[] {
     const dungeonLevel = this.gameState.currentFloor;
     const partyLevel = this.getAveragePartyLevel();
-    
+
     return DataLoader.generateMonstersForLevel(dungeonLevel, partyLevel);
   }
 
   private getAveragePartyLevel(): number {
     const aliveCharacters = this.gameState.party.getAliveCharacters();
     if (aliveCharacters.length === 0) return 1;
-    
-    const totalLevel = aliveCharacters.reduce((sum: number, character: any) => sum + character.level, 0);
+
+    const totalLevel = aliveCharacters.reduce(
+      (sum: number, character: any) => sum + character.level,
+      0
+    );
     return Math.floor(totalLevel / aliveCharacters.length);
   }
 
   private generateEncounterMessage(monsters: Monster[]): void {
     // Always generate message based on actual monsters encountered
     const monsterCounts = new Map<string, number>();
-    monsters.forEach(monster => {
+    monsters.forEach((monster) => {
       const baseName = monster.name.replace(/ \d+$/, ''); // Remove number suffix
       monsterCounts.set(baseName, (monsterCounts.get(baseName) || 0) + 1);
     });
 
     const monsterTypes = Array.from(monsterCounts.entries());
-    
+
     // Helper function to add correct article (a/an)
     const withArticle = (word: string): string => {
       const vowels = ['a', 'e', 'i', 'o', 'u'];
       const article = vowels.includes(word[0].toLowerCase()) ? 'an' : 'a';
       return `${article} ${word}`;
     };
-    
+
     // Always generate message based on actual monsters
     if (monsterTypes.length === 1) {
       const [type, count] = monsterTypes[0];
       if (count === 1) {
-        this.messageLog.addCombatMessage(`${withArticle(type.toLowerCase()).charAt(0).toUpperCase() + withArticle(type.toLowerCase()).slice(1)} appears!`);
+        this.messageLog.addCombatMessage(
+          `${withArticle(type.toLowerCase()).charAt(0).toUpperCase() + withArticle(type.toLowerCase()).slice(1)} appears!`
+        );
       } else {
         this.messageLog.addCombatMessage(`A group of ${count} ${type.toLowerCase()}s appears!`);
       }
     } else {
-      const typeList = monsterTypes.map(([type, count]) => 
-        count === 1 ? withArticle(type.toLowerCase()) : `${count} ${type.toLowerCase()}s`
-      ).join(', ');
+      const typeList = monsterTypes
+        .map(([type, count]) =>
+          count === 1 ? withArticle(type.toLowerCase()) : `${count} ${type.toLowerCase()}s`
+        )
+        .join(', ');
       this.messageLog.addCombatMessage(`A hostile group appears: ${typeList}!`);
     }
 
@@ -159,14 +172,14 @@ export class CombatScene extends Scene {
       this.endCombat(false, undefined, false);
       return;
     }
-    
+
     // Check if we should reset UI state when it's player's turn
     const canPlayerAct = this.combatSystem.canPlayerAct();
     if (canPlayerAct && this.actionState === 'waiting') {
       this.actionState = 'select_action';
       this.isProcessingAction = false;
     }
-    
+
     // Update ASCII state if enabled
     if (this.useASCII && this.asciiState) {
       this.asciiState.update(_deltaTime);
@@ -183,7 +196,7 @@ export class CombatScene extends Scene {
     if (this.useASCII && this.asciiState) {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      
+
       // Initialize canvas renderer with the context if needed
       if (!this.canvasRenderer) {
         this.canvasRenderer = new CanvasRenderer(ctx.canvas, {
@@ -191,15 +204,15 @@ export class CombatScene extends Scene {
           charHeight: 20,
           fontFamily: 'monospace',
           fontSize: 16,
-          antialiasing: false
+          antialiasing: false,
         });
       }
-      
+
       // Render ASCII state
       this.asciiState.render();
       const sceneDeclaration = this.asciiState.getSceneDeclaration();
       this.canvasRenderer.renderScene(sceneDeclaration);
-      
+
       // Still render message log and debug overlay in regular mode
       this.messageLog.render(ctx);
       this.updateDebugData();
@@ -212,7 +225,7 @@ export class CombatScene extends Scene {
       this.renderCombatArea(ctx);
       this.renderUI(ctx);
       this.renderCombatInfo(ctx);
-      
+
       // Update and render debug overlay
       this.updateDebugData();
       this.debugOverlay.render(this.gameState);
@@ -221,7 +234,7 @@ export class CombatScene extends Scene {
 
   public renderLayered(renderContext: SceneRenderContext): void {
     const { renderManager } = renderContext;
-    
+
     if (!this.statusPanel) {
       this.initializeUI(renderContext.mainContext.canvas);
     }
@@ -239,7 +252,7 @@ export class CombatScene extends Scene {
       this.renderUI(ctx);
       this.renderCombatInfo(ctx);
       this.renderCombatControls(ctx);
-      
+
       // Update and render debug overlay
       this.updateDebugData();
       this.debugOverlay.render(this.gameState);
@@ -249,7 +262,7 @@ export class CombatScene extends Scene {
   private initializeUI(canvas: HTMLCanvasElement): void {
     this.statusPanel = new StatusPanel(canvas, 650, 0, 374, 300);
     this.debugOverlay = new DebugOverlay(canvas);
-    
+
     // Only add combat message, don't create a new log
     this.messageLog.addCombatMessage('Combat begins!');
   }
@@ -309,7 +322,6 @@ export class CombatScene extends Scene {
     });
   }
 
-
   private renderUI(ctx: CanvasRenderingContext2D): void {
     this.statusPanel.render(this.gameState.party, ctx);
     this.messageLog.render(ctx);
@@ -363,7 +375,9 @@ export class CombatScene extends Scene {
     const currentUnit = this.combatSystem.getCurrentUnit();
 
     if (currentUnit) {
-      const turnOrder = encounter.turnOrder.map(unit => ('class' in unit ? unit.name : unit.name));
+      const turnOrder = encounter.turnOrder.map((unit) =>
+        'class' in unit ? unit.name : unit.name
+      );
 
       this.statusPanel.renderCombatStatus(
         'class' in currentUnit ? currentUnit.name : currentUnit.name,
@@ -376,9 +390,12 @@ export class CombatScene extends Scene {
     // Show debug hint
     ctx.fillStyle = '#888';
     ctx.font = '10px monospace';
-    ctx.fillText('[DEBUG: Press Ctrl+K for instant kill]', ctx.canvas.width - 200, ctx.canvas.height - 10);
+    ctx.fillText(
+      '[DEBUG: Press Ctrl+K for instant kill]',
+      ctx.canvas.width - 200,
+      ctx.canvas.height - 10
+    );
   }
-
 
   public handleInput(key: string): boolean {
     // Handle debug scene key combination
@@ -448,7 +465,7 @@ export class CombatScene extends Scene {
     const encounter = this.combatSystem.getEncounter();
     if (!encounter) return false;
 
-    const aliveMonsters = encounter.monsters.filter(m => m.hp > 0);
+    const aliveMonsters = encounter.monsters.filter((m) => m.hp > 0);
 
     if (key === KEY_BINDINGS.combat.selectLeft) {
       this.selectedTarget = Math.max(0, this.selectedTarget - 1);
@@ -469,20 +486,20 @@ export class CombatScene extends Scene {
 
   private executeAction(action: string): void {
     const now = Date.now();
-    
+
     // Debounce rapid input - ignore if pressed too quickly
     if (now - this.lastActionTime < 100) {
       DebugLogger.debug('CombatScene', 'Action debounced - pressed too quickly');
       return;
     }
     this.lastActionTime = now;
-    
+
     // Prevent multiple simultaneous executions
     if (this.isProcessingAction) {
       DebugLogger.debug('CombatScene', 'Action blocked - already processing');
       return;
     }
-    
+
     this.isProcessingAction = true;
     this.actionState = 'waiting';
 
@@ -518,7 +535,10 @@ export class CombatScene extends Scene {
     this.actionState = canAct ? 'select_action' : 'waiting';
     this.selectedAction = 0;
     this.isProcessingAction = false;
-    DebugLogger.debug('CombatScene', `UI state reset - canPlayerAct: ${canAct}, actionState: ${this.actionState}`);
+    DebugLogger.debug(
+      'CombatScene',
+      `UI state reset - canPlayerAct: ${canAct}, actionState: ${this.actionState}`
+    );
   }
 
   private syncFromASCII(): void {
@@ -560,9 +580,11 @@ export class CombatScene extends Scene {
     if (!encounter) return;
 
     // Deal 999 damage to all enemies
-    this.messageLog.addSystemMessage('[DEBUG] Instant Kill activated! Dealing 999 damage to all enemies.');
-    
-    encounter.monsters.forEach(monster => {
+    this.messageLog.addSystemMessage(
+      '[DEBUG] Instant Kill activated! Dealing 999 damage to all enemies.'
+    );
+
+    encounter.monsters.forEach((monster) => {
       if (monster.hp > 0) {
         monster.hp = 0;
         this.messageLog.addCombatMessage(`${monster.name} takes 999 damage and is defeated!`);
@@ -573,33 +595,39 @@ export class CombatScene extends Scene {
     this.combatSystem.forceCheckCombatEnd();
   }
 
-  private endCombat(victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }, escaped?: boolean): void {
+  private endCombat(
+    victory: boolean,
+    rewards?: { experience: number; gold: number; items: Item[] },
+    escaped?: boolean
+  ): void {
     try {
       DebugLogger.debug('CombatScene', 'endCombat called', { victory, rewards });
-      
+
       // Reset processing flag to prevent lockups
       this.isProcessingAction = false;
-      
+
       if (victory && rewards) {
         this.messageLog.addSystemMessage(
           `Victory! Gained ${rewards.experience} experience and ${rewards.gold} gold!`
         );
-        
+
         DebugLogger.debug('CombatScene', 'Distributing rewards to party...');
         this.gameState.party.distributeExperience(rewards.experience);
         this.gameState.party.distributeGold(rewards.gold);
-        
+
         // Handle item drops - store for distribution after scene switch
         if (rewards.items && rewards.items.length > 0) {
           this.messageLog.addSystemMessage(`Found ${rewards.items.length} item(s)!`);
-          rewards.items.forEach(item => {
-            this.messageLog.addSystemMessage(`- ${item.identified ? item.name : item.unidentifiedName || '?Item'}`);
+          rewards.items.forEach((item) => {
+            this.messageLog.addSystemMessage(
+              `- ${item.identified ? item.name : item.unidentifiedName || '?Item'}`
+            );
           });
-          
+
           // Store items to be distributed when returning to dungeon
           this.gameState.pendingLoot = rewards.items;
         }
-        
+
         DebugLogger.debug('CombatScene', 'Rewards distributed successfully');
       } else if (escaped) {
         this.messageLog.addSystemMessage('Successfully ran away!');
@@ -620,10 +648,11 @@ export class CombatScene extends Scene {
     ctx.fillStyle = '#888';
     ctx.font = '10px monospace';
     const y = ctx.canvas.height - 30;
-    
+
     if (this.actionState === 'select_action' && this.combatSystem.canPlayerAct()) {
       let controls = 'UP/DOWN: Select Action | ENTER: Confirm';
-      if (this.selectedAction === 0) { // Attack action
+      if (this.selectedAction === 0) {
+        // Attack action
         controls += ' | LEFT/RIGHT: Select Target';
       }
       ctx.fillText(controls, 10, y);
@@ -639,20 +668,27 @@ export class CombatScene extends Scene {
     // Get current system debug data
     const lootData = InventorySystem.getLootDebugData();
     const combatData = CombatSystem.getCombatDebugData();
-    
+
     // Calculate party stats
-    const totalLuck = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.stats.luck, 0);
-    const averageLevel = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.level, 0) / this.gameState.party.characters.length;
-    
+    const totalLuck = this.gameState.party.characters.reduce(
+      (sum: number, char: Character) => sum + char.stats.luck,
+      0
+    );
+    const averageLevel =
+      this.gameState.party.characters.reduce(
+        (sum: number, char: Character) => sum + char.level,
+        0
+      ) / this.gameState.party.characters.length;
+
     // Update debug overlay with current data
     this.debugOverlay.updateDebugData({
       lootSystem: lootData,
       partyStats: {
         totalLuck,
         luckMultiplier: lootData.luckMultiplier,
-        averageLevel
+        averageLevel,
       },
-      combatSystem: combatData
+      combatSystem: combatData,
     });
   }
 }

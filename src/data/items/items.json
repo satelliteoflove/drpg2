@@ -55,7 +55,16 @@
     "value": 20,
     "weight": 8,
     "effects": [{ "type": "ac", "value": 2 }],
-    "classRestrictions": ["Fighter", "Priest", "Thief", "Bishop", "Samurai", "Lord", "Ninja", "Ranger"],
+    "classRestrictions": [
+      "Fighter",
+      "Priest",
+      "Thief",
+      "Bishop",
+      "Samurai",
+      "Lord",
+      "Ninja",
+      "Ranger"
+    ],
     "identified": false,
     "cursed": false,
     "blessed": false,

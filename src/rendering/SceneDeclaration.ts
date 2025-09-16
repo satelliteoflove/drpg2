@@ -13,7 +13,7 @@ export interface InputZone {
   enabled: boolean;
   onActivate?: (zone: InputZone) => void;
   onHover?: (zone: InputZone) => void;
-  keyBinding?: string;  // Keyboard shortcut
+  keyBinding?: string; // Keyboard shortcut
 }
 
 // UI Element definition
@@ -30,7 +30,7 @@ export interface UIElement {
 
 // Animation frame for transitions
 export interface AnimationFrame {
-  duration: number;  // milliseconds
+  duration: number; // milliseconds
   changes: Array<{
     x: number;
     y: number;
@@ -61,27 +61,27 @@ export interface RenderLayer {
 export interface SceneDeclaration {
   id: string;
   name: string;
-  
+
   // Visual layers
   layers: RenderLayer[];
-  
+
   // UI elements
   uiElements: UIElement[];
-  
+
   // Interactive zones
   inputZones: InputZone[];
-  
+
   // Active animations
   animations?: Animation[];
-  
+
   // Scene-specific data
   data?: Record<string, any>;
-  
+
   // Lifecycle hooks
   onEnter?: () => void;
   onExit?: () => void;
   onUpdate?: (deltaTime: number) => void;
-  
+
   // Render configuration
   renderConfig?: {
     clearColor?: string;
@@ -107,7 +107,7 @@ export interface MenuItem {
 export interface StatusBarSegment {
   label: string;
   value: string | number;
-  maxValue?: number;  // For progress bars
+  maxValue?: number; // For progress bars
   style?: CellStyle;
   width?: number;
 }
@@ -151,7 +151,7 @@ export class SceneBuilder {
       name,
       layers: [],
       uiElements: [],
-      inputZones: []
+      inputZones: [],
     };
   }
 
@@ -219,11 +219,11 @@ export class UIPatterns {
     selectedIndex: number = 0
   ): UIElement[] {
     const elements: UIElement[] = [];
-    
+
     items.forEach((item, index) => {
       const prefix = index === selectedIndex ? '> ' : '  ';
       const suffix = item.shortcut ? ` [${item.shortcut}]` : '';
-      
+
       elements.push({
         id: `menu-item-${item.id}`,
         type: 'text',
@@ -231,40 +231,38 @@ export class UIPatterns {
         content: `${prefix}${item.label}${suffix}`,
         style: {
           foreground: item.enabled ? '#ffffff' : '#666666',
-          bold: index === selectedIndex
+          bold: index === selectedIndex,
         },
-        visible: true
+        visible: true,
       });
     });
-    
+
     return elements;
   }
 
   // Create a status bar
-  public static createStatusBar(
-    y: number,
-    segments: StatusBarSegment[]
-  ): UIElement[] {
+  public static createStatusBar(y: number, segments: StatusBarSegment[]): UIElement[] {
     const elements: UIElement[] = [];
     let currentX = 0;
-    
+
     segments.forEach((segment, index) => {
-      const text = segment.maxValue !== undefined
-        ? `${segment.label}: ${segment.value}/${segment.maxValue}`
-        : `${segment.label}: ${segment.value}`;
-      
+      const text =
+        segment.maxValue !== undefined
+          ? `${segment.label}: ${segment.value}/${segment.maxValue}`
+          : `${segment.label}: ${segment.value}`;
+
       elements.push({
         id: `status-segment-${index}`,
         type: 'text',
         position: { x: currentX, y },
         content: text,
         style: segment.style,
-        visible: true
+        visible: true,
       });
-      
-      currentX += segment.width || (text.length + 2);
+
+      currentX += segment.width || text.length + 2;
     });
-    
+
     return elements;
   }
 
@@ -275,7 +273,7 @@ export class UIPatterns {
     const height = dialog.size?.height || 10;
     const x = dialog.position?.x || Math.floor((80 - width) / 2);
     const y = dialog.position?.y || Math.floor((25 - height) / 2);
-    
+
     // Box border
     elements.push({
       id: 'dialog-box',
@@ -283,9 +281,9 @@ export class UIPatterns {
       position: { x, y },
       size: { width, height },
       visible: true,
-      zIndex: 100
+      zIndex: 100,
     });
-    
+
     // Title
     if (dialog.title) {
       elements.push({
@@ -295,10 +293,10 @@ export class UIPatterns {
         content: dialog.title,
         style: { bold: true },
         visible: true,
-        zIndex: 101
+        zIndex: 101,
       });
     }
-    
+
     // Content
     dialog.content.forEach((line, index) => {
       elements.push({
@@ -307,15 +305,15 @@ export class UIPatterns {
         position: { x: x + 2, y: y + 3 + index },
         content: line,
         visible: true,
-        zIndex: 101
+        zIndex: 101,
       });
     });
-    
+
     // Buttons
     if (dialog.buttons) {
       const buttonY = y + height - 2;
       let buttonX = x + 2;
-      
+
       dialog.buttons.forEach((button, index) => {
         const buttonText = button.default ? `[${button.label}]` : ` ${button.label} `;
         elements.push({
@@ -325,12 +323,12 @@ export class UIPatterns {
           content: buttonText,
           style: { bold: button.default },
           visible: true,
-          zIndex: 101
+          zIndex: 101,
         });
         buttonX += buttonText.length + 2;
       });
     }
-    
+
     return elements;
   }
 }

@@ -1,6 +1,6 @@
 import { BaseASCIIScene } from '../BaseASCIIScene';
-import { ASCIIState, ASCII_GRID_WIDTH, ASCII_GRID_HEIGHT } from '../ASCIIState';
-import { SceneDeclaration, InputZone } from '../SceneDeclaration';
+import { ASCIIState, ASCII_GRID_HEIGHT, ASCII_GRID_WIDTH } from '../ASCIIState';
+import { InputZone, SceneDeclaration } from '../SceneDeclaration';
 import { GameState, Item } from '../../types/GameTypes';
 import { SceneManager } from '../../core/Scene';
 import { Character } from '../../entities/Character';
@@ -172,7 +172,10 @@ export class InventoryASCIIState extends BaseASCIIScene {
       this.scrollOffset = this.selectedItem;
     }
 
-    const visibleItems = character.inventory.slice(this.scrollOffset, this.scrollOffset + maxVisible);
+    const visibleItems = character.inventory.slice(
+      this.scrollOffset,
+      this.scrollOffset + maxVisible
+    );
 
     // Draw item list
     visibleItems.forEach((item: Item, index: number) => {
@@ -260,7 +263,7 @@ export class InventoryASCIIState extends BaseASCIIScene {
       { key: 'helmet', label: 'HELMET' },
       { key: 'gauntlets', label: 'GAUNTLETS' },
       { key: 'boots', label: 'BOOTS' },
-      { key: 'accessory', label: 'ACCESSORY' }
+      { key: 'accessory', label: 'ACCESSORY' },
     ];
 
     const startY = 5;
@@ -292,7 +295,11 @@ export class InventoryASCIIState extends BaseASCIIScene {
 
     // Character stats summary
     const statsY = startY + slots.length * 2 + 1;
-    grid.writeText(20, statsY, `AC: ${character.getAC()}  HP: ${character.currentHP}/${character.maxHP}`);
+    grid.writeText(
+      20,
+      statsY,
+      `AC: ${character.getAC()}  HP: ${character.currentHP}/${character.maxHP}`
+    );
 
     // Help text
     const helpText = 'ESC: Back';
@@ -330,7 +337,10 @@ export class InventoryASCIIState extends BaseASCIIScene {
       this.scrollOffset = this.selectedItem;
     }
 
-    const visibleItems = character.inventory.slice(this.scrollOffset, this.scrollOffset + maxVisible);
+    const visibleItems = character.inventory.slice(
+      this.scrollOffset,
+      this.scrollOffset + maxVisible
+    );
 
     visibleItems.forEach((item: Item, index: number) => {
       const actualIndex = this.scrollOffset + index;
@@ -429,8 +439,8 @@ export class InventoryASCIIState extends BaseASCIIScene {
       metadata: {
         mode: this.mode,
         selectedCharacter: this.selectedCharacter,
-        selectedItem: this.selectedItem
-      }
+        selectedItem: this.selectedItem,
+      },
     } as any;
   }
 

@@ -99,7 +99,7 @@ test.describe('Save/Load with ASCII Rendering', () => {
         return {
           menuOptions: scene.menuOptions || [],
           sceneName: scene.name,
-          hasSave: hasSave
+          hasSave: hasSave,
         };
       }
       return { menuOptions: [], sceneName: 'unknown', hasSave: hasSave };
@@ -113,7 +113,7 @@ test.describe('Save/Load with ASCII Rendering', () => {
 
       // Wait for a few render cycles to ensure ASCII initialization
       await page.evaluate(() => {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
           let count = 0;
           const interval = setInterval(() => {
             count++;
@@ -159,7 +159,7 @@ test.describe('Save/Load with ASCII Rendering', () => {
         sceneName: scene?.name || 'none',
         hasASCIIState: hasASCIIState,
         asciiEnabled: window.FeatureFlags?.isEnabled('ASCII_RENDERING'),
-        sceneType: scene?.constructor?.name || 'unknown'
+        sceneType: scene?.constructor?.name || 'unknown',
       };
     });
 
@@ -170,7 +170,9 @@ test.describe('Save/Load with ASCII Rendering', () => {
     expect(sceneInfo.hasASCIIState).toBe(true);
   });
 
-  test.skip('should handle save/load with ASCII rendering in different scenes', async ({ page }) => {
+  test.skip('should handle save/load with ASCII rendering in different scenes', async ({
+    page,
+  }) => {
     // SKIPPED: Similar to the previous test, this checks ASCII initialization timing edge cases.
     // The core save/load functionality with ASCII is verified in other tests.
     // Enable ASCII
@@ -210,9 +212,10 @@ test.describe('Save/Load with ASCII Rendering', () => {
         // Return debug info
         return {
           sceneName: scene?.name || 'none',
-          hasASCIIState: (scene?.asciiState !== null && scene?.asciiState !== undefined) ||
-                         (scene?.dungeonASCIIState !== null && scene?.dungeonASCIIState !== undefined),
-          asciiEnabled: window.FeatureFlags?.isEnabled('ASCII_RENDERING')
+          hasASCIIState:
+            (scene?.asciiState !== null && scene?.asciiState !== undefined) ||
+            (scene?.dungeonASCIIState !== null && scene?.dungeonASCIIState !== undefined),
+          asciiEnabled: window.FeatureFlags?.isEnabled('ASCII_RENDERING'),
         };
       });
 
@@ -267,7 +270,7 @@ test.describe('Save/Load with ASCII Rendering', () => {
         const data = JSON.parse(saved);
         return {
           turnCount: data.gameState.turnCount,
-          gameTime: data.gameState.gameTime
+          gameTime: data.gameState.gameTime,
         };
       }
       return null;
@@ -296,7 +299,7 @@ test.describe('Save/Load with ASCII Rendering', () => {
         const data = JSON.parse(saved);
         return {
           turnCount: data.gameState.turnCount,
-          gameTime: data.gameState.gameTime
+          gameTime: data.gameState.gameTime,
         };
       }
       return null;

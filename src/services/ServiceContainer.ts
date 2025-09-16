@@ -20,7 +20,7 @@ export class ServiceContainer {
     options: { singleton?: boolean } = {}
   ): void {
     const { singleton = true } = options;
-    
+
     this.registrations.set(identifier.name, {
       identifier,
       factory,
@@ -79,7 +79,10 @@ export class ServiceContainer {
   }
 }
 
-export const createServiceIdentifier = <T>(name: string, type: new (...args: any[]) => T): ServiceIdentifier<T> => ({
+export const createServiceIdentifier = <T>(
+  name: string,
+  type: new (...args: any[]) => T
+): ServiceIdentifier<T> => ({
   name,
   type,
 });

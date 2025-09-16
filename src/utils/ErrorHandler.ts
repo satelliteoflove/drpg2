@@ -121,11 +121,11 @@ export class ErrorHandler {
   }
 
   static getErrorsByContext(context: string): GameError[] {
-    return this.errors.filter(error => error.context === context);
+    return this.errors.filter((error) => error.context === context);
   }
 
   static getErrorsBySeverity(severity: ErrorSeverity): GameError[] {
-    return this.errors.filter(error => error.severity === severity);
+    return this.errors.filter((error) => error.severity === severity);
   }
 }
 

@@ -3,7 +3,7 @@ import { GameServices } from './GameServices';
 export class ServiceRegistry {
   private static instance: ServiceRegistry;
   private gameServices?: GameServices;
-  
+
   private constructor() {}
 
   public static getInstance(): ServiceRegistry {

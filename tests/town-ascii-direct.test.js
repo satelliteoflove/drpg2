@@ -47,7 +47,7 @@ test.describe('Town ASCII Direct Test', () => {
         return {
           sceneName: scene?.name,
           hasTownASCIIState: !!scene?.townASCIIState,
-          uniqueId: scene?.__uniqueId
+          uniqueId: scene?.__uniqueId,
         };
       }
       return null;
@@ -68,9 +68,19 @@ test.describe('Town ASCII Direct Test', () => {
       // Also check the actual TownScene from the scenes map
       const townSceneFromMap = window.game?.sceneManager?.scenes?.get('town');
 
-      console.log('Current scene from manager:', scene?.name, 'townASCIIState:', !!scene?.townASCIIState);
+      console.log(
+        'Current scene from manager:',
+        scene?.name,
+        'townASCIIState:',
+        !!scene?.townASCIIState
+      );
       console.log('Current scene townASCIIState value:', scene?.townASCIIState);
-      console.log('Town scene from map:', townSceneFromMap?.name, 'townASCIIState:', !!townSceneFromMap?.townASCIIState);
+      console.log(
+        'Town scene from map:',
+        townSceneFromMap?.name,
+        'townASCIIState:',
+        !!townSceneFromMap?.townASCIIState
+      );
       console.log('Town scene from map townASCIIState value:', townSceneFromMap?.townASCIIState);
       console.log('Are they the same object?', scene === townSceneFromMap);
 
@@ -79,13 +89,13 @@ test.describe('Town ASCII Direct Test', () => {
         sceneName: scene?.name,
         asciiEnabled: window.FeatureFlags?.isEnabled('ascii_rendering'),
         hasASCIIStateBeforeRender: !!scene?.townASCIIState,
-        renderCount: scene?.renderCount || 0
+        renderCount: scene?.renderCount || 0,
       };
 
       console.log('Before render:', {
         sceneName: scene?.name,
         townASCIIState: scene?.townASCIIState,
-        renderCount: scene?.renderCount
+        renderCount: scene?.renderCount,
       });
 
       // Manually trigger render
@@ -96,7 +106,7 @@ test.describe('Town ASCII Direct Test', () => {
           scene.render(ctx);
           console.log('After scene.render():', {
             townASCIIState: scene?.townASCIIState,
-            renderCount: scene?.renderCount
+            renderCount: scene?.renderCount,
           });
         }
       }
@@ -131,7 +141,7 @@ test.describe('Town ASCII Direct Test', () => {
                 if (cell && cell !== ' ' && cell !== undefined) {
                   info.gridHasContent = true;
                   info.sampleChar = cell;
-                  info.sampleLocation = {x, y};
+                  info.sampleLocation = { x, y };
                   console.log(`Found content at (${x},${y}): '${cell}'`);
                   break;
                 }

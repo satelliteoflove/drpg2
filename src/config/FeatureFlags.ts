@@ -6,8 +6,8 @@ export interface FeatureFlag {
   description: string;
   enabled: boolean;
   experimental?: boolean;
-  rolloutPercentage?: number;  // For gradual rollout
-  enabledScenes?: string[];     // Specific scenes where feature is enabled
+  rolloutPercentage?: number; // For gradual rollout
+  enabledScenes?: string[]; // Specific scenes where feature is enabled
   metadata?: Record<string, any>;
 }
 
@@ -22,21 +22,21 @@ export enum FeatureFlagKey {
   ASCII_DEBUG_OVERLAY = 'ascii_debug_overlay',
   PERFORMANCE_MONITORING = 'performance_monitoring',
   SAVE_ASCII_STATE = 'save_ascii_state',
-  TERMINAL_MODE = 'terminal_mode'
+  TERMINAL_MODE = 'terminal_mode',
 }
 
 // Feature flags configuration
 class FeatureFlagsManager {
   private static instance: FeatureFlagsManager;
   private flags: Map<string, FeatureFlag>;
-  private overrides: Map<string, boolean>;  // Runtime overrides
+  private overrides: Map<string, boolean>; // Runtime overrides
   private localStorage: Storage | null;
 
   private constructor() {
     this.flags = new Map();
     this.overrides = new Map();
     this.localStorage = typeof window !== 'undefined' ? window.localStorage : null;
-    
+
     this.initializeFlags();
     this.loadOverrides();
   }
@@ -54,7 +54,7 @@ class FeatureFlagsManager {
       name: FeatureFlagKey.ASCII_RENDERING,
       description: 'Enable ASCII-first rendering system globally',
       enabled: false,
-      experimental: true
+      experimental: true,
     });
 
     this.registerFlag({
@@ -62,7 +62,7 @@ class FeatureFlagsManager {
       description: 'Use ASCII rendering for Town scene',
       enabled: false,
       experimental: true,
-      enabledScenes: ['town']
+      enabledScenes: ['town'],
     });
 
     this.registerFlag({
@@ -70,7 +70,7 @@ class FeatureFlagsManager {
       description: 'Use ASCII rendering for Shop scene',
       enabled: false,
       experimental: true,
-      enabledScenes: ['shop']
+      enabledScenes: ['shop'],
     });
 
     this.registerFlag({
@@ -78,7 +78,7 @@ class FeatureFlagsManager {
       description: 'Use ASCII rendering for Combat scene',
       enabled: false,
       experimental: true,
-      enabledScenes: ['combat']
+      enabledScenes: ['combat'],
     });
 
     this.registerFlag({
@@ -86,7 +86,7 @@ class FeatureFlagsManager {
       description: 'Use ASCII rendering for Dungeon scene',
       enabled: false,
       experimental: true,
-      enabledScenes: ['dungeon']
+      enabledScenes: ['dungeon'],
     });
 
     this.registerFlag({
@@ -94,35 +94,35 @@ class FeatureFlagsManager {
       description: 'Use ASCII rendering for Inventory scene',
       enabled: false,
       experimental: true,
-      enabledScenes: ['inventory']
+      enabledScenes: ['inventory'],
     });
 
     this.registerFlag({
       name: FeatureFlagKey.ASCII_DEBUG_OVERLAY,
       description: 'Show ASCII state in debug overlay',
       enabled: false,
-      experimental: false
+      experimental: false,
     });
 
     this.registerFlag({
       name: FeatureFlagKey.PERFORMANCE_MONITORING,
       description: 'Enable performance monitoring',
-      enabled: true,  // Already implemented and active
-      experimental: false
+      enabled: true, // Already implemented and active
+      experimental: false,
     });
 
     this.registerFlag({
       name: FeatureFlagKey.SAVE_ASCII_STATE,
       description: 'Include ASCII state in save games',
       enabled: false,
-      experimental: true
+      experimental: true,
     });
 
     this.registerFlag({
       name: FeatureFlagKey.TERMINAL_MODE,
       description: 'Enable terminal/console rendering mode',
       enabled: false,
-      experimental: true
+      experimental: true,
     });
 
     DebugLogger.info('FeatureFlags', `Initialized ${this.flags.size} feature flags`);
@@ -250,7 +250,7 @@ class FeatureFlagsManager {
     const config = {
       flags: Array.from(this.flags.entries()),
       overrides: Array.from(this.overrides.entries()),
-      status: this.getStatus()
+      status: this.getStatus(),
     };
     return JSON.stringify(config, null, 2);
   }
@@ -281,8 +281,8 @@ if (typeof window !== 'undefined') {
     clearAll: () => FeatureFlags.clearAllOverrides(),
     isEnabled: (key: string) => FeatureFlags.isEnabled(key),
     status: () => console.table(FeatureFlags.getStatus()),
-    export: () => console.log(FeatureFlags.exportConfig())
+    export: () => console.log(FeatureFlags.exportConfig()),
   };
-  
+
   DebugLogger.info('FeatureFlags', 'Console helpers available: window.FeatureFlags');
 }

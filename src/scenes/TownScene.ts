@@ -1,7 +1,7 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState } from '../types/GameTypes';
 import { TownASCIIState } from '../rendering/scenes/TownASCIIState';
-import { FeatureFlags, FeatureFlagKey } from '../config/FeatureFlags';
+import { FeatureFlagKey, FeatureFlags } from '../config/FeatureFlags';
 import { CanvasRenderer } from '../rendering/CanvasRenderer';
 import { DebugLogger } from '../utils/DebugLogger';
 
@@ -9,12 +9,7 @@ export class TownScene extends Scene {
   private gameState: GameState;
   private sceneManager: SceneManager;
   private selectedOption: number = 0;
-  private menuOptions: string[] = [
-    'Boltac\'s Trading Post',
-    'Temple',
-    'Inn',
-    'Return to Dungeon'
-  ];
+  private menuOptions: string[] = ["Boltac's Trading Post", 'Temple', 'Inn', 'Return to Dungeon'];
   public townASCIIState: TownASCIIState | undefined = undefined;
   private asciiRenderer?: CanvasRenderer;
   private useASCII: boolean = false;
@@ -26,14 +21,15 @@ export class TownScene extends Scene {
     this.sceneManager = sceneManager;
 
     // Check if ASCII rendering should be used initially
-    this.useASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
-                    FeatureFlags.isEnabled(FeatureFlagKey.ASCII_TOWN_SCENE);
+    this.useASCII =
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_TOWN_SCENE);
 
     if (this.useASCII) {
       this.townASCIIState = new TownASCIIState(gameState, sceneManager);
       DebugLogger.info('TownScene', 'ASCII rendering enabled for Town scene');
     }
-    
+
     // Remove old exposure - don't expose directly anymore
   }
 
@@ -41,10 +37,16 @@ export class TownScene extends Scene {
     this.selectedOption = 0;
 
     // Check if ASCII should be enabled
-    const shouldUseASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
-                           FeatureFlags.isEnabled(FeatureFlagKey.ASCII_TOWN_SCENE);
+    const shouldUseASCII =
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_TOWN_SCENE);
 
-    console.log('[TownScene.enter] shouldUseASCII:', shouldUseASCII, 'townASCIIState:', this.townASCIIState);
+    console.log(
+      '[TownScene.enter] shouldUseASCII:',
+      shouldUseASCII,
+      'townASCIIState:',
+      this.townASCIIState
+    );
 
     if (shouldUseASCII && !this.townASCIIState) {
       console.log('[TownScene.enter] Creating ASCII state');
@@ -63,10 +65,12 @@ export class TownScene extends Scene {
     if (this.townASCIIState) {
       this.townASCIIState.exit();
     }
-    
+
     // Clean up ASCII state on exit if feature is disabled
-    if (!FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) &&
-        !FeatureFlags.isEnabled(FeatureFlagKey.ASCII_TOWN_SCENE)) {
+    if (
+      !FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) &&
+      !FeatureFlags.isEnabled(FeatureFlagKey.ASCII_TOWN_SCENE)
+    ) {
       this.townASCIIState = undefined;
       this.asciiRenderer = undefined;
       this.useASCII = false;
@@ -81,22 +85,28 @@ export class TownScene extends Scene {
 
   public render(ctx: CanvasRenderingContext2D): void {
     this.renderCount++;
-    
+
     // Debug on every 60th frame
     if (this.renderCount % 60 === 0) {
       console.log(`[TownScene] Render #${this.renderCount}, checking feature flag...`);
     }
-    
+
     // Check feature flag dynamically on each render
-    const shouldUseASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
-                           FeatureFlags.isEnabled(FeatureFlagKey.ASCII_TOWN_SCENE);
-    
+    const shouldUseASCII =
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_TOWN_SCENE);
+
     // Always log first 5 renders and changes
     if (this.renderCount <= 5 || this.useASCII !== shouldUseASCII) {
-      console.log(`[TownScene] Render #${this.renderCount}: shouldUseASCII=${shouldUseASCII}, useASCII=${this.useASCII}, townASCIIState=${!!this.townASCIIState}`);
-      DebugLogger.info('TownScene', `Feature flag check: current=${this.useASCII} -> new=${shouldUseASCII}`);
+      console.log(
+        `[TownScene] Render #${this.renderCount}: shouldUseASCII=${shouldUseASCII}, useASCII=${this.useASCII}, townASCIIState=${!!this.townASCIIState}`
+      );
+      DebugLogger.info(
+        'TownScene',
+        `Feature flag check: current=${this.useASCII} -> new=${shouldUseASCII}`
+      );
     }
-    
+
     // Initialize ASCII state if feature was just enabled
     if (shouldUseASCII && !this.townASCIIState) {
       DebugLogger.info('TownScene', 'Initializing ASCII state - feature flag enabled');
@@ -126,12 +136,12 @@ export class TownScene extends Scene {
       this.asciiRenderer.renderScene(sceneDeclaration);
       return;
     }
-    
+
     // Only log when not using ASCII (reduce spam)
     if (!shouldUseASCII) {
       DebugLogger.debug('TownScene', `Using original rendering - flag disabled`);
     }
-    
+
     // Original canvas rendering
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -185,11 +195,12 @@ export class TownScene extends Scene {
 
   public renderLayered(renderContext: SceneRenderContext): void {
     this.renderCount++;
-    
+
     // Check for ASCII rendering
-    const shouldUseASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
-                           FeatureFlags.isEnabled(FeatureFlagKey.ASCII_TOWN_SCENE);
-    
+    const shouldUseASCII =
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_TOWN_SCENE);
+
     // Initialize ASCII state if needed
     if (shouldUseASCII && !this.townASCIIState) {
       DebugLogger.info('TownScene', 'Initializing ASCII state in renderLayered');
@@ -205,7 +216,7 @@ export class TownScene extends Scene {
       this.asciiRenderer = undefined;
       this.useASCII = false;
     }
-    
+
     // If using ASCII, delegate to regular render method
     if (shouldUseASCII && this.townASCIIState) {
       // Get the context
@@ -227,13 +238,13 @@ export class TownScene extends Scene {
 
       // Get the grid - getGrid() returns the ASCIIState itself, not the grid
       const state = this.townASCIIState.getGrid();
-      const grid = state.getGrid();  // Now get the actual grid array
+      const grid = state.getGrid(); // Now get the actual grid array
 
       // Render the grid
       this.asciiRenderer.renderASCIIGrid(grid);
       return;
     }
-    
+
     // Original layered rendering
     const { renderManager } = renderContext;
 
@@ -271,7 +282,11 @@ export class TownScene extends Scene {
       ctx.textAlign = 'left';
 
       if (this.selectedOption === 0) {
-        ctx.fillText('Buy, sell, and identify items. Pool your gold for better purchases.', 50, 420);
+        ctx.fillText(
+          'Buy, sell, and identify items. Pool your gold for better purchases.',
+          50,
+          420
+        );
       } else if (this.selectedOption === 1) {
         ctx.fillText('Heal your party and remove curses (not yet available)', 50, 420);
       } else if (this.selectedOption === 2) {
@@ -293,9 +308,10 @@ export class TownScene extends Scene {
 
   public handleInput(key: string): boolean {
     // Check if ASCII rendering is currently active
-    const shouldUseASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
-                           FeatureFlags.isEnabled(FeatureFlagKey.ASCII_TOWN_SCENE);
-    
+    const shouldUseASCII =
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_TOWN_SCENE);
+
     // If using ASCII rendering, delegate to ASCII state
     if (shouldUseASCII && this.townASCIIState) {
       const handled = this.townASCIIState.handleInput(key);
@@ -305,7 +321,7 @@ export class TownScene extends Scene {
       }
       return handled;
     }
-    
+
     // Original key handling
     switch (key) {
       case 'arrowup':
@@ -335,15 +351,15 @@ export class TownScene extends Scene {
       case 0: // Boltac's Trading Post
         this.sceneManager.switchTo('shop');
         break;
-        
+
       case 1: // Temple
         console.log('Temple not yet implemented');
         break;
-        
+
       case 2: // Inn
         console.log('Inn not yet implemented');
         break;
-        
+
       case 3: // Return to Dungeon
         this.sceneManager.switchTo('dungeon');
         break;

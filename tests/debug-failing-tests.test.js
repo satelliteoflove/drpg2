@@ -5,7 +5,7 @@ test.describe('Debug Failing Tests', () => {
     await page.goto('http://localhost:8080');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
-    
+
     // Navigate to dungeon with test state
     await page.evaluate(() => {
       if (window.game && window.game.sceneManager) {
@@ -16,11 +16,27 @@ test.describe('Debug Failing Tests', () => {
             facing: 'north',
             getAliveCharacters: () => [
               { name: 'Test Fighter', hp: 100, maxHp: 100, mp: 50, maxMp: 50, inventory: [] },
-              { name: 'Test Mage', hp: 80, maxHp: 80, mp: 100, maxMp: 100, inventory: [] }
+              { name: 'Test Mage', hp: 80, maxHp: 80, mp: 100, maxMp: 100, inventory: [] },
             ],
             characters: [
-              { name: 'Test Fighter', hp: 100, maxHp: 100, mp: 50, maxMp: 50, level: 1, stats: { luck: 10 } },
-              { name: 'Test Mage', hp: 80, maxHp: 80, mp: 100, maxMp: 100, level: 1, stats: { luck: 10 } }
+              {
+                name: 'Test Fighter',
+                hp: 100,
+                maxHp: 100,
+                mp: 50,
+                maxMp: 50,
+                level: 1,
+                stats: { luck: 10 },
+              },
+              {
+                name: 'Test Mage',
+                hp: 80,
+                maxHp: 80,
+                mp: 100,
+                maxMp: 100,
+                level: 1,
+                stats: { luck: 10 },
+              },
             ],
             move: (direction) => {
               const party = window.game.gameState.party;
@@ -47,13 +63,17 @@ test.describe('Debug Failing Tests', () => {
             rest: () => {},
             distributeGold: () => {},
             getFrontRow: () => [],
-            floor: 1
+            floor: 1,
           },
-          dungeon: [{
-            width: 20,
-            height: 20,
-            tiles: Array(20).fill(null).map(() => Array(20).fill({ type: 'floor', discovered: true }))
-          }],
+          dungeon: [
+            {
+              width: 20,
+              height: 20,
+              tiles: Array(20)
+                .fill(null)
+                .map(() => Array(20).fill({ type: 'floor', discovered: true })),
+            },
+          ],
           currentFloor: 1,
           messageLog: {
             messages: [],
@@ -63,18 +83,18 @@ test.describe('Debug Failing Tests', () => {
             addWarningMessage: (msg) => {
               window.game.gameState.messageLog.messages.push({ text: msg });
             },
-            render: () => {}
+            render: () => {},
           },
           inCombat: false,
           combatEnabled: true,
           hasEnteredDungeon: false,
-          turnCount: 0
+          turnCount: 0,
         };
-        
+
         window.game.sceneManager.switchTo('dungeon');
       }
     });
-    
+
     await page.waitForTimeout(500);
   });
 
@@ -92,31 +112,32 @@ test.describe('Debug Failing Tests', () => {
         }
       }
     });
-    
+
     await page.waitForTimeout(500);
-    
+
     // Check what's being passed to renderStatusPanel
     const debugInfo = await page.evaluate(() => {
       const scene = window.game?.sceneManager?.currentScene;
       if (scene && scene.getASCIIState) {
         const asciiState = scene.getASCIIState();
-        
+
         // Check the party data
         const party = window.game.gameState.party;
         const aliveChars = party.getAliveCharacters();
-        
+
         // Manually call renderStatusPanel to debug
         if (asciiState) {
           asciiState.renderStatusPanel(party);
-          
+
           const grid = asciiState.getGrid();
           const gridString = asciiState.toString();
-          
+
           // Look for specific areas of the grid
-          const statusAreaSample = grid.cells.slice(18, 24).map(row => 
-            row.slice(52, 77).join('')
-          ).join('\n');
-          
+          const statusAreaSample = grid.cells
+            .slice(18, 24)
+            .map((row) => row.slice(52, 77).join(''))
+            .join('\n');
+
           return {
             partyHasGetAliveCharacters: typeof party.getAliveCharacters === 'function',
             aliveCharactersCount: aliveChars.length,
@@ -126,15 +147,15 @@ test.describe('Debug Failing Tests', () => {
             gridHasMP: gridString.includes('MP:'),
             gridHasTestFighter: gridString.includes('Test Fighter'),
             statusAreaSample: statusAreaSample,
-            fullGrid: gridString.substring(0, 500) // First 500 chars for debugging
+            fullGrid: gridString.substring(0, 500), // First 500 chars for debugging
           };
         }
       }
       return null;
     });
-    
+
     console.log('Debug Info:', JSON.stringify(debugInfo, null, 2));
-    
+
     expect(debugInfo).toBeTruthy();
     expect(debugInfo.aliveCharactersCount).toBe(2);
     expect(debugInfo.gridHasPartyStatus).toBeTruthy();
@@ -145,16 +166,16 @@ test.describe('Debug Failing Tests', () => {
     await page.evaluate(() => {
       window.FeatureFlags.enable('ASCII_RENDERING');
     });
-    
+
     // Add messages and render
     const debugInfo = await page.evaluate(() => {
       // Add test messages
       window.game.gameState.messageLog.messages = [
         { text: 'First test message' },
         { text: 'Second test message' },
-        { text: 'Third test message' }
+        { text: 'Third test message' },
       ];
-      
+
       const scene = window.game?.sceneManager?.currentScene;
       if (scene) {
         const canvas = document.querySelector('canvas');
@@ -163,34 +184,38 @@ test.describe('Debug Failing Tests', () => {
           scene.render(ctx);
           scene.render(ctx);
         }
-        
+
         if (scene.getASCIIState) {
           const asciiState = scene.getASCIIState();
           if (asciiState) {
             const gridString = asciiState.toString();
-            
+
             // Check message area (bottom of screen)
             const grid = asciiState.getGrid();
-            const messageAreaSample = grid.cells.slice(24, 29).map(row => 
-              row.slice(0, 80).join('')
-            ).join('\n');
-            
+            const messageAreaSample = grid.cells
+              .slice(24, 29)
+              .map((row) => row.slice(0, 80).join(''))
+              .join('\n');
+
             return {
               messageCount: window.game.gameState.messageLog.messages.length,
               messages: window.game.gameState.messageLog.messages,
               gridHasFirstMessage: gridString.includes('First test'),
               gridHasSecondMessage: gridString.includes('Second test'),
               messageAreaSample: messageAreaSample,
-              bottomOfGrid: grid.cells.slice(20).map(row => row.join('')).join('\n')
+              bottomOfGrid: grid.cells
+                .slice(20)
+                .map((row) => row.join(''))
+                .join('\n'),
             };
           }
         }
       }
       return null;
     });
-    
+
     console.log('Message Debug Info:', JSON.stringify(debugInfo, null, 2));
-    
+
     expect(debugInfo).toBeTruthy();
     expect(debugInfo.messageCount).toBe(3);
   });
@@ -209,34 +234,34 @@ test.describe('Debug Failing Tests', () => {
         }
       }
     });
-    
+
     await page.waitForTimeout(500);
-    
+
     // Get initial state
     const initialState = await page.evaluate(() => {
       return {
         x: window.game.gameState.party.x,
         y: window.game.gameState.party.y,
-        facing: window.game.gameState.party.facing
+        facing: window.game.gameState.party.facing,
       };
     });
-    
+
     console.log('Initial state:', initialState);
-    
+
     // Try to turn right using keyboard
     await page.keyboard.press('d');
     await page.waitForTimeout(500);
-    
+
     const afterKeyPress = await page.evaluate(() => {
       return {
         x: window.game.gameState.party.x,
         y: window.game.gameState.party.y,
-        facing: window.game.gameState.party.facing
+        facing: window.game.gameState.party.facing,
       };
     });
-    
-    console.log('After \'d\' key press:', afterKeyPress);
-    
+
+    console.log("After 'd' key press:", afterKeyPress);
+
     // Try manual movement call
     const afterManualMove = await page.evaluate(() => {
       // Manually trigger movement
@@ -244,16 +269,16 @@ test.describe('Debug Failing Tests', () => {
       if (scene && scene.handleInput) {
         scene.handleInput('d');
       }
-      
+
       return {
         x: window.game.gameState.party.x,
         y: window.game.gameState.party.y,
-        facing: window.game.gameState.party.facing
+        facing: window.game.gameState.party.facing,
       };
     });
-    
+
     console.log('After manual handleInput:', afterManualMove);
-    
+
     // Check if InputManager is working
     const inputDebug = await page.evaluate(() => {
       const scene = window.game?.sceneManager?.currentScene;
@@ -261,18 +286,18 @@ test.describe('Debug Failing Tests', () => {
         // Try to access InputManager
         const hasInputManager = scene.inputManager !== undefined;
         const inputManagerType = typeof scene.inputManager;
-        
+
         return {
           hasInputManager,
           inputManagerType,
-          sceneHasHandleInput: typeof scene.handleInput === 'function'
+          sceneHasHandleInput: typeof scene.handleInput === 'function',
         };
       }
       return null;
     });
-    
+
     console.log('Input debug:', inputDebug);
-    
+
     expect(initialState.facing).toBe('north');
     // Movement might not work due to InputManager not being properly initialized
   });

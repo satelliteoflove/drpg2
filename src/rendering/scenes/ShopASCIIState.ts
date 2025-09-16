@@ -1,20 +1,20 @@
 import { BaseASCIIScene } from '../BaseASCIIScene';
-import { ASCIIState, ASCII_GRID_WIDTH, ASCII_GRID_HEIGHT } from '../ASCIIState';
-import { SceneDeclaration, InputZone } from '../SceneDeclaration';
+import { ASCIIState, ASCII_GRID_HEIGHT, ASCII_GRID_WIDTH } from '../ASCIIState';
+import { InputZone, SceneDeclaration } from '../SceneDeclaration';
 import { GameState, Item } from '../../types/GameTypes';
 import { SceneManager } from '../../core/Scene';
-import { ShopSystem, ShopInventory } from '../../systems/ShopSystem';
+import { ShopInventory, ShopSystem } from '../../systems/ShopSystem';
 import { Character } from '../../entities/Character';
 import { DebugLogger } from '../../utils/DebugLogger';
 
-type ShopState = 
-  | 'main_menu' 
-  | 'buying_category' 
-  | 'buying_items' 
-  | 'buying_character_select' 
-  | 'selling_character_select' 
-  | 'selling_items' 
-  | 'selling_confirmation' 
+type ShopState =
+  | 'main_menu'
+  | 'buying_category'
+  | 'buying_items'
+  | 'buying_character_select'
+  | 'selling_character_select'
+  | 'selling_items'
+  | 'selling_confirmation'
   | 'pooling_gold';
 
 export class ShopASCIIState extends BaseASCIIScene {
@@ -34,15 +34,15 @@ export class ShopASCIIState extends BaseASCIIScene {
     'Identify Items',
     'Pool Gold',
     'Remove Curses',
-    'Leave Shop'
+    'Leave Shop',
   ];
 
-  private categoryOptions: Array<{key: keyof ShopInventory['categories'], name: string}> = [
+  private categoryOptions: Array<{ key: keyof ShopInventory['categories']; name: string }> = [
     { key: 'weapons', name: 'Weapons' },
     { key: 'armor', name: 'Armor' },
     { key: 'shields', name: 'Shields' },
     { key: 'accessories', name: 'Accessories' },
-    { key: 'consumables', name: 'Consumables' }
+    { key: 'consumables', name: 'Consumables' },
   ];
 
   constructor(gameState: GameState, _sceneManager: SceneManager) {
@@ -145,7 +145,7 @@ export class ShopASCIIState extends BaseASCIIScene {
   private renderMainMenu(): void {
     const grid = this.asciiState;
     // Title
-    const title = 'BOLTAC\'S TRADING POST [ASCII MODE]';
+    const title = "BOLTAC'S TRADING POST [ASCII MODE]";
     const titleX = Math.floor((ASCII_GRID_WIDTH - title.length) / 2);
     grid.writeText(titleX, 1, title);
 
@@ -196,7 +196,7 @@ export class ShopASCIIState extends BaseASCIIScene {
         detailText = 'Return to the town';
         break;
     }
-    
+
     if (detailText) {
       const detailX = Math.floor((ASCII_GRID_WIDTH - detailText.length) / 2);
       grid.writeText(detailX, 16, detailText);
@@ -235,7 +235,8 @@ export class ShopASCIIState extends BaseASCIIScene {
   private renderItemList(): void {
     const grid = this.asciiState;
     const items = this.shopInventory.categories[this.selectedCategory];
-    const categoryName = this.categoryOptions.find(c => c.key === this.selectedCategory)?.name || 'Items';
+    const categoryName =
+      this.categoryOptions.find((c) => c.key === this.selectedCategory)?.name || 'Items';
 
     // Title
     const title = categoryName.toUpperCase();
@@ -256,7 +257,7 @@ export class ShopASCIIState extends BaseASCIIScene {
       // Item list with scrolling
       const maxVisible = 10;
       const startY = 5;
-      
+
       // Adjust scroll offset if needed
       if (this.selectedIndex >= this.scrollOffset + maxVisible) {
         this.scrollOffset = this.selectedIndex - maxVisible + 1;
@@ -276,10 +277,10 @@ export class ShopASCIIState extends BaseASCIIScene {
         const y = startY + 2 + index;
         const isSelected = actualIndex === this.selectedIndex;
         const prefix = isSelected ? '> ' : '  ';
-        
+
         // Item name
         grid.writeText(5, y, `${prefix}${item.name}`);
-        
+
         // Price
         const priceText = `${item.value}g`;
         grid.writeText(ASCII_GRID_WIDTH - 10 - priceText.length, y, priceText);
@@ -297,15 +298,15 @@ export class ShopASCIIState extends BaseASCIIScene {
       if (this.selectedIndex < items.length) {
         const selectedItem = items[this.selectedIndex];
         const detailY = 17;
-        
+
         grid.writeText(5, detailY, `Type: ${selectedItem.type}`);
         grid.writeText(25, detailY, `Weight: ${selectedItem.weight}`);
-        
+
         if (selectedItem.enchantment !== 0) {
           const enchText = `Enchantment: ${selectedItem.enchantment > 0 ? '+' : ''}${selectedItem.enchantment}`;
           grid.writeText(45, detailY, enchText);
         }
-        
+
         if (selectedItem.classRestrictions && selectedItem.classRestrictions.length > 0) {
           const classText = `Classes: ${selectedItem.classRestrictions.join(', ')}`;
           grid.writeText(5, detailY + 1, classText);
@@ -347,10 +348,10 @@ export class ShopASCIIState extends BaseASCIIScene {
       const prefix = isSelected ? '> ' : '  ';
       const statusText = character.isDead ? ' (DEAD)' : '';
       const inventoryText = ` Items: ${character.inventory.length}/20`;
-      
+
       const line1 = `${prefix}${character.name} - ${character.class}${statusText}`;
       const line2 = `   Gold: ${character.gold}${inventoryText}`;
-      
+
       grid.writeText(20, y, line1);
       grid.writeText(20, y + 1, line2);
     });
@@ -382,12 +383,12 @@ export class ShopASCIIState extends BaseASCIIScene {
       const prefix = isSelected ? '> ' : '  ';
       const statusText = character.isDead ? ' (DEAD)' : '';
       const itemCount = character.inventory.length;
-      const sellableItems = character.inventory.filter(item => !item.equipped).length;
-      
+      const sellableItems = character.inventory.filter((item) => !item.equipped).length;
+
       const line1 = `${prefix}${character.name} - ${character.class}${statusText}`;
       const line2 = `   Items: ${itemCount} (${sellableItems} sellable)`;
       const line3 = `   Gold: ${character.gold}`;
-      
+
       grid.writeText(20, y, line1);
       grid.writeText(20, y + 1, line2);
       grid.writeText(20, y + 2, line3);
@@ -403,7 +404,7 @@ export class ShopASCIIState extends BaseASCIIScene {
     const grid = this.asciiState;
     if (!this.selectedSellingCharacter) return;
 
-    const sellableItems = this.selectedSellingCharacter.inventory.filter(item => !item.equipped);
+    const sellableItems = this.selectedSellingCharacter.inventory.filter((item) => !item.equipped);
 
     // Title
     const title = `${this.selectedSellingCharacter.name.toUpperCase()}'S ITEMS`;
@@ -424,7 +425,7 @@ export class ShopASCIIState extends BaseASCIIScene {
       // Item list with scrolling
       const maxVisible = 10;
       const startY = 5;
-      
+
       // Adjust scroll offset if needed
       if (this.selectedIndex >= this.scrollOffset + maxVisible) {
         this.scrollOffset = this.selectedIndex - maxVisible + 1;
@@ -445,10 +446,10 @@ export class ShopASCIIState extends BaseASCIIScene {
         const isSelected = actualIndex === this.selectedIndex;
         const prefix = isSelected ? '> ' : '  ';
         const sellPrice = Math.floor(item.value * 0.5);
-        
+
         // Item name
         grid.writeText(5, y, `${prefix}${item.name}`);
-        
+
         // Sell price
         const priceText = `${sellPrice}g`;
         grid.writeText(ASCII_GRID_WIDTH - 10 - priceText.length, y, priceText);
@@ -459,11 +460,11 @@ export class ShopASCIIState extends BaseASCIIScene {
         const selectedItem = sellableItems[this.selectedIndex];
         const sellPrice = Math.floor(selectedItem.value * 0.5);
         const detailY = 17;
-        
+
         grid.writeText(5, detailY, `Type: ${selectedItem.type}`);
         grid.writeText(25, detailY, `Original Value: ${selectedItem.value}g`);
         grid.writeText(50, detailY, `Sell Price: ${sellPrice}g`);
-        
+
         if (selectedItem.cursed) {
           grid.writeText(5, detailY + 1, 'CURSED');
         }
@@ -508,13 +509,17 @@ export class ShopASCIIState extends BaseASCIIScene {
     const currentText = `Current Party Gold: ${currentGold}`;
     const newText = `After Sale: ${newGold}`;
 
-    grid.writeText(Math.floor((ASCII_GRID_WIDTH - currentText.length) / 2), detailsY + 10, currentText);
+    grid.writeText(
+      Math.floor((ASCII_GRID_WIDTH - currentText.length) / 2),
+      detailsY + 10,
+      currentText
+    );
     grid.writeText(Math.floor((ASCII_GRID_WIDTH - newText.length) / 2), detailsY + 11, newText);
 
     // Confirmation options
     const options = ['Confirm Sale', 'Cancel'];
     const optionsY = 18;
-    
+
     options.forEach((option, index) => {
       const isSelected = index === this.selectedIndex;
       const prefix = isSelected ? '> ' : '  ';
@@ -538,15 +543,15 @@ export class ShopASCIIState extends BaseASCIIScene {
 
     // Show current gold distribution
     const goldInfo = ShopSystem.viewGoldDistribution(this.gameState.party);
-    
+
     const totalText = `Total Party Gold: ${goldInfo.totalGold}`;
     const totalX = Math.floor((ASCII_GRID_WIDTH - totalText.length) / 2);
     grid.writeText(totalX, 4, totalText);
-    
+
     const distText = 'Current Distribution:';
     const distX = Math.floor((ASCII_GRID_WIDTH - distText.length) / 2);
     grid.writeText(distX, 6, distText);
-    
+
     // Character gold list
     const startY = 8;
     goldInfo.goldByCharacter.forEach((charGold, index) => {
@@ -556,14 +561,22 @@ export class ShopASCIIState extends BaseASCIIScene {
       const x = Math.floor((ASCII_GRID_WIDTH - text.length) / 2);
       grid.writeText(x, startY + index, text);
     });
-    
+
     // Instructions
     const instructY = startY + this.gameState.party.characters.length + 2;
     const instruction1 = 'Select character to receive all gold';
     const instruction2 = '[Enter] Pool to selected | [D] Distribute evenly | [Escape] Cancel';
-    
-    grid.writeText(Math.floor((ASCII_GRID_WIDTH - instruction1.length) / 2), instructY, instruction1);
-    grid.writeText(Math.floor((ASCII_GRID_WIDTH - instruction2.length) / 2), instructY + 2, instruction2);
+
+    grid.writeText(
+      Math.floor((ASCII_GRID_WIDTH - instruction1.length) / 2),
+      instructY,
+      instruction1
+    );
+    grid.writeText(
+      Math.floor((ASCII_GRID_WIDTH - instruction2.length) / 2),
+      instructY + 2,
+      instruction2
+    );
   }
 
   public getGrid(): ASCIIState {
@@ -583,10 +596,10 @@ export class ShopASCIIState extends BaseASCIIScene {
   protected generateSceneDeclaration(): SceneDeclaration {
     // Generate input zones based on current shop state
     const zones: InputZone[] = [];
-    
+
     // Add zones for menu items or shop items based on current state
     // This will be expanded as needed for interactive elements
-    
+
     return {
       id: 'shop-scene',
       name: 'Shop Scene',
@@ -596,8 +609,8 @@ export class ShopASCIIState extends BaseASCIIScene {
       grid: this.asciiState.getGrid(),
       metadata: {
         currentState: this.currentState,
-        selectedIndex: this.selectedIndex
-      }
+        selectedIndex: this.selectedIndex,
+      },
     } as any;
   }
 

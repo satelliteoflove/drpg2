@@ -1,9 +1,9 @@
 import { Scene, SceneRenderContext } from '../core/Scene';
-import { ASCIIState, ASCII_GRID_WIDTH, ASCII_GRID_HEIGHT } from './ASCIIState';
+import { ASCIIState, ASCII_GRID_HEIGHT, ASCII_GRID_WIDTH } from './ASCIIState';
 import { CanvasRenderer, RendererConfig } from './CanvasRenderer';
-import { InputHandler, InputEvent, KeyBinding } from './InputHandler';
-import { SceneDeclaration, InputZone, UIElement } from './SceneDeclaration';
-import { FeatureFlags, FeatureFlagKey } from '../config/FeatureFlags';
+import { InputEvent, InputHandler, KeyBinding } from './InputHandler';
+import { InputZone, SceneDeclaration, UIElement } from './SceneDeclaration';
+import { FeatureFlagKey, FeatureFlags } from '../config/FeatureFlags';
 import { DebugLogger } from '../utils/DebugLogger';
 
 // Constants for scene management
@@ -12,7 +12,7 @@ const DEFAULT_RENDERER_CONFIG: RendererConfig = {
   charHeight: 20,
   fontFamily: 'monospace',
   fontSize: 16,
-  antialiasing: false
+  antialiasing: false,
 };
 
 const UPDATE_THROTTLE_MS = 16; // ~60 FPS for state updates
@@ -43,9 +43,9 @@ export abstract class BaseASCIIScene extends Scene {
       charWidth: rendererConfig.charWidth,
       charHeight: rendererConfig.charHeight,
       enableKeyboard: true,
-      enableMouse: true
+      enableMouse: true,
     });
-    
+
     this.setupInputHandlers();
     DebugLogger.info('BaseASCIIScene', 'Renderers initialized');
   }
@@ -120,8 +120,10 @@ export abstract class BaseASCIIScene extends Scene {
   }
 
   protected shouldUseASCIIRendering(): boolean {
-    return FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) || 
-           FeatureFlags.isEnabled(this.featureFlagKey, this.name);
+    return (
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+      FeatureFlags.isEnabled(this.featureFlagKey, this.name)
+    );
   }
 
   protected abstract setupScene(): void;
@@ -141,7 +143,7 @@ export abstract class BaseASCIIScene extends Scene {
   }
 
   protected removeInputZone(zoneId: string): void {
-    this.inputZones = this.inputZones.filter(z => z.id !== zoneId);
+    this.inputZones = this.inputZones.filter((z) => z.id !== zoneId);
     if (this.inputHandler) {
       this.inputHandler.setInputZones(this.inputZones);
     }
@@ -193,7 +195,7 @@ export abstract class BaseASCIIScene extends Scene {
       const event: InputEvent = {
         type: 'keypress',
         key,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       binding.action(event);
       return true;
@@ -208,7 +210,7 @@ export abstract class BaseASCIIScene extends Scene {
   }
 
   protected updateUIElement(elementId: string, updates: Partial<UIElement>): void {
-    const element = this.uiElements.find(e => e.id === elementId);
+    const element = this.uiElements.find((e) => e.id === elementId);
     if (element) {
       Object.assign(element, updates);
       this.renderUIElement(element);
@@ -217,7 +219,7 @@ export abstract class BaseASCIIScene extends Scene {
   }
 
   protected removeUIElement(elementId: string): void {
-    this.uiElements = this.uiElements.filter(e => e.id !== elementId);
+    this.uiElements = this.uiElements.filter((e) => e.id !== elementId);
     this.isDirty = true;
   }
 
@@ -252,7 +254,7 @@ export abstract class BaseASCIIScene extends Scene {
           const percentage = parseFloat(element.content as string) || 0;
           const fillWidth = Math.floor((element.size.width * percentage) / 100);
           const emptyWidth = element.size.width - fillWidth;
-          
+
           const barText = '█'.repeat(fillWidth) + '░'.repeat(emptyWidth);
           this.asciiState.writeText(x, y, barText, element.style);
         }
@@ -275,7 +277,7 @@ export abstract class BaseASCIIScene extends Scene {
       asciiState: this.asciiState.serialize(),
       inputZones: this.inputZones,
       uiElements: this.uiElements,
-      featureFlagKey: this.featureFlagKey
+      featureFlagKey: this.featureFlagKey,
     };
     return JSON.stringify(data);
   }
@@ -303,7 +305,7 @@ export abstract class BaseASCIIScene extends Scene {
     this.asciiState.drawBox(0, 0, ASCII_GRID_WIDTH, ASCII_GRID_HEIGHT, {
       horizontal: '─',
       vertical: '│',
-      corner: '┌'
+      corner: '┌',
     });
   }
 

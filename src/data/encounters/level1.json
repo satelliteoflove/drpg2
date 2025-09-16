@@ -8,7 +8,7 @@
       "weight": 40
     },
     {
-      "monsterId": "goblin", 
+      "monsterId": "goblin",
       "levelRange": [1, 2],
       "weight": 35
     }

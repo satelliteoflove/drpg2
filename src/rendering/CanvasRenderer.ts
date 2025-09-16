@@ -1,5 +1,11 @@
-import { ASCIIGrid, CellStyle, CellMetadata, ASCII_GRID_WIDTH, ASCII_GRID_HEIGHT } from './ASCIIState';
-import { SceneDeclaration, RenderLayer } from './SceneDeclaration';
+import {
+  ASCIIGrid,
+  ASCII_GRID_HEIGHT,
+  ASCII_GRID_WIDTH,
+  CellMetadata,
+  CellStyle,
+} from './ASCIIState';
+import { RenderLayer, SceneDeclaration } from './SceneDeclaration';
 import { SymbolUtils } from './ASCIISymbols';
 import { DebugLogger } from '../utils/DebugLogger';
 
@@ -60,7 +66,7 @@ export class CanvasRenderer {
       letterSpacing: config.letterSpacing || 0,
       lineHeight: config.lineHeight || 1.0,
       defaultForeground: config.defaultForeground || DEFAULT_FG_COLOR,
-      defaultBackground: config.defaultBackground || DEFAULT_BG_COLOR
+      defaultBackground: config.defaultBackground || DEFAULT_BG_COLOR,
     };
 
     this.characterCache = new Map();
@@ -73,11 +79,11 @@ export class CanvasRenderer {
     // The game expects a specific canvas size
     const currentWidth = this.canvas.width;
     const currentHeight = this.canvas.height;
-    
+
     // Calculate character size based on current canvas size
     this.config.charWidth = Math.floor(currentWidth / ASCII_GRID_WIDTH);
     this.config.charHeight = Math.floor(currentHeight / ASCII_GRID_HEIGHT);
-    
+
     // Adjust font size to fit
     this.config.fontSize = Math.floor(this.config.charHeight * 0.8);
 
@@ -86,16 +92,22 @@ export class CanvasRenderer {
     this.ctx.font = `${this.config.fontSize}px ${this.config.fontFamily}`;
     this.ctx.textBaseline = 'top';
     this.ctx.fillStyle = this.config.defaultForeground;
-    
-    DebugLogger.info('CanvasRenderer', `Canvas using existing size: ${currentWidth}x${currentHeight}px`);
-    DebugLogger.info('CanvasRenderer', `Char size: ${this.config.charWidth}x${this.config.charHeight}, font: ${this.config.fontSize}px`);
+
+    DebugLogger.info(
+      'CanvasRenderer',
+      `Canvas using existing size: ${currentWidth}x${currentHeight}px`
+    );
+    DebugLogger.info(
+      'CanvasRenderer',
+      `Char size: ${this.config.charWidth}x${this.config.charHeight}, font: ${this.config.fontSize}px`
+    );
   }
 
   private createOffscreenCanvas(): void {
     this.offscreenCanvas = document.createElement('canvas');
     this.offscreenCanvas.width = this.canvas.width;
     this.offscreenCanvas.height = this.canvas.height;
-    
+
     const ctx = this.offscreenCanvas.getContext('2d');
     if (ctx) {
       this.offscreenCtx = ctx;
@@ -108,7 +120,7 @@ export class CanvasRenderer {
   // Main render method for ASCII grid
   public renderASCIIGrid(grid: ASCIIGrid, dirtyRegions?: Set<string>): void {
     const startTime = performance.now();
-    
+
     // If no dirty regions provided, render everything
     if (!dirtyRegions || dirtyRegions.size === 0) {
       // Clear canvas
@@ -125,17 +137,17 @@ export class CanvasRenderer {
       }
     } else {
       // Only render dirty regions for optimization
-      dirtyRegions.forEach(key => {
+      dirtyRegions.forEach((key) => {
         const [xStr, yStr] = key.split(',');
         const x = parseInt(xStr);
         const y = parseInt(yStr);
-        
+
         // Clear the specific cell
         const pixelX = x * this.config.charWidth;
         const pixelY = y * this.config.charHeight;
         this.ctx.fillStyle = this.config.defaultBackground;
         this.ctx.fillRect(pixelX, pixelY, this.config.charWidth, this.config.charHeight);
-        
+
         // Render the character
         const char = grid.cells[y][x];
         const metadata = grid.metadata.get(key);
@@ -146,35 +158,40 @@ export class CanvasRenderer {
     // Update performance metrics
     this.frameCount++;
     this.lastRenderTime = performance.now() - startTime;
-    
+
     if (this.frameCount % 60 === 0) {
       const cellsRendered = dirtyRegions ? dirtyRegions.size : grid.width * grid.height;
-      DebugLogger.debug('CanvasRenderer', 
-        `Render time: ${this.lastRenderTime.toFixed(2)}ms, Cells: ${cellsRendered}`);
+      DebugLogger.debug(
+        'CanvasRenderer',
+        `Render time: ${this.lastRenderTime.toFixed(2)}ms, Cells: ${cellsRendered}`
+      );
     }
   }
 
   // Render a single character at grid position
   private renderCharacter(
-    gridX: number, 
-    gridY: number, 
-    char: string, 
+    gridX: number,
+    gridY: number,
+    char: string,
     metadata?: CellMetadata
   ): void {
     // Calculate pixel position
     const x = gridX * this.config.charWidth;
     const y = gridY * this.config.charHeight;
-    
+
     // Debug first few characters
     if (this.frameCount < 5 && char !== ' ' && char !== '') {
-      DebugLogger.debug('CanvasRenderer', `Rendering '${char}' at grid(${gridX},${gridY}) pixel(${x},${y})`);
+      DebugLogger.debug(
+        'CanvasRenderer',
+        `Rendering '${char}' at grid(${gridX},${gridY}) pixel(${x},${y})`
+      );
     }
 
     // Get style with symbol-based color fallback
     const style = metadata?.style || {};
     let fgColor = style.foreground;
     let bgColor = style.background;
-    
+
     // Use symbol-based coloring if no explicit colors provided
     if (!fgColor || !bgColor) {
       const symbolKey = SymbolUtils.getSymbolKey(char);
@@ -186,7 +203,7 @@ export class CanvasRenderer {
         }
       }
     }
-    
+
     fgColor = fgColor || this.config.defaultForeground;
     bgColor = bgColor || this.config.defaultBackground;
 
@@ -212,7 +229,7 @@ export class CanvasRenderer {
     if (!style.blink) {
       const cacheKey = this.getCacheKey(char, style);
       const cached = this.characterCache.get(cacheKey);
-      
+
       if (cached) {
         this.ctx.drawImage(cached.canvas, x, y);
         this.ctx.globalAlpha = prevAlpha;
@@ -231,7 +248,7 @@ export class CanvasRenderer {
 
     // Draw character
     this.ctx.fillStyle = fgColor;
-    
+
     if (style.bold) {
       this.ctx.font = `bold ${this.config.fontSize}px ${this.config.fontFamily}`;
     }
@@ -239,7 +256,7 @@ export class CanvasRenderer {
     // Center character in cell
     const charX = x + Math.floor((this.config.charWidth - this.ctx.measureText(char).width) / 2);
     const charY = y + Math.floor((this.config.charHeight - this.config.fontSize) / 2);
-    
+
     this.ctx.fillText(char, charX, charY);
 
     // Reset font if it was bold
@@ -267,9 +284,9 @@ export class CanvasRenderer {
 
     // Render layers in order
     scene.layers
-      .filter(layer => layer.visible)
+      .filter((layer) => layer.visible)
       .sort((a, b) => a.zIndex - b.zIndex)
-      .forEach(layer => {
+      .forEach((layer) => {
         this.renderLayer(layer);
       });
 
@@ -311,9 +328,9 @@ export class CanvasRenderer {
   // Render UI elements
   private renderUIElements(scene: SceneDeclaration): void {
     scene.uiElements
-      .filter(element => element.visible)
+      .filter((element) => element.visible)
       .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
-      .forEach(element => {
+      .forEach((element) => {
         switch (element.type) {
           case 'text':
             this.renderTextElement(element);
@@ -335,14 +352,14 @@ export class CanvasRenderer {
   private renderTextElement(element: any): void {
     const x = element.position.x * this.config.charWidth;
     const y = element.position.y * this.config.charHeight;
-    
+
     const style = element.style || {};
     this.ctx.fillStyle = style.foreground || this.config.defaultForeground;
-    
+
     if (style.bold) {
       this.ctx.font = `bold ${this.config.fontSize}px ${this.config.fontFamily}`;
     }
-    
+
     if (typeof element.content === 'string') {
       this.ctx.fillText(element.content, x, y);
     } else if (Array.isArray(element.content)) {
@@ -350,7 +367,7 @@ export class CanvasRenderer {
         this.ctx.fillText(line, x, y + index * this.config.charHeight);
       });
     }
-    
+
     if (style.bold) {
       this.ctx.font = `${this.config.fontSize}px ${this.config.fontFamily}`;
     }
@@ -359,29 +376,29 @@ export class CanvasRenderer {
   // Render box UI element
   private renderBoxElement(element: any): void {
     if (!element.size) return;
-    
+
     const x = element.position.x * this.config.charWidth;
     const y = element.position.y * this.config.charHeight;
     const width = element.size.width * this.config.charWidth;
     const height = element.size.height * this.config.charHeight;
-    
+
     const style = element.style || {};
     this.ctx.strokeStyle = style.foreground || this.config.defaultForeground;
     this.ctx.lineWidth = 1;
-    
+
     this.ctx.strokeRect(x, y, width, height);
   }
 
   // Render list UI element
   private renderListElement(element: any): void {
     if (!Array.isArray(element.content)) return;
-    
+
     const x = element.position.x * this.config.charWidth;
     let y = element.position.y * this.config.charHeight;
-    
+
     const style = element.style || {};
     this.ctx.fillStyle = style.foreground || this.config.defaultForeground;
-    
+
     element.content.forEach((item: string) => {
       this.ctx.fillText(item, x, y);
       y += this.config.charHeight;
@@ -391,18 +408,18 @@ export class CanvasRenderer {
   // Render bar UI element (health bar, mana bar, etc)
   private renderBarElement(element: any): void {
     if (!element.size) return;
-    
+
     const x = element.position.x * this.config.charWidth;
     const y = element.position.y * this.config.charHeight;
     const width = element.size.width * this.config.charWidth;
     const height = element.size.height * this.config.charHeight;
-    
+
     const style = element.style || {};
-    
+
     // Draw background
     this.ctx.fillStyle = style.background || '#333333';
     this.ctx.fillRect(x, y, width, height);
-    
+
     // Draw filled portion
     const fillPercent = element.content ? parseFloat(element.content) / 100 : 0;
     this.ctx.fillStyle = style.foreground || '#00FF00';
@@ -429,23 +446,27 @@ export class CanvasRenderer {
     const cacheCanvas = document.createElement('canvas');
     cacheCanvas.width = this.config.charWidth;
     cacheCanvas.height = this.config.charHeight;
-    
+
     const cacheCtx = cacheCanvas.getContext('2d');
     if (!cacheCtx) return;
 
     // Copy the character to cache
     cacheCtx.drawImage(
       this.canvas,
-      x, y,
-      this.config.charWidth, this.config.charHeight,
-      0, 0,
-      this.config.charWidth, this.config.charHeight
+      x,
+      y,
+      this.config.charWidth,
+      this.config.charHeight,
+      0,
+      0,
+      this.config.charWidth,
+      this.config.charHeight
     );
 
     this.characterCache.set(this.getCacheKey(char, style), {
       char,
       style,
-      canvas: cacheCanvas
+      canvas: cacheCanvas,
     });
   }
 
@@ -458,7 +479,7 @@ export class CanvasRenderer {
   public getPerformanceMetrics(): { lastRenderTime: number; frameCount: number } {
     return {
       lastRenderTime: this.lastRenderTime,
-      frameCount: this.frameCount
+      frameCount: this.frameCount,
     };
   }
 

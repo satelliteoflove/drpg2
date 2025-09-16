@@ -45,7 +45,7 @@ export class TypeValidation {
 
     const requiredStats = ['strength', 'intelligence', 'piety', 'vitality', 'agility', 'luck'];
     return requiredStats.every(
-      stat => typeof value[stat] === 'number' && value[stat] >= 3 && value[stat] <= 25
+      (stat) => typeof value[stat] === 'number' && value[stat] >= 3 && value[stat] <= 25
     );
   }
 
@@ -78,7 +78,7 @@ export class TypeValidation {
     ];
 
     return (
-      requiredFields.every(field => field in value) &&
+      requiredFields.every((field) => field in value) &&
       typeof value.id === 'string' &&
       typeof value.name === 'string' &&
       this.isCharacterRace(value.race) &&
@@ -226,7 +226,7 @@ export class TypeValidation {
         array[6] = (array[6] & 0x0f) | 0x40; // Version 4
         array[8] = (array[8] & 0x3f) | 0x80; // Variant bits
 
-        const hex = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+        const hex = Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
         return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
       } catch (error) {
         ErrorHandler.logError(

@@ -14,7 +14,7 @@ import { DebugLogger } from '../utils/DebugLogger';
 import { UI_CONSTANTS } from '../config/UIConstants';
 import { DungeonASCIIState } from '../rendering/scenes/DungeonASCIIState';
 import { CanvasRenderer, RendererConfig } from '../rendering/CanvasRenderer';
-import { FeatureFlags, FeatureFlagKey } from '../config/FeatureFlags';
+import { FeatureFlagKey, FeatureFlags } from '../config/FeatureFlags';
 
 export class DungeonScene extends Scene {
   private gameState: GameState;
@@ -29,14 +29,14 @@ export class DungeonScene extends Scene {
   private moveDelay: number = UI_CONSTANTS.TIMING.MOVE_DELAY;
   private lastTileEventPosition: { x: number; y: number; floor: number } | null = null;
   private lastEncounterPosition: { x: number; y: number; floor: number } | null = null;
-  
+
   // ASCII rendering components
   public dungeonASCIIState: DungeonASCIIState | null = null;
   private canvasRenderer: CanvasRenderer | null = null;
-  
+
   // Item pickup state
   private itemPickupState: 'none' | 'selecting_character' = 'none';
-  
+
   // Castle stairs state
   private isAwaitingCastleStairsResponse: boolean = false;
   private itemsToPickup: Item[] = [];
@@ -48,10 +48,10 @@ export class DungeonScene extends Scene {
     this.gameState = gameState;
     this.sceneManager = sceneManager;
     this.inputManager = inputManager;
-    
+
     // Initialize messageLog immediately to avoid runtime errors
     this.messageLog = this.gameState.messageLog;
-    
+
     // Safety check - if messageLog is still undefined, create a temporary one
     if (!this.messageLog) {
       DebugLogger.warn('DungeonScene', 'MessageLog not found in gameState, this should not happen');
@@ -72,7 +72,7 @@ export class DungeonScene extends Scene {
     }
 
     // Also check if ASCII was enabled after scene creation
-    this.checkAndInitializeASCII()
+    this.checkAndInitializeASCII();
 
     // Only show "Entered the dungeon..." message when truly entering for the first time,
     // not when returning from combat, inventory, etc.
@@ -81,7 +81,7 @@ export class DungeonScene extends Scene {
       this.gameState.hasEnteredDungeon = true;
     }
     this.lastTileEventPosition = null;
-    
+
     // Check for pending loot from combat
     if (this.gameState.pendingLoot && this.gameState.pendingLoot.length > 0) {
       const aliveCharacters = this.gameState.party.getAliveCharacters();
@@ -91,12 +91,12 @@ export class DungeonScene extends Scene {
         this.currentItemIndex = 0;
         this.selectedCharacterIndex = 0;
         this.itemPickupState = 'selecting_character';
-        
+
         const currentItem = this.itemsToPickup[this.currentItemIndex];
         this.messageLog.addSystemMessage(
           `Distributing loot: ${currentItem.identified ? currentItem.name : currentItem.unidentifiedName || '?Item'}. Who should take it?`
         );
-        
+
         // Clear pending loot
         this.gameState.pendingLoot = undefined;
       }
@@ -122,8 +122,10 @@ export class DungeonScene extends Scene {
   }
 
   private shouldUseASCIIRendering(): boolean {
-    return FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) || 
-           FeatureFlags.isEnabled('DUNGEON_ASCII', 'Dungeon');
+    return (
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+      FeatureFlags.isEnabled('DUNGEON_ASCII', 'Dungeon')
+    );
   }
 
   private renderASCII(ctx: CanvasRenderingContext2D): void {
@@ -148,7 +150,7 @@ export class DungeonScene extends Scene {
 
     // Render status and messages
     this.dungeonASCIIState!.renderStatusPanel(this.gameState.party);
-    
+
     // Get recent messages from log
     const messages: string[] = [];
     if (this.messageLog && this.messageLog.messages) {
@@ -158,7 +160,7 @@ export class DungeonScene extends Scene {
       });
     }
     this.dungeonASCIIState!.renderMessageLog(messages);
-    
+
     // Render controls
     this.dungeonASCIIState!.renderControls();
 
@@ -166,8 +168,14 @@ export class DungeonScene extends Scene {
     if (this.itemPickupState === 'selecting_character') {
       const aliveCharacters = this.gameState.party.getAliveCharacters();
       const currentItem = this.itemsToPickup[this.currentItemIndex];
-      const itemName = currentItem.identified ? currentItem.name : currentItem.unidentifiedName || '?Item';
-      this.dungeonASCIIState!.renderItemPickupUI(itemName, aliveCharacters, this.selectedCharacterIndex);
+      const itemName = currentItem.identified
+        ? currentItem.name
+        : currentItem.unidentifiedName || '?Item';
+      this.dungeonASCIIState!.renderItemPickupUI(
+        itemName,
+        aliveCharacters,
+        this.selectedCharacterIndex
+      );
     }
 
     if (this.isAwaitingCastleStairsResponse) {
@@ -212,10 +220,10 @@ export class DungeonScene extends Scene {
       }
 
       this.dungeonMapView.render();
-      
+
       // Update debug overlay with current system data
       this.updateDebugData();
-      
+
       // Always render debug overlay last so it appears on top
       this.debugOverlay.render(this.gameState);
     }
@@ -228,7 +236,7 @@ export class DungeonScene extends Scene {
     } else {
       // Original layered rendering
       const { renderManager } = renderContext;
-      
+
       if (!this.dungeonView) {
         this.initializeUI(renderContext.mainContext.canvas);
       }
@@ -270,10 +278,10 @@ export class DungeonScene extends Scene {
             this.renderItemPickupUI(ctx);
           }
           this.dungeonMapView.render(ctx);
-          
+
           // Update debug overlay with current system data
           this.updateDebugData();
-          
+
           // Always render debug overlay last so it appears on top
           this.debugOverlay.render(this.gameState);
         });
@@ -302,7 +310,7 @@ export class DungeonScene extends Scene {
       charHeight: 20,
       fontFamily: 'monospace',
       fontSize: 16,
-      antialiasing: false
+      antialiasing: false,
     };
 
     this.dungeonASCIIState = new DungeonASCIIState();
@@ -451,24 +459,29 @@ export class DungeonScene extends Scene {
     const currentPosition = {
       x: this.gameState.party.x,
       y: this.gameState.party.y,
-      floor: this.gameState.currentFloor
+      floor: this.gameState.currentFloor,
     };
 
-    DebugLogger.debug('DungeonScene', `Current pos: (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.floor})`);
+    DebugLogger.debug(
+      'DungeonScene',
+      `Current pos: (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.floor})`
+    );
     DebugLogger.debug('DungeonScene', 'Last encounter pos', this.lastEncounterPosition);
 
-    if (this.lastEncounterPosition &&
-        this.lastEncounterPosition.x === currentPosition.x &&
-        this.lastEncounterPosition.y === currentPosition.y &&
-        this.lastEncounterPosition.floor === currentPosition.floor) {
+    if (
+      this.lastEncounterPosition &&
+      this.lastEncounterPosition.x === currentPosition.x &&
+      this.lastEncounterPosition.y === currentPosition.y &&
+      this.lastEncounterPosition.floor === currentPosition.floor
+    ) {
       DebugLogger.debug('DungeonScene', 'Blocking encounter - same position as last encounter');
       return; // Don't trigger encounter at same position
     }
 
     // Check if player is in an override zone
     const currentZone = this.getOverrideZoneAtPosition(
-      this.gameState.party.x, 
-      this.gameState.party.y, 
+      this.gameState.party.x,
+      this.gameState.party.y,
       currentDungeon
     );
 
@@ -506,33 +519,41 @@ export class DungeonScene extends Scene {
     }
 
     // Debug the encounter rate being used
-    DebugLogger.debug('DungeonScene', `Zone type: ${currentZone?.type || 'normal'}, Rate: ${encounterRate}, Should force: ${shouldTriggerEncounter}`);
+    DebugLogger.debug(
+      'DungeonScene',
+      `Zone type: ${currentZone?.type || 'normal'}, Rate: ${encounterRate}, Should force: ${shouldTriggerEncounter}`
+    );
 
     // Roll for encounter (always allow encounters unless in safe zone)
     if (shouldTriggerEncounter || Math.random() < encounterRate) {
-      DebugLogger.debug('DungeonScene', `Triggering encounter at (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.floor})`);
-      
+      DebugLogger.debug(
+        'DungeonScene',
+        `Triggering encounter at (${currentPosition.x}, ${currentPosition.y}, ${currentPosition.floor})`
+      );
+
       // Store zone information for combat scene to use for proper messaging
       this.gameState.encounterContext = {
         zoneType: currentZone?.type || 'normal',
         bossType: currentZone?.data?.bossType,
         description: currentZone?.data?.description,
-        monsterGroups
+        monsterGroups,
       };
 
       // Store encounter position to prevent re-encounters at same spot
       this.lastEncounterPosition = { ...currentPosition };
       DebugLogger.debug('DungeonScene', 'Stored encounter position', this.lastEncounterPosition);
-      
+
       this.gameState.inCombat = true;
       this.sceneManager.switchTo('combat');
     }
   }
 
   private getOverrideZoneAtPosition(x: number, y: number, dungeon: any): any {
-    return dungeon.overrideZones?.find((zone: any) =>
-      x >= zone.x1 && x <= zone.x2 && y >= zone.y1 && y <= zone.y2
-    ) || null;
+    return (
+      dungeon.overrideZones?.find(
+        (zone: any) => x >= zone.x1 && x <= zone.x2 && y >= zone.y1 && y <= zone.y2
+      ) || null
+    );
   }
 
   private checkTileEvents(): void {
@@ -606,7 +627,7 @@ export class DungeonScene extends Scene {
     if (!currentDungeon) return;
 
     const event = currentDungeon.events.find(
-      e => e.x === this.gameState.party.x && e.y === this.gameState.party.y && !e.triggered
+      (e) => e.x === this.gameState.party.x && e.y === this.gameState.party.y && !e.triggered
     );
 
     if (event) {
@@ -645,18 +666,21 @@ export class DungeonScene extends Scene {
 
   public handleInput(key: string): boolean {
     // const actions = this.inputManager.getActionKeys();
-    
+
     // Debug: Log the key and expected binding
     if (key.includes('ctrl')) {
       DebugLogger.debug('DungeonScene', 'Key pressed: ' + key);
-      DebugLogger.debug('DungeonScene', 'Expected debug overlay key: ' + KEY_BINDINGS.dungeonActions.debugOverlay);
+      DebugLogger.debug(
+        'DungeonScene',
+        'Expected debug overlay key: ' + KEY_BINDINGS.dungeonActions.debugOverlay
+      );
     }
-    
+
     // Handle castle stairs response
     if (this.isAwaitingCastleStairsResponse) {
       return this.handleCastleStairsInput(key);
     }
-    
+
     // Handle debug scene key combination first
     if (key === KEY_BINDINGS.dungeonActions.debugOverlay) {
       DebugLogger.debug('DungeonScene', 'Switching to debug scene');
@@ -667,13 +691,12 @@ export class DungeonScene extends Scene {
       this.sceneManager.switchTo('debug');
       return true;
     }
-    
-    
+
     // Handle item pickup selection state
     if (this.itemPickupState === 'selecting_character') {
       return this.handleItemPickupSelection(key);
     }
-    
+
     // Handle movement keys directly for immediate response (especially in tests)
     // But only for turning - forward/backward needs collision checking from handleMovement
     if (key === 'a' || key === 'arrowleft') {
@@ -705,7 +728,6 @@ export class DungeonScene extends Scene {
       this.checkRandomEncounter(); // Check for encounters when resting
       return true;
     }
-
 
     if (key === KEY_BINDINGS.dungeonActions.toggleCombat) {
       this.toggleCombat();
@@ -756,8 +778,8 @@ export class DungeonScene extends Scene {
 
     const playerPos = `(${this.gameState.party.x}, ${this.gameState.party.y})`;
     const currentZone = this.getOverrideZoneAtPosition(
-      this.gameState.party.x, 
-      this.gameState.party.y, 
+      this.gameState.party.x,
+      this.gameState.party.y,
       currentDungeon
     );
 
@@ -772,7 +794,7 @@ export class DungeonScene extends Scene {
       zoneType: currentZone?.type || 'normal',
       bossType: currentZone?.data?.bossType,
       description: currentZone?.data?.description,
-      monsterGroups: currentZone?.data?.monsterGroups
+      monsterGroups: currentZone?.data?.monsterGroups,
     };
 
     this.messageLog.addSystemMessage(`Forcing encounter at ${playerPos}...`);
@@ -781,9 +803,9 @@ export class DungeonScene extends Scene {
     this.lastEncounterPosition = {
       x: this.gameState.party.x,
       y: this.gameState.party.y,
-      floor: this.gameState.currentFloor
+      floor: this.gameState.currentFloor,
     };
-    
+
     this.gameState.inCombat = true;
     this.sceneManager.switchTo('combat');
   }
@@ -798,15 +820,16 @@ export class DungeonScene extends Scene {
     }
   }
 
-
   private handleItemPickupSelection(key: string): boolean {
     const aliveCharacters = this.gameState.party.getAliveCharacters();
-    
+
     if (key === 'escape' || key === 'l') {
       // Discard current item permanently
       const item = this.itemsToPickup[this.currentItemIndex];
-      this.messageLog.addSystemMessage(`Discarded ${item.identified ? item.name : item.unidentifiedName || '?Item'}.`);
-      
+      this.messageLog.addSystemMessage(
+        `Discarded ${item.identified ? item.name : item.unidentifiedName || '?Item'}.`
+      );
+
       // Move to next item or finish
       this.currentItemIndex++;
       if (this.currentItemIndex >= this.itemsToPickup.length) {
@@ -823,26 +846,31 @@ export class DungeonScene extends Scene {
       }
       return true;
     }
-    
+
     if (key === 'arrowup' || key === 'w') {
       this.selectedCharacterIndex = Math.max(0, this.selectedCharacterIndex - 1);
       return true;
     } else if (key === 'arrowdown' || key === 's') {
-      this.selectedCharacterIndex = Math.min(aliveCharacters.length - 1, this.selectedCharacterIndex + 1);
+      this.selectedCharacterIndex = Math.min(
+        aliveCharacters.length - 1,
+        this.selectedCharacterIndex + 1
+      );
       return true;
     } else if (key === 'enter' || key === ' ') {
       // Give item to selected character
       const character = aliveCharacters[this.selectedCharacterIndex];
       const item = this.itemsToPickup[this.currentItemIndex];
-      
+
       if (character.inventory.length >= GAME_CONFIG.ITEMS.INVENTORY.MAX_ITEMS_PER_CHARACTER) {
         this.messageLog.addWarningMessage(`${character.name}'s inventory is full!`);
         return true;
       }
-      
+
       // Add item to character's inventory
       // Check if it's a stackable consumable
-      const existingItem = character.inventory.find((i: Item) => i.id === item.id && i.type === 'consumable');
+      const existingItem = character.inventory.find(
+        (i: Item) => i.id === item.id && i.type === 'consumable'
+      );
       if (existingItem && item.type === 'consumable') {
         existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1);
       } else {
@@ -851,7 +879,7 @@ export class DungeonScene extends Scene {
       this.messageLog.addItemMessage(
         `${character.name} takes ${item.identified ? item.name : item.unidentifiedName || '?Item'}`
       );
-      
+
       // Move to next item or finish
       this.currentItemIndex++;
       if (this.currentItemIndex >= this.itemsToPickup.length) {
@@ -869,22 +897,24 @@ export class DungeonScene extends Scene {
       }
       return true;
     }
-    
+
     // Number keys for quick character selection
     const num = parseInt(key);
     if (!isNaN(num) && num >= 1 && num <= aliveCharacters.length) {
       this.selectedCharacterIndex = num - 1;
       const character = aliveCharacters[this.selectedCharacterIndex];
       const item = this.itemsToPickup[this.currentItemIndex];
-      
+
       if (character.inventory.length >= GAME_CONFIG.ITEMS.INVENTORY.MAX_ITEMS_PER_CHARACTER) {
         this.messageLog.addWarningMessage(`${character.name}'s inventory is full!`);
         return true;
       }
-      
+
       // Add item to character's inventory
       // Check if it's a stackable consumable
-      const existingItem = character.inventory.find((i: Item) => i.id === item.id && i.type === 'consumable');
+      const existingItem = character.inventory.find(
+        (i: Item) => i.id === item.id && i.type === 'consumable'
+      );
       if (existingItem && item.type === 'consumable') {
         existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1);
       } else {
@@ -893,7 +923,7 @@ export class DungeonScene extends Scene {
       this.messageLog.addItemMessage(
         `${character.name} takes ${item.identified ? item.name : item.unidentifiedName || '?Item'}`
       );
-      
+
       // Move to next item or finish
       this.currentItemIndex++;
       if (this.currentItemIndex >= this.itemsToPickup.length) {
@@ -911,7 +941,7 @@ export class DungeonScene extends Scene {
       }
       return true;
     }
-    
+
     return false;
   }
 
@@ -919,81 +949,92 @@ export class DungeonScene extends Scene {
     ctx.fillStyle = '#888';
     ctx.font = '10px monospace';
     const y = ctx.canvas.height - 45;
-    
+
     const controls = 'TAB: Inventory | R: Rest | M: Map | C: Toggle Combat | Ctrl+D: Debug';
-    
+
     ctx.fillText(controls, 10, y);
     ctx.fillText('WASD/Arrows: Move | SPACE/ENTER: Interact | ESC: Menu', 10, y + 12);
   }
-  
+
   private renderItemPickupUI(ctx: CanvasRenderingContext2D): void {
     if (this.itemPickupState !== 'selecting_character') return;
-    
+
     const aliveCharacters = this.gameState.party.getAliveCharacters();
     if (aliveCharacters.length === 0 || this.itemsToPickup.length === 0) return;
-    
+
     // Draw semi-transparent overlay
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    
+
     // Draw selection window
     const windowX = 200;
     const windowY = 150;
     const windowWidth = 400;
     const windowHeight = 300;
-    
+
     // Window background
     ctx.fillStyle = '#222';
     ctx.fillRect(windowX, windowY, windowWidth, windowHeight);
     ctx.strokeStyle = '#aaa';
     ctx.lineWidth = 2;
     ctx.strokeRect(windowX, windowY, windowWidth, windowHeight);
-    
+
     // Title
     ctx.fillStyle = '#fff';
     ctx.font = '16px monospace';
     ctx.textAlign = 'center';
     const currentItem = this.itemsToPickup[this.currentItemIndex];
-    const itemName = currentItem.identified ? currentItem.name : currentItem.unidentifiedName || '?Item';
+    const itemName = currentItem.identified
+      ? currentItem.name
+      : currentItem.unidentifiedName || '?Item';
     ctx.fillText(`Select character to receive:`, windowX + windowWidth / 2, windowY + 30);
     ctx.fillText(`${itemName}`, windowX + windowWidth / 2, windowY + 50);
-    
+
     // Item counter
     ctx.font = '12px monospace';
-    ctx.fillText(`Item ${this.currentItemIndex + 1} of ${this.itemsToPickup.length}`, windowX + windowWidth / 2, windowY + 70);
-    
+    ctx.fillText(
+      `Item ${this.currentItemIndex + 1} of ${this.itemsToPickup.length}`,
+      windowX + windowWidth / 2,
+      windowY + 70
+    );
+
     // Character list
     ctx.textAlign = 'left';
     ctx.font = '14px monospace';
     const startY = windowY + 100;
     const lineHeight = 25;
-    
+
     aliveCharacters.forEach((character: any, index: number) => {
-      const y = startY + (index * lineHeight);
-      
+      const y = startY + index * lineHeight;
+
       // Highlight selected character
       if (index === this.selectedCharacterIndex) {
         ctx.fillStyle = '#444';
         ctx.fillRect(windowX + 20, y - 15, windowWidth - 40, 20);
       }
-      
+
       // Character info
       ctx.fillStyle = index === this.selectedCharacterIndex ? '#ff0' : '#fff';
-      const inventorySpace = GAME_CONFIG.ITEMS.INVENTORY.MAX_ITEMS_PER_CHARACTER - character.inventory.length;
+      const inventorySpace =
+        GAME_CONFIG.ITEMS.INVENTORY.MAX_ITEMS_PER_CHARACTER - character.inventory.length;
       const spacesText = inventorySpace > 0 ? `${inventorySpace} spaces` : 'FULL';
       ctx.fillText(`${index + 1}. ${character.name} (${spacesText})`, windowX + 30, y);
     });
-    
+
     // Show "Discard" option after all characters
-    const discardY = startY + (aliveCharacters.length * lineHeight);
+    const discardY = startY + aliveCharacters.length * lineHeight;
     ctx.fillStyle = '#888';
     ctx.fillText(`L. Discard it`, windowX + 30, discardY);
-    
+
     // Instructions
     ctx.fillStyle = '#888';
     ctx.font = '12px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('UP/DOWN: Select | ENTER/1-6: Confirm | L: Discard', windowX + windowWidth / 2, windowY + windowHeight - 20);
+    ctx.fillText(
+      'UP/DOWN: Select | ENTER/1-6: Confirm | L: Discard',
+      windowX + windowWidth / 2,
+      windowY + windowHeight - 20
+    );
   }
 
   private handleInteraction(): void {
@@ -1050,11 +1091,18 @@ export class DungeonScene extends Scene {
 
     // Get current loot system debug data
     const lootData = InventorySystem.getLootDebugData();
-    
+
     // Calculate party stats
-    const totalLuck = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.stats.luck, 0);
-    const averageLevel = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.level, 0) / this.gameState.party.characters.length;
-    
+    const totalLuck = this.gameState.party.characters.reduce(
+      (sum: number, char: Character) => sum + char.stats.luck,
+      0
+    );
+    const averageLevel =
+      this.gameState.party.characters.reduce(
+        (sum: number, char: Character) => sum + char.level,
+        0
+      ) / this.gameState.party.characters.length;
+
     // Get combat debug data
     const combatData = CombatSystem.getCombatDebugData();
 
@@ -1064,9 +1112,9 @@ export class DungeonScene extends Scene {
       partyStats: {
         totalLuck,
         luckMultiplier: lootData.luckMultiplier,
-        averageLevel
+        averageLevel,
       },
-      combatSystem: combatData
+      combatSystem: combatData,
     });
   }
 
@@ -1078,7 +1126,7 @@ export class DungeonScene extends Scene {
 
   private handleCastleStairsInput(key: string): boolean {
     const lowerKey = key.toLowerCase();
-    
+
     if (lowerKey === 'y' || key === 'enter') {
       this.isAwaitingCastleStairsResponse = false;
       this.messageLog.addSystemMessage('You climb the steps and enter the castle.');
@@ -1089,7 +1137,7 @@ export class DungeonScene extends Scene {
       this.messageLog.addSystemMessage('You remain in the dungeon.');
       return true;
     }
-    
+
     return false;
   }
 

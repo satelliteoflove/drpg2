@@ -44,11 +44,11 @@ export class MainMenuScene extends Scene {
       ctx.save();
       this.renderTitle(ctx);
       ctx.restore();
-      
+
       ctx.save();
       this.renderMenu(ctx);
       ctx.restore();
-      
+
       ctx.save();
       this.renderFooter(ctx);
       ctx.restore();

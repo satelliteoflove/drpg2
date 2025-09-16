@@ -65,7 +65,7 @@ export class DungeonMapView {
 
   public render(ctx?: CanvasRenderingContext2D): void {
     if (!this.isVisible || !this.dungeon) return;
-    
+
     this.currentRenderCtx = ctx || this.ctx;
     this.currentRenderCtx.save();
 
@@ -303,7 +303,11 @@ export class DungeonMapView {
     this.currentRenderCtx.font = 'bold 20px monospace';
     this.currentRenderCtx.textAlign = 'center';
     this.currentRenderCtx.textBaseline = 'top';
-    this.currentRenderCtx.fillText(`DUNGEON FLOOR ${this.dungeon.level}`, this.canvas.width / 2, 30);
+    this.currentRenderCtx.fillText(
+      `DUNGEON FLOOR ${this.dungeon.level}`,
+      this.canvas.width / 2,
+      30
+    );
 
     this.currentRenderCtx.font = '14px monospace';
     this.currentRenderCtx.fillText(
@@ -312,6 +316,10 @@ export class DungeonMapView {
       55
     );
 
-    this.currentRenderCtx.fillText('Press M to close map', this.canvas.width / 2, this.canvas.height - 30);
+    this.currentRenderCtx.fillText(
+      'Press M to close map',
+      this.canvas.width / 2,
+      this.canvas.height - 30
+    );
   }
 }

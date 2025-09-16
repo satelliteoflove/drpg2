@@ -69,15 +69,18 @@ export class SceneManager {
   public update(deltaTime: number): void {
     if (this.nextScene) {
       DebugLogger.debug('SceneManager', 'Processing scene switch to: ' + this.nextScene);
-      
+
       if (this._currentScene) {
         DebugLogger.debug('SceneManager', 'Exiting current scene: ' + this._currentScene.getName());
         this._currentScene.exit();
       }
 
       const newScene = this.scenes.get(this.nextScene);
-      DebugLogger.debug('SceneManager', 'Found new scene: ' + (newScene ? newScene.getName() : 'null'));
-      
+      DebugLogger.debug(
+        'SceneManager',
+        'Found new scene: ' + (newScene ? newScene.getName() : 'null')
+      );
+
       this._currentScene = newScene || null;
       this.nextScene = null;
 

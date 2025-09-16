@@ -6,24 +6,24 @@ export const ASCII_GRID_HEIGHT = 25;
 export const DEFAULT_EMPTY_CELL = ' ';
 
 // Cell types for different game elements
-export type CellType = 
-  | 'wall' 
-  | 'floor' 
-  | 'door' 
-  | 'stairs' 
-  | 'entity' 
-  | 'ui' 
+export type CellType =
+  | 'wall'
+  | 'floor'
+  | 'door'
+  | 'stairs'
+  | 'entity'
+  | 'ui'
   | 'border'
   | 'text'
   | 'empty';
 
 // Visual style information for cells
 export interface CellStyle {
-  foreground?: string;  // Text color
-  background?: string;  // Background color
-  bold?: boolean;       // Bold text
-  blink?: boolean;      // Blinking effect
-  opacity?: number;     // Transparency (0-1)
+  foreground?: string; // Text color
+  background?: string; // Background color
+  bold?: boolean; // Bold text
+  blink?: boolean; // Blinking effect
+  opacity?: number; // Transparency (0-1)
 }
 
 // Metadata for individual cells
@@ -33,8 +33,8 @@ export interface CellMetadata {
   interactive?: boolean;
   entityId?: string;
   style?: CellStyle;
-  zIndex?: number;      // Layer ordering
-  tooltip?: string;     // Hover text
+  zIndex?: number; // Layer ordering
+  tooltip?: string; // Hover text
 }
 
 // Main ASCII grid interface
@@ -42,14 +42,14 @@ export interface ASCIIGrid {
   width: number;
   height: number;
   cells: string[][];
-  metadata: Map<string, CellMetadata>;  // Key: "x,y" format
+  metadata: Map<string, CellMetadata>; // Key: "x,y" format
 }
 
 // ASCII state management class
 export class ASCIIState {
   private grid: ASCIIGrid;
-  private dirtyRegions: Set<string>;  // Track changed cells for optimization
-  private previousGrid?: string[][];  // For diff calculations
+  private dirtyRegions: Set<string>; // Track changed cells for optimization
+  private previousGrid?: string[][]; // For diff calculations
 
   constructor(width: number = ASCII_GRID_WIDTH, height: number = ASCII_GRID_HEIGHT) {
     this.grid = this.createEmptyGrid(width, height);
@@ -70,17 +70,12 @@ export class ASCIIState {
       width,
       height,
       cells,
-      metadata: new Map()
+      metadata: new Map(),
     };
   }
 
   // Set a single cell
-  public setCell(
-    x: number,
-    y: number,
-    char: string,
-    metadata?: Partial<CellMetadata>
-  ): void {
+  public setCell(x: number, y: number, char: string, metadata?: Partial<CellMetadata>): void {
     if (!this.isValidPosition(x, y)) {
       DebugLogger.warn('ASCIIState', `Invalid position: (${x}, ${y})`);
       return;
@@ -103,7 +98,7 @@ export class ASCIIState {
         position: { x, y },
         type: metadata.type || existing?.type || 'empty',
         ...existing,
-        ...metadata
+        ...metadata,
       });
     }
   }
@@ -206,10 +201,10 @@ export class ASCIIState {
 
   // Clear the entire grid
   public clear(): void {
-    this.previousGrid = this.grid.cells.map(row => [...row]);
+    this.previousGrid = this.grid.cells.map((row) => [...row]);
     this.grid = this.createEmptyGrid(this.grid.width, this.grid.height);
     this.dirtyRegions.clear();
-    
+
     // Mark entire grid as dirty
     for (let y = 0; y < this.grid.height; y++) {
       for (let x = 0; x < this.grid.width; x++) {
@@ -225,7 +220,7 @@ export class ASCIIState {
 
   // Get a copy of the grid as strings for display/debugging
   public toString(): string {
-    return this.grid.cells.map(row => row.join('')).join('\n');
+    return this.grid.cells.map((row) => row.join('')).join('\n');
   }
 
   // Get dirty regions for optimized rendering
@@ -241,7 +236,7 @@ export class ASCIIState {
   // Calculate diff from previous state
   public getDiff(): Array<{ x: number; y: number; oldChar: string; newChar: string }> {
     const diff: Array<{ x: number; y: number; oldChar: string; newChar: string }> = [];
-    
+
     if (!this.previousGrid) {
       return diff;
     }
@@ -265,7 +260,7 @@ export class ASCIIState {
       width: this.grid.width,
       height: this.grid.height,
       cells: this.grid.cells,
-      metadata: Array.from(this.grid.metadata.entries())
+      metadata: Array.from(this.grid.metadata.entries()),
     });
   }
 
@@ -273,10 +268,10 @@ export class ASCIIState {
   public static deserialize(data: string): ASCIIState {
     const parsed = JSON.parse(data);
     const state = new ASCIIState(parsed.width, parsed.height);
-    
+
     state.grid.cells = parsed.cells;
     state.grid.metadata = new Map(parsed.metadata);
-    
+
     return state;
   }
 

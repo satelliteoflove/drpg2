@@ -19,7 +19,7 @@ test.describe('Combat ASCII Basic Tests', () => {
         // Generate test monsters
         const testMonsters = [
           { name: 'Goblin 1', hp: 10, maxHp: 10, ac: 10, damage: '1d4', experience: 10, gold: 5 },
-          { name: 'Goblin 2', hp: 10, maxHp: 10, ac: 10, damage: '1d4', experience: 10, gold: 5 }
+          { name: 'Goblin 2', hp: 10, maxHp: 10, ac: 10, damage: '1d4', experience: 10, gold: 5 },
         ];
 
         // Set up game state for combat
@@ -53,7 +53,7 @@ test.describe('Combat ASCII Basic Tests', () => {
         exists: scene.asciiState !== null && scene.asciiState !== undefined,
         useASCII: scene.useASCII,
         hasCanvasRenderer: scene.canvasRenderer !== null && scene.canvasRenderer !== undefined,
-        actionState: scene.asciiState?.getActionState ? scene.asciiState.getActionState() : null
+        actionState: scene.asciiState?.getActionState ? scene.asciiState.getActionState() : null,
       };
     });
 
@@ -103,7 +103,7 @@ test.describe('Combat ASCII Basic Tests', () => {
         hasCombatText,
         hasPartyText,
         hasActionText,
-        sample: fullText.substring(0, 200)
+        sample: fullText.substring(0, 200),
       };
     });
 

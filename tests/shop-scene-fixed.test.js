@@ -5,19 +5,19 @@ async function navigateToShop(page) {
   // Start from MainMenu
   await page.keyboard.press('Enter'); // New Game
   await page.waitForTimeout(500);
-  
+
   // Now in New Game scene
   await page.keyboard.press('Enter'); // Continue
   await page.waitForTimeout(500);
-  
+
   // Now in Character Creation
   await page.keyboard.press('Escape'); // Skip to Dungeon with default party
   await page.waitForTimeout(500);
-  
+
   // Now in Dungeon
   await page.keyboard.press('Escape'); // Go to Town
   await page.waitForTimeout(500);
-  
+
   // Now in Town
   await page.keyboard.press('Enter'); // Enter Shop (first option)
   await page.waitForTimeout(500);
@@ -38,10 +38,10 @@ test.describe('ShopScene Functionality (Fixed)', () => {
         name: scene?.getName(),
         state: scene?.currentState,
         menuOptions: scene?.menuOptions,
-        selectedOption: scene?.selectedOption
+        selectedOption: scene?.selectedOption,
       };
     });
-    
+
     expect(sceneInfo.name).toBe('Shop');
     expect(sceneInfo.state).toBe('main_menu');
     expect(sceneInfo.menuOptions).toContain('Buy Items');
@@ -52,20 +52,21 @@ test.describe('ShopScene Functionality (Fixed)', () => {
   });
 
   test('should navigate shop menu', async ({ page }) => {
-    const getSelectedOption = () => page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
-      const scene = sceneManager?.getCurrentScene();
-      return scene?.selectedOption;
-    });
-    
+    const getSelectedOption = () =>
+      page.evaluate(() => {
+        const sceneManager = window.game?.getSceneManager();
+        const scene = sceneManager?.getCurrentScene();
+        return scene?.selectedOption;
+      });
+
     await page.keyboard.press('ArrowDown');
     await page.waitForTimeout(100);
     expect(await getSelectedOption()).toBe(1);
-    
+
     await page.keyboard.press('ArrowDown');
     await page.waitForTimeout(100);
     expect(await getSelectedOption()).toBe(2);
-    
+
     await page.keyboard.press('ArrowUp');
     await page.waitForTimeout(100);
     expect(await getSelectedOption()).toBe(1);
@@ -74,18 +75,18 @@ test.describe('ShopScene Functionality (Fixed)', () => {
   test('should enter buying category selection', async ({ page }) => {
     await page.keyboard.press('Enter'); // Select "Buy Items"
     await page.waitForTimeout(200);
-    
+
     const state = await page.evaluate(() => {
       const sceneManager = window.game?.getSceneManager();
       const scene = sceneManager?.getCurrentScene();
       return scene?.currentState;
     });
     expect(state).toBe('buying_category');
-    
+
     // Can return to main menu
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
-    
+
     const newState = await page.evaluate(() => {
       const sceneManager = window.game?.getSceneManager();
       const scene = sceneManager?.getCurrentScene();
@@ -101,7 +102,7 @@ test.describe('ShopScene Functionality (Fixed)', () => {
       const scene = sceneManager?.getCurrentScene();
       return {
         menuOptions: scene?.menuOptions,
-        selectedOption: scene?.selectedOption
+        selectedOption: scene?.selectedOption,
       };
     });
     console.log('Shop menu options:', menuInfo);
@@ -112,16 +113,18 @@ test.describe('ShopScene Functionality (Fixed)', () => {
       await page.waitForTimeout(50);
     }
 
-    const getGoldInfo = () => page.evaluate(() => {
-      const state = window.game?.getGameState();
-      return {
-        partyGold: state?.gold || 0,
-        characterGold: state?.party?.characters?.map(c => c.gold) || []
-      };
-    });
+    const getGoldInfo = () =>
+      page.evaluate(() => {
+        const state = window.game?.getGameState();
+        return {
+          partyGold: state?.gold || 0,
+          characterGold: state?.party?.characters?.map((c) => c.gold) || [],
+        };
+      });
 
     const initialGold = await getGoldInfo();
-    const totalBefore = initialGold.characterGold.reduce((a, b) => a + b, 0) + initialGold.partyGold;
+    const totalBefore =
+      initialGold.characterGold.reduce((a, b) => a + b, 0) + initialGold.partyGold;
 
     // Enter pooling
     await page.keyboard.press('Enter');
@@ -152,7 +155,7 @@ test.describe('ShopScene Functionality (Fixed)', () => {
   test('should return to town on Escape', async ({ page }) => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
-    
+
     const currentScene = await page.evaluate(() => {
       const sceneManager = window.game?.getSceneManager();
       return sceneManager?.getCurrentScene()?.getName();
@@ -166,10 +169,10 @@ test.describe('ShopScene Functionality (Fixed)', () => {
       await page.keyboard.press('ArrowDown');
       await page.waitForTimeout(50);
     }
-    
+
     await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
-    
+
     const currentScene = await page.evaluate(() => {
       const sceneManager = window.game?.getSceneManager();
       return sceneManager?.getCurrentScene()?.getName();

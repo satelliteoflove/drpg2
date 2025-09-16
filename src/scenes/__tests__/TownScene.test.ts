@@ -15,22 +15,22 @@ describe('TownScene', () => {
   beforeEach(() => {
     mockGameState = {
       party: [],
-      gold: 100
+      gold: 100,
     } as GameState;
 
     mockSceneManager = {
       switchTo: jest.fn(),
-      currentScene: null
+      currentScene: null,
     } as unknown as SceneManager;
 
     mockCanvas = document.createElement('canvas');
     mockCanvas.width = 800;
     mockCanvas.height = 600;
-    
+
     mockContext = mockCanvas.getContext('2d') as CanvasRenderingContext2D;
 
     FeatureFlags.disable(FeatureFlagKey.ASCII_TOWN_SCENE);
-    
+
     townScene = new TownScene(mockGameState, mockSceneManager);
   });
 
@@ -95,13 +95,17 @@ describe('TownScene', () => {
     it('should render traditional canvas when ASCII is disabled', () => {
       const fillTextSpy = jest.spyOn(mockContext, 'fillText');
       townScene.render(mockContext);
-      expect(fillTextSpy).toHaveBeenCalledWith('TOWN OF LLYLGAMYN', expect.any(Number), expect.any(Number));
+      expect(fillTextSpy).toHaveBeenCalledWith(
+        'TOWN OF LLYLGAMYN',
+        expect.any(Number),
+        expect.any(Number)
+      );
     });
 
     it('should dynamically enable ASCII rendering when flag changes', () => {
       townScene.render(mockContext);
       expect((townScene as any).asciiState).toBeUndefined();
-      
+
       FeatureFlags.enable(FeatureFlagKey.ASCII_TOWN_SCENE);
       townScene.render(mockContext);
       expect((townScene as any).asciiState).toBeDefined();
@@ -112,7 +116,7 @@ describe('TownScene', () => {
       const scene = new TownScene(mockGameState, mockSceneManager);
       scene.render(mockContext);
       expect((scene as any).asciiState).toBeDefined();
-      
+
       FeatureFlags.disable(FeatureFlagKey.ASCII_TOWN_SCENE);
       scene.render(mockContext);
       expect((scene as any).asciiState).toBeUndefined();
@@ -121,19 +125,31 @@ describe('TownScene', () => {
     it('should render menu options correctly', () => {
       const fillTextSpy = jest.spyOn(mockContext, 'fillText');
       townScene.render(mockContext);
-      
-      expect(fillTextSpy).toHaveBeenCalledWith(expect.stringContaining('Boltac'), expect.any(Number), expect.any(Number));
+
+      expect(fillTextSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Boltac'),
+        expect.any(Number),
+        expect.any(Number)
+      );
       expect(fillTextSpy).toHaveBeenCalledWith('Temple', expect.any(Number), expect.any(Number));
       expect(fillTextSpy).toHaveBeenCalledWith('Inn', expect.any(Number), expect.any(Number));
-      expect(fillTextSpy).toHaveBeenCalledWith('Return to Dungeon', expect.any(Number), expect.any(Number));
+      expect(fillTextSpy).toHaveBeenCalledWith(
+        'Return to Dungeon',
+        expect.any(Number),
+        expect.any(Number)
+      );
     });
 
     it('should highlight selected option', () => {
       (townScene as any).selectedOption = 1;
       const fillTextSpy = jest.spyOn(mockContext, 'fillText');
       townScene.render(mockContext);
-      
-      expect(fillTextSpy).toHaveBeenCalledWith('> Temple <', expect.any(Number), expect.any(Number));
+
+      expect(fillTextSpy).toHaveBeenCalledWith(
+        '> Temple <',
+        expect.any(Number),
+        expect.any(Number)
+      );
     });
   });
 
@@ -222,13 +238,13 @@ describe('TownScene', () => {
       FeatureFlags.enable(FeatureFlagKey.ASCII_TOWN_SCENE);
       const scene = new TownScene(mockGameState, mockSceneManager);
       scene.render(mockContext);
-      
+
       const asciiState = (scene as any).asciiState;
       const exitSpy = jest.spyOn(asciiState, 'exit');
-      
+
       FeatureFlags.disable(FeatureFlagKey.ASCII_TOWN_SCENE);
       scene.render(mockContext);
-      
+
       expect(exitSpy).toHaveBeenCalled();
       expect((scene as any).asciiState).toBeUndefined();
       expect((scene as any).asciiRenderer).toBeUndefined();
@@ -237,17 +253,17 @@ describe('TownScene', () => {
 
   describe('Menu Navigation', () => {
     const menuOptions = [
-      { index: 0, name: 'Boltac\'s Trading Post', destination: 'shop' },
+      { index: 0, name: "Boltac's Trading Post", destination: 'shop' },
       { index: 1, name: 'Temple', destination: null },
       { index: 2, name: 'Inn', destination: null },
-      { index: 3, name: 'Return to Dungeon', destination: 'dungeon' }
+      { index: 3, name: 'Return to Dungeon', destination: 'dungeon' },
     ];
 
     menuOptions.forEach(({ index, name, destination }) => {
       it(`should handle selection of ${name}`, () => {
         (townScene as any).selectedOption = index;
         townScene.handleInput('enter');
-        
+
         if (destination) {
           expect(mockSceneManager.switchTo).toHaveBeenCalledWith(destination);
         } else {

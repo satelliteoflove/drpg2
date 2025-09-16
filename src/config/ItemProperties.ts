@@ -96,7 +96,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     spellId: 'POWER_STRIKE',
     description: 'A magical staff imbued with a powerful offensive spell',
   },
-  
+
   // === ARMOR ===
   {
     id: 'leather_armor',
@@ -106,7 +106,16 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     value: 20,
     weight: 8,
     effects: [{ type: 'ac', value: 2 }],
-    classRestrictions: ['Fighter', 'Priest', 'Thief', 'Bishop', 'Samurai', 'Lord', 'Ninja', 'Ranger'],
+    classRestrictions: [
+      'Fighter',
+      'Priest',
+      'Thief',
+      'Bishop',
+      'Samurai',
+      'Lord',
+      'Ninja',
+      'Ranger',
+    ],
     identified: false,
     cursed: false,
     blessed: false,
@@ -126,9 +135,9 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
-    description: 'Dark robes that corrupt the wearer\'s soul',
+    description: "Dark robes that corrupt the wearer's soul",
   },
-  
+
   // === ACCESSORIES ===
   {
     id: 'shadow_cape',
@@ -164,7 +173,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     spellId: 'DIOS',
     description: 'A ring that channels healing magic',
   },
-  
+
   // === CONSUMABLES ===
   {
     id: 'potion',
@@ -214,16 +223,26 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
 // Function to get unidentified name for an item type
 export function getUnidentifiedName(type: string): string {
   switch (type) {
-    case 'weapon': return '?Weapon';
-    case 'armor': return '?Armor';
-    case 'shield': return '?Shield';
-    case 'helmet': return '?Helmet';
-    case 'gauntlets': return '?Gloves';
-    case 'boots': return '?Boots';
-    case 'accessory': return '?Accessory';
-    case 'consumable': return '?Item';
-    case 'special': return '?Special';
-    default: return '?Unknown';
+    case 'weapon':
+      return '?Weapon';
+    case 'armor':
+      return '?Armor';
+    case 'shield':
+      return '?Shield';
+    case 'helmet':
+      return '?Helmet';
+    case 'gauntlets':
+      return '?Gloves';
+    case 'boots':
+      return '?Boots';
+    case 'accessory':
+      return '?Accessory';
+    case 'consumable':
+      return '?Item';
+    case 'special':
+      return '?Special';
+    default:
+      return '?Unknown';
   }
 }
 
@@ -233,7 +252,7 @@ export function canClassEquipItem(characterClass: string, item: Item): boolean {
   if (!item.classRestrictions || item.classRestrictions.length === 0) {
     return true;
   }
-  
+
   // Check if character's class is in the allowed list
   return item.classRestrictions.includes(characterClass);
 }
@@ -244,7 +263,7 @@ export function canAlignmentUseItem(alignment: string, item: Item): boolean {
   if (!item.alignmentRestrictions || item.alignmentRestrictions.length === 0) {
     return true;
   }
-  
+
   // Check if character's alignment is in the allowed list
   return item.alignmentRestrictions.includes(alignment as 'Good' | 'Neutral' | 'Evil');
 }
@@ -253,7 +272,7 @@ export function canAlignmentUseItem(alignment: string, item: Item): boolean {
 export function generateRandomItem(level: number = 1): Item {
   const templates = ITEM_TEMPLATES;
   const template = templates[Math.floor(Math.random() * templates.length)];
-  
+
   const item: Item = {
     id: template.id + '_' + Date.now(),
     name: template.name || 'Unknown Item',
@@ -275,33 +294,40 @@ export function generateRandomItem(level: number = 1): Item {
     charges: template.charges,
     maxCharges: template.maxCharges,
   };
-  
+
   // Random chance for special properties based on level
   const roll = Math.random();
-  
+
   // Check for cursed
   if (roll < GAME_CONFIG.ITEMS.GENERATION.CURSED_CHANCE && !item.blessed) {
     item.cursed = true;
     item.enchantment = -1 - Math.floor(Math.random() * level);
   }
   // Check for blessed (cursed + blessed chance)
-  else if (roll < (GAME_CONFIG.ITEMS.GENERATION.CURSED_CHANCE + 
-                   GAME_CONFIG.ITEMS.GENERATION.BLESSED_CHANCE) && !item.cursed) {
+  else if (
+    roll <
+      GAME_CONFIG.ITEMS.GENERATION.CURSED_CHANCE + GAME_CONFIG.ITEMS.GENERATION.BLESSED_CHANCE &&
+    !item.cursed
+  ) {
     item.blessed = true;
     item.enchantment = 1 + Math.floor(Math.random() * Math.min(3, level));
   }
   // Check for minor enchantment (total enchantment chance)
-  else if (roll < (GAME_CONFIG.ITEMS.GENERATION.CURSED_CHANCE + 
-                   GAME_CONFIG.ITEMS.GENERATION.BLESSED_CHANCE + 
-                   GAME_CONFIG.ITEMS.GENERATION.ENCHANTMENT_CHANCE)) {
+  else if (
+    roll <
+    GAME_CONFIG.ITEMS.GENERATION.CURSED_CHANCE +
+      GAME_CONFIG.ITEMS.GENERATION.BLESSED_CHANCE +
+      GAME_CONFIG.ITEMS.GENERATION.ENCHANTMENT_CHANCE
+  ) {
     item.enchantment = 1 + Math.floor(Math.random() * Math.min(2, level));
   }
-  
+
   // Adjust value based on enchantment
   if (item.enchantment !== 0) {
-    item.value = Math.floor(item.value * (1 + item.enchantment * 
-                            GAME_CONFIG.ITEMS.GENERATION.ENCHANTMENT_VALUE_MULT));
+    item.value = Math.floor(
+      item.value * (1 + item.enchantment * GAME_CONFIG.ITEMS.GENERATION.ENCHANTMENT_VALUE_MULT)
+    );
   }
-  
+
   return item;
 }

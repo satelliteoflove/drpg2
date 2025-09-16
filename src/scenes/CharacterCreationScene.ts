@@ -344,7 +344,7 @@ export class CharacterCreationScene extends Scene {
       this.sceneManager.switchTo('dungeon');
       return true;
     }
-    
+
     switch (this.currentStep) {
       case 'name':
         return this.handleNameInput(key);
@@ -545,11 +545,11 @@ export class CharacterCreationScene extends Scene {
         new Character('Fighter', 'Human', 'Fighter', 'Good'),
         new Character('Mage', 'Elf', 'Mage', 'Good'),
         new Character('Priest', 'Human', 'Priest', 'Good'),
-        new Character('Thief', 'Hobbit', 'Thief', 'Neutral')
+        new Character('Thief', 'Hobbit', 'Thief', 'Neutral'),
       ];
-      
+
       // Add default characters to party
-      defaultCharacters.forEach(char => {
+      defaultCharacters.forEach((char) => {
         char.gold = 100; // Give some starting gold for testing
         this.gameState.party.addCharacter(char);
       });

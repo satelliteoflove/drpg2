@@ -187,7 +187,7 @@ export class NewGameScene extends Scene {
 
     const usedNames = new Set<string>();
 
-    partyTemplates.forEach(template => {
+    partyTemplates.forEach((template) => {
       let characterName: string;
       do {
         characterName = names[Math.floor(Math.random() * names.length)];

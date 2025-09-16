@@ -20,18 +20,18 @@ export class DataLoader {
 
   public static loadEncounters(level: number): any {
     const levelKey = `level${level}` as keyof typeof encountersData;
-    
+
     if (!(levelKey in this.encounters)) {
       DebugLogger.warn('DataLoader', `No encounter data for level ${level}, using level 1`);
       return this.encounters.level1;
     }
-    
+
     return this.encounters[levelKey];
   }
 
   public static createItemInstance(itemId: string): Item | null {
     const itemTemplate = this.items[itemId as keyof typeof itemsData];
-    
+
     if (!itemTemplate) {
       DebugLogger.error('DataLoader', `Item not found: ${itemId}`);
       return null;
@@ -59,7 +59,7 @@ export class DataLoader {
       maxCharges: (itemTemplate as any).maxCharges,
       invokable: (itemTemplate as any).invokable,
       spellId: (itemTemplate as any).spellId,
-      description: (itemTemplate as any).description
+      description: (itemTemplate as any).description,
     };
 
     return item;
@@ -80,7 +80,10 @@ export class DataLoader {
 
     for (let i = 0; i < numMonsters; i++) {
       // Select a monster type based on weights
-      const totalWeight = encounters.encounters.reduce((sum: number, enc: any) => sum + enc.weight, 0);
+      const totalWeight = encounters.encounters.reduce(
+        (sum: number, enc: any) => sum + enc.weight,
+        0
+      );
       let roll = Math.random() * totalWeight;
       let selectedEncounter = encounters.encounters[0];
 
@@ -92,9 +95,13 @@ export class DataLoader {
         }
       }
 
-      const monsterTemplate = monsterTemplates[selectedEncounter.monsterId as keyof typeof monstersData];
+      const monsterTemplate =
+        monsterTemplates[selectedEncounter.monsterId as keyof typeof monstersData];
       if (!monsterTemplate) {
-        DebugLogger.error('DataLoader', `Monster template not found: ${selectedEncounter.monsterId}`);
+        DebugLogger.error(
+          'DataLoader',
+          `Monster template not found: ${selectedEncounter.monsterId}`
+        );
         continue;
       }
 
@@ -118,7 +125,7 @@ export class DataLoader {
         itemDrops: [],
         lootDrops: [],
         resistances: [],
-        weaknesses: []
+        weaknesses: [],
       };
 
       // Add attacks
@@ -133,11 +140,13 @@ export class DataLoader {
           name: attack.name,
           damage: scaledDamage,
           effect: attack.effect,
-          chance: attack.chance
+          chance: attack.chance,
         });
       }
 
-      monster.experience = Math.floor(monsterTemplate.baseExperience * (1 + (monsterLevel - 1) * 0.3));
+      monster.experience = Math.floor(
+        monsterTemplate.baseExperience * (1 + (monsterLevel - 1) * 0.3)
+      );
       monster.gold = Math.floor(monsterTemplate.baseGold * (1 + (monsterLevel - 1) * 0.25));
       monster.itemDrops = monsterTemplate.itemDrops || [];
       monster.lootDrops = monsterTemplate.lootDrops || [];

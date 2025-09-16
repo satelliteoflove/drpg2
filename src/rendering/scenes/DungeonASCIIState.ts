@@ -1,4 +1,4 @@
-import { ASCIIState, ASCII_GRID_WIDTH, ASCII_GRID_HEIGHT } from '../ASCIIState';
+import { ASCIIState, ASCII_GRID_HEIGHT, ASCII_GRID_WIDTH } from '../ASCIIState';
 import { ASCII_SYMBOLS } from '../ASCIISymbols';
 import { Direction, DungeonLevel, DungeonTile } from '../../types/GameTypes';
 import { DebugLogger } from '../../utils/DebugLogger';
@@ -12,7 +12,7 @@ export class DungeonASCIIState extends ASCIIState {
   private showMap: boolean = false;
   private mapOffsetX: number = 0;
   private mapOffsetY: number = 0;
-  
+
   constructor() {
     super(ASCII_GRID_WIDTH, ASCII_GRID_HEIGHT);
     DebugLogger.info('DungeonASCIIState', 'Initialized DungeonASCIIState');
@@ -56,33 +56,33 @@ export class DungeonASCIIState extends ASCIIState {
 
   private updateMapOffset(): void {
     if (!this.dungeon) return;
-    
+
     const mapViewWidth = 30;
     const mapViewHeight = 20;
-    
-    this.mapOffsetX = Math.max(0, Math.min(
-      this.dungeon.width - mapViewWidth,
-      this.playerX - Math.floor(mapViewWidth / 2)
-    ));
-    
-    this.mapOffsetY = Math.max(0, Math.min(
-      this.dungeon.height - mapViewHeight,
-      this.playerY - Math.floor(mapViewHeight / 2)
-    ));
+
+    this.mapOffsetX = Math.max(
+      0,
+      Math.min(this.dungeon.width - mapViewWidth, this.playerX - Math.floor(mapViewWidth / 2))
+    );
+
+    this.mapOffsetY = Math.max(
+      0,
+      Math.min(this.dungeon.height - mapViewHeight, this.playerY - Math.floor(mapViewHeight / 2))
+    );
   }
 
   public updateDungeonView(): void {
     if (!this.dungeon) return;
-    
+
     this.clear();
-    
+
     if (this.showMap) {
       this.renderFullMap();
     } else {
       this.renderFirstPersonView();
       this.renderMiniMap();
     }
-    
+
     this.renderUIBorders();
   }
 
@@ -91,31 +91,31 @@ export class DungeonASCIIState extends ASCIIState {
     const viewY = 1;
     const viewWidth = 48;
     const viewHeight = 22;
-    
+
     this.drawBox(viewX - 1, viewY - 1, viewWidth + 2, viewHeight + 2);
-    
+
     const centerX = viewX + Math.floor(viewWidth / 2);
     const centerY = viewY + Math.floor(viewHeight / 2);
-    
+
     this.renderDepth3(centerX, centerY);
     this.renderDepth2(centerX, centerY);
     this.renderDepth1(centerX, centerY);
     this.renderCurrentPosition(centerX, centerY);
-    
+
     this.renderCompass(viewX + viewWidth - 8, viewY + 1);
   }
 
   private renderDepth3(centerX: number, centerY: number): void {
     const positions = this.getPositionsAtDepth(3);
-    
-    positions.forEach(pos => {
+
+    positions.forEach((pos) => {
       const tile = this.getTileAt(pos.x, pos.y);
       if (!tile) return;
-      
+
       const offsetX = pos.screenOffset * 4;
       const x = centerX + offsetX;
       const y = centerY - 3;
-      
+
       if (this.canSeeWall(pos.x, pos.y, pos.side)) {
         this.drawWallSection(x, y, 3, 3, 'far');
       } else if (tile.type === 'floor') {
@@ -126,15 +126,15 @@ export class DungeonASCIIState extends ASCIIState {
 
   private renderDepth2(centerX: number, centerY: number): void {
     const positions = this.getPositionsAtDepth(2);
-    
-    positions.forEach(pos => {
+
+    positions.forEach((pos) => {
       const tile = this.getTileAt(pos.x, pos.y);
       if (!tile) return;
-      
+
       const offsetX = pos.screenOffset * 8;
       const x = centerX + offsetX;
       const y = centerY - 2;
-      
+
       if (this.canSeeWall(pos.x, pos.y, pos.side)) {
         this.drawWallSection(x, y, 5, 5, 'mid');
       } else if (tile.type === 'floor') {
@@ -146,15 +146,15 @@ export class DungeonASCIIState extends ASCIIState {
 
   private renderDepth1(centerX: number, centerY: number): void {
     const positions = this.getPositionsAtDepth(1);
-    
-    positions.forEach(pos => {
+
+    positions.forEach((pos) => {
       const tile = this.getTileAt(pos.x, pos.y);
       if (!tile) return;
-      
+
       const offsetX = pos.screenOffset * 12;
       const x = centerX + offsetX;
       const y = centerY;
-      
+
       if (this.canSeeWall(pos.x, pos.y, pos.side)) {
         this.drawWallSection(x, y, 7, 7, 'near');
       } else if (tile.type === 'floor') {
@@ -167,7 +167,7 @@ export class DungeonASCIIState extends ASCIIState {
   private renderCurrentPosition(centerX: number, centerY: number): void {
     const tile = this.getTileAt(this.playerX, this.playerY);
     if (!tile) return;
-    
+
     const frontTile = this.getTileInFront();
     if (frontTile && frontTile.type === 'wall') {
       this.drawWallSection(centerX, centerY + 2, 15, 10, 'immediate');
@@ -179,9 +179,15 @@ export class DungeonASCIIState extends ASCIIState {
     }
   }
 
-  private drawWallSection(x: number, y: number, width: number, height: number, distance: 'far' | 'mid' | 'near' | 'immediate'): void {
+  private drawWallSection(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    distance: 'far' | 'mid' | 'near' | 'immediate'
+  ): void {
     const wallChar = distance === 'far' ? '░' : distance === 'mid' ? '▒' : '▓';
-    
+
     for (let dy = 0; dy < height; dy++) {
       for (let dx = -Math.floor(width / 2); dx <= Math.floor(width / 2); dx++) {
         this.setCell(x + dx, y + dy, wallChar);
@@ -189,9 +195,15 @@ export class DungeonASCIIState extends ASCIIState {
     }
   }
 
-  private drawFloorSection(x: number, y: number, width: number, height: number, distance: 'far' | 'mid' | 'near' | 'immediate'): void {
+  private drawFloorSection(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    distance: 'far' | 'mid' | 'near' | 'immediate'
+  ): void {
     const floorChar = distance === 'far' ? '.' : distance === 'mid' ? '·' : '∙';
-    
+
     for (let dy = 0; dy < height; dy++) {
       for (let dx = -Math.floor(width / 2); dx <= Math.floor(width / 2); dx++) {
         if (dy === 0 || dy === height - 1) {
@@ -203,7 +215,7 @@ export class DungeonASCIIState extends ASCIIState {
 
   private drawSpecialTileSymbol(tile: DungeonTile, x: number, y: number): void {
     let symbol = '';
-    
+
     switch (tile.type) {
       case 'stairs_up':
         symbol = ASCII_SYMBOLS.STAIRS_UP;
@@ -221,7 +233,7 @@ export class DungeonASCIIState extends ASCIIState {
         symbol = ASCII_SYMBOLS.TRAP;
         break;
     }
-    
+
     if (symbol) {
       this.setCell(x, y, symbol);
     }
@@ -230,41 +242,41 @@ export class DungeonASCIIState extends ASCIIState {
   private renderCompass(x: number, y: number): void {
     const directions = ['N', 'E', 'S', 'W'];
     const facingIndex = ['north', 'east', 'south', 'west'].indexOf(this.playerFacing);
-    
+
     this.writeText(x, y, '┌─────┐');
     this.writeText(x, y + 1, '│     │');
     this.writeText(x, y + 2, '│     │');
     this.writeText(x, y + 3, '└─────┘');
-    
+
     const compassDir = directions[facingIndex];
     this.writeText(x + 3, y + 2, compassDir, { foreground: '#FFFF00' });
   }
 
   private renderMiniMap(): void {
     if (!this.dungeon) return;
-    
+
     const mapX = 52;
     const mapY = 1;
     const mapWidth = 25;
     const mapHeight = 15;
-    
+
     this.drawBox(mapX - 1, mapY - 1, mapWidth + 2, mapHeight + 2);
     this.writeText(mapX + 8, mapY - 1, ' MINI MAP ');
-    
+
     const viewRadius = 5;
     const startX = Math.max(0, this.playerX - viewRadius);
     const endX = Math.min(this.dungeon.width - 1, this.playerX + viewRadius);
     const startY = Math.max(0, this.playerY - viewRadius);
     const endY = Math.min(this.dungeon.height - 1, this.playerY + viewRadius);
-    
+
     for (let y = startY; y <= endY; y++) {
       for (let x = startX; x <= endX; x++) {
         const tile = this.dungeon.tiles[y][x];
         if (!tile || !tile.discovered) continue;
-        
+
         const screenX = mapX + (x - startX) * 2 + 1;
         const screenY = mapY + (y - startY) + 1;
-        
+
         if (x === this.playerX && y === this.playerY) {
           this.setCell(screenX, screenY, ASCII_SYMBOLS.PLAYER);
         } else {
@@ -276,26 +288,26 @@ export class DungeonASCIIState extends ASCIIState {
 
   private renderFullMap(): void {
     if (!this.dungeon) return;
-    
+
     const mapX = 10;
     const mapY = 2;
     const mapWidth = 60;
     const mapHeight = 30;
-    
+
     this.drawBox(mapX - 1, mapY - 1, mapWidth + 2, mapHeight + 2);
     this.writeText(mapX + 20, mapY - 1, ` DUNGEON MAP - FLOOR ${this.playerY} `);
-    
+
     for (let y = 0; y < mapHeight && y + this.mapOffsetY < this.dungeon.height; y++) {
       for (let x = 0; x < mapWidth && x + this.mapOffsetX < this.dungeon.width; x++) {
         const tileX = x + this.mapOffsetX;
         const tileY = y + this.mapOffsetY;
         const tile = this.dungeon.tiles[tileY][tileX];
-        
+
         if (!tile || !tile.discovered) {
           this.setCell(mapX + x, mapY + y, ASCII_SYMBOLS.DARKNESS);
           continue;
         }
-        
+
         if (tileX === this.playerX && tileY === this.playerY) {
           this.setCell(mapX + x, mapY + y, ASCII_SYMBOLS.PLAYER);
         } else {
@@ -303,7 +315,7 @@ export class DungeonASCIIState extends ASCIIState {
         }
       }
     }
-    
+
     this.writeText(mapX, mapY + mapHeight + 1, 'Press M to close map');
   }
 
@@ -357,9 +369,9 @@ export class DungeonASCIIState extends ASCIIState {
   private canSeeWall(x: number, y: number, side: 'left' | 'center' | 'right'): boolean {
     const tile = this.getTileAt(x, y);
     if (!tile) return false;
-    
+
     if (tile.type === 'wall') return true;
-    
+
     if (side === 'left') {
       const [dx, dy] = this.getLeftVector();
       const leftTile = this.getTileAt(x + dx, y + dy);
@@ -369,7 +381,7 @@ export class DungeonASCIIState extends ASCIIState {
       const rightTile = this.getTileAt(x + dx, y + dy);
       return rightTile?.type === 'wall';
     }
-    
+
     return false;
   }
 
@@ -403,19 +415,26 @@ export class DungeonASCIIState extends ASCIIState {
     }
   }
 
-  private getPositionsAtDepth(depth: number): Array<{x: number, y: number, side: 'left' | 'center' | 'right', screenOffset: number}> {
-    const positions: Array<{x: number, y: number, side: 'left' | 'center' | 'right', screenOffset: number}> = [];
+  private getPositionsAtDepth(
+    depth: number
+  ): Array<{ x: number; y: number; side: 'left' | 'center' | 'right'; screenOffset: number }> {
+    const positions: Array<{
+      x: number;
+      y: number;
+      side: 'left' | 'center' | 'right';
+      screenOffset: number;
+    }> = [];
     const [dx, dy] = this.getDirectionVector();
     const [lx, ly] = this.getLeftVector();
     const [rx, ry] = this.getRightVector();
-    
+
     const forwardX = this.playerX + dx * depth;
     const forwardY = this.playerY + dy * depth;
-    
+
     positions.push({ x: forwardX - lx, y: forwardY - ly, side: 'left', screenOffset: -1 });
     positions.push({ x: forwardX, y: forwardY, side: 'center', screenOffset: 0 });
     positions.push({ x: forwardX + rx, y: forwardY + ry, side: 'right', screenOffset: 1 });
-    
+
     return positions;
   }
 
@@ -426,56 +445,64 @@ export class DungeonASCIIState extends ASCIIState {
 
   public renderStatusPanel(party: any): void {
     const panelX = 52;
-    const panelY = 12;  // Moved up to avoid overlap with message log
+    const panelY = 12; // Moved up to avoid overlap with message log
     const panelWidth = 25;
     const panelHeight = 6;
-    
+
     this.drawBox(panelX - 1, panelY - 1, panelWidth + 2, panelHeight + 2);
     this.writeText(panelX + 7, panelY - 1, ' PARTY STATUS ');
-    
+
     const characters = party.getAliveCharacters();
     for (let i = 0; i < Math.min(characters.length, 5); i++) {
       const char: Character = characters[i];
       const y = panelY + i;
-      
+
       const name = char.name.substring(0, 8).padEnd(8);
       const hp = `${char.hp}/${char.maxHp}`.padStart(7);
       const mp = `${char.mp}/${char.maxMp}`.padStart(7);
-      
+
       this.writeText(panelX, y, `${name} HP:${hp} MP:${mp}`);
     }
   }
 
   public renderMessageLog(messages: string[]): void {
-    const logY = 20;  // Changed from 25 to fit within grid
-    const maxMessages = 3;  // Reduced to fit available space
-    
+    const logY = 20; // Changed from 25 to fit within grid
+    const maxMessages = 3; // Reduced to fit available space
+
     // Draw a separator line
     this.writeText(0, logY - 1, '─'.repeat(50));
-    
+
     for (let i = 0; i < maxMessages && i < messages.length; i++) {
       const message = messages[messages.length - 1 - i];
-      this.writeText(2, logY + i, message.substring(0, 48));  // Reduced width to avoid overlap
+      this.writeText(2, logY + i, message.substring(0, 48)); // Reduced width to avoid overlap
     }
   }
 
   public renderControls(): void {
     const y = ASCII_GRID_HEIGHT - 2;
-    this.writeText(2, y, 'WASD/Arrows: Move | SPACE/ENTER: Interact | M: Map | TAB: Inventory | ESC: Menu');
+    this.writeText(
+      2,
+      y,
+      'WASD/Arrows: Move | SPACE/ENTER: Interact | M: Map | TAB: Inventory | ESC: Menu'
+    );
   }
 
-  public renderItemPickupUI(itemName: string, characters: Character[], selectedIndex: number): void {
+  public renderItemPickupUI(
+    itemName: string,
+    characters: Character[],
+    selectedIndex: number
+  ): void {
     const windowX = 20;
     const windowY = 8;
     const windowWidth = 40;
     const windowHeight = 12;
-    
+
     this.fillRegion(windowX, windowY, windowWidth, windowHeight, ' ');
     this.drawBox(windowX, windowY, windowWidth, windowHeight);
-    
+
     this.centerTextInRegion(windowX, windowY + 1, windowWidth, 'SELECT CHARACTER TO RECEIVE:');
     this.centerTextInRegion(windowX, windowY + 2, windowWidth, itemName);
-    
+
     for (let i = 0; i < characters.length; i++) {
       const char = characters[i];
       const y = windowY + 4 + i;
@@ -483,8 +510,12 @@ export class DungeonASCIIState extends ASCIIState {
       const text = `${prefix}${i + 1}. ${char.name}`;
       this.writeText(windowX + 2, y, text);
     }
-    
-    this.writeText(windowX + 2, windowY + windowHeight - 2, 'UP/DOWN: Select | ENTER: Confirm | L: Discard');
+
+    this.writeText(
+      windowX + 2,
+      windowY + windowHeight - 2,
+      'UP/DOWN: Select | ENTER: Confirm | L: Discard'
+    );
   }
 
   private centerTextInRegion(x: number, y: number, width: number, text: string): void {
@@ -505,10 +536,10 @@ export class DungeonASCIIState extends ASCIIState {
     const windowY = 10;
     const windowWidth = 30;
     const windowHeight = 6;
-    
+
     this.fillRegion(windowX, windowY, windowWidth, windowHeight, ' ');
     this.drawBox(windowX, windowY, windowWidth, windowHeight);
-    
+
     this.centerTextInRegion(windowX, windowY + 1, windowWidth, 'CASTLE STAIRS');
     this.centerTextInRegion(windowX, windowY + 2, windowWidth, 'Return to castle?');
     this.centerTextInRegion(windowX, windowY + 4, windowWidth, '(Y/N)');

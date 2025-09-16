@@ -202,12 +202,12 @@ export class SaveManager {
   private static cleanupOldBackups(): void {
     try {
       const keys = Object.keys(localStorage);
-      const backupKeys = keys.filter(key => key.startsWith('drpg2_backup_'));
+      const backupKeys = keys.filter((key) => key.startsWith('drpg2_backup_'));
 
       backupKeys
         .sort()
         .slice(0, -3)
-        .forEach(key => {
+        .forEach((key) => {
           localStorage.removeItem(key);
         });
     } catch (error) {

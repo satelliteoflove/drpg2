@@ -43,7 +43,11 @@ test.describe('Save/Load ASCII - User Outcomes', () => {
       }
 
       // Check if ASCII state exists and has content (check for both possible property names)
-      const asciiState = scene?.asciiState || scene?.townASCIIState || scene?.shopASCIIState || scene?.dungeonASCIIState;
+      const asciiState =
+        scene?.asciiState ||
+        scene?.townASCIIState ||
+        scene?.shopASCIIState ||
+        scene?.dungeonASCIIState;
       if (asciiState) {
         // Need to call getGrid() twice - once to get ASCIIState, then again to get ASCIIGrid
         const asciiStateObj = asciiState.getGrid();
@@ -62,13 +66,13 @@ test.describe('Save/Load ASCII - User Outcomes', () => {
         return {
           hasASCIIState: true,
           hasASCIIContent: hasASCIIContent,
-          sceneName: scene.name
+          sceneName: scene.name,
         };
       }
       return {
         hasASCIIState: false,
         hasASCIIContent: false,
-        sceneName: scene?.name || 'unknown'
+        sceneName: scene?.name || 'unknown',
       };
     });
 
@@ -84,7 +88,7 @@ test.describe('Save/Load ASCII - User Outcomes', () => {
       const scene = window.game?.sceneManager?.currentScene;
       return {
         beforeNav: scene?.name,
-        isInTown: scene?.name === 'Town'
+        isInTown: scene?.name === 'Town',
       };
     });
     console.log('Before navigation:', navDebug);
@@ -107,7 +111,10 @@ test.describe('Save/Load ASCII - User Outcomes', () => {
       const scene = window.game?.sceneManager?.currentScene;
 
       console.log('Shop test - Current scene:', scene?.name);
-      console.log('Shop test - ASCII flag enabled:', window.FeatureFlags?.isEnabled('ascii_rendering'));
+      console.log(
+        'Shop test - ASCII flag enabled:',
+        window.FeatureFlags?.isEnabled('ascii_rendering')
+      );
       console.log('Shop test - Scene has shopASCIIState:', !!scene?.shopASCIIState);
       console.log('Shop test - Scene has asciiState:', !!scene?.asciiState);
 
@@ -139,13 +146,13 @@ test.describe('Save/Load ASCII - User Outcomes', () => {
         return {
           hasASCIIState: true,
           hasContent: hasContent,
-          sceneName: scene.name
+          sceneName: scene.name,
         };
       }
       return {
         hasASCIIState: false,
         hasContent: false,
-        sceneName: scene?.name || 'unknown'
+        sceneName: scene?.name || 'unknown',
       };
     });
 
@@ -216,7 +223,12 @@ test.describe('Save/Load ASCII - User Outcomes', () => {
       }
 
       // Check for ASCII state (could be asciiState, dungeonASCIIState, townASCIIState, or shopASCIIState)
-      const hasASCII = !!(scene?.asciiState || scene?.dungeonASCIIState || scene?.townASCIIState || scene?.shopASCIIState);
+      const hasASCII = !!(
+        scene?.asciiState ||
+        scene?.dungeonASCIIState ||
+        scene?.townASCIIState ||
+        scene?.shopASCIIState
+      );
       console.log('After load - Has ASCII state:', hasASCII);
       console.log('After load - dungeonASCIIState:', !!scene?.dungeonASCIIState);
 
@@ -224,7 +236,7 @@ test.describe('Save/Load ASCII - User Outcomes', () => {
         sceneName: scene?.name || 'unknown',
         hasASCII: hasASCII,
         asciiEnabled: window.FeatureFlags?.isEnabled('ascii_rendering'),
-        hasDungeonASCII: !!scene?.dungeonASCIIState
+        hasDungeonASCII: !!scene?.dungeonASCIIState,
       };
     });
 
@@ -284,7 +296,7 @@ test.describe('Save/Load ASCII - User Outcomes', () => {
           return {
             valid: true,
             hasGameState: !!data.gameState,
-            hasParty: !!data.gameState?.party
+            hasParty: !!data.gameState?.party,
           };
         } catch {
           return { valid: false };
@@ -317,7 +329,7 @@ test.describe('Save/Load ASCII - User Outcomes', () => {
       return {
         sceneName: scene?.name || 'unknown',
         hasScene: !!scene,
-        asciiOff: !window.FeatureFlags?.isEnabled('ascii_rendering')
+        asciiOff: !window.FeatureFlags?.isEnabled('ascii_rendering'),
       };
     });
 

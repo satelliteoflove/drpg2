@@ -65,7 +65,7 @@ export class MessageLog {
     recentMessages.forEach((message, index) => {
       const messageY = startY + index * lineHeight;
       let alpha = 1;
-      
+
       if (GAME_CONFIG.UI.MESSAGE_FADE_ENABLED) {
         const age = Date.now() - message.timestamp;
         alpha = Math.max(0.3, 1 - age / GAME_CONFIG.UI.MESSAGE_FADE_TIME);
@@ -92,7 +92,7 @@ export class MessageLog {
     const lines: string[] = [];
     let currentLine = '';
 
-    words.forEach(word => {
+    words.forEach((word) => {
       const testLine = currentLine + (currentLine ? ' ' : '') + word;
       const metrics = this.currentRenderCtx.measureText(testLine);
 

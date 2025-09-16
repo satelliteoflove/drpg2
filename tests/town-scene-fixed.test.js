@@ -5,15 +5,15 @@ async function navigateToTown(page) {
   // Start from MainMenu
   await page.keyboard.press('Enter'); // New Game
   await page.waitForTimeout(500);
-  
+
   // Now in New Game scene
   await page.keyboard.press('Enter'); // Continue
   await page.waitForTimeout(500);
-  
+
   // Now in Character Creation
   await page.keyboard.press('Escape'); // Skip to Dungeon with default party
   await page.waitForTimeout(500);
-  
+
   // Now in Dungeon
   await page.keyboard.press('Escape'); // Go to Town
   await page.waitForTimeout(500);
@@ -33,10 +33,10 @@ test.describe('TownScene Functionality (Fixed)', () => {
       return {
         name: scene?.getName(),
         menuOptions: scene?.menuOptions,
-        selectedOption: scene?.selectedOption
+        selectedOption: scene?.selectedOption,
       };
     });
-    
+
     expect(sceneInfo.name).toBe('Town');
     expect(sceneInfo.menuOptions).toContain("Boltac's Trading Post");
     expect(sceneInfo.menuOptions).toContain('Temple');
@@ -46,26 +46,27 @@ test.describe('TownScene Functionality (Fixed)', () => {
   });
 
   test('should navigate menu with arrow keys', async ({ page }) => {
-    const getSelectedOption = () => page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
-      const scene = sceneManager?.getCurrentScene();
-      return scene?.selectedOption;
-    });
-    
+    const getSelectedOption = () =>
+      page.evaluate(() => {
+        const sceneManager = window.game?.getSceneManager();
+        const scene = sceneManager?.getCurrentScene();
+        return scene?.selectedOption;
+      });
+
     expect(await getSelectedOption()).toBe(0);
-    
+
     await page.keyboard.press('ArrowDown');
     await page.waitForTimeout(100);
     expect(await getSelectedOption()).toBe(1);
-    
+
     await page.keyboard.press('ArrowDown');
     await page.waitForTimeout(100);
     expect(await getSelectedOption()).toBe(2);
-    
+
     await page.keyboard.press('ArrowUp');
     await page.waitForTimeout(100);
     expect(await getSelectedOption()).toBe(1);
-    
+
     await page.keyboard.press('ArrowUp');
     await page.waitForTimeout(100);
     expect(await getSelectedOption()).toBe(0);
@@ -74,7 +75,7 @@ test.describe('TownScene Functionality (Fixed)', () => {
   test('should enter shop when selecting first option', async ({ page }) => {
     await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
-    
+
     const currentScene = await page.evaluate(() => {
       const sceneManager = window.game?.getSceneManager();
       return sceneManager?.getCurrentScene()?.getName();
@@ -85,7 +86,7 @@ test.describe('TownScene Functionality (Fixed)', () => {
   test('should return to dungeon on Escape', async ({ page }) => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
-    
+
     const currentScene = await page.evaluate(() => {
       const sceneManager = window.game?.getSceneManager();
       return sceneManager?.getCurrentScene()?.getName();
@@ -99,10 +100,10 @@ test.describe('TownScene Functionality (Fixed)', () => {
       await page.keyboard.press('ArrowDown');
       await page.waitForTimeout(50);
     }
-    
+
     await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
-    
+
     const currentScene = await page.evaluate(() => {
       const sceneManager = window.game?.getSceneManager();
       return sceneManager?.getCurrentScene()?.getName();
@@ -117,10 +118,10 @@ test.describe('TownScene Functionality (Fixed)', () => {
         hasParty: gameState?.party !== undefined,
         characterCount: gameState?.party?.characters?.length || 0,
         firstCharName: gameState?.party?.characters?.[0]?.name,
-        firstCharGold: gameState?.party?.characters?.[0]?.gold
+        firstCharGold: gameState?.party?.characters?.[0]?.gold,
       };
     });
-    
+
     expect(partyInfo.hasParty).toBe(true);
     expect(partyInfo.characterCount).toBe(4);
     expect(partyInfo.firstCharName).toBe('Fighter');

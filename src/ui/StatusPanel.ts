@@ -20,7 +20,7 @@ export class StatusPanel {
 
   public render(party: Party, ctx?: CanvasRenderingContext2D): void {
     this.currentRenderCtx = ctx || this.ctx;
-    
+
     this.currentRenderCtx.fillStyle = '#1a1a1a';
     this.currentRenderCtx.fillRect(this.x, this.y, this.width, this.height);
 
@@ -73,7 +73,8 @@ export class StatusPanel {
     this.currentRenderCtx.fillStyle = '#333';
     this.currentRenderCtx.fillRect(x + 5, y + 28, hpBarWidth, 6);
 
-    this.currentRenderCtx.fillStyle = hpPercent > 0.5 ? '#00ff00' : hpPercent > 0.25 ? '#ffaa00' : '#ff0000';
+    this.currentRenderCtx.fillStyle =
+      hpPercent > 0.5 ? '#00ff00' : hpPercent > 0.25 ? '#ffaa00' : '#ff0000';
     this.currentRenderCtx.fillRect(x + 5, y + 28, hpBarWidth * hpPercent, 6);
 
     this.currentRenderCtx.fillStyle = '#fff';
@@ -122,7 +123,11 @@ export class StatusPanel {
     const aliveCount = party.getAliveCharacters().length;
     const totalGold = party.getTotalGold();
 
-    this.currentRenderCtx.fillText(`Alive: ${aliveCount}/${party.characters.length}`, this.x + 180, infoY + 25);
+    this.currentRenderCtx.fillText(
+      `Alive: ${aliveCount}/${party.characters.length}`,
+      this.x + 180,
+      infoY + 25
+    );
     this.currentRenderCtx.fillText(`Total Gold: ${totalGold}`, this.x + 180, infoY + 35);
 
     if (party.isWiped()) {
@@ -132,7 +137,12 @@ export class StatusPanel {
     }
   }
 
-  public renderCombatStatus(currentTurn: string, turnOrder: string[], currentTurnIndex: number = 0, ctx?: CanvasRenderingContext2D): void {
+  public renderCombatStatus(
+    currentTurn: string,
+    turnOrder: string[],
+    currentTurnIndex: number = 0,
+    ctx?: CanvasRenderingContext2D
+  ): void {
     const renderCtx = ctx || this.currentRenderCtx;
     // Position combat status below the party status panel with proper spacing
     const combatY = this.y + this.height + 20;
@@ -162,14 +172,15 @@ export class StatusPanel {
     const startX = this.x + 10;
     const startY = combatY + 75;
 
-    turnOrder.slice(0, 12).forEach((unit, index) => { // Show up to 12 units
+    turnOrder.slice(0, 12).forEach((unit, index) => {
+      // Show up to 12 units
       const col = index % maxCols;
       const row = Math.floor(index / maxCols);
       const x = startX + col * colWidth;
       const y = startY + row * rowHeight;
 
       renderCtx.fillStyle = index === currentTurnIndex ? '#ffff00' : '#ccc';
-      
+
       // Truncate long names to fit in grid cells
       const displayName = unit.length > 12 ? unit.substring(0, 12) + '...' : unit;
       renderCtx.fillText(`${index + 1}. ${displayName}`, x, y);

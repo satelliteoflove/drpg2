@@ -1,7 +1,7 @@
 {
   "movement": {
     "up": "arrowup",
-    "down": "arrowdown", 
+    "down": "arrowdown",
     "left": "arrowleft",
     "right": "arrowright"
   },
@@ -15,7 +15,7 @@
   "combat": {
     "selectUp": "arrowup",
     "selectDown": "arrowdown",
-    "selectLeft": "arrowleft", 
+    "selectLeft": "arrowleft",
     "selectRight": "arrowright",
     "confirm": "enter",
     "cancel": "escape"

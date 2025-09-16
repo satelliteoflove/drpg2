@@ -14,26 +14,26 @@ describe('ShopScene', () => {
   beforeEach(() => {
     const mockCharacter1 = new Character('Fighter', 'Fighter');
     mockCharacter1.gold = 50;
-    
+
     const mockCharacter2 = new Character('Mage', 'Mage');
     mockCharacter2.gold = 30;
 
     mockGameState = {
       party: [mockCharacter1, mockCharacter2],
-      gold: 0
+      gold: 0,
     } as GameState;
 
     mockSceneManager = {
       switchTo: jest.fn(),
-      currentScene: null
+      currentScene: null,
     } as unknown as SceneManager;
 
     mockCanvas = document.createElement('canvas');
     mockCanvas.width = 800;
     mockCanvas.height = 600;
-    
+
     mockContext = mockCanvas.getContext('2d') as CanvasRenderingContext2D;
-    
+
     shopScene = new ShopScene(mockGameState, mockSceneManager);
   });
 
@@ -86,7 +86,7 @@ describe('ShopScene', () => {
       (shopScene as any).selectedOption = 0;
       shopScene.handleInput('arrowup');
       expect((shopScene as any).selectedOption).toBe(0);
-      
+
       (shopScene as any).selectedOption = 5;
       shopScene.handleInput('arrowdown');
       expect((shopScene as any).selectedOption).toBe(5);
@@ -181,7 +181,7 @@ describe('ShopScene', () => {
         (shopScene as any).selectedItem = {
           name: 'Test Sword',
           type: ItemType.Weapon,
-          value: 20
+          value: 20,
         } as Item;
       });
 
@@ -195,10 +195,10 @@ describe('ShopScene', () => {
         const character = mockGameState.party[0];
         const initialGold = character.gold;
         (shopScene as any).selectedCharacterIndex = 0;
-        
+
         const consoleSpy = jest.spyOn(console, 'log');
         shopScene.handleInput('enter');
-        
+
         expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('purchased'));
         expect(character.gold).toBe(initialGold - 20);
       });
@@ -208,10 +208,10 @@ describe('ShopScene', () => {
         const character = mockGameState.party[0];
         const initialGold = character.gold;
         (shopScene as any).selectedCharacterIndex = 0;
-        
+
         const consoleSpy = jest.spyOn(console, 'log');
         shopScene.handleInput('enter');
-        
+
         expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('afford'));
         expect(character.gold).toBe(initialGold);
       });
@@ -229,7 +229,7 @@ describe('ShopScene', () => {
         name: 'Iron Sword',
         type: ItemType.Weapon,
         value: 30,
-        equipped: false
+        equipped: false,
       };
       mockGameState.party[0].inventory = [sword];
       (shopScene as any).currentState = 'selling_character_select';
@@ -265,7 +265,7 @@ describe('ShopScene', () => {
         (shopScene as any).currentState = 'selling_confirmation';
         (shopScene as any).selectedItem = mockGameState.party[0].inventory[0];
         const initialGold = mockGameState.party[0].gold;
-        
+
         shopScene.handleInput('y');
         expect(mockGameState.party[0].gold).toBeGreaterThan(initialGold);
         expect((shopScene as any).currentState).toBe('main_menu');
@@ -275,7 +275,7 @@ describe('ShopScene', () => {
         (shopScene as any).currentState = 'selling_confirmation';
         (shopScene as any).selectedItem = mockGameState.party[0].inventory[0];
         const initialInventoryLength = mockGameState.party[0].inventory.length;
-        
+
         shopScene.handleInput('n');
         expect(mockGameState.party[0].inventory.length).toBe(initialInventoryLength);
         expect((shopScene as any).currentState).toBe('selling_items');
@@ -291,18 +291,18 @@ describe('ShopScene', () => {
     it('should pool all party gold', () => {
       const totalGold = mockGameState.party.reduce((sum, char) => sum + char.gold, 0);
       shopScene.handleInput('y');
-      
+
       expect(mockGameState.gold).toBe(totalGold);
-      mockGameState.party.forEach(char => {
+      mockGameState.party.forEach((char) => {
         expect(char.gold).toBe(0);
       });
       expect((shopScene as any).currentState).toBe('main_menu');
     });
 
     it('should cancel gold pooling', () => {
-      const initialPartyGold = mockGameState.party.map(c => c.gold);
+      const initialPartyGold = mockGameState.party.map((c) => c.gold);
       shopScene.handleInput('n');
-      
+
       expect(mockGameState.gold).toBe(0);
       mockGameState.party.forEach((char, index) => {
         expect(char.gold).toBe(initialPartyGold[index]);
@@ -319,17 +319,25 @@ describe('ShopScene', () => {
     it('should render main menu', () => {
       const fillTextSpy = jest.spyOn(mockContext, 'fillText');
       shopScene.render(mockContext);
-      
-      expect(fillTextSpy).toHaveBeenCalledWith(expect.stringContaining('BOLTAC'), expect.any(Number), expect.any(Number));
+
+      expect(fillTextSpy).toHaveBeenCalledWith(
+        expect.stringContaining('BOLTAC'),
+        expect.any(Number),
+        expect.any(Number)
+      );
       expect(fillTextSpy).toHaveBeenCalledWith('Buy Items', expect.any(Number), expect.any(Number));
-      expect(fillTextSpy).toHaveBeenCalledWith('Sell Items', expect.any(Number), expect.any(Number));
+      expect(fillTextSpy).toHaveBeenCalledWith(
+        'Sell Items',
+        expect.any(Number),
+        expect.any(Number)
+      );
     });
 
     it('should render category selection', () => {
       (shopScene as any).currentState = 'buying_category';
       const fillTextSpy = jest.spyOn(mockContext, 'fillText');
       shopScene.render(mockContext);
-      
+
       expect(fillTextSpy).toHaveBeenCalledWith('Weapons', expect.any(Number), expect.any(Number));
       expect(fillTextSpy).toHaveBeenCalledWith('Armor', expect.any(Number), expect.any(Number));
     });
@@ -346,7 +354,7 @@ describe('ShopScene', () => {
       mockGameState.party[0].inventory = [];
       (shopScene as any).currentState = 'selling_character_select';
       (shopScene as any).selectedCharacterIndex = 0;
-      
+
       shopScene.handleInput('enter');
       expect((shopScene as any).currentState).toBe('selling_items');
     });
@@ -355,7 +363,7 @@ describe('ShopScene', () => {
       (shopScene as any).shopInventory.categories.weapons = [];
       (shopScene as any).currentState = 'buying_items';
       (shopScene as any).selectedCategory = 'weapons';
-      
+
       expect(() => shopScene.render(mockContext)).not.toThrow();
     });
 

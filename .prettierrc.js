@@ -10,16 +10,16 @@ module.exports = {
   bracketSpacing: true,
   bracketSameLine: false,
   arrowParens: 'avoid',
-  
+
   // TypeScript specific
   parser: 'typescript',
-  
+
   // Game development preferences
   endOfLine: 'lf',
   insertPragma: false,
   requirePragma: false,
   proseWrap: 'preserve',
-  
+
   // File type overrides
   overrides: [
     {
