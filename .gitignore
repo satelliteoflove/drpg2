@@ -13,3 +13,4 @@ coverage/
 temp/
 .claude/
 test-results/
+scripts/
