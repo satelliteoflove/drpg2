@@ -1,0 +1,30 @@
+node_id: update-character-class
+checklist:
+  unit_tests: false
+  integration_tests: false
+  e2e_tests: true
+outcome: |
+  Successfully refactored Character class for WGIV mechanics:
+  - Replaced hardcoded race modifiers with stat range system from configs
+  - Stats now rolled within racial min/max ranges
+  - Experience system uses race/class modifiers from progression tables
+  - Removed automatic levelUp(), added checkForLevelUp() and confirmLevelUp()
+  - pendingLevelUp flag prevents auto-leveling (requires Inn)
+  - Integrated spell learning schedule tracking
+  - All imports and dependencies properly configured
+manual_test_instructions: |
+  1. Run: npm run typecheck
+  2. Verify no TypeScript errors
+  3. Run: npm run dev
+  4. Create characters of different races and verify stats are within racial ranges
+  5. Gain experience and verify pendingLevelUp flag is set
+  6. Verify level-ups don't happen automatically
+surprises_or_notes: |
+  The applyRaceModifiers() method was completely removed as stats are now rolled within racial ranges.
+  Experience modifiers are applied when calculating required XP, not when gaining XP.
+reimplementation_prompt: |
+  Update Character class for WGIV mechanics:
+  - Use race configs for stat generation within min/max ranges
+  - Apply experience modifiers from progression tables
+  - Implement pending level-up system (checkForLevelUp/confirmLevelUp)
+  - Remove post-roll stat modifiers in favor of range-based generation

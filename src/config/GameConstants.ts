@@ -38,6 +38,12 @@ export const GAME_CONFIG = {
       DWARF: 50,
       GNOME: 60,
       HOBBIT: 30,
+      FAERIE: 25,
+      LIZMAN: 20,
+      DRACON: 40,
+      RAWULF: 16,
+      MOOK: 15,
+      FELPURR: 22,
     },
     AGE_VARIANCE: 5,
     STAT_MIN: 3,
@@ -106,6 +112,12 @@ export const GAME_CONFIG = {
     BISHOP: 4,
     THIEF: 4,
     MAGE: 3,
+    ALCHEMIST: 4,
+    BARD: 5,
+    RANGER: 7,
+    PSIONIC: 3,
+    VALKYRIE: 7,
+    MONK: 6,
   } as const,
 
   MP_BASE: {
@@ -113,7 +125,7 @@ export const GAME_CONFIG = {
     HYBRID_CLASS_BASE: 2,
   },
 
-  SPELLCASTER_CLASSES: ['Mage', 'Priest', 'Bishop', 'Samurai', 'Lord', 'Ninja'] as const,
+  SPELLCASTER_CLASSES: ['Mage', 'Priest', 'Bishop', 'Samurai', 'Lord', 'Ninja', 'Alchemist', 'Bard', 'Psionic', 'Valkyrie'] as const,
 
   DUNGEON: {
     DEFAULT_WIDTH: 20,

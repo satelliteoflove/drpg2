@@ -1,6 +1,6 @@
 # Documentation Index for DRPG2
 # This file provides a searchable index for Claude Code to efficiently navigate project documentation
-# Last updated: 2025-09-15
+# Last updated: 2025-09-17
 
 architecture:
   file: ARCHITECTURE.md
@@ -16,10 +16,6 @@ ascii_rendering:
   - file: ASCII_RENDERING_GUIDE.md
     topics: [ASCII, rendering, text display, console output, terminal graphics]
     summary: Guide for implementing ASCII-based rendering system
-
-  - file: ASCII_RENDERING_MIGRATION_PLAN.md
-    topics: [migration, ASCII, refactoring, rendering transition]
-    summary: Plan for migrating from canvas to ASCII rendering
 
   - file: ascii-system-documentation.md
     topics: [ASCII system, implementation, architecture, rendering pipeline]
@@ -71,6 +67,40 @@ wizardry_items:
     13: Special armor sets
     14: Miscellaneous items
     15: End-game equipment
+
+wizardry_gaiden_4_systems:
+  - file: wizardry_gaiden_4_character_parameters.md
+    topics: [character creation, races, classes, stats, attributes, wizardry gaiden]
+    summary: Character races, classes, and stat ranges for Wizardry Gaiden IV
+
+  - file: wizardry_gaiden_4_spell_learning.md
+    topics: [spell learning, magic progression, class spells, wizardry gaiden]
+    summary: Spell learning progression by class and level in Wizardry Gaiden IV
+
+  - file: wizardry_gaiden_4_experience.md
+    topics: [experience, leveling, XP, progression, wizardry gaiden]
+    summary: Experience system, requirements, and race/class modifiers for Wizardry Gaiden IV
+
+  - file: wizardry_gaiden_4_spells.md
+    topics: [spells, magic system, mage, priest, alchemist, psionic, wizardry gaiden]
+    summary: Complete spell system including all four magic schools in Wizardry Gaiden IV
+
+wgiv_implementation:
+  - folder: src/config/races/
+    topics: [race configuration, stat ranges, race bonuses, character creation]
+    summary: Race configuration modules with stat ranges for all 11 WGIV races
+
+  - folder: src/config/classes/
+    topics: [class configuration, stat requirements, class abilities, elite classes]
+    summary: Class configuration modules with requirements for all 14 WGIV classes
+
+  - folder: src/config/progression/
+    topics: [experience tables, spell learning, progression system, leveling]
+    summary: Progression tables for experience modifiers and spell learning
+
+  - file: src/types/SaveGameTypes.ts
+    topics: [save system, game persistence, save versioning, type definitions]
+    summary: TypeScript types for save game system with versioning support
 
 usage_and_setup:
   - file: README.md
@@ -377,5 +407,7 @@ search_hints:
   dungeon: [api/classes/DungeonGenerator.md, api/classes/DungeonScene.md, api/interfaces/DungeonLevel.md]
   services: [api/classes/GameServices.md, api/classes/ServiceContainer.md, api/classes/ServiceRegistry.md]
   scenes: [api/classes/Scene.md, api/classes/SceneManager.md, api/interfaces/SceneRenderContext.md]
-  character: [api/classes/Character.md, api/interfaces/CharacterStats.md, api/classes/CharacterCreationScene.md]
-  save_load: [api/classes/SaveManager.md, api/interfaces/GameState.md, api/interfaces/ISaveService.md]
+  character: [api/classes/Character.md, api/interfaces/CharacterStats.md, api/classes/CharacterCreationScene.md, wizardry_gaiden_4_character_parameters.md]
+  save_load: [api/classes/SaveManager.md, api/interfaces/GameState.md, api/interfaces/ISaveService.md, src/types/SaveGameTypes.ts]
+  wgiv: [wizardry_gaiden_4_character_parameters.md, wizardry_gaiden_4_experience.md, wizardry_gaiden_4_spells.md, src/config/races/, src/config/classes/]
+  progression: [wizardry_gaiden_4_experience.md, wizardry_gaiden_4_spell_learning.md, src/config/progression/]

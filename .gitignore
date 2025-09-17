@@ -14,3 +14,16 @@ temp/
 .claude/
 test-results/
 scripts/
+
+# AI development artifacts (keep directories with .gitkeep)
+ai/logs/*.yaml
+ai/logs/*.md
+ai/logs/*.json
+ai/logs/*.log
+!ai/logs/.gitkeep
+
+# Test screenshots (regenerated on test runs)
+tests/screenshots/*.png
+tests/screenshots/*.jpg
+tests/screenshots/*.jpeg
+!tests/screenshots/.gitkeep
