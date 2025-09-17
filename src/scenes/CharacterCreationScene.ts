@@ -6,23 +6,22 @@ import { DungeonGenerator } from '../utils/DungeonGenerator';
 export class CharacterCreationScene extends Scene {
   private gameState: GameState;
   private sceneManager: SceneManager;
-  private currentStep: 'name' | 'race' | 'class' | 'alignment' | 'confirm' | 'party';
+  private currentStep: 'name' | 'race' | 'gender' | 'class' | 'alignment' | 'confirm' | 'party';
   private currentCharacter: Partial<Character> = {};
   private selectedIndex: number = 0;
   private nameInput: string = '';
 
-  private races: CharacterRace[] = ['Human', 'Elf', 'Dwarf', 'Gnome', 'Hobbit'];
+  private races: CharacterRace[] = [
+    'Human', 'Elf', 'Dwarf', 'Gnome', 'Hobbit',
+    'Faerie', 'Lizman', 'Dracon', 'Rawulf', 'Mook', 'Felpurr'
+  ];
   private classes: CharacterClass[] = [
-    'Fighter',
-    'Mage',
-    'Priest',
-    'Thief',
-    'Bishop',
-    'Samurai',
-    'Lord',
-    'Ninja',
+    'Fighter', 'Mage', 'Priest', 'Thief', 'Alchemist',
+    'Bishop', 'Bard', 'Ranger', 'Psionic',
+    'Valkyrie', 'Samurai', 'Lord', 'Monk', 'Ninja'
   ];
   private alignments: CharacterAlignment[] = ['Good', 'Neutral', 'Evil'];
+  private genders: Array<'male' | 'female'> = ['male', 'female'];
 
   constructor(gameState: GameState, sceneManager: SceneManager) {
     super('Character Creation');
@@ -60,6 +59,9 @@ export class CharacterCreationScene extends Scene {
         break;
       case 'race':
         this.renderRaceStep(ctx);
+        break;
+      case 'gender':
+        this.renderGenderStep(ctx);
         break;
       case 'class':
         this.renderClassStep(ctx);
@@ -101,6 +103,9 @@ export class CharacterCreationScene extends Scene {
           break;
         case 'race':
           this.renderRaceStep(ctx);
+          break;
+        case 'gender':
+          this.renderGenderStep(ctx);
           break;
         case 'class':
           this.renderClassStep(ctx);
@@ -154,6 +159,24 @@ export class CharacterCreationScene extends Scene {
       ctx.font = '12px monospace';
       ctx.fillText(this.getRaceDescription(race), 200, y);
       ctx.font = '16px monospace';
+    });
+  }
+
+  private renderGenderStep(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Select gender:', 100, 150);
+
+    this.genders.forEach((gender, index) => {
+      const y = 180 + index * 40;
+
+      if (index === this.selectedIndex) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(90, y - 20, 400, 30);
+      }
+
+      ctx.fillStyle = index === this.selectedIndex ? '#ffff00' : '#fff';
+      const displayText = gender.charAt(0).toUpperCase() + gender.slice(1);
+      ctx.fillText(`${index + 1}. ${displayText}`, 100, y);
     });
   }
 
@@ -258,6 +281,7 @@ export class CharacterCreationScene extends Scene {
         instructions = 'Type name, ENTER to continue, ESC to go back';
         break;
       case 'race':
+      case 'gender':
       case 'class':
       case 'alignment':
         instructions = 'UP/DOWN to select, ENTER to continue, ESC to go back';
@@ -284,6 +308,18 @@ export class CharacterCreationScene extends Scene {
         return '+1 INT, +2 PIE, -2 STR';
       case 'Hobbit':
         return '+3 AGI, +2 LUK, -3 STR';
+      case 'Faerie':
+        return 'Very low STR/VIT, very high AGI/INT';
+      case 'Lizman':
+        return 'Very high STR/VIT, very low INT/PIE';
+      case 'Dracon':
+        return 'High STR/VIT, dragon heritage';
+      case 'Rawulf':
+        return 'High PIE, wolf-like race';
+      case 'Mook':
+        return 'Balanced warrior race';
+      case 'Felpurr':
+        return 'High AGI/LUK, feline race';
       default:
         return '';
     }
@@ -294,20 +330,36 @@ export class CharacterCreationScene extends Scene {
 
     const stats = this.currentCharacter.stats;
 
+    // Check gender restriction for Valkyrie
+    if (charClass === 'Valkyrie' && this.currentCharacter.gender !== 'female') {
+      return false;
+    }
+
+    // Use class configs for requirements
     switch (charClass) {
       case 'Fighter':
-        return stats.strength >= 11;
+        return true; // No requirements
       case 'Mage':
         return stats.intelligence >= 11;
       case 'Priest':
         return stats.piety >= 11;
       case 'Thief':
         return stats.agility >= 11;
+      case 'Alchemist':
+        return stats.intelligence >= 10;
       case 'Bishop':
         return stats.intelligence >= 12 && stats.piety >= 12;
+      case 'Bard':
+        return stats.intelligence >= 11 && stats.luck >= 11;
+      case 'Ranger':
+        return stats.strength >= 11 && stats.agility >= 11;
+      case 'Psionic':
+        return stats.intelligence >= 11 && stats.piety >= 11;
+      case 'Valkyrie':
+        return stats.strength >= 12 && stats.vitality >= 10 && stats.piety >= 11;
       case 'Samurai':
         return (
-          stats.strength >= 15 &&
+          stats.strength >= 13 &&
           stats.intelligence >= 11 &&
           stats.piety >= 10 &&
           stats.vitality >= 14 &&
@@ -315,21 +367,28 @@ export class CharacterCreationScene extends Scene {
         );
       case 'Lord':
         return (
-          stats.strength >= 15 &&
-          stats.intelligence >= 12 &&
+          stats.strength >= 13 &&
+          stats.intelligence >= 11 &&
+          stats.piety >= 11 &&
+          stats.vitality >= 13 &&
+          stats.agility >= 9 &&
+          stats.luck >= 9
+        );
+      case 'Monk':
+        return (
+          stats.strength >= 12 &&
           stats.piety >= 12 &&
-          stats.vitality >= 15 &&
-          stats.agility >= 14 &&
-          stats.luck >= 15
+          stats.vitality >= 13 &&
+          stats.agility >= 11
         );
       case 'Ninja':
         return (
-          stats.strength >= 15 &&
-          stats.intelligence >= 15 &&
-          stats.piety >= 15 &&
-          stats.vitality >= 15 &&
-          stats.agility >= 15 &&
-          stats.luck >= 15
+          stats.strength >= 14 &&
+          stats.intelligence >= 14 &&
+          stats.piety >= 14 &&
+          stats.vitality >= 14 &&
+          stats.agility >= 14 &&
+          stats.luck >= 14
         );
       default:
         return true;
@@ -350,6 +409,8 @@ export class CharacterCreationScene extends Scene {
         return this.handleNameInput(key);
       case 'race':
         return this.handleSelectionInput(key, this.races.length);
+      case 'gender':
+        return this.handleSelectionInput(key, this.genders.length);
       case 'class':
         return this.handleSelectionInput(key, this.classes.length);
       case 'alignment':
@@ -405,9 +466,14 @@ export class CharacterCreationScene extends Scene {
     switch (this.currentStep) {
       case 'race':
         this.currentCharacter.race = this.races[this.selectedIndex];
-        this.currentStep = 'class';
+        this.currentStep = 'gender';
         this.selectedIndex = 0;
         this.generatePreviewStats();
+        break;
+      case 'gender':
+        this.currentCharacter.gender = this.genders[this.selectedIndex];
+        this.currentStep = 'class';
+        this.selectedIndex = 0;
         break;
       case 'class':
         if (this.canSelectClass(this.classes[this.selectedIndex])) {
@@ -492,7 +558,8 @@ export class CharacterCreationScene extends Scene {
         this.nameInput,
         this.currentCharacter.race,
         this.currentCharacter.class,
-        this.currentCharacter.alignment
+        this.currentCharacter.alignment,
+        this.currentCharacter.gender || 'male'
       );
 
       this.gameState.party.addCharacter(character);
@@ -513,8 +580,11 @@ export class CharacterCreationScene extends Scene {
       case 'race':
         this.currentStep = 'name';
         break;
-      case 'class':
+      case 'gender':
         this.currentStep = 'race';
+        break;
+      case 'class':
+        this.currentStep = 'gender';
         break;
       case 'alignment':
         this.currentStep = 'class';

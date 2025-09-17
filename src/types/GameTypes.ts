@@ -6,8 +6,14 @@ export type CharacterClass =
   | 'Bishop'
   | 'Samurai'
   | 'Lord'
-  | 'Ninja';
-export type CharacterRace = 'Human' | 'Elf' | 'Dwarf' | 'Gnome' | 'Hobbit';
+  | 'Ninja'
+  | 'Alchemist'
+  | 'Bard'
+  | 'Ranger'
+  | 'Psionic'
+  | 'Valkyrie'
+  | 'Monk';
+export type CharacterRace = 'Human' | 'Elf' | 'Dwarf' | 'Gnome' | 'Hobbit' | 'Faerie' | 'Lizman' | 'Dracon' | 'Rawulf' | 'Mook' | 'Felpurr';
 export type CharacterAlignment = 'Good' | 'Neutral' | 'Evil';
 export type CharacterStatus =
   | 'OK'
@@ -34,8 +40,11 @@ export interface Character {
   race: CharacterRace;
   class: CharacterClass;
   alignment: CharacterAlignment;
+  gender: 'male' | 'female';
   level: number;
   experience: number;
+  experienceModifier: number;
+  pendingLevelUp: boolean;
   stats: CharacterStats;
   baseStats: CharacterStats;
   hp: number;
@@ -106,7 +115,7 @@ export interface Spell {
   id: string;
   name: string;
   level: number;
-  type: 'mage' | 'priest';
+  type: 'mage' | 'priest' | 'alchemist' | 'psionic';
   mpCost: number;
   effect: SpellEffect;
   targetType: 'self' | 'ally' | 'enemy' | 'allAllies' | 'allEnemies' | 'any';
