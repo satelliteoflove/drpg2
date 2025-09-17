@@ -176,7 +176,7 @@ export class Character implements ICharacter {
         break;
     }
 
-    Object.keys(this.stats).forEach(key => {
+    Object.keys(this.stats).forEach((key) => {
       const statKey = key as keyof CharacterStats;
       this.stats[statKey] = TypeValidation.clampNumber(
         this.stats[statKey],
@@ -309,7 +309,10 @@ export class Character implements ICharacter {
   }
 
   public getExperienceForNextLevel(): number {
-    return Math.floor(GAME_VALUES.CHARACTER.BASE_EXPERIENCE * Math.pow(GAME_VALUES.CHARACTER.EXPERIENCE_MULTIPLIER, this.level - 1));
+    return Math.floor(
+      GAME_VALUES.CHARACTER.BASE_EXPERIENCE *
+        Math.pow(GAME_VALUES.CHARACTER.EXPERIENCE_MULTIPLIER, this.level - 1)
+    );
   }
 
   public addExperience(amount: number): boolean {
@@ -329,13 +332,10 @@ export class Character implements ICharacter {
     if (this.class !== 'Bishop') {
       return 0;
     }
-    
+
     // Authentic Wizardry formula: (Level × 5%) + 10%
-    const successRate = Math.min(
-      1.0,
-      (this.level * 0.05) + 0.10
-    );
-    
+    const successRate = Math.min(1.0, this.level * 0.05 + 0.1);
+
     return successRate;
   }
 
@@ -345,13 +345,13 @@ export class Character implements ICharacter {
         return false;
       }
     }
-    
+
     if (item.alignmentRestrictions && item.alignmentRestrictions.length > 0) {
       if (!item.alignmentRestrictions.includes(this.alignment)) {
         return false;
       }
     }
-    
+
     return true;
   }
 }

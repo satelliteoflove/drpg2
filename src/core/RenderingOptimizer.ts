@@ -55,9 +55,9 @@ export class RenderingOptimizer {
       ctx.fillRect(0, 0, 100, 100);
     }
     const end = performance.now();
-    
+
     // If simple operations take too long, assume lower-end device
-    return (end - start) > 10; // 10ms threshold
+    return end - start > 10; // 10ms threshold
   }
 
   private setupMainLayer(): void {
@@ -76,11 +76,7 @@ export class RenderingOptimizer {
     });
   }
 
-  public createLayer(
-    name: string,
-    zIndex: number = 0,
-    persistent: boolean = false
-  ): LayerConfig {
+  public createLayer(name: string, zIndex: number = 0, persistent: boolean = false): LayerConfig {
     if (this.layers.has(name)) {
       ErrorHandler.logError(
         `Layer ${name} already exists`,
@@ -155,7 +151,7 @@ export class RenderingOptimizer {
 
   public shouldSkipFrame(currentTime: number): boolean {
     const deltaTime = currentTime - this.lastFrameTime;
-    
+
     // Adaptive performance: adjust threshold based on current performance
     if (this.adaptivePerformance && this.frameCount % 60 === 0) {
       if (this.fps < this.targetFPS * 0.8) {
@@ -166,7 +162,7 @@ export class RenderingOptimizer {
         this.skipFrameThreshold = Math.max(this.skipFrameThreshold * 0.95, 1000 / this.targetFPS);
       }
     }
-    
+
     return deltaTime < this.skipFrameThreshold;
   }
 
@@ -191,7 +187,7 @@ export class RenderingOptimizer {
 
     // Sort layers by z-index and composite them
     const sortedLayers = Array.from(this.layers.values())
-      .filter(layer => layer.name !== 'main')
+      .filter((layer) => layer.name !== 'main')
       .sort((a, b) => a.zIndex - b.zIndex);
 
     // Always composite all layers to main canvas
@@ -279,9 +275,11 @@ export class RenderingOptimizer {
     // Check that all layers have correct dimensions and contexts
     for (const layer of this.layers.values()) {
       if (layer.name === 'main') continue;
-      
-      if (layer.canvas.width !== this.mainCanvas.width || 
-          layer.canvas.height !== this.mainCanvas.height) {
+
+      if (
+        layer.canvas.width !== this.mainCanvas.width ||
+        layer.canvas.height !== this.mainCanvas.height
+      ) {
         ErrorHandler.logError(
           `Layer ${layer.name} has incorrect dimensions: ${layer.canvas.width}x${layer.canvas.height}, expected: ${this.mainCanvas.width}x${this.mainCanvas.height}`,
           ErrorSeverity.HIGH,
@@ -289,7 +287,7 @@ export class RenderingOptimizer {
         );
         return false;
       }
-      
+
       if (!layer.context) {
         ErrorHandler.logError(
           `Layer ${layer.name} has no context`,
@@ -322,10 +320,7 @@ export class SpriteCache {
     return this.cache.get(key) || null;
   }
 
-  public set(
-    key: string,
-    sprite: HTMLImageElement | HTMLCanvasElement
-  ): void {
+  public set(key: string, sprite: HTMLImageElement | HTMLCanvasElement): void {
     if (this.cache.size >= this.maxCacheSize) {
       // Remove oldest entry (simple LRU)
       const firstKey = this.cache.keys().next().value;
@@ -392,7 +387,7 @@ export class SpatialPartition {
 
   public query(x: number, y: number, width: number, height: number): Set<any> {
     const result = new Set<any>();
-    
+
     const startCellX = Math.floor(x / this.cellSize);
     const endCellX = Math.floor((x + width) / this.cellSize);
     const startCellY = Math.floor(y / this.cellSize);
@@ -403,7 +398,7 @@ export class SpatialPartition {
         const cellKey = `${cellX},${cellY}`;
         const cell = this.grid.get(cellKey);
         if (cell) {
-          cell.forEach(obj => result.add(obj));
+          cell.forEach((obj) => result.add(obj));
         }
       }
     }
@@ -427,7 +422,7 @@ export class SpatialPartition {
 
   public getTotalObjects(): number {
     let total = 0;
-    this.grid.forEach(cell => total += cell.size);
+    this.grid.forEach((cell) => (total += cell.size));
     return total;
   }
 }

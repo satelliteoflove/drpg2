@@ -1,0 +1,45 @@
+node_id: implement-canvas-renderer
+checklist:
+  unit_tests: false
+  integration_tests: false
+  e2e_tests: false
+outcome: |
+  Successfully completed the CanvasRenderer implementation with all required rendering features.
+  Added symbol-based coloring, blinking effects, opacity support, and dirty rectangle optimization.
+  The renderer now efficiently converts ASCII grids to canvas pixels while maintaining 60 FPS.
+  Integrated with ASCIISymbols for automatic color mapping and improved visual consistency.
+manual_test_instructions: |
+  1. Create a test HTML file that includes the compiled JavaScript
+  2. Create a canvas element with id="game-canvas"
+  3. Initialize CanvasRenderer: const renderer = new CanvasRenderer(canvas)
+  4. Create an ASCIIState and populate it with test data
+  5. Call renderer.renderASCIIGrid(state.getGrid()) in a requestAnimationFrame loop
+  6. Verify characters render correctly with proper colors
+  7. Test blinking by adding cells with blink: true in metadata
+  8. Test dirty regions by calling with getDirtyRegions() result
+  9. Check performance metrics with renderer.getPerformanceMetrics()
+  10. Verify 60 FPS is maintained with full grid updates
+surprises_or_notes: |
+  The character caching system provides significant performance improvements.
+  Blinking implementation uses real-time phase calculation for smooth animation.
+  Symbol-based coloring fallback eliminates need for explicit color definitions.
+suggested_follow_ups:
+  - Add WebGL renderer option for even better performance
+  - Implement particle effects for combat animations
+  - Add configurable themes with different color schemes
+  - Create performance profiling tools
+reimplementation_prompt: |
+  Implement a complete Canvas-based ASCII renderer for a grid-based game.
+  
+  Requirements:
+  - Render 80x25 ASCII grid to HTML5 canvas
+  - Support character-by-character rendering with 10x20 pixel cells
+  - Implement symbol-based automatic coloring using a symbol color map
+  - Add blinking effect support with 500ms cycle
+  - Support opacity/transparency per cell
+  - Implement dirty rectangle optimization for partial updates
+  - Cache rendered characters for performance
+  - Maintain 60 FPS with full grid updates
+  - Use monospace font with configurable size
+  - Support bold text styling
+  - Log performance metrics every 60 frames

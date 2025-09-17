@@ -1,13 +1,24 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState, Item } from '../types/GameTypes';
-import { ShopSystem, ShopInventory } from '../systems/ShopSystem';
+import { ShopInventory, ShopSystem } from '../systems/ShopSystem';
 import { Character } from '../entities/Character';
 import { RenderingUtils } from '../utils/RenderingUtils';
 import { GameUtilities } from '../utils/GameUtilities';
 import { UI_CONSTANTS } from '../config/UIConstants';
 import { DebugLogger } from '../utils/DebugLogger';
+import { ShopASCIIState } from '../rendering/scenes/ShopASCIIState';
+import { FeatureFlagKey, FeatureFlags } from '../config/FeatureFlags';
+import { CanvasRenderer } from '../rendering/CanvasRenderer';
 
-type ShopState = 'main_menu' | 'buying_category' | 'buying_items' | 'buying_character_select' | 'selling_character_select' | 'selling_items' | 'selling_confirmation' | 'pooling_gold';
+type ShopState =
+  | 'main_menu'
+  | 'buying_category'
+  | 'buying_items'
+  | 'buying_character_select'
+  | 'selling_character_select'
+  | 'selling_items'
+  | 'selling_confirmation'
+  | 'pooling_gold';
 
 export class ShopScene extends Scene {
   private gameState: GameState;
@@ -19,22 +30,26 @@ export class ShopScene extends Scene {
   private selectedItem: Item | null = null;
   private selectedCharacterIndex: number = 0;
   private selectedSellingCharacter: Character | null = null;
-  
+  private renderCount: number = 0;
+  public shopASCIIState?: ShopASCIIState;
+  private asciiRenderer?: CanvasRenderer;
+  private useASCII: boolean = false;
+
   private menuOptions: string[] = [
     'Buy Items',
-    'Sell Items', 
+    'Sell Items',
     'Identify Items',
     'Pool Gold',
     'Remove Curses',
-    'Leave Shop'
+    'Leave Shop',
   ];
 
-  private categoryOptions: Array<{key: keyof ShopInventory['categories'], name: string}> = [
+  private categoryOptions: Array<{ key: keyof ShopInventory['categories']; name: string }> = [
     { key: 'weapons', name: 'Weapons' },
     { key: 'armor', name: 'Armor' },
     { key: 'shields', name: 'Shields' },
     { key: 'accessories', name: 'Accessories' },
-    { key: 'consumables', name: 'Consumables' }
+    { key: 'consumables', name: 'Consumables' },
   ];
 
   constructor(gameState: GameState, sceneManager: SceneManager) {
@@ -42,6 +57,16 @@ export class ShopScene extends Scene {
     this.gameState = gameState;
     this.sceneManager = sceneManager;
     this.shopInventory = ShopSystem.getShopInventory();
+
+    // Check if ASCII rendering should be enabled
+    this.useASCII =
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
+
+    if (this.useASCII) {
+      this.shopASCIIState = new ShopASCIIState(gameState, sceneManager);
+      DebugLogger.info('ShopScene', 'ASCII rendering enabled for Shop scene');
+    }
   }
 
   public enter(): void {
@@ -51,31 +76,143 @@ export class ShopScene extends Scene {
     this.selectedCharacterIndex = 0;
     this.selectedSellingCharacter = null;
     this.shopInventory = ShopSystem.getShopInventory();
+
+    // Check if ASCII should be enabled on enter
+    const shouldUseASCII =
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
+
+    if (shouldUseASCII && !this.shopASCIIState) {
+      this.shopASCIIState = new ShopASCIIState(this.gameState, this.sceneManager);
+      this.useASCII = true;
+      DebugLogger.info('ShopScene', 'ASCII rendering enabled on enter');
+    } else if (!shouldUseASCII && this.shopASCIIState) {
+      this.shopASCIIState = undefined;
+      this.asciiRenderer = undefined;
+      this.useASCII = false;
+      DebugLogger.info('ShopScene', 'ASCII rendering disabled on enter');
+    }
+
+    // Initialize ASCII state if enabled
+    if (this.shopASCIIState) {
+      this.shopASCIIState.enter();
+      this.syncASCIIState();
+    }
   }
 
-  public exit(): void {}
+  public exit(): void {
+    if (this.shopASCIIState) {
+      this.shopASCIIState.exit();
+    }
+  }
 
-  public update(_deltaTime: number): void {}
+  public update(_deltaTime: number): void {
+    if (this.shopASCIIState) {
+      this.shopASCIIState.update(_deltaTime);
+    }
+  }
 
   public render(ctx: CanvasRenderingContext2D): void {
+    // Check if ASCII should be enabled at runtime (same as renderLayered)
+    const shouldUseASCII =
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
+
+    if (shouldUseASCII && !this.shopASCIIState) {
+      DebugLogger.info('ShopScene', 'Initializing ASCII state in render');
+      this.shopASCIIState = new ShopASCIIState(this.gameState, this.sceneManager);
+      this.shopASCIIState.enter();
+      this.syncASCIIState();
+      this.useASCII = true;
+    } else if (!shouldUseASCII && this.shopASCIIState) {
+      DebugLogger.info('ShopScene', 'Disabling ASCII state in render');
+      this.shopASCIIState.exit();
+      this.shopASCIIState = undefined;
+      this.asciiRenderer = undefined;
+      this.useASCII = false;
+    }
+
+    if (shouldUseASCII && this.shopASCIIState) {
+      // Use ASCII rendering
+      if (!this.asciiRenderer) {
+        this.asciiRenderer = new CanvasRenderer(ctx.canvas);
+      }
+
+      this.syncASCIIState();
+      this.shopASCIIState.render();
+
+      const state = this.shopASCIIState.getGrid();
+      const grid = state.getGrid();
+      this.asciiRenderer.renderASCIIGrid(grid);
+      return;
+    }
+
+    // Original rendering
     this.renderShopContent(ctx);
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
-    const { renderManager } = renderContext;
+    this.renderCount++;
 
-    renderManager.renderBackground((ctx) => {
-      RenderingUtils.clearCanvas(ctx);
-    });
+    // Check if ASCII should be enabled at runtime
+    const shouldUseASCII =
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
 
-    renderManager.renderUI((ctx) => {
-      this.renderShopContent(ctx);
-    });
+    if (shouldUseASCII && !this.shopASCIIState) {
+      DebugLogger.info('ShopScene', 'Initializing ASCII state in renderLayered');
+      this.shopASCIIState = new ShopASCIIState(this.gameState, this.sceneManager);
+      this.shopASCIIState.enter();
+      this.syncASCIIState();
+      this.useASCII = true;
+    } else if (!shouldUseASCII && this.shopASCIIState) {
+      DebugLogger.info('ShopScene', 'Disabling ASCII state in renderLayered');
+      this.shopASCIIState.exit();
+      this.shopASCIIState = undefined;
+      this.asciiRenderer = undefined;
+      this.useASCII = false;
+    }
+
+    if (shouldUseASCII && this.shopASCIIState) {
+      // ASCII rendering
+      const { renderManager } = renderContext;
+
+      renderManager.renderBackground((ctx) => {
+        RenderingUtils.clearCanvas(ctx);
+      });
+
+      renderManager.renderUI((ctx) => {
+        // Create ASCII renderer if needed
+        if (!this.asciiRenderer) {
+          this.asciiRenderer = new CanvasRenderer(ctx.canvas);
+        }
+
+        // Update ASCII state with latest data
+        this.syncASCIIState();
+
+        // Render ASCII grid
+        if (this.shopASCIIState && this.asciiRenderer) {
+          const asciiGrid = this.shopASCIIState.getGrid();
+          this.asciiRenderer.renderASCIIGrid(asciiGrid.getGrid());
+        }
+      });
+    } else {
+      // Original rendering code
+      const { renderManager } = renderContext;
+
+      renderManager.renderBackground((ctx) => {
+        RenderingUtils.clearCanvas(ctx);
+      });
+
+      renderManager.renderUI((ctx) => {
+        this.renderShopContent(ctx);
+      });
+    }
   }
 
   private renderShopContent(ctx: CanvasRenderingContext2D): void {
     RenderingUtils.clearCanvas(ctx);
-    
+
     switch (this.currentState) {
       case 'main_menu':
         this.renderMainMenu(ctx);
@@ -105,6 +242,24 @@ export class ShopScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
+    // Check if ASCII rendering is currently active
+    const shouldUseASCII =
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
+      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_SHOP_SCENE);
+
+    // Handle input through main logic since ShopASCIIState doesn't have its own input handling
+    const handled = this.handleShopInput(key);
+
+    // Sync with ASCII state after handling input
+    if (shouldUseASCII && this.shopASCIIState && handled) {
+      this.syncASCIIState();
+    }
+
+    return handled;
+  }
+
+  private handleShopInput(key: string): boolean {
+    // Handle input and sync with ASCII state if needed
     switch (this.currentState) {
       case 'main_menu':
         return this.handleMainMenuInput(key);
@@ -128,22 +283,37 @@ export class ShopScene extends Scene {
   }
 
   private renderMainMenu(ctx: CanvasRenderingContext2D): void {
-    RenderingUtils.renderCenteredText(ctx, 'BOLTAC\'S TRADING POST', UI_CONSTANTS.LAYOUT.HEADER_HEIGHT, {
-      color: RenderingUtils.COLORS.WHITE,
-      font: RenderingUtils.FONTS.TITLE_LARGE
-    });
+    RenderingUtils.renderCenteredText(
+      ctx,
+      "BOLTAC'S TRADING POST",
+      UI_CONSTANTS.LAYOUT.HEADER_HEIGHT,
+      {
+        color: RenderingUtils.COLORS.WHITE,
+        font: RenderingUtils.FONTS.TITLE_LARGE,
+      }
+    );
 
-    RenderingUtils.renderCenteredText(ctx, '"Welcome, adventurers! What can I do for you today?"', UI_CONSTANTS.LAYOUT.HEADER_HEIGHT + 30, {
-      color: RenderingUtils.COLORS.WHITE,
-      font: RenderingUtils.FONTS.SMALL
-    });
+    RenderingUtils.renderCenteredText(
+      ctx,
+      '"Welcome, adventurers! What can I do for you today?"',
+      UI_CONSTANTS.LAYOUT.HEADER_HEIGHT + 30,
+      {
+        color: RenderingUtils.COLORS.WHITE,
+        font: RenderingUtils.FONTS.SMALL,
+      }
+    );
 
     // Show party gold
     const totalGold = this.gameState.party.getTotalGold();
-    RenderingUtils.renderCenteredText(ctx, `Party Gold: ${totalGold}`, UI_CONSTANTS.LAYOUT.CONTENT_START_Y, {
-      color: RenderingUtils.COLORS.GOLD,
-      font: RenderingUtils.FONTS.NORMAL
-    });
+    RenderingUtils.renderCenteredText(
+      ctx,
+      `Party Gold: ${totalGold}`,
+      UI_CONSTANTS.LAYOUT.CONTENT_START_Y,
+      {
+        color: RenderingUtils.COLORS.GOLD,
+        font: RenderingUtils.FONTS.NORMAL,
+      }
+    );
 
     RenderingUtils.renderMenu(
       ctx,
@@ -160,48 +330,54 @@ export class ShopScene extends Scene {
     if (this.selectedOption === 0) {
       RenderingUtils.renderText(ctx, 'Purchase weapons, armor, and supplies', 50, 400, {
         color: RenderingUtils.COLORS.GRAY,
-        font: RenderingUtils.FONTS.SMALL
+        font: RenderingUtils.FONTS.SMALL,
       });
-      RenderingUtils.renderText(ctx, `Available items: ${this.shopInventory.items.length}`, 50, 420, {
-        color: RenderingUtils.COLORS.GRAY,
-        font: RenderingUtils.FONTS.SMALL
-      });
+      RenderingUtils.renderText(
+        ctx,
+        `Available items: ${this.shopInventory.items.length}`,
+        50,
+        420,
+        {
+          color: RenderingUtils.COLORS.GRAY,
+          font: RenderingUtils.FONTS.SMALL,
+        }
+      );
     } else if (this.selectedOption === 1) {
       RenderingUtils.renderText(ctx, 'Sell your unwanted items for gold', 50, 400, {
         color: RenderingUtils.COLORS.GRAY,
-        font: RenderingUtils.FONTS.SMALL
+        font: RenderingUtils.FONTS.SMALL,
       });
     } else if (this.selectedOption === 2) {
       RenderingUtils.renderText(ctx, 'Identify unknown magical items', 50, 400, {
         color: RenderingUtils.COLORS.GRAY,
-        font: RenderingUtils.FONTS.SMALL
+        font: RenderingUtils.FONTS.SMALL,
       });
       RenderingUtils.renderText(ctx, 'Cost: 50% of item value', 50, 420, {
         color: RenderingUtils.COLORS.GRAY,
-        font: RenderingUtils.FONTS.SMALL
+        font: RenderingUtils.FONTS.SMALL,
       });
     } else if (this.selectedOption === 3) {
       RenderingUtils.renderText(ctx, 'Pool all party gold to one character', 50, 400, {
         color: RenderingUtils.COLORS.GRAY,
-        font: RenderingUtils.FONTS.SMALL
+        font: RenderingUtils.FONTS.SMALL,
       });
       RenderingUtils.renderText(ctx, 'Or distribute gold evenly among party', 50, 420, {
         color: RenderingUtils.COLORS.GRAY,
-        font: RenderingUtils.FONTS.SMALL
+        font: RenderingUtils.FONTS.SMALL,
       });
     } else if (this.selectedOption === 4) {
       RenderingUtils.renderText(ctx, 'Remove curses from cursed items', 50, 400, {
         color: RenderingUtils.COLORS.GRAY,
-        font: RenderingUtils.FONTS.SMALL
+        font: RenderingUtils.FONTS.SMALL,
       });
       RenderingUtils.renderText(ctx, 'Cost: 100% of item value', 50, 420, {
         color: RenderingUtils.COLORS.GRAY,
-        font: RenderingUtils.FONTS.SMALL
+        font: RenderingUtils.FONTS.SMALL,
       });
     } else {
       RenderingUtils.renderText(ctx, 'Return to the town', 50, 400, {
         color: RenderingUtils.COLORS.GRAY,
-        font: RenderingUtils.FONTS.SMALL
+        font: RenderingUtils.FONTS.SMALL,
       });
     }
 
@@ -211,7 +387,7 @@ export class ShopScene extends Scene {
       ctx.canvas.height - 20,
       {
         color: RenderingUtils.COLORS.MUTED,
-        font: RenderingUtils.FONTS.TINY
+        font: RenderingUtils.FONTS.TINY,
       }
     );
   }
@@ -255,7 +431,8 @@ export class ShopScene extends Scene {
 
   private renderItemList(ctx: CanvasRenderingContext2D): void {
     const items = this.shopInventory.categories[this.selectedCategory];
-    const categoryName = this.categoryOptions.find(c => c.key === this.selectedCategory)?.name || 'Items';
+    const categoryName =
+      this.categoryOptions.find((c) => c.key === this.selectedCategory)?.name || 'Items';
 
     ctx.fillStyle = '#fff';
     ctx.font = '20px monospace';
@@ -290,10 +467,10 @@ export class ShopScene extends Scene {
 
         ctx.font = '14px monospace';
         ctx.textAlign = 'left';
-        
+
         const prefix = actualIndex === this.selectedOption ? '> ' : '  ';
         ctx.fillText(`${prefix}${item.name}`, 50, y);
-        
+
         ctx.textAlign = 'right';
         ctx.fillText(`${item.value}g`, ctx.canvas.width - 50, y);
       });
@@ -302,18 +479,22 @@ export class ShopScene extends Scene {
       if (this.selectedOption < items.length) {
         const selectedItem = items[this.selectedOption];
         const detailY = 450;
-        
+
         ctx.fillStyle = '#aaa';
         ctx.font = '12px monospace';
         ctx.textAlign = 'left';
         ctx.fillText(`Type: ${selectedItem.type}`, 50, detailY);
         ctx.fillText(`Weight: ${selectedItem.weight}`, 50, detailY + 15);
         ctx.fillText(`Value: ${selectedItem.value} gold`, 50, detailY + 30);
-        
+
         if (selectedItem.enchantment !== 0) {
-          ctx.fillText(`Enchantment: ${selectedItem.enchantment > 0 ? '+' : ''}${selectedItem.enchantment}`, 200, detailY);
+          ctx.fillText(
+            `Enchantment: ${selectedItem.enchantment > 0 ? '+' : ''}${selectedItem.enchantment}`,
+            200,
+            detailY
+          );
         }
-        
+
         if (selectedItem.classRestrictions && selectedItem.classRestrictions.length > 0) {
           ctx.fillText(`Classes: ${selectedItem.classRestrictions.join(', ')}`, 200, detailY + 15);
         }
@@ -339,7 +520,11 @@ export class ShopScene extends Scene {
     if (this.selectedItem) {
       ctx.font = '16px monospace';
       ctx.fillStyle = '#ffaa00';
-      ctx.fillText(`Purchasing: ${this.selectedItem.name} (${this.selectedItem.value}g)`, ctx.canvas.width / 2, 80);
+      ctx.fillText(
+        `Purchasing: ${this.selectedItem.name} (${this.selectedItem.value}g)`,
+        ctx.canvas.width / 2,
+        80
+      );
     }
 
     const totalGold = this.gameState.party.getTotalGold();
@@ -360,13 +545,17 @@ export class ShopScene extends Scene {
 
       ctx.font = '16px monospace';
       ctx.textAlign = 'left';
-      
+
       const prefix = index === this.selectedCharacterIndex ? '> ' : '  ';
       const statusText = character.isDead ? ' (DEAD)' : '';
       const inventoryText = ` (${character.inventory.length}/20)`;
-      
-      ctx.fillText(`${prefix}${character.name} - ${character.class}${statusText}${inventoryText}`, 50, y);
-      
+
+      ctx.fillText(
+        `${prefix}${character.name} - ${character.class}${statusText}${inventoryText}`,
+        50,
+        y
+      );
+
       ctx.font = '12px monospace';
       ctx.fillStyle = '#aaa';
       ctx.fillText(`Gold: ${character.gold}`, 50, y + 15);
@@ -383,7 +572,11 @@ export class ShopScene extends Scene {
   }
 
   private handleMainMenuInput(key: string): boolean {
-    const nav = GameUtilities.handleMenuNavigation(key, this.selectedOption, this.menuOptions.length - 1);
+    const nav = GameUtilities.handleMenuNavigation(
+      key,
+      this.selectedOption,
+      this.menuOptions.length - 1
+    );
     if (nav.handled) {
       this.selectedOption = nav.newIndex;
       return true;
@@ -397,12 +590,16 @@ export class ShopScene extends Scene {
       this.sceneManager.switchTo('town');
       return true;
     }
-    
+
     return false;
   }
 
   private handleCategoryInput(key: string): boolean {
-    const nav = GameUtilities.handleMenuNavigation(key, this.selectedOption, this.categoryOptions.length - 1);
+    const nav = GameUtilities.handleMenuNavigation(
+      key,
+      this.selectedOption,
+      this.categoryOptions.length - 1
+    );
     if (nav.handled) {
       this.selectedOption = nav.newIndex;
       return true;
@@ -419,13 +616,13 @@ export class ShopScene extends Scene {
       this.selectedOption = 0;
       return true;
     }
-    
+
     return false;
   }
 
   private handleItemListInput(key: string): boolean {
     const items = this.shopInventory.categories[this.selectedCategory];
-    
+
     switch (key) {
       case 'arrowup':
       case 'w':
@@ -448,7 +645,9 @@ export class ShopScene extends Scene {
 
       case 'escape':
         this.currentState = 'buying_category';
-        this.selectedOption = this.categoryOptions.findIndex(c => c.key === this.selectedCategory);
+        this.selectedOption = this.categoryOptions.findIndex(
+          (c) => c.key === this.selectedCategory
+        );
         return true;
     }
     return false;
@@ -463,7 +662,10 @@ export class ShopScene extends Scene {
 
       case 'arrowdown':
       case 's':
-        this.selectedCharacterIndex = Math.min(this.gameState.party.characters.length - 1, this.selectedCharacterIndex + 1);
+        this.selectedCharacterIndex = Math.min(
+          this.gameState.party.characters.length - 1,
+          this.selectedCharacterIndex + 1
+        );
         return true;
 
       case 'enter':
@@ -485,29 +687,30 @@ export class ShopScene extends Scene {
         this.currentState = 'buying_category';
         this.selectedOption = 0;
         break;
-        
+
       case 1: // Sell Items
         this.currentState = 'selling_character_select';
         this.selectedCharacterIndex = 0;
         break;
-        
+
       case 2: // Identify Items
         DebugLogger.info('ShopScene', 'Identify Items not yet implemented');
         break;
-        
+
       case 3: // Pool Gold
         this.currentState = 'pooling_gold';
         this.selectedCharacterIndex = 0;
         break;
-        
+
       case 4: // Remove Curses
         DebugLogger.info('ShopScene', 'Remove Curses not yet implemented');
         break;
-        
+
       case 5: // Leave Shop
         this.sceneManager.switchTo('town');
         break;
     }
+    this.syncASCIIState();
   }
 
   private handlePoolingGoldInput(key: string): boolean {
@@ -526,7 +729,7 @@ export class ShopScene extends Scene {
         return true;
 
       case 'enter':
-      case ' ':
+      case ' ': {
         // Pool all gold to selected character
         const targetChar = this.gameState.party.characters[this.selectedCharacterIndex];
         const result = ShopSystem.poolGold(this.gameState.party, targetChar);
@@ -534,21 +737,23 @@ export class ShopScene extends Scene {
         this.currentState = 'main_menu';
         this.selectedOption = 3; // Stay on Pool Gold option
         return true;
-        
-      case 'd':
+      }
+
+      case 'd': {
         // Distribute evenly
         const distResult = ShopSystem.distributeGoldEvenly(this.gameState.party);
         DebugLogger.info('ShopScene', distResult.message);
         this.currentState = 'main_menu';
         this.selectedOption = 3; // Stay on Pool Gold option
         return true;
+      }
 
       case 'escape':
         this.currentState = 'main_menu';
         this.selectedOption = 3; // Stay on Pool Gold option
         return true;
     }
-    
+
     return false;
   }
 
@@ -565,10 +770,11 @@ export class ShopScene extends Scene {
       // Return to item list after successful purchase
       this.currentState = 'buying_items';
       this.selectedItem = null;
-      
+
       // Update shop inventory if needed (for now, items are unlimited)
       this.shopInventory = ShopSystem.getShopInventory();
     }
+    this.syncASCIIState();
     // If purchase failed, stay on character selection screen to show the error message
   }
 
@@ -597,14 +803,14 @@ export class ShopScene extends Scene {
 
       ctx.font = '16px monospace';
       ctx.textAlign = 'left';
-      
+
       const prefix = index === this.selectedCharacterIndex ? '> ' : '  ';
       const statusText = character.isDead ? ' (DEAD)' : '';
       const itemCount = character.inventory.length;
-      const sellableItems = character.inventory.filter(item => !item.equipped).length;
-      
+      const sellableItems = character.inventory.filter((item) => !item.equipped).length;
+
       ctx.fillText(`${prefix}${character.name} - ${character.class}${statusText}`, 50, y);
-      
+
       ctx.font = '12px monospace';
       ctx.fillStyle = '#aaa';
       ctx.fillText(`Items: ${itemCount} (${sellableItems} sellable)`, 50, y + 15);
@@ -624,12 +830,16 @@ export class ShopScene extends Scene {
   private renderSellingItemList(ctx: CanvasRenderingContext2D): void {
     if (!this.selectedSellingCharacter) return;
 
-    const sellableItems = this.selectedSellingCharacter.inventory.filter(item => !item.equipped);
+    const sellableItems = this.selectedSellingCharacter.inventory.filter((item) => !item.equipped);
 
     ctx.fillStyle = '#fff';
     ctx.font = '20px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`${this.selectedSellingCharacter.name.toUpperCase()}'S ITEMS`, ctx.canvas.width / 2, 50);
+    ctx.fillText(
+      `${this.selectedSellingCharacter.name.toUpperCase()}'S ITEMS`,
+      ctx.canvas.width / 2,
+      50
+    );
 
     const totalGold = this.gameState.party.getTotalGold();
     ctx.font = '14px monospace';
@@ -644,7 +854,10 @@ export class ShopScene extends Scene {
       const startY = 120;
       const lineHeight = 30;
       const maxVisible = 12;
-      const startIndex = Math.max(0, Math.min(this.selectedOption - 6, sellableItems.length - maxVisible));
+      const startIndex = Math.max(
+        0,
+        Math.min(this.selectedOption - 6, sellableItems.length - maxVisible)
+      );
       const visibleItems = sellableItems.slice(startIndex, startIndex + maxVisible);
 
       visibleItems.forEach((item, index) => {
@@ -659,11 +872,11 @@ export class ShopScene extends Scene {
 
         ctx.font = '14px monospace';
         ctx.textAlign = 'left';
-        
+
         const prefix = actualIndex === this.selectedOption ? '> ' : '  ';
         const sellPrice = Math.floor(item.value * 0.5); // 50% of item value
         ctx.fillText(`${prefix}${item.name}`, 50, y);
-        
+
         ctx.textAlign = 'right';
         ctx.fillText(`${sellPrice}g`, ctx.canvas.width - 50, y);
       });
@@ -673,7 +886,7 @@ export class ShopScene extends Scene {
         const selectedItem = sellableItems[this.selectedOption];
         const detailY = 450;
         const sellPrice = Math.floor(selectedItem.value * 0.5);
-        
+
         ctx.fillStyle = '#aaa';
         ctx.font = '12px monospace';
         ctx.textAlign = 'left';
@@ -681,11 +894,15 @@ export class ShopScene extends Scene {
         ctx.fillText(`Weight: ${selectedItem.weight}`, 50, detailY + 15);
         ctx.fillText(`Original Value: ${selectedItem.value}g`, 50, detailY + 30);
         ctx.fillText(`Sell Price: ${sellPrice}g`, 50, detailY + 45);
-        
+
         if (selectedItem.enchantment !== 0) {
-          ctx.fillText(`Enchantment: ${selectedItem.enchantment > 0 ? '+' : ''}${selectedItem.enchantment}`, 250, detailY);
+          ctx.fillText(
+            `Enchantment: ${selectedItem.enchantment > 0 ? '+' : ''}${selectedItem.enchantment}`,
+            250,
+            detailY
+          );
         }
-        
+
         if (selectedItem.cursed) {
           ctx.fillStyle = '#ff6666';
           ctx.fillText('CURSED', 250, detailY + 15);
@@ -706,50 +923,55 @@ export class ShopScene extends Scene {
   private renderPoolingGold(ctx: CanvasRenderingContext2D): void {
     RenderingUtils.renderCenteredText(ctx, 'POOL PARTY GOLD', UI_CONSTANTS.LAYOUT.HEADER_HEIGHT, {
       color: RenderingUtils.COLORS.WHITE,
-      font: RenderingUtils.FONTS.TITLE_LARGE
+      font: RenderingUtils.FONTS.TITLE_LARGE,
     });
 
     // Show current gold distribution
     const goldInfo = ShopSystem.viewGoldDistribution(this.gameState.party);
-    
+
     let yPos = UI_CONSTANTS.LAYOUT.CONTENT_START_Y;
     RenderingUtils.renderCenteredText(ctx, `Total Party Gold: ${goldInfo.totalGold}`, yPos, {
       color: RenderingUtils.COLORS.GOLD,
-      font: RenderingUtils.FONTS.NORMAL
+      font: RenderingUtils.FONTS.NORMAL,
     });
-    
+
     yPos += 40;
     RenderingUtils.renderCenteredText(ctx, 'Current Distribution:', yPos, {
       color: RenderingUtils.COLORS.WHITE,
-      font: RenderingUtils.FONTS.NORMAL
+      font: RenderingUtils.FONTS.NORMAL,
     });
-    
+
     yPos += 30;
     goldInfo.goldByCharacter.forEach((charGold, index) => {
       const isSelected = index === this.selectedCharacterIndex;
       const prefix = isSelected ? '> ' : '  ';
       RenderingUtils.renderCenteredText(
-        ctx, 
+        ctx,
         `${prefix}${charGold.name}: ${charGold.gold} gold`,
-        yPos + (index * 25),
+        yPos + index * 25,
         {
           color: isSelected ? RenderingUtils.COLORS.GOLD : RenderingUtils.COLORS.WHITE,
-          font: RenderingUtils.FONTS.NORMAL
+          font: RenderingUtils.FONTS.NORMAL,
         }
       );
     });
-    
-    yPos += (this.gameState.party.characters.length * 25) + 40;
+
+    yPos += this.gameState.party.characters.length * 25 + 40;
     RenderingUtils.renderCenteredText(ctx, 'Select character to receive all gold', yPos, {
       color: RenderingUtils.COLORS.GRAY,
-      font: RenderingUtils.FONTS.SMALL
+      font: RenderingUtils.FONTS.SMALL,
     });
-    
+
     yPos += 30;
-    RenderingUtils.renderCenteredText(ctx, '[Enter] Pool to selected | [D] Distribute evenly | [Escape] Cancel', yPos, {
-      color: RenderingUtils.COLORS.GRAY,
-      font: RenderingUtils.FONTS.SMALL
-    });
+    RenderingUtils.renderCenteredText(
+      ctx,
+      '[Enter] Pool to selected | [D] Distribute evenly | [Escape] Cancel',
+      yPos,
+      {
+        color: RenderingUtils.COLORS.GRAY,
+        font: RenderingUtils.FONTS.SMALL,
+      }
+    );
   }
 
   private renderSellingConfirmation(ctx: CanvasRenderingContext2D): void {
@@ -781,7 +1003,7 @@ export class ShopScene extends Scene {
     // Show confirmation options
     const confirmY = 360;
     const options = ['Confirm Sale', 'Cancel'];
-    
+
     options.forEach((option, index) => {
       const y = confirmY + index * 40;
 
@@ -809,23 +1031,31 @@ export class ShopScene extends Scene {
       case 'arrowup':
       case 'w':
         this.selectedCharacterIndex = Math.max(0, this.selectedCharacterIndex - 1);
+        this.syncASCIIState();
         return true;
 
       case 'arrowdown':
       case 's':
-        this.selectedCharacterIndex = Math.min(this.gameState.party.characters.length - 1, this.selectedCharacterIndex + 1);
+        this.selectedCharacterIndex = Math.min(
+          this.gameState.party.characters.length - 1,
+          this.selectedCharacterIndex + 1
+        );
+        this.syncASCIIState();
         return true;
 
       case 'enter':
       case ' ':
-        this.selectedSellingCharacter = this.gameState.party.characters[this.selectedCharacterIndex];
+        this.selectedSellingCharacter =
+          this.gameState.party.characters[this.selectedCharacterIndex];
         this.currentState = 'selling_items';
         this.selectedOption = 0;
+        this.syncASCIIState();
         return true;
 
       case 'escape':
         this.currentState = 'main_menu';
         this.selectedOption = 1; // Return to "Sell Items" option
+        this.syncASCIIState();
         return true;
     }
     return false;
@@ -833,18 +1063,20 @@ export class ShopScene extends Scene {
 
   private handleSellingItemListInput(key: string): boolean {
     if (!this.selectedSellingCharacter) return false;
-    
-    const sellableItems = this.selectedSellingCharacter.inventory.filter(item => !item.equipped);
-    
+
+    const sellableItems = this.selectedSellingCharacter.inventory.filter((item) => !item.equipped);
+
     switch (key) {
       case 'arrowup':
       case 'w':
         this.selectedOption = Math.max(0, this.selectedOption - 1);
+        this.syncASCIIState();
         return true;
 
       case 'arrowdown':
       case 's':
         this.selectedOption = Math.min(sellableItems.length - 1, this.selectedOption + 1);
+        this.syncASCIIState();
         return true;
 
       case 'enter':
@@ -853,13 +1085,17 @@ export class ShopScene extends Scene {
           this.selectedItem = sellableItems[this.selectedOption];
           this.currentState = 'selling_confirmation';
           this.selectedOption = 0;
+          this.syncASCIIState();
         }
         return true;
 
       case 'escape':
         this.currentState = 'selling_character_select';
-        this.selectedOption = this.gameState.party.characters.indexOf(this.selectedSellingCharacter);
+        this.selectedOption = this.gameState.party.characters.indexOf(
+          this.selectedSellingCharacter
+        );
         this.selectedSellingCharacter = null;
+        this.syncASCIIState();
         return true;
     }
     return false;
@@ -870,11 +1106,13 @@ export class ShopScene extends Scene {
       case 'arrowup':
       case 'w':
         this.selectedOption = Math.max(0, this.selectedOption - 1);
+        this.syncASCIIState();
         return true;
 
       case 'arrowdown':
       case 's':
         this.selectedOption = Math.min(1, this.selectedOption + 1); // 0 = Confirm, 1 = Cancel
+        this.syncASCIIState();
         return true;
 
       case 'enter':
@@ -884,10 +1122,12 @@ export class ShopScene extends Scene {
         } else {
           this.cancelSale();
         }
+        this.syncASCIIState();
         return true;
 
       case 'escape':
         this.cancelSale();
+        this.syncASCIIState();
         return true;
     }
     return false;
@@ -896,7 +1136,11 @@ export class ShopScene extends Scene {
   private executeSale(): void {
     if (!this.selectedItem || !this.selectedSellingCharacter) return;
 
-    const result = ShopSystem.sellItem(this.gameState.party, this.selectedItem, this.selectedSellingCharacter);
+    const result = ShopSystem.sellItem(
+      this.gameState.party,
+      this.selectedItem,
+      this.selectedSellingCharacter
+    );
 
     // Add message to game log
     this.gameState.messageLog.addSystemMessage(result.message);
@@ -913,11 +1157,25 @@ export class ShopScene extends Scene {
       this.selectedItem = null;
       this.selectedOption = 0;
     }
+    this.syncASCIIState();
   }
 
   private cancelSale(): void {
     this.currentState = 'selling_items';
     this.selectedItem = null;
     this.selectedOption = 0;
+    this.syncASCIIState();
+  }
+
+  private syncASCIIState(): void {
+    if (!this.shopASCIIState) return;
+
+    // Sync state with ASCII renderer
+    this.shopASCIIState.updateState(this.currentState);
+    this.shopASCIIState.updateSelectedIndex(this.selectedOption);
+    this.shopASCIIState.updateSelectedCategory(this.selectedCategory);
+    this.shopASCIIState.updateSelectedItem(this.selectedItem);
+    this.shopASCIIState.updateSelectedCharacter(this.selectedCharacterIndex);
+    this.shopASCIIState.updateSellingCharacter(this.selectedSellingCharacter);
   }
 }

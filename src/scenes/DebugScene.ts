@@ -4,6 +4,8 @@ import { Character } from '../entities/Character';
 import { InventorySystem } from '../systems/InventorySystem';
 import { CombatSystem } from '../systems/CombatSystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
+import { PerformanceMonitor } from '../utils/PerformanceMonitor';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export class DebugScene extends Scene {
   private gameState: GameState;
@@ -23,12 +25,12 @@ export class DebugScene extends Scene {
   }
 
   public enter(): void {
-    console.log('[DEBUG SCENE] Debug scene entered');
+    DebugLogger.info('DebugScene', 'Debug scene entered');
     this.scrollOffset = 0;
   }
 
   public exit(): void {
-    console.log('[DEBUG SCENE] Debug scene exited');
+    DebugLogger.info('DebugScene', 'Debug scene exited');
   }
 
   public update(_deltaTime: number): void {
@@ -59,7 +61,11 @@ export class DebugScene extends Scene {
     // Instructions
     ctx.fillStyle = '#CCCCCC';
     ctx.font = '12px monospace';
-    ctx.fillText('Use Page Up/Down to scroll • Press Escape to return', padding, currentY);
+    ctx.fillText(
+      'Use Page Up/Down to scroll • Press P for Performance Report • Press Escape to return',
+      padding,
+      currentY
+    );
     currentY += sectionSpacing;
 
     // System Information
@@ -85,13 +91,13 @@ export class DebugScene extends Scene {
   public renderLayered(renderContext: SceneRenderContext): void {
     // Use layered rendering for debug screen
     const { renderManager } = renderContext;
-    
+
     // Render background layer
     renderManager.renderBackground((ctx) => {
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     });
-    
+
     // Render UI layer
     renderManager.renderUI((ctx) => {
       this.renderDebugContent(ctx);
@@ -99,12 +105,21 @@ export class DebugScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
+    DebugLogger.debug('DebugScene', `Key pressed: ${key}`);
+
     // Handle scrolling
     if (key === KEY_BINDINGS.ui.scrollUp) {
       this.scrollOffset = Math.max(0, this.scrollOffset - 50);
       return true;
     } else if (key === KEY_BINDINGS.ui.scrollDown) {
       this.scrollOffset = Math.min(this.maxScrollOffset, this.scrollOffset + 50);
+      return true;
+    }
+
+    // Generate performance report with 'p' key (lowercase since InputManager converts to lowercase)
+    if (key === 'p') {
+      DebugLogger.info('DebugScene', 'Generating performance report...');
+      this.generatePerformanceReport();
       return true;
     }
 
@@ -117,7 +132,72 @@ export class DebugScene extends Scene {
     return false;
   }
 
-  private renderSystemInfo(ctx: CanvasRenderingContext2D, x: number, y: number, lineHeight: number): number {
+  private generatePerformanceReport(): void {
+    const monitor = PerformanceMonitor.getInstance();
+    const report = monitor.generateReport();
+    const markdown = monitor.exportReportAsMarkdown(report);
+
+    // Log full report to debug logger
+    DebugLogger.info('Performance Report', '===== PERFORMANCE REPORT GENERATED =====');
+    const lines = markdown.split('\n');
+    lines.forEach((line) => {
+      DebugLogger.info('Performance Report', line);
+    });
+    DebugLogger.info('Performance Report', '=========================================');
+
+    // Show multiple messages to user for visibility
+    if (this.gameState.messageLog) {
+      this.gameState.messageLog.addSystemMessage('===================================');
+      this.gameState.messageLog.addSystemMessage('PERFORMANCE REPORT GENERATED!');
+      this.gameState.messageLog.addSystemMessage(
+        `Performance Score: ${report.globalMetrics.performanceScore.toFixed(1)}/100`
+      );
+      this.gameState.messageLog.addSystemMessage(
+        `Average FPS: ${report.globalMetrics.overallAverageFPS.toFixed(1)}`
+      );
+      this.gameState.messageLog.addSystemMessage('Report downloaded to your Downloads folder');
+      this.gameState.messageLog.addSystemMessage('Full report available in Debug Logger');
+      this.gameState.messageLog.addSystemMessage('===================================');
+    }
+
+    // Try to download as a file
+    this.downloadReport(markdown);
+  }
+
+  private downloadReport(markdown: string): void {
+    try {
+      const blob = new Blob([markdown], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `performance-report-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      DebugLogger.info('Performance Report', 'Report successfully downloaded as markdown file');
+
+      if (this.gameState.messageLog) {
+        this.gameState.messageLog.addSystemMessage('✓ Report file downloaded successfully');
+      }
+    } catch (error) {
+      DebugLogger.error('Performance Report', 'Failed to download report file', error);
+
+      if (this.gameState.messageLog) {
+        this.gameState.messageLog.addSystemMessage(
+          '! Could not download report file - check Debug Logger'
+        );
+      }
+    }
+  }
+
+  private renderSystemInfo(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    lineHeight: number
+  ): number {
     ctx.fillStyle = '#FFFF00';
     ctx.font = 'bold 16px monospace';
     ctx.fillText('=== SYSTEM INFORMATION ===', x, y);
@@ -142,7 +222,12 @@ export class DebugScene extends Scene {
     return y;
   }
 
-  private renderPartyStats(ctx: CanvasRenderingContext2D, x: number, y: number, lineHeight: number): number {
+  private renderPartyStats(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    lineHeight: number
+  ): number {
     ctx.fillStyle = '#00FF00';
     ctx.font = 'bold 16px monospace';
     ctx.fillText('=== PARTY STATS & LUCK SYSTEM ===', x, y);
@@ -152,8 +237,15 @@ export class DebugScene extends Scene {
     ctx.font = '14px monospace';
 
     // Calculate party stats
-    const totalLuck = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.stats.luck, 0);
-    const averageLevel = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.level, 0) / this.gameState.party.characters.length;
+    const totalLuck = this.gameState.party.characters.reduce(
+      (sum: number, char: Character) => sum + char.stats.luck,
+      0
+    );
+    const averageLevel =
+      this.gameState.party.characters.reduce(
+        (sum: number, char: Character) => sum + char.level,
+        0
+      ) / this.gameState.party.characters.length;
     const luckMultiplier = 1.0 + (totalLuck - 60) * 0.005;
 
     ctx.fillText(`Total Party Luck: ${totalLuck} (Base: 60)`, x, y);
@@ -170,21 +262,31 @@ export class DebugScene extends Scene {
       ctx.fillStyle = char.isDead ? '#888888' : '#CCCCCC';
       ctx.fillText(`${char.name} (${char.class}, Lvl ${char.level})${status}:`, x, y);
       y += lineHeight;
-      
+
       ctx.fillStyle = char.isDead ? '#666666' : '#FFFFFF';
       const stats = `  STR:${char.stats.strength} INT:${char.stats.intelligence} PIE:${char.stats.piety} VIT:${char.stats.vitality} AGI:${char.stats.agility} LUK:${char.stats.luck}`;
       ctx.fillText(stats, x, y);
       y += lineHeight;
-      
-      const equipCount = Object.values(char.equipment).filter(item => item !== undefined).length;
-      ctx.fillText(`  HP:${char.hp}/${char.maxHp} MP:${char.mp}/${char.maxMp} AC:${char.ac} Equipment:${equipCount}/7 Items:${char.inventory.length}/20`, x, y);
+
+      const equipCount = Object.values(char.equipment).filter((item) => item !== undefined).length;
+      ctx.fillText(
+        `  HP:${char.hp}/${char.maxHp} MP:${char.mp}/${char.maxMp} AC:${char.ac} Equipment:${equipCount}/7 Items:${char.inventory.length}/20`,
+        x,
+        y
+      );
       y += lineHeight;
     });
 
     return y;
   }
 
-  private renderLootSystem(ctx: CanvasRenderingContext2D, x: number, y: number, lineHeight: number, lootData: any): number {
+  private renderLootSystem(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    lineHeight: number,
+    lootData: any
+  ): number {
     ctx.fillStyle = '#FF8800';
     ctx.font = 'bold 16px monospace';
     ctx.fillText('=== LOOT SYSTEM ===', x, y);
@@ -222,7 +324,13 @@ export class DebugScene extends Scene {
     return y;
   }
 
-  private renderCombatSystem(ctx: CanvasRenderingContext2D, x: number, y: number, lineHeight: number, combatData: any): number {
+  private renderCombatSystem(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    lineHeight: number,
+    combatData: any
+  ): number {
     ctx.fillStyle = '#FF4444';
     ctx.font = 'bold 16px monospace';
     ctx.fillText('=== COMBAT SYSTEM ===', x, y);

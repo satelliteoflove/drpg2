@@ -158,16 +158,16 @@ export class DungeonGenerator {
 
   private placeStairs(tiles: DungeonTile[][]): void {
     const floorTiles = this.getFloorTiles(tiles);
-    
+
     if (this.level === 1) {
       // Floor 1: Place castle stairs (up to town) at a valid floor location
       if (floorTiles.length >= 2) {
         // Place stairs up (to castle/town) at a random floor tile
         const upStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
         upStairs.type = 'stairs_up';
-        
+
         // Place stairs down at a different floor tile
-        const remainingTiles = floorTiles.filter(t => t !== upStairs);
+        const remainingTiles = floorTiles.filter((t) => t !== upStairs);
         if (remainingTiles.length > 0) {
           const downStairs = remainingTiles[Math.floor(Math.random() * remainingTiles.length)];
           downStairs.type = 'stairs_down';
@@ -190,7 +190,8 @@ export class DungeonGenerator {
   private placeSpecialTiles(tiles: DungeonTile[][]): void {
     const floorTiles = this.getFloorTiles(tiles);
     const numSpecial = Math.min(
-      GAME_CONFIG.DUNGEON.MIN_SPECIAL_TILES + Math.floor(Math.random() * GAME_CONFIG.DUNGEON.MAX_EXTRA_SPECIAL_TILES), 
+      GAME_CONFIG.DUNGEON.MIN_SPECIAL_TILES +
+        Math.floor(Math.random() * GAME_CONFIG.DUNGEON.MAX_EXTRA_SPECIAL_TILES),
       floorTiles.length
     );
 
@@ -202,14 +203,14 @@ export class DungeonGenerator {
       let chestThreshold = 0;
       let trapThreshold = 0;
       let doorThreshold = 0;
-      
+
       if (GAME_CONFIG.DUNGEON.ENABLE_TREASURE_CHESTS) {
         chestThreshold = GAME_CONFIG.DUNGEON.CHEST_CHANCE;
         trapThreshold = chestThreshold + GAME_CONFIG.DUNGEON.TRAP_CHANCE;
       } else {
         trapThreshold = GAME_CONFIG.DUNGEON.TRAP_CHANCE;
       }
-      
+
       if (GAME_CONFIG.DUNGEON.ENABLE_DOORS) {
         doorThreshold = trapThreshold + GAME_CONFIG.DUNGEON.DOOR_CHANCE;
       }
@@ -267,13 +268,13 @@ export class DungeonGenerator {
         x2: Math.min(this.width - 1, startPos.x + 2),
         y2: Math.min(this.height - 1, startPos.y + 2),
         type: 'safe',
-        data: { description: 'Starting area - safe from encounters' }
+        data: { description: 'Starting area - safe from encounters' },
       });
     }
 
     // Generate boss zones in largest rooms (if enabled)
     if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_BOSS_ZONES) {
-      const largeRooms = this.rooms.filter(room => room.width * room.height >= 16);
+      const largeRooms = this.rooms.filter((room) => room.width * room.height >= 16);
       for (const room of largeRooms.slice(0, 2)) {
         zones.push({
           x1: room.x,
@@ -285,8 +286,8 @@ export class DungeonGenerator {
             bossType: 'floor_guardian',
             encounterRate: 1.0,
             monsterGroups: [`boss_level_${this.level}`],
-            description: 'Guardian chamber'
-          }
+            description: 'Guardian chamber',
+          },
         });
       }
     }
@@ -306,8 +307,8 @@ export class DungeonGenerator {
             data: {
               monsterGroups: this.getSpecialMonsterGroupsForLevel(),
               encounterRate: 0.15,
-              description: `Lair of ${this.getSpecialMonsterGroupsForLevel()[0]}s`
-            }
+              description: `Lair of ${this.getSpecialMonsterGroupsForLevel()[0]}s`,
+            },
           });
         }
       }
@@ -330,15 +331,14 @@ export class DungeonGenerator {
           type: 'high_frequency',
           data: {
             encounterRate: 0.08,
-            description: 'Dangerous corridor - high monster activity'
-          }
+            description: 'Dangerous corridor - high monster activity',
+          },
         });
       }
     }
 
     return zones;
   }
-
 
   private getSpecialMonsterGroupsForLevel(): string[] {
     const specialMonsters = [

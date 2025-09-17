@@ -27,7 +27,7 @@ export class Party implements IParty {
   }
 
   public removeCharacter(characterId: string): boolean {
-    const index = this.characters.findIndex(c => c.id === characterId);
+    const index = this.characters.findIndex((c) => c.id === characterId);
     if (index === -1) return false;
 
     this.characters.splice(index, 1);
@@ -51,15 +51,15 @@ export class Party implements IParty {
   }
 
   public getFrontRow(): Character[] {
-    return this.characters.slice(0, 3).filter(c => c && !c.isDead);
+    return this.characters.slice(0, 3).filter((c) => c && !c.isDead);
   }
 
   public getBackRow(): Character[] {
-    return this.characters.slice(3, 6).filter(c => c && !c.isDead);
+    return this.characters.slice(3, 6).filter((c) => c && !c.isDead);
   }
 
   public getAliveCharacters(): Character[] {
-    return this.characters.filter(c => !c.isDead);
+    return this.characters.filter((c) => !c.isDead);
   }
 
   public isWiped(): boolean {
@@ -121,7 +121,7 @@ export class Party implements IParty {
   }
 
   public rest(): void {
-    this.characters.forEach(char => {
+    this.characters.forEach((char) => {
       if (!char.isDead) {
         char.heal(Math.floor(char.maxHp * 0.1));
         char.mp = Math.min(char.maxMp, char.mp + Math.floor(char.maxMp * 0.2));
@@ -138,7 +138,7 @@ export class Party implements IParty {
     if (aliveChars.length === 0) return;
 
     const goldPerChar = Math.floor(amount / aliveChars.length);
-    aliveChars.forEach(char => {
+    aliveChars.forEach((char) => {
       char.gold += goldPerChar;
     });
   }
@@ -148,7 +148,7 @@ export class Party implements IParty {
     if (aliveChars.length === 0) return;
 
     // Each character gets the full experience amount (not split)
-    aliveChars.forEach(char => {
+    aliveChars.forEach((char) => {
       char.addExperience(amount);
     });
   }

@@ -11,24 +11,24 @@ export const UI_CONSTANTS = {
     HEADER_HEIGHT: 60,
     FOOTER_HEIGHT: 40,
     SIDEBAR_WIDTH: 200,
-    
+
     // Common Y positions for UI elements
     TITLE_Y: 50,
     SUBTITLE_Y: 80,
     CONTENT_START_Y: 120,
     FOOTER_Y: 20, // from bottom
-    
+
     // Common X positions
     LEFT_MARGIN: 50,
     RIGHT_MARGIN: 50,
     CENTER_OFFSET: 0,
-    
+
     // List and menu layouts
     MENU_ITEM_HEIGHT: 40,
     MENU_ITEM_SPACING: 10,
     LIST_ITEM_HEIGHT: 30,
     LIST_ITEM_SPACING: 5,
-    
+
     // Form layouts
     LABEL_WIDTH: 150,
     INPUT_WIDTH: 200,
@@ -43,7 +43,7 @@ export const UI_CONSTANTS = {
     INDENT: 20,
     SMALL_LINE_HEIGHT: 15,
     LARGE_LINE_HEIGHT: 30,
-    
+
     // Character limits
     MAX_NAME_LENGTH: 16,
     MAX_MESSAGE_LENGTH: 100,
@@ -55,21 +55,21 @@ export const UI_CONSTANTS = {
     // Transitions
     FADE_DURATION: 300,
     SLIDE_DURATION: 200,
-    
+
     // Delays
     MESSAGE_DISPLAY_TIME: 3000,
     TOOLTIP_DELAY: 500,
     ACTION_COOLDOWN: 200,
     TURN_DELAY: 200,
-    
+
     // Movement
     MOVE_DELAY: 350,
     ROTATION_DELAY: 150,
-    
+
     // Input
     KEY_REPEAT_DELAY: 150,
     DOUBLE_CLICK_TIME: 300,
-    
+
     // Combat
     COMBAT_MESSAGE_DURATION: 1500,
     DAMAGE_NUMBER_DURATION: 1000,
@@ -81,18 +81,18 @@ export const UI_CONSTANTS = {
     MIN_HEIGHT: 200,
     MAX_WIDTH: 800,
     MAX_HEIGHT: 600,
-    
+
     // Modal windows
     MODAL_WIDTH: 400,
     MODAL_HEIGHT: 300,
     CONFIRM_WIDTH: 350,
     CONFIRM_HEIGHT: 150,
-    
+
     // Specific panels
     STATUS_PANEL_WIDTH: 250,
     INVENTORY_PANEL_WIDTH: 400,
     MESSAGE_LOG_HEIGHT: 150,
-    
+
     // Borders
     BORDER_WIDTH: 2,
     BORDER_RADIUS: 4,
@@ -104,18 +104,18 @@ export const UI_CONSTANTS = {
     MONSTER_SPACING: 80,
     MONSTER_START_X: 100,
     MONSTER_Y: 200,
-    
+
     // Character display
     CHARACTER_SPACING: 60,
     CHARACTER_START_X: 100,
     CHARACTER_Y: 400,
-    
+
     // Health bars
     HP_BAR_WIDTH: 50,
     HP_BAR_HEIGHT: 6,
     MP_BAR_WIDTH: 50,
     MP_BAR_HEIGHT: 4,
-    
+
     // Action menu
     ACTION_MENU_Y: 350,
     ACTION_MENU_WIDTH: 200,
@@ -127,11 +127,11 @@ export const UI_CONSTANTS = {
     GRID_ROWS: 4,
     SLOT_SIZE: 48,
     SLOT_SPACING: 8,
-    
+
     // Item display
     ICON_SIZE: 32,
     STACK_NUMBER_OFFSET: { x: 28, y: 28 },
-    
+
     // Equipment slots
     EQUIPMENT_SLOT_SIZE: 64,
     EQUIPMENT_SPACING: 16,
@@ -142,16 +142,16 @@ export const UI_CONSTANTS = {
     // Viewport
     VIEWPORT_WIDTH: 640,
     VIEWPORT_HEIGHT: 480,
-    
+
     // Minimap
     MINIMAP_SIZE: 150,
     MINIMAP_TILE_SIZE: 5,
     MINIMAP_OFFSET: { x: 10, y: 10 },
-    
+
     // Tile rendering
     TILE_SIZE: 32,
     WALL_HEIGHT: 48,
-    
+
     // First-person view
     CORRIDOR_WIDTH: 400,
     CORRIDOR_HEIGHT: 300,
@@ -163,7 +163,7 @@ export const UI_CONSTANTS = {
     ITEM_LIST_HEIGHT: 400,
     ITEM_PREVIEW_WIDTH: 200,
     PRICE_COLUMN_WIDTH: 80,
-    
+
     // Categories
     CATEGORY_BUTTON_WIDTH: 120,
     CATEGORY_BUTTON_HEIGHT: 40,
@@ -177,10 +177,10 @@ export const UI_CONSTANTS = {
     LINE_HEIGHT: 16,
     SECTION_SPACING: 20,
     INDENT: 20,
-    
+
     MAX_LOG_LINES: 50,
     SCROLL_SPEED: 20,
-  }
+  },
 } as const;
 
 /**
@@ -195,11 +195,11 @@ export const GAME_VALUES = {
     BONUS_POINTS: 5,
     MIN_AGE: 18,
     MAX_AGE: 30,
-    
+
     // Inventory
     MAX_INVENTORY_SIZE: 20,
     MAX_EQUIPPED_ITEMS: 7,
-    
+
     // Progression
     BASE_EXPERIENCE: 1000,
     EXPERIENCE_MULTIPLIER: 1.5,
@@ -211,12 +211,12 @@ export const GAME_VALUES = {
     BASE_HIT_CHANCE: 0.5,
     CRITICAL_HIT_CHANCE: 0.05,
     CRITICAL_DAMAGE_MULT: 2.0,
-    
+
     // Escape
     BASE_ESCAPE_CHANCE: 0.4,
     ESCAPE_LEVEL_BONUS: 0.02,
     MAX_ESCAPE_CHANCE: 0.95,
-    
+
     // Initiative
     BASE_INITIATIVE: 10,
     AGILITY_INITIATIVE_BONUS: 0.5,
@@ -228,11 +228,11 @@ export const GAME_VALUES = {
     SELL_PRICE_RATIO: 0.5,
     IDENTIFY_COST_RATIO: 0.5,
     UNCURSE_COST_RATIO: 1.0,
-    
+
     // Enchantment
     MAX_ENCHANTMENT: 5,
     ENCHANTMENT_PRICE_MULT: 1.5,
-    
+
     // Durability (if implemented)
     MAX_DURABILITY: 100,
     REPAIR_COST_RATIO: 0.3,
@@ -242,7 +242,7 @@ export const GAME_VALUES = {
   TREASURE: {
     BASE_GOLD_DROP: 50,
     GOLD_LEVEL_MULTIPLIER: 20,
-    
+
     // Chest rewards
     CHEST_GOLD_MIN: 10,
     CHEST_GOLD_MAX: 100,
@@ -254,10 +254,10 @@ export const GAME_VALUES = {
   PARTY: {
     MAX_SIZE: 6,
     MIN_SIZE: 1,
-    
+
     // Gold pooling
     GOLD_SHARE_RATIO: 1.0, // Equal distribution
-    
+
     // Experience
     EXPERIENCE_SHARE_RATIO: 1.0, // Equal distribution
   },
@@ -267,11 +267,11 @@ export const GAME_VALUES = {
     HP_LEVEL_MULTIPLIER: 0.2,
     DAMAGE_LEVEL_BONUS: 0.3,
     AC_LEVEL_REDUCTION: 0.5,
-    
+
     // Spawning
     MIN_GROUP_SIZE: 1,
     MAX_GROUP_SIZE: 4,
-    
+
     // Rewards
     EXPERIENCE_LEVEL_MULT: 0.3,
     GOLD_LEVEL_MULT: 0.25,
@@ -281,15 +281,15 @@ export const GAME_VALUES = {
   MAGIC: {
     BASE_SPELL_COST: 1,
     SPELL_LEVEL_COST_MULT: 2,
-    
+
     // Ranges
     MIN_SPELL_RANGE: 1,
     MAX_SPELL_RANGE: 10,
-    
+
     // Duration
     BUFF_DURATION_BASE: 5,
     DEBUFF_DURATION_BASE: 3,
-  }
+  },
 } as const;
 
 /**

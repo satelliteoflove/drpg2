@@ -1,5 +1,5 @@
 import { Character } from '../entities/Character';
-import { Encounter, Monster, Spell, Item } from '../types/GameTypes';
+import { Encounter, Item, Monster, Spell } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { InventorySystem } from './InventorySystem';
 import { DebugLogger } from '../utils/DebugLogger';
@@ -15,23 +15,31 @@ export class CombatSystem {
   private encounter: Encounter | null = null;
   private dungeonLevel: number = 1;
   private party: Character[] = [];
-  private onCombatEnd?: (victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }, escaped?: boolean) => void;
+  private onCombatEnd?: (
+    victory: boolean,
+    rewards?: { experience: number; gold: number; items: Item[] },
+    escaped?: boolean
+  ) => void;
   private onMessage?: (message: string) => void;
   private isProcessingTurn: boolean = false; // Prevent simultaneous turn processing
-  
+
   // Debug data
   private static debugData: CombatDebugData = {
     currentTurn: '',
     turnOrder: [],
     escapeChances: [],
-    isActive: false
+    isActive: false,
   };
 
   public startCombat(
     monsters: Monster[],
     party: Character[],
     dungeonLevel: number,
-    onCombatEnd: (victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }, escaped?: boolean) => void,
+    onCombatEnd: (
+      victory: boolean,
+      rewards?: { experience: number; gold: number; items: Item[] },
+      escaped?: boolean
+    ) => void,
     onMessage?: (message: string) => void
   ): void {
     this.onCombatEnd = onCombatEnd;
@@ -41,7 +49,7 @@ export class CombatSystem {
     this.resetTurnState(); // Ensure clean state
 
     this.encounter = {
-      monsters: monsters.map(m => ({ ...m })),
+      monsters: monsters.map((m) => ({ ...m })),
       surprise: Math.random() < GAME_CONFIG.ENCOUNTER.SURPRISE_CHANCE,
       canRun: true, // Keep for compatibility, no longer used
       turnOrder: this.calculateTurnOrder(party, monsters),
@@ -49,7 +57,7 @@ export class CombatSystem {
     };
 
     if (this.encounter.surprise) {
-      this.encounter.turnOrder = this.encounter.turnOrder.filter(unit => 'class' in unit);
+      this.encounter.turnOrder = this.encounter.turnOrder.filter((unit) => 'class' in unit);
     }
 
     // Update debug data
@@ -61,9 +69,8 @@ export class CombatSystem {
     this.isProcessingTurn = false;
   }
 
-
   private calculateTurnOrder(party: Character[], monsters: Monster[]): (Character | Monster)[] {
-    const allUnits: (Character | Monster)[] = [...party.filter(c => !c.isDead), ...monsters];
+    const allUnits: (Character | Monster)[] = [...party.filter((c) => !c.isDead), ...monsters];
 
     return allUnits.sort((a, b) => {
       const aAgility = 'stats' in a ? a.stats.agility : 10;
@@ -138,19 +145,19 @@ export class CombatSystem {
     }
 
     this.nextTurn();
-    
+
     // Additional safety: if we end up back at a player turn immediately, reset processing flag
     if (this.canPlayerAct()) {
       this.isProcessingTurn = false;
     }
-    
+
     return result;
   }
 
   private executeAttack(attacker: Character, targetIndex?: number): string {
     if (!this.encounter) return 'No active combat';
 
-    const aliveMonsters = this.encounter.monsters.filter(m => m.hp > 0);
+    const aliveMonsters = this.encounter.monsters.filter((m) => m.hp > 0);
     if (aliveMonsters.length === 0) return 'No targets available';
 
     const target =
@@ -173,7 +180,7 @@ export class CombatSystem {
   private executeCastSpell(caster: Character, spellId?: string, targetIndex?: number): string {
     if (!this.encounter || !spellId) return 'Invalid spell';
 
-    const spell = caster.spells.find(s => s.id === spellId);
+    const spell = caster.spells.find((s) => s.id === spellId);
     if (!spell) return 'Spell not found';
 
     if (caster.mp < spell.mpCost) return 'Not enough MP';
@@ -184,13 +191,14 @@ export class CombatSystem {
     let result = `${caster.name} casts ${spell.name}!`;
 
     switch (spell.targetType) {
-      case 'enemy':
-        const aliveMonsters = this.encounter.monsters.filter(m => m.hp > 0);
+      case 'enemy': {
+        const aliveMonsters = this.encounter.monsters.filter((m) => m.hp > 0);
         target =
           targetIndex !== undefined && targetIndex < aliveMonsters.length
             ? aliveMonsters[targetIndex]
             : aliveMonsters[Math.floor(Math.random() * aliveMonsters.length)];
         break;
+      }
       case 'ally':
       case 'self':
         target = caster;
@@ -206,13 +214,14 @@ export class CombatSystem {
 
   private applySpellEffect(spell: Spell, target: Character | Monster): string {
     switch (spell.effect.type) {
-      case 'damage':
+      case 'damage': {
         const damage = spell.effect.power + Math.floor(Math.random() * 6);
         if ('hp' in target) {
           target.hp = Math.max(0, target.hp - damage);
           return `${target.name} takes ${damage} damage!`;
         }
         break;
+      }
       case 'heal':
         if ('heal' in target) {
           const healing = spell.effect.power + Math.floor(Math.random() * 6);
@@ -233,7 +242,7 @@ export class CombatSystem {
       this.resetTurnState();
       return '';
     }
-    
+
     if ('class' in currentUnit) {
       // It's a player's turn, not a monster's - reset flag and skip
       this.isProcessingTurn = false;
@@ -242,7 +251,7 @@ export class CombatSystem {
 
     const monster = currentUnit;
     const alivePlayers = this.encounter.turnOrder.filter(
-      unit => 'class' in unit && !unit.isDead
+      (unit) => 'class' in unit && !unit.isDead
     ) as Character[];
 
     if (alivePlayers.length === 0) {
@@ -261,24 +270,27 @@ export class CombatSystem {
       // Don't call nextTurn() here - let the timeout handler manage turn progression
       return `${monster.name} uses ${attack.name} on ${target.name} for ${damage} damage!`;
     } else {
-      // Don't call nextTurn() here - let the timeout handler manage turn progression  
+      // Don't call nextTurn() here - let the timeout handler manage turn progression
       return `${monster.name} attacks ${target.name} but misses!`;
     }
   }
 
   private calculateDamage(attacker: Character, target: Monster): number {
     let baseDamage = Math.floor(attacker.stats.strength / 2) + Math.floor(Math.random() * 6) + 1;
-    
+
     // Add weapon damage if equipped
     const weapon = attacker.equipment.weapon;
     if (weapon && weapon.effects) {
-      const damageEffect = weapon.effects.find(effect => effect.type === 'damage');
+      const damageEffect = weapon.effects.find((effect) => effect.type === 'damage');
       if (damageEffect) {
         baseDamage += damageEffect.value;
-        DebugLogger.info('CombatSystem', `${attacker.name} attacks with ${weapon.name} for +${damageEffect.value} damage!`);
+        DebugLogger.info(
+          'CombatSystem',
+          `${attacker.name} attacks with ${weapon.name} for +${damageEffect.value} damage!`
+        );
       }
     }
-    
+
     const defense = Math.floor(target.ac / 2);
     return Math.max(1, baseDamage - defense);
   }
@@ -302,16 +314,19 @@ export class CombatSystem {
 
     // Base escape chance is 50%
     let escapeChance = 0.5;
-    
+
     // Character agility affects escape chance
     // Higher agility = better escape chance
     const agilityBonus = (character.stats.agility - 10) * 0.02; // +/-2% per point above/below 10
     escapeChance = Math.max(0.1, Math.min(0.9, escapeChance + agilityBonus));
-    
+
     const success = Math.random() < escapeChance;
-    
-    DebugLogger.info('CombatSystem', `${character.name} attempts escape: ${Math.round(escapeChance * 100)}% chance, ${success ? 'SUCCESS' : 'FAILED'}`);
-    
+
+    DebugLogger.info(
+      'CombatSystem',
+      `${character.name} attempts escape: ${Math.round(escapeChance * 100)}% chance, ${success ? 'SUCCESS' : 'FAILED'}`
+    );
+
     return success;
   }
 
@@ -335,20 +350,20 @@ export class CombatSystem {
 
     const currentUnit = this.getCurrentUnit();
     const isMonster = currentUnit && !('class' in currentUnit);
-    
+
     if (isMonster) {
       // Execute monster turn immediately
       const result = this.executeMonsterTurn();
       if (result && this.onMessage) {
         this.onMessage(result);
       }
-      
+
       // Continue to next turn immediately
       this.nextTurn();
     } else {
       // Player turn - reset state to allow player input
       this.isProcessingTurn = false;
-      
+
       // Update debug data for current turn
       this.updateCombatDebugData();
     }
@@ -357,7 +372,7 @@ export class CombatSystem {
   private cleanupDeadUnits(): void {
     if (!this.encounter) return;
 
-    this.encounter.turnOrder = this.encounter.turnOrder.filter(unit => {
+    this.encounter.turnOrder = this.encounter.turnOrder.filter((unit) => {
       if ('class' in unit) {
         return !unit.isDead;
       } else {
@@ -373,8 +388,8 @@ export class CombatSystem {
   private checkCombatEnd(): boolean {
     if (!this.encounter) return true;
 
-    const alivePlayers = this.encounter.turnOrder.filter(unit => 'class' in unit && !unit.isDead);
-    const aliveMonsters = this.encounter.monsters.filter(m => m.hp > 0);
+    const alivePlayers = this.encounter.turnOrder.filter((unit) => 'class' in unit && !unit.isDead);
+    const aliveMonsters = this.encounter.monsters.filter((m) => m.hp > 0);
 
     if (alivePlayers.length === 0) {
       this.endCombat(false);
@@ -382,13 +397,15 @@ export class CombatSystem {
     }
 
     if (aliveMonsters.length === 0) {
-      DebugLogger.info('CombatSystem', 'All monsters defeated! Calculating rewards...', { monsters: this.encounter.monsters });
-      
+      DebugLogger.info('CombatSystem', 'All monsters defeated! Calculating rewards...', {
+        monsters: this.encounter.monsters,
+      });
+
       const totalExp = this.encounter.monsters.reduce((sum, m) => {
         DebugLogger.debug('CombatSystem', `Monster ${m.name} gives ${m.experience} experience`);
         return sum + m.experience;
       }, 0);
-      
+
       const totalGold = this.encounter.monsters.reduce((sum, m) => {
         DebugLogger.debug('CombatSystem', `Monster ${m.name} gives ${m.gold} gold`);
         return sum + m.gold;
@@ -396,13 +413,16 @@ export class CombatSystem {
 
       const partyLevel = this.getAveragePartyLevel();
       const droppedItems = InventorySystem.generateMonsterLoot(
-        this.encounter.monsters, 
-        partyLevel, 
-        this.dungeonLevel, 
+        this.encounter.monsters,
+        partyLevel,
+        this.dungeonLevel,
         this.party
       );
-      
-      DebugLogger.info('CombatSystem', `Total rewards: ${totalExp} experience, ${totalGold} gold, ${droppedItems.length} items`);
+
+      DebugLogger.info(
+        'CombatSystem',
+        `Total rewards: ${totalExp} experience, ${totalGold} gold, ${droppedItems.length} items`
+      );
       this.endCombat(true, { experience: totalExp, gold: totalGold, items: droppedItems });
       return true;
     }
@@ -412,15 +432,19 @@ export class CombatSystem {
 
   private getAveragePartyLevel(): number {
     if (!this.encounter) return 1;
-    
-    const partyMembers = this.encounter.turnOrder.filter(unit => 'class' in unit) as Character[];
+
+    const partyMembers = this.encounter.turnOrder.filter((unit) => 'class' in unit) as Character[];
     if (partyMembers.length === 0) return 1;
-    
+
     const totalLevel = partyMembers.reduce((sum, character) => sum + character.level, 0);
     return Math.floor(totalLevel / partyMembers.length);
   }
 
-  private endCombat(victory: boolean, rewards?: { experience: number; gold: number; items: Item[] }, escaped?: boolean): void {
+  private endCombat(
+    victory: boolean,
+    rewards?: { experience: number; gold: number; items: Item[] },
+    escaped?: boolean
+  ): void {
     if (this.onCombatEnd) {
       this.onCombatEnd(victory, rewards, escaped);
     }
@@ -432,7 +456,7 @@ export class CombatSystem {
       currentTurn: '',
       turnOrder: [],
       escapeChances: [],
-      isActive: false
+      isActive: false,
     };
   }
 
@@ -443,9 +467,9 @@ export class CombatSystem {
   public getCombatStatus(): string {
     if (!this.encounter) return 'No active combat';
 
-    const aliveMonsters = this.encounter.monsters.filter(m => m.hp > 0);
+    const aliveMonsters = this.encounter.monsters.filter((m) => m.hp > 0);
     const alivePlayers = this.encounter.turnOrder.filter(
-      unit => 'class' in unit && !unit.isDead
+      (unit) => 'class' in unit && !unit.isDead
     ).length;
 
     return `Players: ${alivePlayers} | Monsters: ${aliveMonsters.length}`;
@@ -457,34 +481,37 @@ export class CombatSystem {
 
   private updateCombatDebugData(): void {
     const currentUnit = this.getCurrentUnit();
-    const currentTurnName = currentUnit ? 
-      ('class' in currentUnit ? currentUnit.name : currentUnit.name) : 
-      'No active unit';
+    const currentTurnName = currentUnit
+      ? 'class' in currentUnit
+        ? currentUnit.name
+        : currentUnit.name
+      : 'No active unit';
 
-    const turnOrderNames = this.encounter?.turnOrder.map(unit => 
-      'class' in unit ? `${unit.name} (${unit.class})` : unit.name
-    ) || [];
+    const turnOrderNames =
+      this.encounter?.turnOrder.map((unit) =>
+        'class' in unit ? `${unit.name} (${unit.class})` : unit.name
+      ) || [];
 
     CombatSystem.debugData = {
       currentTurn: currentTurnName,
       turnOrder: turnOrderNames,
       escapeChances: this.calculateEscapeChances(),
-      isActive: this.encounter !== null
+      isActive: this.encounter !== null,
     };
   }
 
   private calculateEscapeChances(): { name: string; chance: number }[] {
     if (!this.encounter) return [];
 
-    const partyMembers = this.encounter.turnOrder.filter(unit => 'class' in unit) as Character[];
-    return partyMembers.map(char => {
+    const partyMembers = this.encounter.turnOrder.filter((unit) => 'class' in unit) as Character[];
+    return partyMembers.map((char) => {
       let escapeChance = 0.5;
       const agilityBonus = (char.stats.agility - 10) * 0.02;
       escapeChance = Math.max(0.1, Math.min(0.9, escapeChance + agilityBonus));
-      
+
       return {
         name: char.name,
-        chance: escapeChance
+        chance: escapeChance,
       };
     });
   }

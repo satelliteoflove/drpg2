@@ -30,18 +30,14 @@ export class GameServices {
     );
 
     // Register InputManager
-    this.container.register(
-      ServiceIdentifiers.InputManager,
-      () => new InputManager(),
-      { singleton: true }
-    );
+    this.container.register(ServiceIdentifiers.InputManager, () => new InputManager(), {
+      singleton: true,
+    });
 
     // Register SceneManager
-    this.container.register(
-      ServiceIdentifiers.SceneManager,
-      () => new SceneManager(),
-      { singleton: true }
-    );
+    this.container.register(ServiceIdentifiers.SceneManager, () => new SceneManager(), {
+      singleton: true,
+    });
 
     // SaveManager and ErrorHandler are static utilities, handled directly in getters
 

@@ -1,0 +1,46 @@
+node_id: implement-input-system
+checklist:
+  unit_tests: false
+  integration_tests: false
+  e2e_tests: false
+outcome: |
+  Successfully created a declarative input handling system for ASCII grid-based interaction.
+  Implemented comprehensive keyboard and mouse event handling with zone-based detection.
+  Created flexible key binding system and zone management utilities for complex UI interactions.
+  The system allows scenes to declare input zones rather than handle events imperatively.
+manual_test_instructions: |
+  1. Create a test HTML file with a canvas element
+  2. Initialize InputHandler: const input = new InputHandler(canvas)
+  3. Define test zones: const zones = [{id: 'test', bounds: {x:0, y:0, width:10, height:5}, ...}]
+  4. Set zones: input.setInputZones(zones)
+  5. Add key binding: input.addKeyBinding({key: 'Enter', action: (e) => console.log('Enter pressed')})
+  6. Click on different areas of the canvas to test zone detection
+  7. Hover over zones to test hover events
+  8. Press keys to test keyboard navigation
+  9. Test zone navigation with arrow keys
+  10. Verify event callbacks are triggered correctly
+surprises_or_notes: |
+  Grid coordinate conversion from pixel positions works smoothly.
+  Key repeat implementation provides good user experience for held keys.
+  Zone visualization feature is very helpful for debugging layouts.
+suggested_follow_ups:
+  - Add touch/mobile input support
+  - Implement gamepad/controller support
+  - Add gesture recognition for complex interactions
+  - Create visual feedback system for hovered/focused zones
+reimplementation_prompt: |
+  Implement a declarative input handling system for ASCII grid-based games.
+  
+  Requirements:
+  - Convert mouse pixel coordinates to ASCII grid coordinates (80x25)
+  - Support input zones with bounds, type, and enabled state
+  - Handle mouse clicks, hover, and leave events
+  - Implement keyboard event handling with modifier keys
+  - Create flexible key binding system with descriptions
+  - Support key repeat for held keys with configurable delay/rate
+  - Add zone navigation for keyboard-only interaction
+  - Provide zone manager for grouping and enabling/disabling zones
+  - Create pattern generators for common UI layouts (menus, grids, buttons)
+  - Include zone visualization for debugging
+  - Support event listeners for custom handling
+  - Clean up resources properly on destroy

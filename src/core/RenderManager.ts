@@ -1,4 +1,9 @@
-import { RenderingOptimizer, SpriteCache, SpatialPartition, LayerConfig } from './RenderingOptimizer';
+import {
+  LayerConfig,
+  RenderingOptimizer,
+  SpatialPartition,
+  SpriteCache,
+} from './RenderingOptimizer';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { ErrorHandler } from '../utils/ErrorHandler';
 import { Scene } from './Scene';
@@ -28,7 +33,7 @@ export class RenderManager {
   // Layer definitions
   private static readonly LAYERS = {
     BACKGROUND: 'background',
-    DUNGEON: 'dungeon', 
+    DUNGEON: 'dungeon',
     ENTITIES: 'entities',
     EFFECTS: 'effects',
     UI: 'ui',
@@ -39,11 +44,11 @@ export class RenderManager {
     this.optimizer = new RenderingOptimizer(canvas);
     this.spriteCache = new SpriteCache();
     this.spatialPartition = new SpatialPartition(
-      canvas.width, 
-      canvas.height, 
+      canvas.width,
+      canvas.height,
       GAME_CONFIG.RENDERING.SPATIAL_PARTITION_CELL_SIZE || 32
     );
-    
+
     this.stats = {
       fps: 0,
       frameTime: 0,
@@ -83,9 +88,9 @@ export class RenderManager {
 
   public endFrame(): void {
     const frameTime = performance.now() - this.frameStartTime;
-    
+
     this.optimizer.renderLayers();
-    
+
     this.updateStats(frameTime);
   }
 
@@ -119,14 +124,13 @@ export class RenderManager {
           scene.render(dungeonLayer.context);
           this.optimizer.markLayerDirty(RenderManager.LAYERS.DUNGEON);
         }
-        
+
         return undefined;
       },
       undefined,
       'RenderManager.renderScene'
     );
   }
-
 
   public renderBackground(renderFn: (ctx: CanvasRenderingContext2D) => void): void {
     const layer = this.optimizer.getLayer(RenderManager.LAYERS.BACKGROUND);
@@ -179,7 +183,7 @@ export class RenderManager {
 
   public renderDebugInfo(renderFn: (ctx: CanvasRenderingContext2D) => void): void {
     if (!GAME_CONFIG.DEBUG_MODE) return;
-    
+
     const layer = this.optimizer.getLayer(RenderManager.LAYERS.DEBUG);
     if (layer) {
       this.optimizer.batchDrawCalls(layer.context, renderFn);
@@ -190,7 +194,7 @@ export class RenderManager {
   public drawSprite(
     layerName: string,
     spriteKey: string,
-    x: number, 
+    x: number,
     y: number,
     width?: number,
     height?: number
@@ -198,7 +202,7 @@ export class RenderManager {
     const layer = this.optimizer.getLayer(layerName);
     if (!layer) return;
 
-    let sprite = this.spriteCache.get(spriteKey);
+    const sprite = this.spriteCache.get(spriteKey);
     if (sprite) {
       this.cacheHits++;
     } else {
@@ -221,12 +225,7 @@ export class RenderManager {
   }
 
   private isInViewport(x: number, y: number, width: number, height: number): boolean {
-    return !(
-      x + width < 0 ||
-      x > this.canvas.width ||
-      y + height < 0 ||
-      y > this.canvas.height
-    );
+    return !(x + width < 0 || x > this.canvas.width || y + height < 0 || y > this.canvas.height);
   }
 
   public markRegionDirty(x: number, y: number, width: number, height: number): void {
@@ -244,7 +243,6 @@ export class RenderManager {
   public addSpriteToCache(key: string, sprite: HTMLImageElement | HTMLCanvasElement): void {
     this.spriteCache.set(key, sprite);
   }
-
 
   public getStats(): RenderStats {
     return { ...this.stats };

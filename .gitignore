@@ -11,4 +11,6 @@ dist/
 coverage/
 .nyc_output/
 temp/
-ai/
+.claude/
+test-results/
+scripts/

@@ -1,0 +1,43 @@
+node_id: town-scene-testing
+checklist:
+  unit_tests: false
+  integration_tests: true
+  e2e_tests: true
+outcome: |
+  Successfully validated TownScene ASCII rendering implementation. The feature flag system
+  works correctly, allowing runtime toggling between original and ASCII rendering modes.
+  The ASCII grid properly initializes with 80x25 dimensions and renders town menu options.
+  Canvas dimensions are preserved and the system maintains good performance.
+manual_test_instructions: |
+  1. Start the development server with 'npm run dev'
+  2. Open http://localhost:8080/test-ascii-renderer.html in browser
+  3. Click "Enable ASCII Mode" button
+  4. Verify status shows "ASCII Mode: ENABLED"
+  5. Open browser console and run: window.FeatureFlags.enable('ascii_town_scene')
+  6. Navigate to main game at http://localhost:8080
+  7. Verify "[ASCII MODE]" appears in town title
+  8. Test menu navigation with arrow keys
+  9. Run: window.FeatureFlags.disable('ascii_town_scene')
+  10. Verify scene returns to original rendering
+surprises_or_notes: |
+  - The renderLayered method is used instead of render() for TownScene
+  - Canvas should NOT be resized when ASCII mode is enabled
+  - ASCII content is rendered as visual graphics, not raw text
+suggested_follow_ups:
+  - Complete ShopScene ASCII migration
+  - Add automated tests using Jest
+  - Implement keyboard navigation for menu items
+  - Add visual feedback for selected menu items
+reimplementation_prompt: |
+  Test the TownScene ASCII rendering implementation for a Wizardry-like game.
+  
+  Requirements:
+  - Verify feature flag toggle works (window.FeatureFlags.enable/disable)
+  - Ensure ASCII grid initializes with 80x25 dimensions
+  - Check that canvas dimensions are preserved (not resized)
+  - Validate menu options are rendered in ASCII mode
+  - Test dynamic switching between rendering modes at runtime
+  - Confirm "[ASCII MODE]" indicator appears in title
+  
+  The TownScene should check feature flags dynamically in renderLayered() method,
+  not just at construction time. ASCII state renders to canvas as visual graphics.

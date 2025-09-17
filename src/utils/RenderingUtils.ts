@@ -4,26 +4,26 @@ export class RenderingUtils {
     // Background colors
     BLACK: '#000',
     DARK_GRAY: '#222',
-    
+
     // Text colors
     WHITE: '#fff',
     GRAY: '#aaa',
     MUTED: '#666',
     DARK_MUTED: '#333',
-    
+
     // Highlight colors
     GOLD: '#ffaa00',
     GREEN: '#00ff00',
     RED: '#ff6666',
     BLUE: '#6666ff',
     YELLOW: '#ffff00',
-    
+
     // UI colors
     BORDER: '#444',
     WINDOW_BG: 'rgba(0, 0, 0, 0.9)',
     SELECTED: '#ffaa00',
     HEALTH: '#00ff00',
-    MANA: '#00aaff'
+    MANA: '#00aaff',
   } as const;
 
   // Font constants
@@ -33,7 +33,7 @@ export class RenderingUtils {
     HEADING: '18px monospace',
     NORMAL: '16px monospace',
     SMALL: '14px monospace',
-    TINY: '12px monospace'
+    TINY: '12px monospace',
   } as const;
 
   /**
@@ -63,7 +63,7 @@ export class RenderingUtils {
       color = this.COLORS.WHITE,
       font = this.FONTS.NORMAL,
       align = 'left',
-      baseline = 'alphabetic'
+      baseline = 'alphabetic',
     } = options;
 
     ctx.fillStyle = color;
@@ -87,7 +87,7 @@ export class RenderingUtils {
   ): void {
     this.renderText(ctx, text, ctx.canvas.width / 2, y, {
       ...options,
-      align: 'center'
+      align: 'center',
     });
   }
 
@@ -115,17 +115,16 @@ export class RenderingUtils {
       font = this.FONTS.NORMAL,
       align = 'left',
       prefix = isSelected ? '> ' : '  ',
-      suffix = isSelected ? ' <' : ''
+      suffix = isSelected ? ' <' : '',
     } = options;
 
-    const displayText = align === 'center' && isSelected 
-      ? `${prefix}${text}${suffix}`
-      : `${prefix}${text}`;
+    const displayText =
+      align === 'center' && isSelected ? `${prefix}${text}${suffix}` : `${prefix}${text}`;
 
     this.renderText(ctx, displayText, x, y, {
       color: isSelected ? selectedColor : unselectedColor,
       font,
-      align
+      align,
     });
   }
 
@@ -152,14 +151,7 @@ export class RenderingUtils {
 
     options.forEach((option, index) => {
       const y = startY + index * lineHeight;
-      this.renderMenuOption(
-        ctx,
-        option,
-        x,
-        y,
-        index === selectedIndex,
-        { ...menuOptions, align }
-      );
+      this.renderMenuOption(ctx, option, x, y, index === selectedIndex, { ...menuOptions, align });
     });
   }
 
@@ -187,7 +179,7 @@ export class RenderingUtils {
       borderWidth = 2,
       title,
       titleColor = this.COLORS.WHITE,
-      titleFont = this.FONTS.SMALL
+      titleFont = this.FONTS.SMALL,
     } = options;
 
     // Draw background
@@ -204,7 +196,7 @@ export class RenderingUtils {
       this.renderText(ctx, title, x + width / 2, y + 20, {
         color: titleColor,
         font: titleFont,
-        align: 'center'
+        align: 'center',
       });
     }
   }
@@ -235,7 +227,7 @@ export class RenderingUtils {
       borderColor = this.COLORS.BORDER,
       showText = false,
       textColor = this.COLORS.WHITE,
-      textFont = this.FONTS.TINY
+      textFont = this.FONTS.TINY,
     } = options;
 
     const percentage = Math.max(0, Math.min(1, current / max));
@@ -255,17 +247,11 @@ export class RenderingUtils {
 
     // Draw text if requested
     if (showText) {
-      this.renderText(
-        ctx,
-        `${current}/${max}`,
-        x + width / 2,
-        y + height / 2 + 4,
-        {
-          color: textColor,
-          font: textFont,
-          align: 'center'
-        }
-      );
+      this.renderText(ctx, `${current}/${max}`, x + width / 2, y + height / 2 + 4, {
+        color: textColor,
+        font: textFont,
+        align: 'center',
+      });
     }
   }
 

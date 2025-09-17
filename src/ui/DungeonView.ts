@@ -31,7 +31,7 @@ export class DungeonView {
 
     // Set the current rendering context
     this.currentRenderCtx = ctx || this.ctx;
-    
+
     this.currentRenderCtx.fillStyle = '#000';
     this.currentRenderCtx.fillRect(0, 0, this.VIEW_WIDTH, this.VIEW_HEIGHT);
 
@@ -45,7 +45,7 @@ export class DungeonView {
   private renderDepth3(): void {
     const positions = this.getPositionsAtDepth(3);
 
-    positions.forEach(pos => {
+    positions.forEach((pos) => {
       const tile = this.getTileAt(pos.x, pos.y);
       if (!tile) return;
 
@@ -63,7 +63,7 @@ export class DungeonView {
   private renderDepth2(): void {
     const positions = this.getPositionsAtDepth(2);
 
-    positions.forEach(pos => {
+    positions.forEach((pos) => {
       const tile = this.getTileAt(pos.x, pos.y);
       if (!tile) return;
 
@@ -82,7 +82,7 @@ export class DungeonView {
   private renderDepth1(): void {
     const positions = this.getPositionsAtDepth(1);
 
-    positions.forEach(pos => {
+    positions.forEach((pos) => {
       const tile = this.getTileAt(pos.x, pos.y);
       if (!tile) return;
 
@@ -308,7 +308,11 @@ export class DungeonView {
 
     this.currentRenderCtx.fillStyle = '#fff';
     this.currentRenderCtx.font = '14px monospace';
-    this.currentRenderCtx.fillText(`Position: ${this.playerX}, ${this.playerY}`, 10, this.VIEW_HEIGHT - 40);
+    this.currentRenderCtx.fillText(
+      `Position: ${this.playerX}, ${this.playerY}`,
+      10,
+      this.VIEW_HEIGHT - 40
+    );
     this.currentRenderCtx.fillText(`Facing: ${this.playerFacing}`, 10, this.VIEW_HEIGHT - 20);
 
     if (this.dungeon) {

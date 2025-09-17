@@ -20,6 +20,7 @@ import { GameServices } from '../services/GameServices';
 import { LayerTestUtils } from '../utils/LayerTestUtils';
 import { MessageLog } from '../ui/MessageLog';
 import { DebugLogger } from '../utils/DebugLogger';
+import { PerformanceMonitor } from '../utils/PerformanceMonitor';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -34,6 +35,7 @@ export class Game {
   private playtimeStart: number = Date.now();
   private frameCount: number = 0;
   private autoSaveFrameCounter: number = 0;
+  private performanceMonitor: PerformanceMonitor;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -42,15 +44,16 @@ export class Game {
       throw new Error('Failed to initialize canvas context');
     }
     this.ctx = ctx;
-    
+
     // CRITICAL: Set canvas dimensions BEFORE creating services/layers
     this.setupCanvas();
-    
+
     this.services = new GameServices({ canvas });
     this.renderManager = this.services.getRenderManager();
     this.sceneManager = this.services.getSceneManager();
     this.inputManager = this.services.getInputManager();
-    
+    this.performanceMonitor = PerformanceMonitor.getInstance();
+
     this.initializeManagers();
     this.initializeGameState();
     this.setupScenes();
@@ -63,7 +66,7 @@ export class Game {
 
   private initializeManagers(): void {
     this.sceneManager.setRenderManager(this.renderManager);
-    
+
     this.inputManager.setKeyPressCallback((key: string) => {
       return this.sceneManager.handleInput(key);
     });
@@ -79,7 +82,7 @@ export class Game {
         this.gameState = validatedGameState;
         this.gameState.party = this.reconstructParty(savedGame.gameState.party);
         this.playtimeStart = Date.now() - savedGame.playtimeSeconds * 1000;
-        
+
         // Create a new MessageLog for loaded game (messages aren't saved)
         this.gameState.messageLog = new MessageLog(this.canvas, 624, 500, 400, 268);
         this.gameState.messageLog.addSystemMessage('Game loaded successfully');
@@ -185,6 +188,9 @@ export class Game {
             alignment: _alignment,
             ...restData
           } = charData;
+
+          // eslint-disable-next-line no-unused-expressions
+          (void _name, void _race, void _charClass, void _alignment); // Mark as intentionally unused
           Object.assign(newChar, restData);
           party.characters.push(newChar);
         } catch (error) {
@@ -217,6 +223,11 @@ export class Game {
     this.sceneManager.addScene('debug', new DebugScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('town', new TownScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('shop', new ShopScene(this.gameState, this.sceneManager));
+
+    // Set up scene change listener for performance monitoring
+    this.sceneManager.onSceneChange = (sceneName: string) => {
+      this.performanceMonitor.startMonitoring(sceneName);
+    };
 
     this.sceneManager.switchTo('main_menu');
   }
@@ -263,10 +274,12 @@ export class Game {
   };
 
   private update(deltaTime: number): void {
+    this.performanceMonitor.markUpdateStart();
+
     this.gameState.gameTime += deltaTime;
     this.frameCount++;
     this.sceneManager.update(deltaTime);
-    
+
     // Handle auto-save using frame-based counting
     this.autoSaveFrameCounter++;
     // Auto-save every 1800 frames (approximately 30 seconds at 60fps)
@@ -276,9 +289,13 @@ export class Game {
       }
       this.autoSaveFrameCounter = 0;
     }
+
+    this.performanceMonitor.markUpdateEnd();
   }
 
   private render(): void {
+    this.performanceMonitor.markRenderStart();
+
     ErrorHandler.safeCanvasOperation(
       () => {
         // Start frame timing and skip if needed for performance
@@ -290,38 +307,44 @@ export class Game {
         const currentScene = this.sceneManager.getCurrentScene();
         if (currentScene?.hasLayeredRendering()) {
           // Debug layer state if needed
-          if (GAME_CONFIG.DEBUG_MODE && this.frameCount % 60 === 0) { // Every second at 60fps
+          if (GAME_CONFIG.DEBUG_MODE && this.frameCount % 60 === 0) {
+            // Every second at 60fps
             this.renderManager.debugLayers();
             // Run comprehensive layer tests
             const testResults = LayerTestUtils.runLayerTests(this.renderManager, this.canvas);
             DebugLogger.debug('Game', 'Layer Test Results', testResults.summary);
             if (testResults.failed > 0) {
-              DebugLogger.warn('Game', 'Layer test failures', testResults.results.filter(r => !r.passed));
+              DebugLogger.warn(
+                'Game',
+                'Layer test failures',
+                testResults.results.filter((r) => !r.passed)
+              );
             }
             // Debug layer content analysis
             const layerAnalysis = LayerTestUtils.analyzeLayers(this.renderManager);
             DebugLogger.debug('Game', 'Layer Analysis', layerAnalysis);
           }
           this.sceneManager.renderLayered(this.ctx);
-          
+
           // Complete the frame - this composites all layers to main canvas
           this.renderManager.endFrame();
-          
+
           // NOW render debug info directly on top of the composited result
           this.renderDebugInfo();
         } else {
           // For direct rendering, clear canvas first
           this.ctx.fillStyle = GAME_CONFIG.COLORS.BACKGROUND;
           this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-          
-          if (GAME_CONFIG.DEBUG_MODE && this.frameCount % 600 === 0) { // Every 10 seconds
+
+          if (GAME_CONFIG.DEBUG_MODE && this.frameCount % 600 === 0) {
+            // Every 10 seconds
             DebugLogger.debug('Game', 'Using direct rendering (layered rendering not available)');
           }
           this.sceneManager.render(this.ctx);
-          
+
           // Complete the frame (no-op for direct rendering but keeps consistency)
           this.renderManager.endFrame();
-          
+
           // Render debug info on top
           this.renderDebugInfo();
         }
@@ -331,6 +354,9 @@ export class Game {
       undefined,
       'Game.render'
     );
+
+    this.performanceMonitor.markRenderEnd();
+    this.performanceMonitor.recordFrame();
   }
 
   private renderDebugInfo(): void {
@@ -357,7 +383,7 @@ export class Game {
     }
   }
 
-  private saveGame(): void {
+  public saveGame(): void {
     const playtimeSeconds = Math.floor((Date.now() - this.playtimeStart) / 1000);
     const saveManager = this.services.getSaveManager();
     saveManager.saveGame(this.gameState, playtimeSeconds);
@@ -369,5 +395,14 @@ export class Game {
 
   public getGameState(): GameState {
     return this.gameState;
+  }
+
+  public getCurrentSceneName(): string {
+    const currentScene = this.sceneManager.getCurrentScene();
+    return currentScene ? currentScene.getName() : 'unknown';
+  }
+
+  public getSceneManager(): SceneManager {
+    return this.sceneManager;
   }
 }

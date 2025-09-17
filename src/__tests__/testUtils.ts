@@ -127,7 +127,6 @@ export class TestUtils {
     return jest.fn(implementation);
   }
 
-
   /**
    * Advances Jest fake timers by specified milliseconds
    */
@@ -161,7 +160,7 @@ export class TestUtils {
         delete store[key];
       }),
       clear: jest.fn(() => {
-        Object.keys(store).forEach(key => delete store[key]);
+        Object.keys(store).forEach((key) => delete store[key]);
       }),
       key: jest.fn((index: number) => Object.keys(store)[index] || null),
       length: Object.keys(store).length,

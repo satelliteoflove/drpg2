@@ -1,0 +1,85 @@
+node_id: combat-scene-migration
+checklist:
+  unit_tests: true
+  integration_tests: true
+  e2e_tests: false
+outcome: |
+  Successfully migrated CombatScene to support ASCII rendering mode while maintaining
+  backward compatibility with the original canvas rendering. The implementation includes:
+  - CombatASCIIState class for managing combat visualization
+  - Full battle grid with party formation and monster display
+  - Action menu system with keyboard navigation
+  - Health bars and status indicators
+  - Feature flag integration for toggling between rendering modes
+  - Comprehensive test coverage for all major functionality
+manual_test_instructions: |
+  1. Start the development server: npm run dev
+  2. Navigate to http://localhost:8080
+  3. Enter the dungeon and encounter enemies
+  4. Verify combat displays correctly in regular mode
+  5. Enable ASCII rendering:
+     - Open browser console
+     - Run: localStorage.setItem('feature_ascii_rendering', 'true')
+     - Refresh the page
+  6. Enter combat again and verify:
+     - ASCII grid displays with borders and title
+     - Monsters appear with appropriate symbols (g for goblin, o for orc, etc.)
+     - Party formation shows on the right side
+     - Action menu appears at bottom with cursor
+     - UP/DOWN arrows navigate action menu
+     - ENTER selects Attack and switches to target selection
+     - LEFT/RIGHT arrows select different monsters
+     - ENTER executes the attack
+     - ESC cancels target selection
+     - Number keys (1-4) quick-select actions
+  7. Test combat flow:
+     - Verify turns process correctly
+     - Check that "waiting" state displays during enemy turns
+     - Confirm victory/defeat messages appear
+surprises_or_notes: |
+  - The ASCII_SYMBOLS constants didn't include character class symbols (CHAR_FIGHTER, etc.)
+  - Had to map to existing monster and item symbols instead
+  - Used simple letter representations (F, M, P, T) for character classes
+  - Canvas renderer initialization required special handling in render method
+  - Input delegation pattern worked well for maintaining state sync
+suggested_follow_ups:
+  - Add more detailed combat animations in ASCII mode
+  - Implement spell effects visualization
+  - Add ASCII particle effects for attacks
+  - Create ASCII damage number display
+  - Add turn order indicator in ASCII mode
+reimplementation_prompt: |
+  Implement ASCII rendering support for a combat scene in a dungeon crawler game.
+  
+  Requirements:
+  - Create a CombatASCIIState class extending BaseASCIIScene
+  - Display a battle grid with monsters and party formation
+  - Show health bars using ASCII characters (= for filled, - for empty)
+  - Implement action menu with cursor navigation
+  - Support target selection mode for attacks
+  - Use appropriate ASCII symbols for monsters based on type
+  - Integrate with existing CombatScene using feature flags
+  - Maintain backward compatibility with original rendering
+  
+  Key implementation details:
+  - Use BaseASCIIScene as the parent class for consistency
+  - Map monster types to ASCII_SYMBOLS.MONSTER_* constants
+  - Use simple letters (F, M, P, T) for character classes
+  - Handle state transitions: select_action -> select_target -> waiting
+  - Sync state between ASCII renderer and main combat scene
+  - Initialize CanvasRenderer only when needed
+  
+  The ASCII combat display should show:
+  - Title bar with "COMBAT [ASCII MODE]"
+  - Battlefield area with monster positions
+  - Party formation on the right side
+  - Party status panel with HP/MP for each character
+  - Action menu or waiting message at bottom
+  - Help text for controls
+  
+  Test coverage should include:
+  - Grid rendering verification
+  - Input handling for all navigation
+  - State transition testing
+  - Scene declaration generation
+  - Integration with feature flags

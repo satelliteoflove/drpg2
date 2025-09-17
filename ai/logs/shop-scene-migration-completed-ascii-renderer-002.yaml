@@ -1,0 +1,50 @@
+node_id: shop-scene-migration
+checklist:
+  unit_tests: false
+  integration_tests: false
+  e2e_tests: false
+outcome: |
+  Successfully migrated ShopScene to ASCII rendering system. Created ShopASCIIState class
+  that handles all shop states including main menu, buying items, selling items, and gold
+  pooling. Integrated ASCII rendering into ShopScene with dynamic feature flag checking.
+  All shop functionality is preserved and renders correctly in 80x25 ASCII grid.
+manual_test_instructions: |
+  1. Start the development server with 'npm run dev'
+  2. Open browser console at http://localhost:8080
+  3. Enable ASCII mode: window.FeatureFlags.enable('ascii_shop_scene')
+  4. Navigate to Town and select "Boltac's Trading Post"
+  5. Verify "[ASCII MODE]" appears in shop title
+  6. Test menu navigation with arrow keys
+  7. Select "Buy Items" and browse categories
+  8. Test item scrolling with up/down arrows
+  9. Test character selection for purchases
+  10. Test "Pool Gold" functionality
+  11. Disable ASCII: window.FeatureFlags.disable('ascii_shop_scene')
+  12. Verify shop returns to original rendering
+surprises_or_notes: |
+  - ASCII_SHOP_SCENE feature flag was already defined in FeatureFlags.ts
+  - Shop has complex state management with 8 different states
+  - Scrolling implementation needed for long item lists
+  - Gold pooling feature has unique ASCII layout requirements
+suggested_follow_ups:
+  - Add input zone support for mouse clicking on menu items
+  - Implement item filtering/search in ASCII mode
+  - Add visual indicators for affordable vs unaffordable items
+  - Create unit tests for ShopASCIIState
+reimplementation_prompt: |
+  Migrate ShopScene to ASCII rendering for a Wizardry-like game.
+  
+  Requirements:
+  - Create ShopASCIIState class extending BaseASCIIScene
+  - Handle all shop states: main_menu, buying_category, buying_items, 
+    buying_character_select, selling_character_select, selling_items,
+    selling_confirmation, pooling_gold
+  - Render in 80x25 ASCII grid with proper borders
+  - Implement scrolling for long item lists
+  - Show item details, prices, and character inventories
+  - Integrate with existing ShopSystem for transactions
+  - Add feature flag support (ASCII_SHOP_SCENE)
+  - Preserve all existing shop functionality
+  
+  The ASCII state should update dynamically based on shop state changes
+  and render to canvas via CanvasRenderer.

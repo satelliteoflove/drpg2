@@ -42,7 +42,7 @@
     "baseGold": 8,
     "itemDrops": [
       { "itemId": "leather_armor", "chance": 0.03 },
-      { "itemId": "potion", "chance": 0.10 },
+      { "itemId": "potion", "chance": 0.1 },
       { "itemId": "scroll_of_sleep", "chance": 0.02 }
     ],
     "lootDrops": [

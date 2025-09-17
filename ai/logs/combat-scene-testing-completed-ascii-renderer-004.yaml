@@ -1,0 +1,72 @@
+node_id: combat-scene-testing
+checklist:
+  unit_tests: false
+  integration_tests: true
+  e2e_tests: true
+outcome: |
+  Successfully completed CombatScene ASCII integration with bidirectional state synchronization.
+  The CombatScene now properly renders in ASCII mode when the feature flag is enabled.
+  Created comprehensive Playwright tests for validation.
+
+  Key accomplishments:
+  - Implemented syncFromASCII() and syncToASCII() methods for proper state management
+  - Added pendingAction tracking system to handle action execution flow
+  - Modified CombatASCIIState to properly communicate actions back to main scene
+  - Created 2 test files with 8 total test cases for combat ASCII rendering
+  - TypeScript compilation passes with 0 errors
+
+manual_test_instructions: |
+  1. Start the development server with 'npm run dev'
+  2. Open http://localhost:8080 in your browser
+  3. Open browser console and enable ASCII: window.FeatureFlags.enable('ASCII_RENDERING')
+  4. From Town, press '2' to enter the Dungeon
+  5. Move around with WASD keys until you encounter monsters
+  6. When combat starts, verify:
+     - ASCII grid shows combat layout with borders
+     - Monsters are displayed with ASCII symbols in battlefield area
+     - Party status is shown on the right side
+     - Action menu is displayed at the bottom
+  7. Test menu navigation:
+     - Use UP/DOWN arrows to navigate action menu
+     - Press ENTER on Attack to enter target selection mode
+     - Use LEFT/RIGHT arrows to select different monsters
+     - Press ENTER to execute attack
+     - Press ESC to cancel target selection
+  8. Test feature toggle:
+     - During combat, disable ASCII: window.FeatureFlags.disable('ASCII_RENDERING')
+     - Verify combat switches to regular canvas rendering
+     - Re-enable ASCII: window.FeatureFlags.enable('ASCII_RENDERING')
+     - Verify combat switches back to ASCII rendering
+
+surprises_or_notes: |
+  - The executeAction flow was more complex than expected - needed a pending action queue
+  - Combat scene already had partial ASCII integration but action execution wasn't connected
+  - Testing combat requires either manual dungeon exploration or direct scene switching
+  - Feature flag toggling works dynamically without scene reload
+
+suggested_follow_ups:
+  - Add spell selection submenu for magic actions
+  - Implement item usage in combat
+  - Add combat animations (flashing when hit, etc.)
+  - Display turn order indicator
+  - Add combat log to ASCII display
+  - Improve monster ASCII symbols based on type
+
+reimplementation_prompt: |
+  Complete the ASCII rendering integration for CombatScene in a Wizardry-like dungeon crawler.
+
+  Requirements:
+  - Extend CombatASCIIState from BaseASCIIScene
+  - Implement bidirectional state sync between CombatScene and CombatASCIIState
+  - Use a pending action system to queue actions from ASCII state
+  - Add syncFromASCII() and syncToASCII() methods in CombatScene
+  - Support action states: 'select_action', 'select_target', 'select_spell', 'waiting'
+  - Render combat grid with battlefield, party status, and action menu
+  - Handle input for menu navigation and action execution
+  - Ensure feature flag toggling works dynamically
+
+  Key implementation details:
+  - CombatASCIIState tracks pendingAction with action name and optional target
+  - CombatScene checks for pendingAction in syncFromASCII() and executes it
+  - Use getSelectedAction(), getSelectedTarget(), getActionState() for state queries
+  - Clear pendingAction after execution to prevent duplicate actions

@@ -19,12 +19,12 @@ export const GAME_CONFIG = {
       safe: 0.0,
     },
     ZONE_GENERATION: {
-      ENABLE_SAFE_ZONES: false,        // Safe zones around starting area
-      ENABLE_BOSS_ZONES: false,       // Boss encounter zones (100% rate)
+      ENABLE_SAFE_ZONES: false, // Safe zones around starting area
+      ENABLE_BOSS_ZONES: false, // Boss encounter zones (100% rate)
       ENABLE_SPECIAL_MOB_ZONES: false, // Special monster lairs (15% rate)
       ENABLE_HIGH_FREQUENCY_ZONES: false, // High encounter corridors (8% rate)
-      ENABLE_TREASURE_ZONES: false,   // Treasure rooms with guardian encounters
-      ENABLE_AMBUSH_ZONES: false,     // Guaranteed encounter traps
+      ENABLE_TREASURE_ZONES: false, // Treasure rooms with guardian encounters
+      ENABLE_AMBUSH_ZONES: false, // Guaranteed encounter traps
     },
   },
 
@@ -47,20 +47,20 @@ export const GAME_CONFIG = {
 
   ITEMS: {
     IDENTIFICATION: {
-      BISHOP_BASE_CHANCE: 0.10,           // Bishop base 10% chance (authentic Wizardry)
-      BISHOP_LEVEL_MULTIPLIER: 0.05,     // Bishop gets 5% per level (authentic Wizardry)
-      CURSE_BASE_RISK: 0.35,              // Base 35% curse risk (authentic Wizardry)
-      CURSE_LEVEL_REDUCTION: 0.03,       // Reduce curse risk by 3% per level (authentic Wizardry)
-      MAX_CHANCE: 1.0,                    // Max 100% chance at level 18
+      BISHOP_BASE_CHANCE: 0.1, // Bishop base 10% chance (authentic Wizardry)
+      BISHOP_LEVEL_MULTIPLIER: 0.05, // Bishop gets 5% per level (authentic Wizardry)
+      CURSE_BASE_RISK: 0.35, // Base 35% curse risk (authentic Wizardry)
+      CURSE_LEVEL_REDUCTION: 0.03, // Reduce curse risk by 3% per level (authentic Wizardry)
+      MAX_CHANCE: 1.0, // Max 100% chance at level 18
     },
     GENERATION: {
-      CURSED_CHANCE: 0.1,              // 10% chance for cursed items
-      BLESSED_CHANCE: 0.05,            // 5% chance for blessed items (0.10 to 0.15)
-      ENCHANTMENT_CHANCE: 0.15,        // 15% chance for enchantment (0.15 to 0.30)
-      ENCHANTMENT_VALUE_MULT: 0.5,     // Value increases by 50% per enchantment level
+      CURSED_CHANCE: 0.1, // 10% chance for cursed items
+      BLESSED_CHANCE: 0.05, // 5% chance for blessed items (0.10 to 0.15)
+      ENCHANTMENT_CHANCE: 0.15, // 15% chance for enchantment (0.15 to 0.30)
+      ENCHANTMENT_VALUE_MULT: 0.5, // Value increases by 50% per enchantment level
     },
     INVENTORY: {
-      MAX_ITEMS_PER_CHARACTER: 20,     // Maximum items per character
+      MAX_ITEMS_PER_CHARACTER: 20, // Maximum items per character
     },
     SHOP: {
       IDENTIFY_COST_MULTIPLIER: 0.5,
@@ -126,8 +126,8 @@ export const GAME_CONFIG = {
     CORRIDOR_ATTEMPTS: 10,
     MIN_SPECIAL_TILES: 3,
     MAX_EXTRA_SPECIAL_TILES: 3,
-    ENABLE_TREASURE_CHESTS: false,    // Generate treasure chests in dungeon
-    ENABLE_DOORS: false,              // Generate doors in dungeon
+    ENABLE_TREASURE_CHESTS: false, // Generate treasure chests in dungeon
+    ENABLE_DOORS: false, // Generate doors in dungeon
     CHEST_CHANCE: 0.3,
     TRAP_CHANCE: 0.5,
     DOOR_CHANCE: 0.7,
@@ -157,31 +157,31 @@ export const GAME_CONFIG = {
     LUCK_SYSTEM: {
       // Drop rate bonus: +1% drop rate per point of total party luck above base
       DROP_RATE_PER_LUCK: 0.01,
-      BASE_PARTY_LUCK: 60,     // 6 characters * 10 luck = baseline
-      MAX_LUCK_BONUS: 2.0,     // Cap at 2x multiplier from luck
+      BASE_PARTY_LUCK: 60, // 6 characters * 10 luck = baseline
+      MAX_LUCK_BONUS: 2.0, // Cap at 2x multiplier from luck
 
       // Rarity bonus: shifts rarity chances toward better items
       RARITY_LUCK_FACTOR: 0.002, // +0.2% rare/legendary chance per luck point
-      MAX_RARITY_SHIFT: 0.15,     // Max 15% shift toward better rarities
+      MAX_RARITY_SHIFT: 0.15, // Max 15% shift toward better rarities
     },
 
     RARITY_CHANCES: {
-      common: 0.70,              // 70% of drops are common
-      uncommon: 0.25,            // 25% are uncommon  
-      rare: 0.04,                // 4% are rare
-      legendary: 0.01            // 1% are legendary
+      common: 0.7, // 70% of drops are common
+      uncommon: 0.25, // 25% are uncommon
+      rare: 0.04, // 4% are rare
+      legendary: 0.01, // 1% are legendary
     },
     RARITY_ENCHANTMENT_LEVELS: {
-      common: { min: 0, max: 0 },       // No enchantment
-      uncommon: { min: 1, max: 2 },     // +1 to +2
-      rare: { min: 3, max: 4 },         // +3 to +4
-      legendary: { min: 5, max: 7 }     // +5 to +7
+      common: { min: 0, max: 0 }, // No enchantment
+      uncommon: { min: 1, max: 2 }, // +1 to +2
+      rare: { min: 3, max: 4 }, // +3 to +4
+      legendary: { min: 5, max: 7 }, // +5 to +7
     },
     RARITY_VALUE_MULTIPLIERS: {
       common: 1.0,
       uncommon: 2.0,
       rare: 4.0,
-      legendary: 8.0
+      legendary: 8.0,
     },
   },
 

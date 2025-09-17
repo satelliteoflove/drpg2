@@ -1,10 +1,9 @@
-import { ItemEffect, Direction } from '../types/GameTypes';
+import { Direction, ItemEffect } from '../types/GameTypes';
 
 /**
  * Common game utility functions to reduce code duplication
  */
 export class GameUtilities {
-  
   /**
    * Common navigation input handling
    * Returns the index change for menu navigation
@@ -18,34 +17,34 @@ export class GameUtilities {
     }
   ): { newIndex: number; handled: boolean } {
     const { wrapAround = false } = options || {};
-    
+
     switch (key) {
       case 'arrowup':
       case 'w':
         if (wrapAround) {
           return {
             newIndex: currentIndex > 0 ? currentIndex - 1 : maxIndex,
-            handled: true
+            handled: true,
           };
         }
         return {
           newIndex: Math.max(0, currentIndex - 1),
-          handled: true
+          handled: true,
         };
-        
+
       case 'arrowdown':
       case 's':
         if (wrapAround) {
           return {
             newIndex: currentIndex < maxIndex ? currentIndex + 1 : 0,
-            handled: true
+            handled: true,
           };
         }
         return {
           newIndex: Math.min(maxIndex, currentIndex + 1),
-          handled: true
+          handled: true,
         };
-        
+
       default:
         return { newIndex: currentIndex, handled: false };
     }
@@ -97,10 +96,10 @@ export class GameUtilities {
    */
   static rotateDirectionClockwise(direction: Direction): Direction {
     const rotations: Record<Direction, Direction> = {
-      'north': 'east',
-      'east': 'south',
-      'south': 'west',
-      'west': 'north'
+      north: 'east',
+      east: 'south',
+      south: 'west',
+      west: 'north',
     };
     return rotations[direction];
   }
@@ -110,10 +109,10 @@ export class GameUtilities {
    */
   static rotateDirectionCounterClockwise(direction: Direction): Direction {
     const rotations: Record<Direction, Direction> = {
-      'north': 'west',
-      'west': 'south',
-      'south': 'east',
-      'east': 'north'
+      north: 'west',
+      west: 'south',
+      south: 'east',
+      east: 'north',
     };
     return rotations[direction];
   }
@@ -138,17 +137,17 @@ export class GameUtilities {
    */
   static getTileColor(tileType: string): string {
     const tileColors: Record<string, string> = {
-      'floor': '#444',
-      'wall': '#000',
-      'door': '#8b4513',
-      'stairs_up': '#ffff00',
-      'stairs_down': '#ff00ff',
-      'chest': '#ffd700',
-      'trap': '#ff0000',
-      'event': '#00ffff',
-      'safe': '#00ff00',
-      'boss': '#ff00ff',
-      'special': '#ffa500'
+      floor: '#444',
+      wall: '#000',
+      door: '#8b4513',
+      stairs_up: '#ffff00',
+      stairs_down: '#ff00ff',
+      chest: '#ffd700',
+      trap: '#ff0000',
+      event: '#00ffff',
+      safe: '#00ff00',
+      boss: '#ff00ff',
+      special: '#ffa500',
     };
     return tileColors[tileType] || '#333';
   }
@@ -158,17 +157,17 @@ export class GameUtilities {
    */
   static getTileSymbol(tileType: string): string {
     const tileSymbols: Record<string, string> = {
-      'floor': '.',
-      'wall': '#',
-      'door': 'D',
-      'stairs_up': '<',
-      'stairs_down': '>',
-      'chest': 'C',
-      'trap': 'T',
-      'event': '!',
-      'safe': 'S',
-      'boss': 'B',
-      'special': '?'
+      floor: '.',
+      wall: '#',
+      door: 'D',
+      stairs_up: '<',
+      stairs_down: '>',
+      chest: 'C',
+      trap: 'T',
+      event: '!',
+      safe: 'S',
+      boss: 'B',
+      special: '?',
     };
     return tileSymbols[tileType] || '?';
   }
@@ -199,7 +198,9 @@ export class GameUtilities {
    * Check if a key is a movement key
    */
   static isMovementKey(key: string): boolean {
-    return ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key.toLowerCase());
+    return ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(
+      key.toLowerCase()
+    );
   }
 
   /**
