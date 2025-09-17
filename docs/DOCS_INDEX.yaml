@@ -17,10 +17,6 @@ ascii_rendering:
     topics: [ASCII, rendering, text display, console output, terminal graphics]
     summary: Guide for implementing ASCII-based rendering system
 
-  - file: ASCII_RENDERING_MIGRATION_PLAN.md
-    topics: [migration, ASCII, refactoring, rendering transition]
-    summary: Plan for migrating from canvas to ASCII rendering
-
   - file: ascii-system-documentation.md
     topics: [ASCII system, implementation, architecture, rendering pipeline]
     summary: Detailed documentation of the ASCII rendering system implementation
