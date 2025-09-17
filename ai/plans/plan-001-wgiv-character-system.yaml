@@ -1,0 +1,396 @@
+version: "0.5"
+plan_id: "wgiv-character-system-001"
+project_name: "Wizardry Gaiden IV Character System Implementation"
+agent_profile: "ai-coding-agent-v1"
+entry_node: "create-feature-branch"
+
+context:
+  business_goal: "Implement the complete Wizardry Gaiden IV character system including 11 races, 14 classes, proper experience progression, and Inn-based leveling"
+  non_functional_requirements:
+    - "Maintain TypeScript strict mode compliance"
+    - "Support ASCII, canvas, and declarative rendering layers"
+    - "Ensure consistent UI/UX across character creation and Inn scenes"
+    - "Add save game versioning for future compatibility"
+  personas:
+    - name: "Player"
+      need: "Authentic Wizardry character system with intuitive UI"
+    - name: "Developer"
+      need: "Maintainable, well-structured character system"
+
+architecture:
+  overview: "Expand character system from 5 races/8 classes to 11 races/14 classes with WGIV mechanics, complete UI overhaul, and Inn-based leveling system"
+  constraints:
+    - "No external dependencies beyond existing"
+    - "Maintain backward API compatibility where possible"
+    - "Alpha stage - no save game migration needed"
+  integration_points:
+    - "Character creation scene"
+    - "Inn scene (new)"
+    - "Experience/leveling system"
+    - "Save/load system"
+
+tooling:
+  primary_language: "TypeScript"
+  frameworks: ["Webpack", "Canvas API"]
+  package_manager: "npm"
+  coding_standards:
+    testing: "Playwright"
+    formatting: "Prettier"
+
+nodes:
+  - id: "create-feature-branch"
+    status: "Completed"
+    materialization: 1.0
+    description: "Create feature branch for WGIV character system"
+    detailed_description: |
+      Create a new feature branch called 'feature/wgiv-character-system' from the dev branch.
+      This branch will contain all changes for the character system overhaul.
+    outputs: ["git branch"]
+    agent_action: "Create and checkout feature branch"
+    role: "agent"
+    downstream: ["update-types", "create-config-structure"]
+
+  - id: "update-types"
+    status: "Completed"
+    materialization: 0.9
+    description: "Update TypeScript types for races, classes, and save games"
+    detailed_description: |
+      Update src/types/GameTypes.ts:
+      - Expand CharacterRace to include: Faerie, Lizman, Dracon, Rawulf, Mook, Felpurr
+      - Expand CharacterClass to include: Alchemist, Bard, Ranger, Psionic, Valkyrie, Monk
+      - Update spell type to support 4 schools (mage, priest, alchemist, psionic)
+      - Add gender field to Character interface
+      - Add experienceModifier calculation fields
+
+      Create src/types/SaveGameTypes.ts:
+      - Add versioned save game structure
+      - Include version field (start at "0.0.3")
+      - Extend existing GameState with version
+    outputs: ["src/types/GameTypes.ts", "src/types/SaveGameTypes.ts"]
+    agent_action: "Update and create type definitions"
+    role: "agent"
+    acceptance_criteria:
+      - "All 11 races defined"
+      - "All 14 classes defined"
+      - "4 spell schools supported"
+      - "Save game versioning in place"
+    downstream: ["create-race-configs", "create-class-configs"]
+
+  - id: "create-config-structure"
+    status: "Completed"
+    materialization: 0.9
+    description: "Create configuration file structure"
+    detailed_description: |
+      Create the following directory structure:
+      - src/config/races/
+      - src/config/classes/
+      - src/config/progression/
+
+      This will house all the WGIV configuration data.
+    outputs: ["src/config/races/", "src/config/classes/", "src/config/progression/"]
+    agent_action: "Create configuration directories"
+    role: "agent"
+    downstream: ["create-race-configs", "create-class-configs", "create-progression-tables"]
+
+  - id: "create-race-configs"
+    status: "Completed"
+    materialization: 0.8
+    description: "Create race configuration files with WGIV stats"
+    detailed_description: |
+      Create configuration files in src/config/races/ for each race:
+
+      Each file should contain:
+      - Race name
+      - Stat ranges (min-max for ST, IQ, PI, VT, AG, LK)
+      - Special characteristics
+
+      Use data from docs/wizardry_gaiden_4_character_parameters.md:
+      - Human: ST 9-19, IQ 8-18, PI 8-18, VT 9-19, AG 8-18, LK 8-18
+      - Elf: ST 7-17, IQ 10-20, PI 10-20, VT 7-17, AG 9-19, LK 8-18
+      - Dwarf: ST 11-21, IQ 6-16, PI 10-20, VT 12-22, AG 7-17, LK 7-17
+      - Gnome: ST 10-20, IQ 7-17, PI 13-23, VT 10-20, AG 6-16, LK 7-17
+      - Hobbit: ST 8-18, IQ 7-17, PI 6-16, VT 9-19, AG 10-20, LK 11-21
+      - Faerie: ST 5-15, IQ 11-21, PI 6-16, VT 6-16, AG 14-24, LK 11-21
+      - Lizman: ST 12-22, IQ 5-15, PI 5-15, VT 14-24, AG 9-19, LK 7-17
+      - Dracon: ST 10-20, IQ 7-17, PI 6-16, VT 12-22, AG 8-18, LK 8-18
+      - Rawulf: ST 8-18, IQ 6-16, PI 12-22, VT 10-20, AG 8-18, LK 9-19
+      - Mook: ST 10-20, IQ 10-20, PI 6-16, VT 10-20, AG 7-17, LK 8-18
+      - Felpurr: ST 7-17, IQ 10-20, PI 7-17, VT 7-17, AG 12-22, LK 10-20
+    outputs: ["src/config/races/*.ts"]
+    agent_action: "Create race configuration files"
+    role: "agent"
+    acceptance_criteria:
+      - "All 11 races have configuration files"
+      - "Stat ranges match WGIV documentation"
+    downstream: ["update-character-class"]
+
+  - id: "create-class-configs"
+    status: "Completed"
+    materialization: 0.8
+    description: "Create class configuration files"
+    detailed_description: |
+      Create configuration files in src/config/classes/ for each class:
+
+      Each file should contain:
+      - Class name
+      - Stat requirements
+      - HP/MP calculation formulas
+      - Gender restrictions (Valkyrie is female-only)
+      - Spell schools available
+
+      Classes to implement:
+      - Basic: Fighter, Mage, Priest, Thief, Alchemist
+      - Advanced: Bishop, Bard, Ranger, Psionic
+      - Elite: Valkyrie, Samurai, Lord, Monk, Ninja
+    outputs: ["src/config/classes/*.ts"]
+    agent_action: "Create class configuration files"
+    role: "agent"
+    acceptance_criteria:
+      - "All 14 classes have configuration files"
+      - "Requirements properly defined"
+      - "Gender restrictions noted"
+    downstream: ["update-character-class"]
+
+  - id: "create-progression-tables"
+    status: "Completed"
+    materialization: 0.8
+    description: "Create experience and spell learning progression tables"
+    detailed_description: |
+      Create files in src/config/progression/:
+
+      1. ExperienceTable.ts:
+         - Base experience requirements per level
+         - Race/class modifier matrix from docs/wizardry_gaiden_4_experience.md
+
+      2. SpellLearningTable.ts:
+         - When each class learns spell levels
+         - Use data from docs/wizardry_gaiden_4_spell_learning.md
+         - Pure casters: Learn at levels 1,3,5,7,9,11,13,21
+         - Hybrid casters: Learn at levels 4,6,8,10,12,14,16,24
+         - Bishop: Learn at levels 1,5,9,13,17,21,25,33
+         - Ninja/Monk: Learn at levels 7,10,13,16,19,22,25,33
+    outputs: ["src/config/progression/*.ts"]
+    agent_action: "Create progression tables"
+    role: "agent"
+    acceptance_criteria:
+      - "Experience modifiers for all race/class combinations"
+      - "Spell learning schedules for all casting classes"
+    downstream: ["update-character-class"]
+
+  - id: "update-character-class"
+    status: "Completed"
+    materialization: 0.7
+    description: "Update Character class with WGIV mechanics"
+    detailed_description: |
+      Update src/entities/Character.ts:
+
+      1. Replace hardcoded race modifiers with stat range system
+      2. Implement race-specific stat generation (within min-max ranges)
+      3. Add gender field and validation
+      4. Update experience calculations to use modifiers
+      5. Add pendingLevelUp flag (requires Inn to actually level)
+      6. Update class requirements for new classes
+      7. Add spell learning schedule tracking (data only)
+      8. Remove immediate levelUp(), add checkForLevelUp() that sets flag
+    outputs: ["src/entities/Character.ts"]
+    agent_action: "Refactor Character class for WGIV"
+    role: "agent"
+    acceptance_criteria:
+      - "Stats generated within racial ranges"
+      - "Experience uses race/class modifiers"
+      - "Level-ups pending until Inn rest"
+    downstream: ["overhaul-character-creation-ui"]
+
+  - id: "overhaul-character-creation-ui"
+    status: "Ready"
+    materialization: 0.7
+    description: "Complete overhaul of character creation UI"
+    detailed_description: |
+      Redesign src/scenes/CharacterCreationScene.ts:
+
+      1. Multi-step wizard interface:
+         - Step 1: Choose race (show stat ranges)
+         - Step 2: Choose gender
+         - Step 3: Roll stats (within racial limits, show available classes)
+         - Step 4: Choose class (only show eligible based on stats)
+         - Step 5: Choose alignment
+         - Step 6: Enter name
+         - Step 7: Review and confirm
+
+      2. Visual improvements:
+         - Show stat ranges for selected race
+         - Highlight available classes based on rolled stats
+         - Show class requirements on hover
+         - Add visual feedback for stat rolls
+         - Implement reroll mechanism
+
+      3. Implement all rendering layers:
+         - ASCII layer for feature flag
+         - Canvas layer for main display
+         - Ensure consistent styling
+    outputs: ["src/scenes/CharacterCreationScene.ts", "src/rendering/ascii/CharacterCreationASCII.ts"]
+    agent_action: "Redesign character creation with improved UX"
+    role: "agent"
+    acceptance_criteria:
+      - "Multi-step wizard flow"
+      - "Visual stat rolling"
+      - "Race-specific stat limits"
+      - "Gender affects class availability"
+      - "ASCII and canvas layers"
+    downstream: ["create-inn-scene"]
+
+  - id: "create-inn-scene"
+    status: "Blocked"
+    materialization: 0.6
+    description: "Create Inn scene with level-up mechanics"
+    detailed_description: |
+      Create src/scenes/InnScene.ts with the following services:
+
+      1. Rest & Level Up:
+         - Check for pending level-ups
+         - Apply level-ups with stat increases
+         - Show level-up results
+         - Restore HP/MP
+
+      2. Healing Services:
+         - Cure conditions
+         - Resurrect dead characters
+         - Remove curses
+
+      3. Party Management:
+         - Add/remove characters
+         - Reorder party
+         - Inspect characters
+
+      4. Visual Design:
+         - Match style with new character creation
+         - Implement ASCII layer (src/rendering/ascii/InnASCII.ts)
+         - Implement canvas layer
+         - Menu-driven interface
+
+      5. Integration:
+         - Add Inn option to TownScene
+         - Handle gold costs for services
+         - Save game after rest
+    outputs: ["src/scenes/InnScene.ts", "src/rendering/ascii/InnASCII.ts"]
+    agent_action: "Implement Inn scene with services"
+    role: "agent"
+    acceptance_criteria:
+      - "Level-up only happens at Inn"
+      - "Multiple services available"
+      - "Consistent UI with character creation"
+      - "ASCII and canvas layers"
+    downstream: ["update-town-scene", "update-game-constants", "update-save-system"]
+
+  - id: "update-town-scene"
+    status: "Blocked"
+    materialization: 0.5
+    description: "Add Inn to Town scene"
+    detailed_description: |
+      Update src/scenes/TownScene.ts:
+      - Add Inn as menu option
+      - Implement scene transition to InnScene
+      - Update ASCII rendering to show Inn option
+      - Ensure proper scene management
+    outputs: ["src/scenes/TownScene.ts"]
+    agent_action: "Add Inn option to Town"
+    role: "agent"
+    acceptance_criteria:
+      - "Inn accessible from Town"
+      - "Proper scene transitions"
+    downstream: ["test-character-system"]
+
+  - id: "update-game-constants"
+    status: "Blocked"
+    materialization: 0.5
+    description: "Update game constants for WGIV"
+    detailed_description: |
+      Update src/config/GameConstants.ts:
+      - Add constants for all races
+      - Add constants for all classes
+      - Add Inn service costs
+      - Add level-up related constants
+      - Reference new configuration files
+    outputs: ["src/config/GameConstants.ts"]
+    agent_action: "Update constants for new system"
+    role: "agent"
+    downstream: ["test-character-system"]
+
+  - id: "update-save-system"
+    status: "Blocked"
+    materialization: 0.5
+    description: "Add versioning to save game system"
+    detailed_description: |
+      Update src/utils/SaveManager.ts:
+      - Add version field to saves (start at "0.0.3")
+      - Update save/load to handle versioned data
+      - Add version checking on load
+      - Log version for debugging
+    outputs: ["src/utils/SaveManager.ts"]
+    agent_action: "Add save game versioning"
+    role: "agent"
+    acceptance_criteria:
+      - "Saves include version"
+      - "Version logged on load"
+    downstream: ["test-character-system"]
+
+  - id: "test-character-system"
+    status: "Blocked"
+    materialization: 0.4
+    description: "Comprehensive testing of new character system"
+    detailed_description: |
+      Test the following:
+
+      1. Character Creation:
+         - All 11 races generate valid stats
+         - All 14 classes have proper requirements
+         - Gender restrictions work (Valkyrie)
+         - Stats within racial limits
+
+      2. Experience System:
+         - XP modifiers applied correctly
+         - Level-up flagged at correct XP
+         - No auto-leveling
+
+      3. Inn System:
+         - Level-ups process correctly
+         - Services work as expected
+         - Gold deducted properly
+
+      4. Save System:
+         - Version included in saves
+         - Load works with versioned saves
+
+      Run: npm run dev
+      Test all features manually
+    outputs: ["validation results"]
+    agent_action: "Test all new features"
+    role: "agent"
+    acceptance_criteria:
+      - "All races/classes work"
+      - "Experience system correct"
+      - "Inn level-ups function"
+      - "Saves include version"
+    downstream: ["create-pull-request"]
+
+  - id: "create-pull-request"
+    status: "Blocked"
+    materialization: 0.3
+    description: "Create PR for WGIV character system"
+    detailed_description: |
+      Create pull request to merge feature/wgiv-character-system into dev:
+
+      PR should include:
+      - Summary of all changes
+      - List of new races and classes
+      - Note about save game versioning
+      - Testing checklist
+
+      Ensure all tests pass before creating PR.
+    outputs: ["pull request"]
+    agent_action: "Create PR with comprehensive description"
+    role: "agent"
+    acceptance_criteria:
+      - "All changes committed"
+      - "PR has detailed description"
+      - "Ready for review"
