@@ -68,6 +68,23 @@ wizardry_items:
     14: Miscellaneous items
     15: End-game equipment
 
+wizardry_gaiden_4_systems:
+  - file: wizardry_gaiden_4_character_parameters.md
+    topics: [character creation, races, classes, stats, attributes, wizardry gaiden]
+    summary: Character races, classes, and stat ranges for Wizardry Gaiden IV
+
+  - file: wizardry_gaiden_4_spell_learning.md
+    topics: [spell learning, magic progression, class spells, wizardry gaiden]
+    summary: Spell learning progression by class and level in Wizardry Gaiden IV
+
+  - file: wizardry_gaiden_4_experience.md
+    topics: [experience, leveling, XP, progression, wizardry gaiden]
+    summary: Experience system, requirements, and race/class modifiers for Wizardry Gaiden IV
+
+  - file: wizardry_gaiden_4_spells.md
+    topics: [spells, magic system, mage, priest, alchemist, psionic, wizardry gaiden]
+    summary: Complete spell system including all four magic schools in Wizardry Gaiden IV
+
 usage_and_setup:
   - file: README.md
     topics: [setup, installation, getting started, overview]
