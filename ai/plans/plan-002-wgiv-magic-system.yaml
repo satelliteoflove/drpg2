@@ -1,0 +1,336 @@
+version: "0.5"
+plan_id: "wgiv-magic-system-001"
+project_name: "WGIV Magic System Implementation"
+agent_profile: "ai-coding-agent-v1"
+entry_node: "spell-data-structure"
+
+context:
+  business_goal: "Implement a complete magic system that accurately emulates Wizardry Gaiden IV's spell mechanics"
+  non_functional_requirements:
+    - "Maintain type safety with TypeScript"
+    - "Ensure spell effects are deterministic for testing"
+    - "Keep spell data maintainable and extensible"
+    - "Support future visual effects without refactoring"
+  personas:
+    - name: "Player"
+      need: "Cast spells intuitively in and out of combat with clear feedback"
+    - name: "Developer"
+      need: "Easily add new spells and modify spell effects"
+  reference_doc: "./ai/logs/wgiv-magic-system-analysis.md"
+
+architecture:
+  overview: "Modular spell system with clear separation between data, logic, and UI layers"
+  constraints:
+    - "Must integrate with existing combat and character systems"
+    - "Cannot break save game compatibility"
+    - "Text-only feedback initially (no visual effects)"
+  integration_points:
+    - "Character class for spell learning and MP management"
+    - "Combat system for spell casting in battle"
+    - "Dungeon scene for utility spell usage"
+    - "Status panel for MP display"
+    - "Inn/Town scenes for MP recovery"
+
+tooling:
+  primary_language: "TypeScript"
+  frameworks: ["Webpack", "Canvas API"]
+  package_manager: "npm"
+  coding_standards:
+    lint: "eslint"
+    formatting: "prettier"
+    testing: "playwright"
+
+nodes:
+  - id: "spell-data-structure"
+    status: "Complete"
+    materialization: 1.0
+    description: "Create comprehensive spell database and type definitions"
+    detailed_description: |
+      Create the core spell data structure with all ~100+ spells from WGIV.
+      - Update SpellTypes.ts with expanded spell interfaces
+      - Create SpellDatabase.ts with all spell definitions using English names
+      - Define spell schools, levels, MP costs, and effects
+      - Include targeting types, ranges, and special flags
+      - Add spell learning requirements and restrictions
+      - Create spell effect types for all effect categories
+    outputs:
+      - "src/types/SpellTypes.ts"
+      - "src/data/spells/SpellDatabase.ts"
+      - "src/data/spells/SpellEffectTypes.ts"
+    agent_action: "Define comprehensive spell data structures and populate database"
+    role: "agent"
+    downstream: ["spell-learning-system", "spell-registry"]
+
+  - id: "spell-registry"
+    status: "Complete"
+    materialization: 1.0
+    description: "Build spell registry and lookup system"
+    detailed_description: |
+      Create a central registry for spell management and lookup.
+      - Implement SpellRegistry class for spell access
+      - Add methods to query spells by school, level, class
+      - Create spell availability checking based on class/level
+      - Add spell name mapping (English to internal IDs)
+      - Implement spell prerequisite checking
+    outputs:
+      - "src/systems/magic/SpellRegistry.ts"
+      - "src/systems/magic/MagicConstants.ts"
+    agent_action: "Implement spell registry system"
+    role: "agent"
+    downstream: ["spell-learning-system", "spell-casting-core"]
+
+  - id: "spell-learning-system"
+    status: "Complete"
+    materialization: 1.0
+    description: "Implement randomized spell learning on level up"
+    detailed_description: |
+      Build the spell learning mechanics for character advancement.
+      - Update Character.ts confirmLevelUp() to learn new spells
+      - Implement randomized spell selection based on INT
+      - Add logic to learn missed spells from previous levels
+      - Create spell learning chances calculation
+      - Ensure Bishop multi-school learning works correctly
+      - Add spell learning notifications to message log
+    outputs:
+      - "src/systems/magic/SpellLearning.ts"
+      - "src/entities/Character.ts (updated)"
+    agent_action: "Create spell learning system with randomization"
+    role: "agent"
+    downstream: ["spell-casting-core"]
+
+  - id: "spell-casting-core"
+    status: "Complete"
+    materialization: 1.0
+    description: "Build core spell casting mechanics"
+    detailed_description: |
+      Implement the fundamental spell casting system.
+      - Create SpellCaster class for casting logic
+      - Implement MP cost validation and deduction
+      - Add spell fizzle calculation based on level/stats/luck
+      - Create casting restrictions (silence, anti-magic)
+      - Implement spell range and targeting validation
+      - Add spell casting to message log
+    outputs:
+      - "src/systems/magic/SpellCaster.ts"
+      - "src/systems/magic/SpellValidation.ts"
+    agent_action: "Build core spell casting system"
+    role: "agent"
+    downstream: ["phase1-damage-heal"]
+
+  - id: "phase1-damage-heal"
+    status: "Ready"
+    materialization: 0.8
+    description: "Phase 1: Implement damage and healing spell effects"
+    detailed_description: |
+      Create the effect processors for basic damage and healing spells.
+      - Implement damage calculation with elemental types
+      - Create healing effect processor
+      - Add group vs single target handling
+      - Implement spell resistance checks for damage
+      - Create combat integration for spell effects
+      - Add out-of-combat healing functionality
+      - Update HP/damage display in combat
+    outputs:
+      - "src/systems/magic/effects/DamageEffect.ts"
+      - "src/systems/magic/effects/HealingEffect.ts"
+      - "src/systems/magic/SpellEffectProcessor.ts"
+    agent_action: "Implement Phase 1 damage and healing spells"
+    role: "agent"
+    downstream: ["combat-spell-ui", "spell-testing-phase1"]
+
+  - id: "combat-spell-ui"
+    status: "Blocked"
+    materialization: 0.7
+    description: "Create spell casting UI for combat"
+    detailed_description: |
+      Build the user interface for casting spells in combat.
+      - Add "Cast Spell" option to combat menu
+      - Create spell selection menu organized by level
+      - Implement target selection for spells
+      - Show MP costs and current MP in UI
+      - Add spell descriptions on hover/select
+      - Create spell casting feedback messages
+      - Handle invalid spell selections gracefully
+    outputs:
+      - "src/ui/SpellMenu.ts"
+      - "src/ui/SpellTargetSelector.ts"
+      - "src/scenes/CombatScene.ts (updated)"
+    agent_action: "Create combat spell casting interface"
+    role: "agent"
+    downstream: ["spell-testing-phase1"]
+
+  - id: "spell-testing-phase1"
+    status: "Blocked"
+    materialization: 0.7
+    description: "Test Phase 1 spell implementation"
+    detailed_description: |
+      Create comprehensive tests for damage/healing spells.
+      - Write tests for spell learning on level up
+      - Test damage calculations and resistances
+      - Verify healing effects in and out of combat
+      - Test MP consumption and validation
+      - Verify spell fizzle mechanics
+      - Test group vs single targeting
+      - Ensure save/load compatibility
+    outputs:
+      - "tests/magic-system-phase1.test.js"
+    agent_action: "Write and run Phase 1 spell tests"
+    role: "agent"
+    downstream: ["phase2-status-effects"]
+
+  - id: "phase2-status-effects"
+    status: "Blocked"
+    materialization: 0.6
+    description: "Phase 2: Implement status effect spells"
+    detailed_description: |
+      Build the status effect system for buffs and debuffs.
+      - Create StatusEffectManager for tracking effects
+      - Implement buff spells (AC reduction, stat boosts)
+      - Add debuff spells (sleep, paralysis, silence)
+      - Create poison/disease mechanics
+      - Implement effect duration tracking
+      - Add saving throws and resistance checks
+      - Create effect stacking rules
+      - Add status effect display in UI
+    outputs:
+      - "src/systems/magic/StatusEffectManager.ts"
+      - "src/systems/magic/effects/BuffEffect.ts"
+      - "src/systems/magic/effects/DebuffEffect.ts"
+      - "src/systems/magic/effects/StatusEffect.ts"
+    agent_action: "Implement Phase 2 status effect system"
+    role: "agent"
+    downstream: ["status-ui-integration", "spell-testing-phase2"]
+
+  - id: "status-ui-integration"
+    status: "Blocked"
+    materialization: 0.6
+    description: "Integrate status effects with UI"
+    detailed_description: |
+      Update UI components to display status effects.
+      - Add status effect icons/text to character display
+      - Show effect durations where applicable
+      - Update combat UI to show active effects
+      - Add status effect notifications to message log
+      - Create effect expiration messages
+      - Update save/load to persist status effects
+    outputs:
+      - "src/ui/StatusPanel.ts (updated)"
+      - "src/scenes/CombatScene.ts (updated)"
+    agent_action: "Integrate status effects with UI"
+    role: "agent"
+    downstream: ["spell-testing-phase2"]
+
+  - id: "spell-testing-phase2"
+    status: "Blocked"
+    materialization: 0.6
+    description: "Test Phase 2 status effect implementation"
+    detailed_description: |
+      Test the status effect system thoroughly.
+      - Test buff/debuff application and removal
+      - Verify duration tracking and expiration
+      - Test saving throws and resistance
+      - Verify effect stacking rules
+      - Test silence and anti-magic interactions
+      - Ensure status effects persist correctly
+    outputs:
+      - "tests/magic-system-phase2.test.js"
+    agent_action: "Write and run Phase 2 status effect tests"
+    role: "agent"
+    downstream: ["phase3-special-effects"]
+
+  - id: "phase3-special-effects"
+    status: "Blocked"
+    materialization: 0.5
+    description: "Phase 3: Implement special effect spells"
+    detailed_description: |
+      Implement utility and special mechanic spells.
+      - Create Light spell with duration tracking
+      - Implement Locate (shows coordinates)
+      - Build Teleport with coordinate system
+      - Add Identify spell for items
+      - Implement Resurrection with failure chances
+      - Create instant death spells with saves
+      - Add Dispel magic mechanics
+      - Implement anti-magic zone detection
+    outputs:
+      - "src/systems/magic/effects/UtilityEffect.ts"
+      - "src/systems/magic/effects/SpecialEffect.ts"
+      - "src/systems/magic/TeleportSystem.ts"
+    agent_action: "Implement Phase 3 special effect spells"
+    role: "agent"
+    downstream: ["dungeon-spell-integration", "spell-testing-phase3"]
+
+  - id: "dungeon-spell-integration"
+    status: "Blocked"
+    materialization: 0.5
+    description: "Integrate utility spells with dungeon exploration"
+    detailed_description: |
+      Connect utility spells to dungeon mechanics.
+      - Add spell casting option in dungeon menu
+      - Implement Light spell visibility effects
+      - Add Locate spell coordinate display
+      - Create Teleport UI with safety checks
+      - Add spell duration step counter
+      - Implement anti-magic zone checking
+      - Update message log for spell effects
+    outputs:
+      - "src/scenes/DungeonScene.ts (updated)"
+      - "src/ui/DungeonSpellMenu.ts"
+    agent_action: "Integrate utility spells with dungeon"
+    role: "agent"
+    downstream: ["spell-testing-phase3"]
+
+  - id: "spell-testing-phase3"
+    status: "Blocked"
+    materialization: 0.5
+    description: "Test Phase 3 special effects implementation"
+    detailed_description: |
+      Test all special and utility spell mechanics.
+      - Test Light spell duration and visibility
+      - Verify Teleport coordinate calculations
+      - Test Resurrection success/failure rates
+      - Verify instant death saves and immunities
+      - Test Identify spell functionality
+      - Ensure anti-magic zones work correctly
+    outputs:
+      - "tests/magic-system-phase3.test.js"
+    agent_action: "Write and run Phase 3 special effect tests"
+    role: "agent"
+    downstream: ["spell-documentation"]
+
+  - id: "spell-documentation"
+    status: "Blocked"
+    materialization: 0.4
+    description: "Create comprehensive spell system documentation"
+    detailed_description: |
+      Document the complete magic system implementation.
+      - Create spell reference with all effects
+      - Document spell learning mechanics
+      - Explain status effect system
+      - Provide casting UI guide
+      - Document save/load considerations
+      - Add developer notes for adding new spells
+    outputs:
+      - "docs/magic-system-implementation.md"
+      - "docs/spell-reference.md"
+    agent_action: "Write magic system documentation"
+    role: "agent"
+    downstream: ["final-integration-testing"]
+
+  - id: "final-integration-testing"
+    status: "Blocked"
+    materialization: 0.3
+    description: "Final integration testing of complete magic system"
+    detailed_description: |
+      Perform end-to-end testing of the entire magic system.
+      - Test character progression with spell learning
+      - Verify all spell schools and classes work
+      - Test combat with mixed spell types
+      - Verify dungeon utility spells
+      - Test save/load with active effects
+      - Performance test with many effects
+      - Verify backwards compatibility
+    outputs:
+      - "tests/magic-system-integration.test.js"
+    agent_action: "Perform final integration testing"
+    role: "agent"
