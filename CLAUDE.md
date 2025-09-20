@@ -6,6 +6,8 @@
 - NEVER create files unless absolutely necessary - prefer editing existing files
 - NEVER create documentation files (*.md) unless explicitly requested
 - Always update tests after functional changes
+- Always test new or updated functionality end-to-end using Playwright tests
+- Playwright tests must verify successful user outcomes in the UI
 - Maintain docs/DOCS_INDEX.yaml when documents change
 
 ## Development Commands
@@ -14,6 +16,8 @@
 npm run dev          # Start dev server at http://localhost:8080
 npm run build        # Production build
 npm run typecheck    # TypeScript checking (run before commits)
+npm run test:e2e     # Run Playwright end-to-end tests
+npm run test:e2e:ui  # Run Playwright tests with UI mode
 ```
 
 ## Architecture Overview
@@ -78,5 +82,8 @@ Access via `window.FeatureFlags.enable('feature_name')` or URL `?ff_feature_name
 ## Workflow
 1. Always run `npm run typecheck` before marking work complete
 2. Upon adding or changing an entity or scene, test the intended outcome of that entity or scene
-3. Use feature branches for new features
-4. The ai/ directory contains plans and logs for AI-assisted development
+3. Write and run Playwright tests to verify new functionality works from the user's perspective
+4. Ensure Playwright tests cover the full user journey and successful outcomes in the UI
+5. Run `npm run test:e2e` to execute all end-to-end tests before completing work
+6. Use feature branches for new features
+7. The ai/ directory contains plans and logs for AI-assisted development
