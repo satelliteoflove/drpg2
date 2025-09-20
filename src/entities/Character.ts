@@ -23,6 +23,8 @@ import {
   getClassSpellSchools,
   canClassLearnSpells
 } from '../config/progression/SpellLearningTable';
+import { SpellLearning } from '../systems/magic/SpellLearning';
+import { SpellLearningResult } from '../types/SpellTypes';
 
 export class Character implements ICharacter {
   id: string;
@@ -48,6 +50,8 @@ export class Character implements ICharacter {
   equipment: Equipment;
   inventory: Item[];
   spells: Spell[];
+  knownSpells: string[];
+  statusEffects: Map<string, any>;
   isDead: boolean;
   deathCount: number;
 
@@ -77,6 +81,8 @@ export class Character implements ICharacter {
     this.equipment = {};
     this.inventory = [];
     this.spells = [];
+    this.knownSpells = [];
+    this.statusEffects = new Map();
     this.isDead = false;
     this.deathCount = 0;
     this.status = 'OK';
@@ -229,60 +235,28 @@ export class Character implements ICharacter {
   private learnStartingSpells(): void {
     if (!this.canCastSpells()) return;
 
+    // Import spell database
+    const { SPELLS } = require('../data/spells/SpellDatabase');
+
+    // Placeholder starter spells - will be replaced by spell learning system
     if (this.class === 'Mage' || this.class === 'Bishop') {
-      this.spells.push({
-        id: 'halito',
-        name: 'Halito',
-        level: 1,
-        type: 'mage',
-        mpCost: 1,
-        effect: { type: 'damage', element: 'fire', power: 8 },
-        targetType: 'enemy',
-        inCombat: true,
-        outOfCombat: false,
-      });
+      const flameDart = SPELLS['flame_dart'];
+      if (flameDart) this.spells.push(flameDart);
     }
 
     if (this.class === 'Priest' || this.class === 'Bishop') {
-      this.spells.push({
-        id: 'dios',
-        name: 'Dios',
-        level: 1,
-        type: 'priest',
-        mpCost: 1,
-        effect: { type: 'heal', power: 8 },
-        targetType: 'ally',
-        inCombat: true,
-        outOfCombat: true,
-      });
+      const heal = SPELLS['heal'];
+      if (heal) this.spells.push(heal);
     }
 
     if (this.class === 'Alchemist') {
-      this.spells.push({
-        id: 'heal_potion',
-        name: 'Heal Potion',
-        level: 1,
-        type: 'alchemist',
-        mpCost: 2,
-        effect: { type: 'heal', power: 10 },
-        targetType: 'ally',
-        inCombat: true,
-        outOfCombat: true,
-      });
+      const antidote = SPELLS['antidote'];
+      if (antidote) this.spells.push(antidote);
     }
 
     if (this.class === 'Psionic') {
-      this.spells.push({
-        id: 'mind_blast',
-        name: 'Mind Blast',
-        level: 1,
-        type: 'psionic',
-        mpCost: 1,
-        effect: { type: 'damage', element: 'dark', power: 6 },
-        targetType: 'enemy',
-        inCombat: true,
-        outOfCombat: false,
-      });
+      const mindShield = SPELLS['mind_shield'];
+      if (mindShield) this.spells.push(mindShield);
     }
   }
 
@@ -293,8 +267,8 @@ export class Character implements ICharacter {
     }
   }
 
-  public confirmLevelUp(): void {
-    if (!this.pendingLevelUp) return;
+  public confirmLevelUp(): SpellLearningResult[] {
+    if (!this.pendingLevelUp) return [];
 
     this.level++;
     this.pendingLevelUp = false;
@@ -313,7 +287,10 @@ export class Character implements ICharacter {
       this.stats[randomStat]++;
     }
 
+    const spellResults = SpellLearning.getInstance().learnSpellsOnLevelUp(this, this.level);
     this.checkForNewSpells();
+
+    return spellResults;
   }
 
   private checkForNewSpells(): void {
@@ -404,5 +381,43 @@ export class Character implements ICharacter {
     }
 
     return true;
+  }
+
+  public knowsSpell(spellId: string): boolean {
+    return this.knownSpells.includes(spellId);
+  }
+
+  public learnSpell(spellId: string): void {
+    if (!this.knownSpells.includes(spellId)) {
+      this.knownSpells.push(spellId);
+    }
+  }
+
+  public getKnownSpells(): string[] {
+    return [...this.knownSpells];
+  }
+
+  public hasStatusEffect(effect: string): boolean {
+    return this.statusEffects.has(effect);
+  }
+
+  public getAlignment(): CharacterAlignment {
+    return this.alignment;
+  }
+
+  public getClass(): CharacterClass {
+    return this.class;
+  }
+
+  public getLevel(): number {
+    return this.level;
+  }
+
+  public getStats(): CharacterStats {
+    return { ...this.stats };
+  }
+
+  public getCurrentMP(): number {
+    return this.mp;
   }
 }

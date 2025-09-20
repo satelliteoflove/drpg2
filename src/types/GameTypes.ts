@@ -1,3 +1,5 @@
+import { SpellData } from './SpellTypes';
+
 export type CharacterClass =
   | 'Fighter'
   | 'Mage'
@@ -57,7 +59,7 @@ export interface Character {
   gold: number;
   equipment: Equipment;
   inventory: Item[];
-  spells: Spell[];
+  spells: SpellData[];
   isDead: boolean;
   deathCount: number;
 }
@@ -111,24 +113,7 @@ export interface ItemEffect {
   target?: keyof CharacterStats;
 }
 
-export interface Spell {
-  id: string;
-  name: string;
-  level: number;
-  type: 'mage' | 'priest' | 'alchemist' | 'psionic';
-  mpCost: number;
-  effect: SpellEffect;
-  targetType: 'self' | 'ally' | 'enemy' | 'allAllies' | 'allEnemies' | 'any';
-  inCombat: boolean;
-  outOfCombat: boolean;
-}
-
-export interface SpellEffect {
-  type: 'damage' | 'heal' | 'buff' | 'debuff' | 'cure' | 'special';
-  element?: 'fire' | 'ice' | 'lightning' | 'holy' | 'dark' | 'physical';
-  power: number;
-  duration?: number;
-}
+export type Spell = SpellData;
 
 export interface Monster {
   id: string;

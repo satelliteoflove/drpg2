@@ -213,9 +213,17 @@ export class CombatSystem {
   }
 
   private applySpellEffect(spell: Spell, target: Character | Monster): string {
-    switch (spell.effect.type) {
+    // Process first effect for now - full effect processor will be implemented later
+    const primaryEffect = spell.effects[0];
+    if (!primaryEffect) return 'The spell has no effect!';
+
+    switch (primaryEffect.type) {
       case 'damage': {
-        const damage = spell.effect.power + Math.floor(Math.random() * 6);
+        // Parse damage string like "1d8" - simplified for now
+        const baseDamage = typeof primaryEffect.power === 'string'
+          ? parseInt(primaryEffect.power.split('d')[1] || '8')
+          : (primaryEffect.power || 8);
+        const damage = baseDamage + Math.floor(Math.random() * 6);
         if ('hp' in target) {
           target.hp = Math.max(0, target.hp - damage);
           return `${target.name} takes ${damage} damage!`;
@@ -224,7 +232,11 @@ export class CombatSystem {
       }
       case 'heal':
         if ('heal' in target) {
-          const healing = spell.effect.power + Math.floor(Math.random() * 6);
+          // Parse healing string like "1d8" - simplified for now
+          const baseHealing = typeof primaryEffect.power === 'string'
+            ? parseInt(primaryEffect.power.split('d')[1] || '8')
+            : (primaryEffect.power || 8);
+          const healing = baseHealing + Math.floor(Math.random() * 6);
           target.heal(healing);
           return `${target.name} recovers ${healing} HP!`;
         }
