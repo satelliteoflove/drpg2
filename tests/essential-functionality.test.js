@@ -1,30 +1,44 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('Essential Game Functionality', () => {
-  test('should load game and expose necessary objects', async ({ page }) => {
+  test('should load game and expose AI interface', async ({ page }) => {
     await page.goto('http://localhost:8080');
     await page.waitForTimeout(1000);
 
-    // Check that game object is exposed
+    const aiInterfaceExists = await page.evaluate(() => {
+      return typeof window.AI !== 'undefined';
+    });
+    expect(aiInterfaceExists).toBe(true);
+
+    const aiMethodsExist = await page.evaluate(() => {
+      return {
+        getState: typeof window.AI?.getState === 'function',
+        getScene: typeof window.AI?.getScene === 'function',
+        getParty: typeof window.AI?.getParty === 'function',
+        getDungeon: typeof window.AI?.getDungeon === 'function',
+        getCombat: typeof window.AI?.getCombat === 'function',
+        getActions: typeof window.AI?.getActions === 'function',
+        describe: typeof window.AI?.describe === 'function',
+        sendKey: typeof window.AI?.sendKey === 'function',
+        roll: typeof window.AI?.roll === 'function',
+      };
+    });
+
+    expect(aiMethodsExist.getState).toBe(true);
+    expect(aiMethodsExist.getScene).toBe(true);
+    expect(aiMethodsExist.getParty).toBe(true);
+    expect(aiMethodsExist.getDungeon).toBe(true);
+    expect(aiMethodsExist.getCombat).toBe(true);
+    expect(aiMethodsExist.getActions).toBe(true);
+    expect(aiMethodsExist.describe).toBe(true);
+    expect(aiMethodsExist.sendKey).toBe(true);
+    expect(aiMethodsExist.roll).toBe(true);
+
     const gameExists = await page.evaluate(() => {
       return typeof window.game !== 'undefined';
     });
     expect(gameExists).toBe(true);
 
-    // Check that essential methods exist
-    const methodsExist = await page.evaluate(() => {
-      return {
-        getSceneManager: typeof window.game?.getSceneManager === 'function',
-        getGameState: typeof window.game?.getGameState === 'function',
-        getCanvas: typeof window.game?.getCanvas === 'function',
-      };
-    });
-
-    expect(methodsExist.getSceneManager).toBe(true);
-    expect(methodsExist.getGameState).toBe(true);
-    expect(methodsExist.getCanvas).toBe(true);
-
-    // Check FeatureFlags is exposed
     const featureFlagsExist = await page.evaluate(() => {
       return typeof window.FeatureFlags !== 'undefined';
     });
@@ -35,92 +49,66 @@ test.describe('Essential Game Functionality', () => {
     await page.goto('http://localhost:8080');
     await page.waitForTimeout(1000);
 
-    const sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
-
+    const sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('MainMenu');
+
+    const description = await page.evaluate(() => window.AI.describe());
+    expect(description).toContain('MainMenu');
   });
 
   test('should navigate from MainMenu to game', async ({ page }) => {
     await page.goto('http://localhost:8080');
     await page.waitForTimeout(1000);
 
-    // Press Enter to start new game
-    await page.keyboard.press('Enter');
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
 
-    let sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
-
-    // Should be in New Game scene
+    let sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('New Game');
 
-    // Continue to Character Creation
-    await page.keyboard.press('Enter');
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
 
-    sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
-
-    // Should be in Character Creation
+    sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Character Creation');
 
-    // Skip character creation with Escape
-    await page.keyboard.press('Escape');
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
 
-    sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
-
-    // Should be in Dungeon
+    sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Dungeon');
+
+    const dungeonInfo = await page.evaluate(() => window.AI.getDungeon());
+    expect(dungeonInfo.currentFloor).toBe(1);
   });
 
   test('should navigate between Dungeon and Town', async ({ page }) => {
     await page.goto('http://localhost:8080');
     await page.waitForTimeout(1000);
 
-    // Quick navigate to game
-    await page.keyboard.press('Enter'); // New Game
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Enter'); // Continue
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Escape'); // Skip character creation
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
 
-    // Should be in Dungeon
-    let sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
+    let sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Dungeon');
 
-    // Go to Town
-    await page.keyboard.press('Escape');
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
 
-    sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
+    sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Town');
 
-    // Return to Dungeon
-    await page.keyboard.press('Escape');
+    const description = await page.evaluate(() => window.AI.describe());
+    expect(description).toContain('Town of Llylgamyn');
+
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
 
-    sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
+    sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Dungeon');
   });
 
@@ -128,41 +116,31 @@ test.describe('Essential Game Functionality', () => {
     await page.goto('http://localhost:8080');
     await page.waitForTimeout(1000);
 
-    // Quick navigate to Town
-    await page.keyboard.press('Enter'); // New Game
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Enter'); // Continue
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Escape'); // Skip character creation
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Escape'); // Go to Town
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
 
-    // Should be in Town
-    let sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
+    let sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Town');
 
-    // Enter Shop (first option)
-    await page.keyboard.press('Enter');
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
 
-    sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
+    sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Shop');
 
-    // Return to Town
-    await page.keyboard.press('Escape');
+    const description = await page.evaluate(() => window.AI.describe());
+    expect(description).toContain("Boltac's Trading Post");
+
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
 
-    sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
+    sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Town');
   });
 
@@ -170,115 +148,113 @@ test.describe('Essential Game Functionality', () => {
     await page.goto('http://localhost:8080');
     await page.waitForTimeout(1000);
 
-    // Quick navigate to Town
-    await page.keyboard.press('Enter'); // New Game
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Enter'); // Continue
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Escape'); // Skip character creation
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Escape'); // Go to Town
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
 
-    const getSelectedOption = () =>
-      page.evaluate(() => {
-        const sceneManager = window.game?.sceneManager;
-        const scene = sceneManager?.getCurrentScene();
-        return scene?.selectedOption;
-      });
+    const initialState = await page.evaluate(() => window.AI.getState());
+    const initialMenuPosition = await page.evaluate(() => {
+      const scene = window.game?.sceneManager?.getCurrentScene();
+      return scene?.selectedOption;
+    });
+    expect(initialMenuPosition).toBe(0);
 
-    // Test navigation
-    let selected = await getSelectedOption();
-    expect(selected).toBe(0);
-
-    await page.keyboard.press('ArrowDown');
+    await page.evaluate(() => window.AI.sendKey('ArrowDown'));
     await page.waitForTimeout(100);
-    selected = await getSelectedOption();
-    expect(selected).toBe(1);
+    const afterDownPosition = await page.evaluate(() => {
+      const scene = window.game?.sceneManager?.getCurrentScene();
+      return scene?.selectedOption;
+    });
+    expect(afterDownPosition).toBe(1);
 
-    await page.keyboard.press('ArrowDown');
+    await page.evaluate(() => window.AI.sendKey('ArrowDown'));
     await page.waitForTimeout(100);
-    selected = await getSelectedOption();
-    expect(selected).toBe(2);
+    const secondDownPosition = await page.evaluate(() => {
+      const scene = window.game?.sceneManager?.getCurrentScene();
+      return scene?.selectedOption;
+    });
+    expect(secondDownPosition).toBe(2);
 
-    await page.keyboard.press('ArrowUp');
+    await page.evaluate(() => window.AI.sendKey('ArrowUp'));
     await page.waitForTimeout(100);
-    selected = await getSelectedOption();
-    expect(selected).toBe(1);
+    const afterUpPosition = await page.evaluate(() => {
+      const scene = window.game?.sceneManager?.getCurrentScene();
+      return scene?.selectedOption;
+    });
+    expect(afterUpPosition).toBe(1);
   });
 
   test('should handle Shop menu states', async ({ page }) => {
     await page.goto('http://localhost:8080');
     await page.waitForTimeout(1000);
 
-    // Quick navigate to Shop
-    await page.keyboard.press('Enter'); // New Game
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Enter'); // Continue
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Escape'); // Skip character creation
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Escape'); // Go to Town
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Enter'); // Enter Shop
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
 
-    const getShopState = () =>
-      page.evaluate(() => {
-        const sceneManager = window.game?.sceneManager;
-        const scene = sceneManager?.getCurrentScene();
-        return {
-          name: scene?.getName(),
-          state: scene?.currentState,
-        };
-      });
+    let sceneName = await page.evaluate(() => window.AI.getScene());
+    expect(sceneName).toBe('Shop');
 
-    // Should be in Shop main menu
-    let shopInfo = await getShopState();
-    expect(shopInfo.name).toBe('Shop');
-    expect(shopInfo.state).toBe('main_menu');
+    const initialShopState = await page.evaluate(() => {
+      const scene = window.game?.sceneManager?.getCurrentScene();
+      return scene?.currentState;
+    });
+    expect(initialShopState).toBe('main_menu');
 
-    // Enter buying category
-    await page.keyboard.press('Enter');
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(200);
 
-    shopInfo = await getShopState();
-    expect(shopInfo.state).toBe('buying_category');
+    const buyingState = await page.evaluate(() => {
+      const scene = window.game?.sceneManager?.getCurrentScene();
+      return scene?.currentState;
+    });
+    expect(buyingState).toBe('buying_category');
 
-    // Return to main menu
-    await page.keyboard.press('Escape');
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(200);
 
-    shopInfo = await getShopState();
-    expect(shopInfo.state).toBe('main_menu');
+    const backToMainState = await page.evaluate(() => {
+      const scene = window.game?.sceneManager?.getCurrentScene();
+      return scene?.currentState;
+    });
+    expect(backToMainState).toBe('main_menu');
   });
 
   test('should toggle feature flags', async ({ page }) => {
     await page.goto('http://localhost:8080');
     await page.waitForTimeout(1000);
 
-    // Test ASCII_TOWN_SCENE flag
-    const initialFlag = await page.evaluate(() => {
-      return window.FeatureFlags.isEnabled('ASCII_TOWN_SCENE');
+    const performanceFlag = await page.evaluate(() => {
+      return window.FeatureFlags.isEnabled('PERFORMANCE_MONITORING');
     });
 
-    // Enable the flag
     await page.evaluate(() => {
-      window.FeatureFlags.enable('ASCII_TOWN_SCENE');
+      window.FeatureFlags.enable('PERFORMANCE_MONITORING');
     });
 
     const enabledFlag = await page.evaluate(() => {
-      return window.FeatureFlags.isEnabled('ASCII_TOWN_SCENE');
+      return window.FeatureFlags.isEnabled('PERFORMANCE_MONITORING');
     });
     expect(enabledFlag).toBe(true);
 
-    // Disable the flag
     await page.evaluate(() => {
-      window.FeatureFlags.disable('ASCII_TOWN_SCENE');
+      window.FeatureFlags.disable('PERFORMANCE_MONITORING');
     });
 
     const disabledFlag = await page.evaluate(() => {
-      return window.FeatureFlags.isEnabled('ASCII_TOWN_SCENE');
+      return window.FeatureFlags.isEnabled('PERFORMANCE_MONITORING');
     });
     expect(disabledFlag).toBe(false);
   });
@@ -294,23 +270,21 @@ test.describe('Essential Game Functionality', () => {
       }
     });
 
-    // Quick navigate to game
-    await page.keyboard.press('Enter'); // New Game
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(200);
-    await page.keyboard.press('Enter'); // Continue
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(200);
-    await page.keyboard.press('Escape'); // Skip character creation
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(200);
 
-    // Rapid transitions
     for (let i = 0; i < 5; i++) {
-      await page.keyboard.press('Escape'); // To Town
+      await page.evaluate(() => window.AI.sendKey('Escape'));
       await page.waitForTimeout(100);
-      await page.keyboard.press('Enter'); // To Shop
+      await page.evaluate(() => window.AI.sendKey('Enter'));
       await page.waitForTimeout(100);
-      await page.keyboard.press('Escape'); // Back to Town
+      await page.evaluate(() => window.AI.sendKey('Escape'));
       await page.waitForTimeout(100);
-      await page.keyboard.press('Escape'); // To Dungeon
+      await page.evaluate(() => window.AI.sendKey('Escape'));
       await page.waitForTimeout(100);
     }
 
@@ -321,32 +295,86 @@ test.describe('Essential Game Functionality', () => {
     await page.goto('http://localhost:8080');
     await page.waitForTimeout(1000);
 
-    // Quick navigate to game
-    await page.keyboard.press('Enter'); // New Game
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Enter'); // Continue
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
-    await page.keyboard.press('Escape'); // Skip character creation (creates default party)
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
 
-    // Check game state exists
-    const gameStateInfo = await page.evaluate(() => {
-      const gameState = window.game?.gameState;
-      const totalGold =
-        gameState?.party?.characters?.reduce((sum, char) => sum + (char.gold || 0), 0) || 0;
-      return {
-        hasParty: gameState?.party !== undefined && gameState?.party !== null,
-        hasCharacters: gameState?.party?.characters?.length > 0,
-        hasGold: totalGold > 0,
-        hasMessageLog: gameState?.messageLog !== undefined,
-        characterCount: gameState?.party?.characters?.length || 0,
-      };
+    const partyInfo = await page.evaluate(() => window.AI.getParty());
+    expect(partyInfo.characters).toBeDefined();
+    expect(partyInfo.characters.length).toBe(4);
+
+    const gameState = await page.evaluate(() => window.AI.getState());
+    expect(gameState.party).toBeDefined();
+    expect(gameState.party.characters).toBeDefined();
+    expect(gameState.party.characters.length).toBe(4);
+    expect(gameState.messageLog).toBeDefined();
+
+    const totalGold = await page.evaluate(() => {
+      const state = window.AI.getState();
+      return state.party.characters.reduce((sum, char) => sum + (char.gold || 0), 0);
     });
+    expect(totalGold).toBeGreaterThan(0);
+  });
 
-    expect(gameStateInfo.hasParty).toBe(true);
-    expect(gameStateInfo.hasCharacters).toBe(true);
-    expect(gameStateInfo.characterCount).toBe(4); // Default party has 4 characters
-    expect(gameStateInfo.hasGold).toBe(true);
-    expect(gameStateInfo.hasMessageLog).toBe(true);
+  test('should provide correct available actions per scene', async ({ page }) => {
+    await page.goto('http://localhost:8080');
+    await page.waitForTimeout(1000);
+
+    await page.evaluate(() => window.AI.sendKey('Enter'));
+    await page.waitForTimeout(500);
+    await page.evaluate(() => window.AI.sendKey('Enter'));
+    await page.waitForTimeout(500);
+    await page.evaluate(() => window.AI.sendKey('Escape'));
+    await page.waitForTimeout(500);
+
+    let actions = await page.evaluate(() => window.AI.getActions());
+    expect(actions).toContain('ArrowUp');
+    expect(actions).toContain('ArrowDown');
+    expect(actions).toContain('ArrowLeft');
+    expect(actions).toContain('ArrowRight');
+    expect(actions).toContain('m');
+    expect(actions).toContain('i');
+    expect(actions).toContain('Escape');
+
+    await page.evaluate(() => window.AI.sendKey('Escape'));
+    await page.waitForTimeout(500);
+
+    actions = await page.evaluate(() => window.AI.getActions());
+    expect(actions).toContain('ArrowUp');
+    expect(actions).toContain('ArrowDown');
+    expect(actions).toContain('Enter');
+    expect(actions).toContain('Escape');
+
+    await page.evaluate(() => window.AI.sendKey('Enter'));
+    await page.waitForTimeout(500);
+
+    actions = await page.evaluate(() => window.AI.getActions());
+    expect(actions).toContain('ArrowUp');
+    expect(actions).toContain('ArrowDown');
+    expect(actions).toContain('Enter');
+    expect(actions).toContain('b');
+    expect(actions).toContain('s');
+    expect(actions).toContain('p');
+    expect(actions).toContain('Escape');
+  });
+
+  test('should roll dice correctly', async ({ page }) => {
+    await page.goto('http://localhost:8080');
+    await page.waitForTimeout(1000);
+
+    const rollResult = await page.evaluate(() => window.AI.roll('3d6'));
+    expect(rollResult).toBeGreaterThanOrEqual(3);
+    expect(rollResult).toBeLessThanOrEqual(18);
+
+    const rollWithModifier = await page.evaluate(() => window.AI.roll('1d20+5'));
+    expect(rollWithModifier).toBeGreaterThanOrEqual(6);
+    expect(rollWithModifier).toBeLessThanOrEqual(25);
+
+    const rollWithNegative = await page.evaluate(() => window.AI.roll('2d10-3'));
+    expect(rollWithNegative).toBeGreaterThanOrEqual(-1);
+    expect(rollWithNegative).toBeLessThanOrEqual(17);
   });
 });

@@ -5,75 +5,52 @@ test.describe('Character Creation Escape', () => {
     await page.goto('http://localhost:8080');
     await page.waitForTimeout(1000);
 
-    // Start from MainMenu
-    let sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
+    let sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('MainMenu');
 
-    // Go to New Game
-    await page.keyboard.press('Enter');
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
 
-    sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
+    sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('New Game');
 
-    // Continue to Character Creation
-    await page.keyboard.press('Enter');
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
 
-    sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
+    sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Character Creation');
 
-    // Press Escape to skip
-    await page.keyboard.press('Escape');
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(1000);
 
-    sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
+    sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Dungeon');
 
-    // Check that party was created
-    const partyInfo = await page.evaluate(() => {
-      const gameState = window.game?.gameState;
-      return {
-        hasParty: gameState?.party !== undefined,
-        partySize: gameState?.party?.characters?.length || 0,
-        firstCharName: gameState?.party?.characters?.[0]?.name,
-      };
-    });
+    const partyInfo = await page.evaluate(() => window.AI.getParty());
+    expect(partyInfo.characters).toBeDefined();
+    expect(partyInfo.characters.length).toBeGreaterThan(0);
+    expect(partyInfo.characters[0].name).toBe('Fighter');
 
-    expect(partyInfo.hasParty).toBe(true);
-    expect(partyInfo.partySize).toBeGreaterThan(0);
-    expect(partyInfo.firstCharName).toBe('Fighter');
+    const gameState = await page.evaluate(() => window.AI.getState());
+    expect(gameState.party).toBeDefined();
+    expect(gameState.party.characters.length).toBeGreaterThan(0);
 
-    // Now test navigation to Town
-    await page.keyboard.press('Escape');
+    await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(500);
 
-    sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
+    sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Town');
 
-    // And to Shop
-    await page.keyboard.press('Enter');
+    const description = await page.evaluate(() => window.AI.describe());
+    expect(description).toContain('Town of Llylgamyn');
+
+    await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(500);
 
-    sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.sceneManager;
-      return sceneManager?.getCurrentScene()?.getName();
-    });
+    sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Shop');
+
+    const shopDescription = await page.evaluate(() => window.AI.describe());
+    expect(shopDescription).toContain("Boltac's Trading Post");
   });
 });
