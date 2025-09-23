@@ -6,8 +6,8 @@
 - NEVER create files unless absolutely necessary - prefer editing existing files
 - NEVER create documentation files (*.md) unless explicitly requested
 - Always update tests after functional changes
-- Always test new or updated functionality end-to-end using Playwright tests
-- Playwright tests must verify successful user outcomes in the UI
+- Use AI Interface (`window.AI`) for all testing and verification
+- Playwright tests must verify outcomes programmatically via AI Interface, not DOM selectors
 - Maintain docs/DOCS_INDEX.yaml when documents change
 
 ## Development Commands
@@ -30,24 +30,30 @@ src/
 │   ├── races/      # Race configs (11 races with stat ranges)
 │   ├── classes/    # Class configs (14 classes with requirements)
 │   ├── progression/# Experience modifiers & spell learning tables
-│   └── *.ts        # GameConstants, ItemProperties, etc.
-├── core/           # Engine (Game, Scene, Input, RenderingOptimizer)
+│   └── *.ts        # GameConstants, ItemProperties, FeatureFlags, etc.
+├── core/           # Engine (Game, Scene, Input, RenderManager, AIInterface)
 ├── entities/       # Game objects (Character, Party)
 ├── scenes/         # Game states (MainMenu, CharacterCreation, Town, Dungeon, Combat, Shop, Inventory)
-├── systems/        # Game logic (CombatSystem, InventorySystem, SceneManager, ShopSystem)
+├── systems/        # Game logic
+│   ├── dungeon/    # Dungeon movement, input handling, item pickup
+│   ├── shop/       # Shop inventory and transaction management
+│   ├── magic/      # Spell casting, validation, effects, learning
+│   └── *.ts        # CombatSystem, InventorySystem, etc.
 ├── services/       # DI layer (ServiceContainer, ServiceRegistry, GameServices)
-├── rendering/      # ASCII system (feature-flagged, CanvasRenderer, ASCIIState)
-├── ui/             # UI components (DungeonView, StatusPanel, MessageLog)
-├── utils/          # Utilities (DungeonGenerator, SaveManager, ErrorHandler, TypeValidation, FeatureFlags)
-├── types/          # TypeScript definitions (GameTypes, SaveGameTypes)
+├── ui/             # UI components
+│   ├── components/ # Reusable UI components (MenuInputHandler, etc.)
+│   └── *.ts        # DungeonView, StatusPanel, MessageLog, etc.
+├── utils/          # Utilities (DungeonGenerator, SaveManager, ErrorHandler, TypeValidation, DiceRoller, EntityUtils)
+├── types/          # TypeScript definitions (GameTypes, SaveGameTypes, SpellTypes)
 ├── data/           # Game data files
+│   └── spells/     # Spell database and definitions
 └── assets/         # Game assets
 ```
 
 ## Key Patterns
 - **Service Container**: DI for engine services
 - **Scene Management**: Lifecycle methods (enter/exit/update/render)
-- **ASCII Rendering**: Feature-flagged 80x25 grid for AI visualization (`window.FeatureFlags.enable('ascii_rendering')`)
+- **AI Interface**: Programmatic game control via `window.AI` for testing and automation
 - **TypeScript Strict Mode**: Full type safety enabled
 
 ## Wizardry Gaiden IV Implementation
@@ -65,13 +71,30 @@ src/
 ### Technical Stack
 - **Webpack**: TypeScript via ts-loader, HMR on port 8080
 - **TypeScript**: ES2020 target, strict mode, source maps
-- **Rendering**: Canvas-based retro aesthetic, ASCII feature flag for AI
+- **Rendering**: Canvas-based retro aesthetic with layered rendering system
 - **Storage**: LocalStorage saves, JSON game data
 
-## Feature Flags
-Access via `window.FeatureFlags.enable('feature_name')` or URL `?ff_feature_name=true`
-- `ascii_rendering` - Enable ASCII visualization
-- `ascii_*_scene` - Scene-specific ASCII toggles
+## AI Interface for Testing and Automation
+
+The AI Interface (`window.AI`) is the **primary method** for testing and verifying game functionality. Always use this instead of DOM manipulation or visual inspection.
+
+### Quick Reference
+- `AI.getState()` - Get complete game state
+- `AI.getScene()` - Get current scene name
+- `AI.getParty()` - Get party location and character info
+- `AI.getDungeon()` - Get dungeon floor and tile info
+- `AI.getCombat()` - Get combat state and enemies
+- `AI.getActions()` - Get available keyboard actions for current scene
+- `AI.describe()` - Get human-readable scene description
+- `AI.sendKey(key)` - Simulate keyboard input
+- `AI.roll(dice)` - Roll dice (e.g., "3d6+2")
+
+### Testing Best Practices
+- **Always verify state changes** through AI Interface, not visual output
+- **Use `AI.getActions()`** to know what inputs are valid before sending keys
+- **Check scene transitions** with `AI.getScene()` after actions that might change scenes
+- **Validate combat outcomes** by comparing before/after states from `AI.getCombat()`
+- **Debug with `AI.describe()`** for readable state information in console
 
 ## Conventions
 - PascalCase for classes/interfaces
@@ -79,11 +102,107 @@ Access via `window.FeatureFlags.enable('feature_name')` or URL `?ff_feature_name
 - Avoid async functionality
 - Maintain docs/DOCS_INDEX.yaml for all doc changes
 
-## Workflow
+## Testing Workflow
+
+### Using the AI Interface for Testing
+1. **Before writing tests**, use the browser console to verify functionality:
+   ```javascript
+   // Test new features interactively
+   AI.getScene();  // Verify correct scene
+   AI.sendKey('a'); // Test input handling
+   AI.getState();  // Verify state changes
+   ```
+
+2. **In Playwright tests**, always use the AI Interface for assertions:
+   ```javascript
+   // Good - uses AI interface
+   await page.evaluate(() => window.AI.getScene() === 'combat');
+
+   // Avoid - brittle DOM selectors
+   await page.locator('.combat-scene').isVisible();
+   ```
+
+3. **Test user outcomes programmatically**:
+   ```javascript
+   // Verify combat damage was applied
+   const hpBefore = await page.evaluate(() => window.AI.getCombat().enemies[0].hp);
+   await page.evaluate(() => window.AI.sendKey('a')); // Attack
+   const hpAfter = await page.evaluate(() => window.AI.getCombat().enemies[0].hp);
+   expect(hpAfter).toBeLessThan(hpBefore);
+   ```
+
+### Development Process
 1. Always run `npm run typecheck` before marking work complete
-2. Upon adding or changing an entity or scene, test the intended outcome of that entity or scene
-3. Write and run Playwright tests to verify new functionality works from the user's perspective
-4. Ensure Playwright tests cover the full user journey and successful outcomes in the UI
-5. Run `npm run test:e2e` to execute all end-to-end tests before completing work
-6. Use feature branches for new features
-7. The ai/ directory contains plans and logs for AI-assisted development
+2. Use `AI.describe()` in browser console to understand current game state
+3. Write Playwright tests using `window.AI` methods for reliable assertions
+4. Run `npm run test:e2e` to execute all end-to-end tests before completing work
+5. Use feature branches for new features
+6. The ai/ directory contains plans and logs for AI-assisted development
+
+## Utility Classes and DRY Principles
+
+To maintain DRY (Don't Repeat Yourself) code:
+- **Always use DiceRoller** (`src/utils/DiceRoller.ts`) for any dice rolling or random number generation
+- **Always use EntityUtils** (`src/utils/EntityUtils.ts`) when working with Character or Monster entities
+- **Always use SavingThrowCalculator** (`src/utils/SavingThrowCalculator.ts`) for saving throws and resistance checks
+- Never duplicate dice rolling logic - use `DiceRoller.roll(notation)`
+- Never duplicate entity type checking - use `EntityUtils.isCharacter()` or `EntityUtils.isMonster()`
+- Never duplicate HP manipulation - use `EntityUtils.applyDamage()` or `EntityUtils.applyHealing()`
+- See `docs/utilities-reference.md` for complete utility documentation
+
+## Dependency Injection
+
+The magic and combat systems are registered as services:
+- Access via `GameServices` methods: `getSpellCaster()`, `getCombatSystem()`, etc.
+- SpellRegistry and SpellCaster are singletons - use `getInstance()`
+- Services are registered in `src/services/GameServices.ts`
+- Service identifiers in `src/services/ServiceIdentifiers.ts`
+
+## Debugging and Development with AI Interface
+
+When implementing new features or fixing bugs:
+
+1. **Start with manual testing in browser console**:
+   ```javascript
+   // Understand current state
+   AI.describe()
+   AI.getState()
+
+   // Test your changes
+   AI.sendKey('your_key')
+   AI.getState() // Verify change happened
+   ```
+
+2. **Write assertions based on state, not visuals**:
+   ```javascript
+   // Instead of checking if a menu appears visually
+   // Check the actual game state
+   const beforeScene = AI.getScene();
+   AI.sendKey('Enter');
+   const afterScene = AI.getScene();
+   console.assert(beforeScene !== afterScene, 'Scene should have changed');
+   ```
+
+3. **Use the AI Interface to reproduce bugs**:
+   ```javascript
+   // Create reproducible bug scenarios
+   function reproduceBug() {
+     // Navigate to specific state
+     while (AI.getScene() !== 'dungeon') {
+       AI.sendKey('Escape');
+     }
+     // Trigger the bug
+     AI.sendKey('m'); // Open map
+     return AI.getState(); // Capture state for debugging
+   }
+   ```
+
+4. **Validate game logic through the interface**:
+   ```javascript
+   // Test damage calculation
+   const enemyHp = AI.getCombat().enemies[0].hp;
+   AI.sendKey('a'); // Attack
+   AI.sendKey('1'); // Select first enemy
+   const newHp = AI.getCombat().enemies[0].hp;
+   console.log(`Damage dealt: ${enemyHp - newHp}`);
+   ```

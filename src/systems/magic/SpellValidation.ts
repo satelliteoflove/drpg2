@@ -259,7 +259,9 @@ export class SpellValidation {
 
   private calculateDistance(context: SpellCastingContext): number | null {
     if (!context.targetPosition) {
-      return null;
+      const casterRow = context.casterRow ?? 0;
+      const targetRow = context.targetRow ?? 0;
+      return Math.abs(targetRow - casterRow);
     }
 
     return Math.abs(context.targetPosition.x) + Math.abs(context.targetPosition.y);

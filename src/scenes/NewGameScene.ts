@@ -2,6 +2,7 @@ import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { CharacterAlignment, CharacterClass, CharacterRace, GameState } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { DungeonGenerator } from '../utils/DungeonGenerator';
+import { MenuInputHandler } from '../ui/components/MenuInputHandler';
 
 export class NewGameScene extends Scene {
   private gameState: GameState;
@@ -126,27 +127,27 @@ export class NewGameScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
-    switch (key) {
-      case 'arrowup':
-      case 'w':
-        this.selectedOption = Math.max(0, this.selectedOption - 1);
-        return true;
+    // Use MenuInputHandler for navigation
+    const action = MenuInputHandler.handleMenuInput(
+      key,
+      {
+        selectedIndex: this.selectedOption,
+        maxIndex: this.menuOptions.length - 1,
+      },
+      {
+        onNavigate: (newIndex: number) => {
+          this.selectedOption = newIndex;
+        },
+        onConfirm: () => {
+          this.selectCurrentOption();
+        },
+        onCancel: () => {
+          this.sceneManager.switchTo('main_menu');
+        },
+      }
+    );
 
-      case 'arrowdown':
-      case 's':
-        this.selectedOption = Math.min(this.menuOptions.length - 1, this.selectedOption + 1);
-        return true;
-
-      case 'enter':
-      case ' ':
-        this.selectCurrentOption();
-        return true;
-
-      case 'escape':
-        this.sceneManager.switchTo('main_menu');
-        return true;
-    }
-    return false;
+    return action.type !== 'none';
   }
 
   private selectCurrentOption(): void {

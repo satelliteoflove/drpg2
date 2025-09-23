@@ -8,9 +8,7 @@ import { DataLoader } from '../utils/DataLoader';
 import { InventorySystem } from '../systems/InventorySystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
 import { DebugLogger } from '../utils/DebugLogger';
-import { FeatureFlagKey, FeatureFlags } from '../config/FeatureFlags';
-import { CombatASCIIState } from '../rendering/scenes/CombatASCIIState';
-import { CanvasRenderer } from '../rendering/CanvasRenderer';
+import { EntityUtils } from '../utils/EntityUtils';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
@@ -21,13 +19,11 @@ export class CombatScene extends Scene {
   private messageLog: any; // Shared from gameState
   private selectedAction: number = 0;
   private selectedTarget: number = 0;
+  private selectedSpell: number = 0;
   private actionState: 'select_action' | 'select_target' | 'select_spell' | 'waiting' =
     'select_action';
   private isProcessingAction: boolean = false; // Prevent multiple simultaneous actions
   private lastActionTime: number = 0; // Debounce rapid input
-  private asciiState: CombatASCIIState | null = null;
-  private canvasRenderer: CanvasRenderer | null = null;
-  private useASCII: boolean = false;
 
   constructor(gameState: GameState, sceneManager: SceneManager) {
     super('Combat');
@@ -42,20 +38,6 @@ export class CombatScene extends Scene {
     if (!this.messageLog) {
       DebugLogger.warn('CombatScene', 'MessageLog not found in gameState, this should not happen');
     }
-
-    // Check if ASCII rendering should be used
-    this.useASCII = FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING);
-    if (this.useASCII) {
-      this.asciiState = new CombatASCIIState(gameState, sceneManager, this.combatSystem);
-      this.canvasRenderer = new CanvasRenderer(null as any, {
-        charWidth: 10,
-        charHeight: 20,
-        fontFamily: 'monospace',
-        fontSize: 16,
-        antialiasing: false,
-      });
-      DebugLogger.info('CombatScene', 'ASCII rendering enabled for combat');
-    }
   }
 
   public enter(): void {
@@ -66,14 +48,9 @@ export class CombatScene extends Scene {
     this.actionState = 'select_action';
     this.selectedAction = 0;
     this.selectedTarget = 0;
+    this.selectedSpell = 0;
     this.isProcessingAction = false;
     this.lastActionTime = 0;
-
-    // Initialize ASCII state if enabled
-    if (this.useASCII && this.asciiState) {
-      this.asciiState.enter();
-      this.syncToASCII();
-    }
 
     DebugLogger.debug('CombatScene', 'Combat scene entered - UI state reset');
   }
@@ -179,12 +156,6 @@ export class CombatScene extends Scene {
       this.actionState = 'select_action';
       this.isProcessingAction = false;
     }
-
-    // Update ASCII state if enabled
-    if (this.useASCII && this.asciiState) {
-      this.asciiState.update(_deltaTime);
-      this.syncToASCII();
-    }
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
@@ -192,44 +163,16 @@ export class CombatScene extends Scene {
       this.initializeUI(ctx.canvas);
     }
 
-    // Use ASCII rendering if enabled
-    if (this.useASCII && this.asciiState) {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-      // Initialize canvas renderer with the context if needed
-      if (!this.canvasRenderer) {
-        this.canvasRenderer = new CanvasRenderer(ctx.canvas, {
-          charWidth: 10,
-          charHeight: 20,
-          fontFamily: 'monospace',
-          fontSize: 16,
-          antialiasing: false,
-        });
-      }
+    this.renderCombatArea(ctx);
+    this.renderUI(ctx);
+    this.renderCombatInfo(ctx);
 
-      // Render ASCII state
-      this.asciiState.render();
-      const sceneDeclaration = this.asciiState.getSceneDeclaration();
-      this.canvasRenderer.renderScene(sceneDeclaration);
-
-      // Still render message log and debug overlay in regular mode
-      this.messageLog.render(ctx);
-      this.updateDebugData();
-      this.debugOverlay.render(this.gameState);
-    } else {
-      // Original rendering code
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-      this.renderCombatArea(ctx);
-      this.renderUI(ctx);
-      this.renderCombatInfo(ctx);
-
-      // Update and render debug overlay
-      this.updateDebugData();
-      this.debugOverlay.render(this.gameState);
-    }
+    // Update and render debug overlay
+    this.updateDebugData();
+    this.debugOverlay.render(this.gameState);
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
@@ -362,7 +305,9 @@ export class CombatScene extends Scene {
     } else if (this.actionState === 'select_target') {
       ctx.fillText('Select Target:', menuX + 10, menuY + 25);
       ctx.fillText('Use LEFT/RIGHT arrows to select target', menuX + 10, menuY + 50);
-      ctx.fillText('Press ENTER to attack', menuX + 10, menuY + 75);
+      ctx.fillText('Press ENTER to confirm', menuX + 10, menuY + 75);
+    } else if (this.actionState === 'select_spell') {
+      this.renderSpellMenu(ctx, menuX, menuY);
     } else if (this.actionState === 'waiting') {
       ctx.fillText('Processing turn...', menuX + 10, menuY + 25);
     }
@@ -376,11 +321,11 @@ export class CombatScene extends Scene {
 
     if (currentUnit) {
       const turnOrder = encounter.turnOrder.map((unit) =>
-        'class' in unit ? unit.name : unit.name
+        EntityUtils.isCharacter(unit as any) ? unit.name : unit.name
       );
 
       this.statusPanel.renderCombatStatus(
-        'class' in currentUnit ? currentUnit.name : currentUnit.name,
+        EntityUtils.isCharacter(currentUnit as any) ? currentUnit.name : currentUnit.name,
         turnOrder,
         encounter.currentTurn,
         ctx
@@ -415,16 +360,6 @@ export class CombatScene extends Scene {
       return true;
     }
 
-    // If ASCII rendering is enabled, delegate input handling to ASCII state
-    if (this.useASCII && this.asciiState) {
-      const handled = this.asciiState.handleInput(key);
-      if (handled) {
-        // Sync state from ASCII back to main scene
-        this.syncFromASCII();
-        return true;
-      }
-    }
-
     // Ignore all input if we're processing an action or waiting
     if (this.isProcessingAction || this.actionState === 'waiting') return true;
 
@@ -432,6 +367,8 @@ export class CombatScene extends Scene {
       return this.handleActionSelection(key);
     } else if (this.actionState === 'select_target') {
       return this.handleTargetSelection(key);
+    } else if (this.actionState === 'select_spell') {
+      return this.handleSpellSelection(key);
     }
 
     return false;
@@ -452,6 +389,9 @@ export class CombatScene extends Scene {
       if (selectedActionText === 'Attack') {
         this.actionState = 'select_target';
         this.selectedTarget = 0;
+      } else if (selectedActionText === 'Cast Spell') {
+        this.actionState = 'select_spell';
+        this.selectedSpell = 0;
       } else {
         this.executeAction(selectedActionText);
       }
@@ -474,7 +414,12 @@ export class CombatScene extends Scene {
       this.selectedTarget = Math.min(aliveMonsters.length - 1, this.selectedTarget + 1);
       return true;
     } else if (key === KEY_BINDINGS.combat.confirm) {
-      this.executeAction('Attack');
+      const pendingSpell = (this as any).pendingSpellId;
+      if (pendingSpell) {
+        this.executeAction('Cast Spell', this.selectedTarget, pendingSpell);
+      } else {
+        this.executeAction('Attack', this.selectedTarget);
+      }
       return true;
     } else if (key === KEY_BINDINGS.combat.cancel) {
       this.actionState = 'select_action';
@@ -484,7 +429,83 @@ export class CombatScene extends Scene {
     return false;
   }
 
-  private executeAction(action: string): void {
+  private handleSpellSelection(key: string): boolean {
+    const currentUnit = this.combatSystem.getCurrentUnit();
+    if (!currentUnit || !EntityUtils.isCharacter(currentUnit as any)) return false;
+
+    const knownSpells = currentUnit.getKnownSpells();
+    if (knownSpells.length === 0) {
+      this.messageLog.addCombatMessage(`${currentUnit.name} doesn't know any spells!`);
+      this.actionState = 'select_action';
+      return true;
+    }
+
+    if (key === KEY_BINDINGS.combat.selectUp) {
+      this.selectedSpell = Math.max(0, this.selectedSpell - 1);
+      return true;
+    } else if (key === KEY_BINDINGS.combat.selectDown) {
+      this.selectedSpell = Math.min(knownSpells.length - 1, this.selectedSpell + 1);
+      return true;
+    } else if (key === KEY_BINDINGS.combat.confirm) {
+      const spellId = knownSpells[this.selectedSpell];
+      this.executeSpellCast(spellId);
+      return true;
+    } else if (key === KEY_BINDINGS.combat.cancel) {
+      this.actionState = 'select_action';
+      return true;
+    }
+
+    return false;
+  }
+
+  private renderSpellMenu(ctx: CanvasRenderingContext2D, menuX: number, menuY: number): void {
+    const currentUnit = this.combatSystem.getCurrentUnit();
+    if (!currentUnit || !EntityUtils.isCharacter(currentUnit as any)) return;
+
+    const knownSpells = currentUnit.getKnownSpells();
+    const { SpellRegistry } = require('../systems/magic/SpellRegistry');
+    const registry = SpellRegistry.getInstance();
+
+    ctx.fillText('Select Spell:', menuX + 10, menuY + 25);
+    ctx.fillText(`MP: ${currentUnit.mp}/${currentUnit.maxMp}`, menuX + 200, menuY + 25);
+
+    knownSpells.forEach((spellId: string, index: number) => {
+      const spell = registry.getSpellById(spellId);
+      if (!spell) return;
+
+      const y = menuY + 50 + index * 25;
+      const canCast = currentUnit.mp >= spell.mpCost;
+
+      ctx.fillStyle = index === this.selectedSpell ? '#ffff00' : canCast ? '#fff' : '#666';
+      ctx.fillText(
+        `${index + 1}. ${spell.name} (${spell.mpCost} MP)`,
+        menuX + 20,
+        y
+      );
+    });
+  }
+
+  private executeSpellCast(spellId: string): void {
+    const { SpellRegistry } = require('../systems/magic/SpellRegistry');
+    const registry = SpellRegistry.getInstance();
+    const spell = registry.getSpellById(spellId);
+
+    if (!spell) {
+      this.messageLog.addCombatMessage('Unknown spell!');
+      this.actionState = 'select_action';
+      return;
+    }
+
+    if (spell.targetType === 'enemy') {
+      this.actionState = 'select_target';
+      this.selectedTarget = 0;
+      (this as any).pendingSpellId = spellId;
+    } else {
+      this.executeAction('Cast Spell', undefined, spellId);
+    }
+  }
+
+  private executeAction(action: string, targetIndex?: number, spellId?: string): void {
     const now = Date.now();
 
     // Debounce rapid input - ignore if pressed too quickly
@@ -505,7 +526,11 @@ export class CombatScene extends Scene {
 
     let result = '';
     if (action === 'Attack') {
-      result = this.combatSystem.executePlayerAction(action, this.selectedTarget);
+      result = this.combatSystem.executePlayerAction(action, targetIndex ?? this.selectedTarget);
+    } else if (action === 'Cast Spell') {
+      const pendingSpell = (this as any).pendingSpellId || spellId;
+      result = this.combatSystem.executePlayerAction(action, targetIndex ?? this.selectedTarget, pendingSpell);
+      delete (this as any).pendingSpellId;
     } else {
       result = this.combatSystem.executePlayerAction(action);
     }
@@ -541,39 +566,6 @@ export class CombatScene extends Scene {
     );
   }
 
-  private syncFromASCII(): void {
-    if (!this.asciiState) return;
-
-    const asciiActionState = this.asciiState.getActionState();
-    const asciiSelectedAction = this.asciiState.getSelectedAction();
-    const asciiSelectedTarget = this.asciiState.getSelectedTarget();
-
-    // Update local state
-    this.actionState = asciiActionState as any;
-    this.selectedAction = asciiSelectedAction;
-    this.selectedTarget = asciiSelectedTarget;
-
-    // Check if ASCII state executed an action
-    const pendingAction = this.asciiState.getPendingAction();
-    if (pendingAction) {
-      // Execute the action in the main scene
-      if (pendingAction.action === 'Attack') {
-        this.executeAction('Attack');
-      } else {
-        this.executeAction(pendingAction.action);
-      }
-      // Clear the pending action
-      this.asciiState.clearPendingAction();
-    }
-  }
-
-  private syncToASCII(): void {
-    if (!this.asciiState) return;
-
-    this.asciiState.setActionState(this.actionState);
-    this.asciiState.setSelectedAction(this.selectedAction);
-    this.asciiState.setSelectedTarget(this.selectedTarget);
-  }
 
   private executeInstantKill(): void {
     const encounter = this.combatSystem.getEncounter();
@@ -690,5 +682,28 @@ export class CombatScene extends Scene {
       },
       combatSystem: combatData,
     });
+  }
+
+  public getTestState(): any {
+    return {
+      actionState: this.actionState,
+      currentUnit: this.combatSystem.getCurrentUnit(),
+      monsters: this.combatSystem.getMonsters(),
+      party: this.combatSystem.getParty(),
+      spellMenuOpen: this.actionState === 'select_spell',
+      availableSpells: this.actionState === 'select_spell' ? this.getAvailableSpells() : [],
+      selectedAction: this.selectedAction,
+      selectedTarget: this.selectedTarget,
+      selectedSpell: this.selectedSpell,
+      isProcessingAction: this.isProcessingAction
+    };
+  }
+
+  private getAvailableSpells(): string[] {
+    const currentUnit = this.combatSystem.getCurrentUnit();
+    if (currentUnit && EntityUtils.isCharacter(currentUnit as any)) {
+      return currentUnit.knownSpells || [];
+    }
+    return [];
   }
 }

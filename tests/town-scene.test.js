@@ -25,7 +25,7 @@ test.describe('TownScene Functionality', () => {
     await expect(canvas).toBeVisible();
 
     const sceneInfo = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return {
         name: scene?.getName(),
@@ -44,7 +44,7 @@ test.describe('TownScene Functionality', () => {
   test('should navigate menu with arrow keys', async ({ page }) => {
     const getSelectedOption = () =>
       page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         return scene?.selectedOption;
       });
@@ -72,7 +72,7 @@ test.describe('TownScene Functionality', () => {
   test('should navigate menu with W/S keys', async ({ page }) => {
     const getSelectedOption = () =>
       page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         return scene?.selectedOption;
       });
@@ -93,7 +93,7 @@ test.describe('TownScene Functionality', () => {
   test('should not navigate beyond menu boundaries', async ({ page }) => {
     const getSelectedOption = () =>
       page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         return scene?.selectedOption;
       });
@@ -115,7 +115,7 @@ test.describe('TownScene Functionality', () => {
     await page.waitForTimeout(500);
 
     const currentScene = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(currentScene).toBe('Shop');
@@ -131,7 +131,7 @@ test.describe('TownScene Functionality', () => {
     await page.waitForTimeout(500);
 
     const currentScene = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(currentScene).toBe('Dungeon');
@@ -142,7 +142,7 @@ test.describe('TownScene Functionality', () => {
     await page.waitForTimeout(500);
 
     const currentScene = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(currentScene).toBe('Dungeon');
@@ -153,7 +153,7 @@ test.describe('TownScene Functionality', () => {
     await page.waitForTimeout(500);
 
     const currentScene = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(currentScene).toBe('Shop');
@@ -183,7 +183,7 @@ test.describe('TownScene Functionality', () => {
 
     // Check that ASCII state is created
     const withASCII = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return {
         sceneName: scene?.getName(),
@@ -214,7 +214,7 @@ test.describe('TownScene Functionality', () => {
 
     // Check that ASCII state is not created
     const withoutASCII = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return {
         sceneName: scene?.getName(),
@@ -234,7 +234,7 @@ test.describe('TownScene Functionality', () => {
     await page.waitForTimeout(100);
 
     const selectedBefore = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.selectedOption;
     });
     expect(selectedBefore).toBe(2);
@@ -248,7 +248,7 @@ test.describe('TownScene Functionality', () => {
     await page.waitForTimeout(500);
 
     const selectedAfter = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.selectedOption;
     });
     // Should reset to 0 after re-entering
@@ -275,7 +275,7 @@ test.describe('TownScene Functionality', () => {
   test('should handle all menu options correctly', async ({ page }) => {
     const getSceneAndOption = () =>
       page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         return {
           name: scene?.getName(),

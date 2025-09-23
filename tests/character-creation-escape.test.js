@@ -7,7 +7,7 @@ test.describe('Character Creation Escape', () => {
 
     // Start from MainMenu
     let sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(sceneName).toBe('MainMenu');
@@ -17,7 +17,7 @@ test.describe('Character Creation Escape', () => {
     await page.waitForTimeout(500);
 
     sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(sceneName).toBe('New Game');
@@ -27,7 +27,7 @@ test.describe('Character Creation Escape', () => {
     await page.waitForTimeout(500);
 
     sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(sceneName).toBe('Character Creation');
@@ -37,14 +37,14 @@ test.describe('Character Creation Escape', () => {
     await page.waitForTimeout(1000);
 
     sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(sceneName).toBe('Dungeon');
 
     // Check that party was created
     const partyInfo = await page.evaluate(() => {
-      const gameState = window.game?.getGameState();
+      const gameState = window.game?.gameState;
       return {
         hasParty: gameState?.party !== undefined,
         partySize: gameState?.party?.characters?.length || 0,
@@ -61,7 +61,7 @@ test.describe('Character Creation Escape', () => {
     await page.waitForTimeout(500);
 
     sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(sceneName).toBe('Town');
@@ -71,7 +71,7 @@ test.describe('Character Creation Escape', () => {
     await page.waitForTimeout(500);
 
     sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(sceneName).toBe('Shop');

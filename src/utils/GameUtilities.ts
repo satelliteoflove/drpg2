@@ -95,26 +95,26 @@ export class GameUtilities {
    * Rotate direction clockwise
    */
   static rotateDirectionClockwise(direction: Direction): Direction {
-    const rotations: Record<Direction, Direction> = {
+    const rotations: any = {
       north: 'east',
       east: 'south',
       south: 'west',
       west: 'north',
     };
-    return rotations[direction];
+    return rotations[direction] || direction;
   }
 
   /**
    * Rotate direction counter-clockwise
    */
   static rotateDirectionCounterClockwise(direction: Direction): Direction {
-    const rotations: Record<Direction, Direction> = {
+    const rotations: any = {
       north: 'west',
       west: 'south',
       south: 'east',
       east: 'north',
     };
-    return rotations[direction];
+    return rotations[direction] || direction;
   }
 
   /**
@@ -246,18 +246,7 @@ export class GameUtilities {
    * Roll dice notation (e.g., "2d6+3")
    */
   static rollDice(notation: string): number {
-    const match = notation.match(/(\d+)d(\d+)([+-]\d+)?/);
-    if (!match) return 0;
-
-    const numDice = parseInt(match[1]);
-    const dieSize = parseInt(match[2]);
-    const modifier = match[3] ? parseInt(match[3]) : 0;
-
-    let total = modifier;
-    for (let i = 0; i < numDice; i++) {
-      total += Math.floor(Math.random() * dieSize) + 1;
-    }
-
-    return Math.max(0, total);
+    const { DiceRoller } = require('./DiceRoller');
+    return DiceRoller.roll(notation);
   }
 }

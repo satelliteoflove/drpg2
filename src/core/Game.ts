@@ -405,4 +405,12 @@ export class Game {
   public getSceneManager(): SceneManager {
     return this.sceneManager;
   }
+
+  public getServices(): GameServices {
+    return this.services;
+  }
+
+  public isGameRunning(): boolean {
+    return this.isRunning;
+  }
 }

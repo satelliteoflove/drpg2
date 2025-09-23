@@ -118,8 +118,8 @@ nodes:
     downstream: ["phase1-damage-heal"]
 
   - id: "phase1-damage-heal"
-    status: "Ready"
-    materialization: 0.8
+    status: "Complete"
+    materialization: 1.0
     description: "Phase 1: Implement damage and healing spell effects"
     detailed_description: |
       Create the effect processors for basic damage and healing spells.
@@ -139,7 +139,7 @@ nodes:
     downstream: ["combat-spell-ui", "spell-testing-phase1"]
 
   - id: "combat-spell-ui"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.7
     description: "Create spell casting UI for combat"
     detailed_description: |
@@ -160,7 +160,7 @@ nodes:
     downstream: ["spell-testing-phase1"]
 
   - id: "spell-testing-phase1"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.7
     description: "Test Phase 1 spell implementation"
     detailed_description: |

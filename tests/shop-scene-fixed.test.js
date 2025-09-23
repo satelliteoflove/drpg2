@@ -32,7 +32,7 @@ test.describe('ShopScene Functionality (Fixed)', () => {
 
   test('should display shop main menu', async ({ page }) => {
     const sceneInfo = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return {
         name: scene?.getName(),
@@ -54,7 +54,7 @@ test.describe('ShopScene Functionality (Fixed)', () => {
   test('should navigate shop menu', async ({ page }) => {
     const getSelectedOption = () =>
       page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         return scene?.selectedOption;
       });
@@ -77,7 +77,7 @@ test.describe('ShopScene Functionality (Fixed)', () => {
     await page.waitForTimeout(200);
 
     const state = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return scene?.currentState;
     });
@@ -88,7 +88,7 @@ test.describe('ShopScene Functionality (Fixed)', () => {
     await page.waitForTimeout(200);
 
     const newState = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return scene?.currentState;
     });
@@ -98,7 +98,7 @@ test.describe('ShopScene Functionality (Fixed)', () => {
   test('should handle gold pooling', async ({ page }) => {
     // First, check what menu options are available
     const menuInfo = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return {
         menuOptions: scene?.menuOptions,
@@ -115,7 +115,7 @@ test.describe('ShopScene Functionality (Fixed)', () => {
 
     const getGoldInfo = () =>
       page.evaluate(() => {
-        const state = window.game?.getGameState();
+        const state = window.game?.gameState;
         return {
           partyGold: state?.gold || 0,
           characterGold: state?.party?.characters?.map((c) => c.gold) || [],
@@ -131,7 +131,7 @@ test.describe('ShopScene Functionality (Fixed)', () => {
     await page.waitForTimeout(200);
 
     const poolingState = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return scene?.currentState;
     });
@@ -157,7 +157,7 @@ test.describe('ShopScene Functionality (Fixed)', () => {
     await page.waitForTimeout(500);
 
     const currentScene = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(currentScene).toBe('Town');
@@ -174,7 +174,7 @@ test.describe('ShopScene Functionality (Fixed)', () => {
     await page.waitForTimeout(500);
 
     const currentScene = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(currentScene).toBe('Town');

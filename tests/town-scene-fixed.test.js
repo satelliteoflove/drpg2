@@ -28,7 +28,7 @@ test.describe('TownScene Functionality (Fixed)', () => {
 
   test('should display town scene with correct title', async ({ page }) => {
     const sceneInfo = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return {
         name: scene?.getName(),
@@ -48,7 +48,7 @@ test.describe('TownScene Functionality (Fixed)', () => {
   test('should navigate menu with arrow keys', async ({ page }) => {
     const getSelectedOption = () =>
       page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         return scene?.selectedOption;
       });
@@ -77,7 +77,7 @@ test.describe('TownScene Functionality (Fixed)', () => {
     await page.waitForTimeout(500);
 
     const currentScene = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(currentScene).toBe('Shop');
@@ -88,7 +88,7 @@ test.describe('TownScene Functionality (Fixed)', () => {
     await page.waitForTimeout(500);
 
     const currentScene = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(currentScene).toBe('Dungeon');
@@ -105,7 +105,7 @@ test.describe('TownScene Functionality (Fixed)', () => {
     await page.waitForTimeout(500);
 
     const currentScene = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(currentScene).toBe('Dungeon');
@@ -113,7 +113,7 @@ test.describe('TownScene Functionality (Fixed)', () => {
 
   test('should have party with characters and gold', async ({ page }) => {
     const partyInfo = await page.evaluate(() => {
-      const gameState = window.game?.getGameState();
+      const gameState = window.game?.gameState;
       return {
         hasParty: gameState?.party !== undefined,
         characterCount: gameState?.party?.characters?.length || 0,

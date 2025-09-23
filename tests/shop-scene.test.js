@@ -25,7 +25,7 @@ test.describe('ShopScene Functionality', () => {
 
   test('should display shop main menu', async ({ page }) => {
     const sceneInfo = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return {
         name: scene?.getName(),
@@ -45,7 +45,7 @@ test.describe('ShopScene Functionality', () => {
   test('should navigate shop main menu', async ({ page }) => {
     const getSelectedOption = () =>
       page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         return scene?.selectedOption;
       });
@@ -68,7 +68,7 @@ test.describe('ShopScene Functionality', () => {
     await page.waitForTimeout(200);
 
     const state = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return scene?.currentState;
     });
@@ -81,7 +81,7 @@ test.describe('ShopScene Functionality', () => {
 
     const getSelectedOption = () =>
       page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         return scene?.selectedOption;
       });
@@ -103,7 +103,7 @@ test.describe('ShopScene Functionality', () => {
     await page.waitForTimeout(200);
 
     const state = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return scene?.currentState;
     });
@@ -118,7 +118,7 @@ test.describe('ShopScene Functionality', () => {
     await page.waitForTimeout(200);
 
     const state = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return scene?.currentState;
     });
@@ -133,7 +133,7 @@ test.describe('ShopScene Functionality', () => {
     await page.waitForTimeout(200);
 
     const state = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return scene?.currentState;
     });
@@ -148,13 +148,13 @@ test.describe('ShopScene Functionality', () => {
 
     const getSelectedChar = () =>
       page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         return scene?.selectedCharacterIndex;
       });
 
     const partySize = await page.evaluate(() => {
-      const gameState = window.game?.getGameState();
+      const gameState = window.game?.gameState;
       return gameState?.party?.length || 0;
     });
 
@@ -179,7 +179,7 @@ test.describe('ShopScene Functionality', () => {
     await page.waitForTimeout(200);
 
     const state = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return scene?.currentState;
     });
@@ -189,7 +189,7 @@ test.describe('ShopScene Functionality', () => {
   test('should pool gold to selected character', async ({ page }) => {
     const getGoldInfo = () =>
       page.evaluate(() => {
-        const state = window.game?.getGameState();
+        const state = window.game?.gameState;
         return {
           partyGold: state?.gold || 0,
           characterGold:
@@ -231,7 +231,7 @@ test.describe('ShopScene Functionality', () => {
   test('should cancel gold pooling', async ({ page }) => {
     const getGoldInfo = () =>
       page.evaluate(() => {
-        const state = window.game?.getGameState();
+        const state = window.game?.gameState;
         return {
           partyGold: state?.gold || 0,
           characterGold: state?.party?.characters?.map((c) => c.gold) || [],
@@ -270,7 +270,7 @@ test.describe('ShopScene Functionality', () => {
     await page.waitForTimeout(500);
 
     const currentScene = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(currentScene).toBe('Town');
@@ -281,7 +281,7 @@ test.describe('ShopScene Functionality', () => {
     await page.waitForTimeout(500);
 
     const currentScene = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(currentScene).toBe('Town');
@@ -295,7 +295,7 @@ test.describe('ShopScene Functionality', () => {
     await page.waitForTimeout(200);
 
     const hasItems = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       const category = scene?.selectedCategory;
       return scene?.shopInventory?.categories?.[category]?.length > 0;
@@ -306,7 +306,7 @@ test.describe('ShopScene Functionality', () => {
       await page.waitForTimeout(200);
 
       const state = await page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         return scene?.currentState;
       });
@@ -325,7 +325,7 @@ test.describe('ShopScene Functionality', () => {
     await page.waitForTimeout(200);
 
     let state = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return scene?.currentState;
     });
@@ -335,7 +335,7 @@ test.describe('ShopScene Functionality', () => {
     await page.waitForTimeout(200);
 
     state = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return scene?.currentState;
     });
@@ -366,7 +366,7 @@ test.describe('ShopScene Functionality', () => {
 
   test('should handle complete purchase flow', async ({ page }) => {
     const initialGold = await page.evaluate(() => {
-      const gameState = window.game?.getGameState();
+      const gameState = window.game?.gameState;
       return gameState?.party?.[0]?.gold || 0;
     });
 
@@ -378,10 +378,10 @@ test.describe('ShopScene Functionality', () => {
       await page.waitForTimeout(200);
 
       const hasAffordableItem = await page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         const items = scene?.shopInventory?.categories?.[scene?.selectedCategory] || [];
-        const gameState = window.game?.getGameState();
+        const gameState = window.game?.gameState;
         const charGold = gameState?.party?.[0]?.gold || 0;
         return items.some((item) => item.value <= charGold);
       });
@@ -394,7 +394,7 @@ test.describe('ShopScene Functionality', () => {
         await page.waitForTimeout(200);
 
         const finalGold = await page.evaluate(() => {
-          const gameState = window.game?.getGameState();
+          const gameState = window.game?.gameState;
           return gameState?.party?.[0]?.gold || 0;
         });
 
@@ -408,7 +408,7 @@ test.describe('ShopScene Functionality', () => {
     await page.waitForTimeout(200);
 
     const categories = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       const scene = sceneManager?.getCurrentScene();
       return scene?.categoryOptions?.map((c) => c.name) || [];
     });

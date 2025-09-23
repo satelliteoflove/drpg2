@@ -238,25 +238,37 @@ export class Character implements ICharacter {
     // Import spell database
     const { SPELLS } = require('../data/spells/SpellDatabase');
 
-    // Placeholder starter spells - will be replaced by spell learning system
+    // Starting spells for damage/healing testing
     if (this.class === 'Mage' || this.class === 'Bishop') {
       const flameDart = SPELLS['flame_dart'];
-      if (flameDart) this.spells.push(flameDart);
+      if (flameDart) {
+        this.spells.push(flameDart);
+        this.knownSpells.push('flame_dart');
+      }
     }
 
     if (this.class === 'Priest' || this.class === 'Bishop') {
       const heal = SPELLS['heal'];
-      if (heal) this.spells.push(heal);
+      if (heal) {
+        this.spells.push(heal);
+        this.knownSpells.push('heal');
+      }
     }
 
     if (this.class === 'Alchemist') {
-      const antidote = SPELLS['antidote'];
-      if (antidote) this.spells.push(antidote);
+      const flameDart = SPELLS['flame_dart'];
+      if (flameDart) {
+        this.spells.push(flameDart);
+        this.knownSpells.push('flame_dart');
+      }
     }
 
     if (this.class === 'Psionic') {
-      const mindShield = SPELLS['mind_shield'];
-      if (mindShield) this.spells.push(mindShield);
+      const mindBlast = SPELLS['mind_blast'];
+      if (mindBlast) {
+        this.spells.push(mindBlast);
+        this.knownSpells.push('mind_blast');
+      }
     }
   }
 

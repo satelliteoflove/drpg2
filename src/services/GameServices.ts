@@ -6,12 +6,17 @@ import { SceneManager } from '../core/Scene';
 import { SaveManager } from '../utils/SaveManager';
 import { DungeonGenerator } from '../utils/DungeonGenerator';
 import { ErrorHandler } from '../utils/ErrorHandler';
+import { SpellCaster } from '../systems/magic/SpellCaster';
+import { SpellRegistry } from '../systems/magic/SpellRegistry';
+import { SpellValidation } from '../systems/magic/SpellValidation';
+import { CombatSystem } from '../systems/CombatSystem';
 
 export interface GameServiceDependencies {
   canvas: HTMLCanvasElement;
 }
 
 export class GameServices {
+  private static instance: GameServices | null = null;
   private container: ServiceContainer;
   private dependencies: GameServiceDependencies;
 
@@ -19,6 +24,19 @@ export class GameServices {
     this.container = serviceContainer;
     this.dependencies = dependencies;
     this.registerServices();
+    GameServices.instance = this;
+  }
+
+  public static getInstance(): GameServices {
+    if (!GameServices.instance) {
+      if (typeof window !== 'undefined' && (window as any).game?.services) {
+        GameServices.instance = (window as any).game.services;
+      }
+      if (!GameServices.instance) {
+        throw new Error('GameServices not initialized. Game must be started first.');
+      }
+    }
+    return GameServices.instance;
   }
 
   private registerServices(): void {
@@ -47,6 +65,32 @@ export class GameServices {
       () => new DungeonGenerator(20, 20),
       { singleton: false }
     );
+
+    // Register Magic System Services
+    this.container.register(
+      ServiceIdentifiers.SpellRegistry,
+      () => SpellRegistry.getInstance(),
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.SpellValidation,
+      () => new SpellValidation(),
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.SpellCaster,
+      () => SpellCaster.getInstance(),
+      { singleton: true }
+    );
+
+    // Register Combat System
+    this.container.register(
+      ServiceIdentifiers.CombatSystem,
+      () => new CombatSystem(),
+      { singleton: true }
+    );
   }
 
   public getRenderManager(): RenderManager {
@@ -71,6 +115,22 @@ export class GameServices {
 
   public getErrorHandler(): typeof ErrorHandler {
     return ErrorHandler;
+  }
+
+  public getSpellRegistry(): SpellRegistry {
+    return this.container.resolve(ServiceIdentifiers.SpellRegistry);
+  }
+
+  public getSpellValidation(): SpellValidation {
+    return this.container.resolve(ServiceIdentifiers.SpellValidation);
+  }
+
+  public getSpellCaster(): SpellCaster {
+    return this.container.resolve(ServiceIdentifiers.SpellCaster);
+  }
+
+  public getCombatSystem(): CombatSystem {
+    return this.container.resolve(ServiceIdentifiers.CombatSystem);
   }
 
   public dispose(): void {

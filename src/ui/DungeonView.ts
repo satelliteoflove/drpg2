@@ -155,6 +155,8 @@ export class DungeonView {
         return [1, 0];
       case 'west':
         return [-1, 0];
+      default:
+        return [0, 0];
     }
   }
 
@@ -364,6 +366,8 @@ export class DungeonView {
         return Math.PI;
       case 'west':
         return (3 * Math.PI) / 2;
+      default:
+        return 0;
     }
   }
 }

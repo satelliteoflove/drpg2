@@ -36,7 +36,7 @@ test.describe('Essential Game Functionality', () => {
     await page.waitForTimeout(1000);
 
     const sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
 
@@ -52,7 +52,7 @@ test.describe('Essential Game Functionality', () => {
     await page.waitForTimeout(500);
 
     let sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
 
@@ -64,7 +64,7 @@ test.describe('Essential Game Functionality', () => {
     await page.waitForTimeout(500);
 
     sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
 
@@ -76,7 +76,7 @@ test.describe('Essential Game Functionality', () => {
     await page.waitForTimeout(500);
 
     sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
 
@@ -98,7 +98,7 @@ test.describe('Essential Game Functionality', () => {
 
     // Should be in Dungeon
     let sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(sceneName).toBe('Dungeon');
@@ -108,7 +108,7 @@ test.describe('Essential Game Functionality', () => {
     await page.waitForTimeout(500);
 
     sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(sceneName).toBe('Town');
@@ -118,7 +118,7 @@ test.describe('Essential Game Functionality', () => {
     await page.waitForTimeout(500);
 
     sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(sceneName).toBe('Dungeon');
@@ -140,7 +140,7 @@ test.describe('Essential Game Functionality', () => {
 
     // Should be in Town
     let sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(sceneName).toBe('Town');
@@ -150,7 +150,7 @@ test.describe('Essential Game Functionality', () => {
     await page.waitForTimeout(500);
 
     sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(sceneName).toBe('Shop');
@@ -160,7 +160,7 @@ test.describe('Essential Game Functionality', () => {
     await page.waitForTimeout(500);
 
     sceneName = await page.evaluate(() => {
-      const sceneManager = window.game?.getSceneManager();
+      const sceneManager = window.game?.sceneManager;
       return sceneManager?.getCurrentScene()?.getName();
     });
     expect(sceneName).toBe('Town');
@@ -182,7 +182,7 @@ test.describe('Essential Game Functionality', () => {
 
     const getSelectedOption = () =>
       page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         return scene?.selectedOption;
       });
@@ -225,7 +225,7 @@ test.describe('Essential Game Functionality', () => {
 
     const getShopState = () =>
       page.evaluate(() => {
-        const sceneManager = window.game?.getSceneManager();
+        const sceneManager = window.game?.sceneManager;
         const scene = sceneManager?.getCurrentScene();
         return {
           name: scene?.getName(),
@@ -331,7 +331,7 @@ test.describe('Essential Game Functionality', () => {
 
     // Check game state exists
     const gameStateInfo = await page.evaluate(() => {
-      const gameState = window.game?.getGameState();
+      const gameState = window.game?.gameState;
       const totalGold =
         gameState?.party?.characters?.reduce((sum, char) => sum + (char.gold || 0), 0) || 0;
       return {

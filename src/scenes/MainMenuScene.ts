@@ -1,6 +1,7 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState } from '../types/GameTypes';
 import { SaveManager } from '../utils/SaveManager';
+import { MenuInputHandler } from '../ui/components/MenuInputHandler';
 
 export class MainMenuScene extends Scene {
   private sceneManager: SceneManager;
@@ -116,29 +117,29 @@ export class MainMenuScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
-    switch (key) {
-      case 'arrowup':
-      case 'w':
-        this.selectedOption = Math.max(0, this.selectedOption - 1);
-        return true;
+    // Use MenuInputHandler for navigation
+    const action = MenuInputHandler.handleMenuInput(
+      key,
+      {
+        selectedIndex: this.selectedOption,
+        maxIndex: this.menuOptions.length - 1,
+      },
+      {
+        onNavigate: (newIndex: number) => {
+          this.selectedOption = newIndex;
+        },
+        onConfirm: () => {
+          this.selectCurrentOption();
+        },
+        onCancel: () => {
+          if (window.confirm('Are you sure you want to quit?')) {
+            window.close();
+          }
+        },
+      }
+    );
 
-      case 'arrowdown':
-      case 's':
-        this.selectedOption = Math.min(this.menuOptions.length - 1, this.selectedOption + 1);
-        return true;
-
-      case 'enter':
-      case ' ':
-        this.selectCurrentOption();
-        return true;
-
-      case 'escape':
-        if (window.confirm('Are you sure you want to quit?')) {
-          window.close();
-        }
-        return true;
-    }
-    return false;
+    return action.type !== 'none';
   }
 
   private selectCurrentOption(): void {

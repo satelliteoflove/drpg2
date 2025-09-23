@@ -123,8 +123,14 @@ export interface SpellLearningResult {
 
 export interface SpellCastingContext {
   casterId: string;
+  caster?: any;
+  target?: any;
+  party?: any[];
+  enemies?: any[];
   targetId?: string | string[];
   targetPosition?: { x: number; y: number; z?: number };
+  casterRow?: number;
+  targetRow?: number;
   inCombat: boolean;
   combatRound?: number;
   antiMagicZone?: boolean;

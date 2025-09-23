@@ -13,16 +13,7 @@ export interface FeatureFlag {
 
 // Feature flag keys
 export enum FeatureFlagKey {
-  ASCII_RENDERING = 'ascii_rendering',
-  ASCII_TOWN_SCENE = 'ascii_town_scene',
-  ASCII_SHOP_SCENE = 'ascii_shop_scene',
-  ASCII_COMBAT_SCENE = 'ascii_combat_scene',
-  ASCII_DUNGEON_SCENE = 'ascii_dungeon_scene',
-  ASCII_INVENTORY_SCENE = 'ascii_inventory_scene',
-  ASCII_DEBUG_OVERLAY = 'ascii_debug_overlay',
   PERFORMANCE_MONITORING = 'performance_monitoring',
-  SAVE_ASCII_STATE = 'save_ascii_state',
-  TERMINAL_MODE = 'terminal_mode',
 }
 
 // Feature flags configuration
@@ -49,80 +40,11 @@ class FeatureFlagsManager {
   }
 
   private initializeFlags(): void {
-    // ASCII Rendering System Flags
-    this.registerFlag({
-      name: FeatureFlagKey.ASCII_RENDERING,
-      description: 'Enable ASCII-first rendering system globally',
-      enabled: false,
-      experimental: true,
-    });
-
-    this.registerFlag({
-      name: FeatureFlagKey.ASCII_TOWN_SCENE,
-      description: 'Use ASCII rendering for Town scene',
-      enabled: false,
-      experimental: true,
-      enabledScenes: ['town'],
-    });
-
-    this.registerFlag({
-      name: FeatureFlagKey.ASCII_SHOP_SCENE,
-      description: 'Use ASCII rendering for Shop scene',
-      enabled: false,
-      experimental: true,
-      enabledScenes: ['shop'],
-    });
-
-    this.registerFlag({
-      name: FeatureFlagKey.ASCII_COMBAT_SCENE,
-      description: 'Use ASCII rendering for Combat scene',
-      enabled: false,
-      experimental: true,
-      enabledScenes: ['combat'],
-    });
-
-    this.registerFlag({
-      name: FeatureFlagKey.ASCII_DUNGEON_SCENE,
-      description: 'Use ASCII rendering for Dungeon scene',
-      enabled: false,
-      experimental: true,
-      enabledScenes: ['dungeon'],
-    });
-
-    this.registerFlag({
-      name: FeatureFlagKey.ASCII_INVENTORY_SCENE,
-      description: 'Use ASCII rendering for Inventory scene',
-      enabled: false,
-      experimental: true,
-      enabledScenes: ['inventory'],
-    });
-
-    this.registerFlag({
-      name: FeatureFlagKey.ASCII_DEBUG_OVERLAY,
-      description: 'Show ASCII state in debug overlay',
-      enabled: false,
-      experimental: false,
-    });
-
     this.registerFlag({
       name: FeatureFlagKey.PERFORMANCE_MONITORING,
       description: 'Enable performance monitoring',
       enabled: true, // Already implemented and active
       experimental: false,
-    });
-
-    this.registerFlag({
-      name: FeatureFlagKey.SAVE_ASCII_STATE,
-      description: 'Include ASCII state in save games',
-      enabled: false,
-      experimental: true,
-    });
-
-    this.registerFlag({
-      name: FeatureFlagKey.TERMINAL_MODE,
-      description: 'Enable terminal/console rendering mode',
-      enabled: false,
-      experimental: true,
     });
 
     DebugLogger.info('FeatureFlags', `Initialized ${this.flags.size} feature flags`);

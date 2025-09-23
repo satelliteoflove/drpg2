@@ -2,10 +2,6 @@ import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState, Item } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { InventorySystem } from '../systems/InventorySystem';
-import { InventoryASCIIState } from '../rendering/scenes/InventoryASCIIState';
-import { FeatureFlagKey, FeatureFlags } from '../config/FeatureFlags';
-import { CanvasRenderer } from '../rendering/CanvasRenderer';
-import { DebugLogger } from '../utils/DebugLogger';
 
 export class InventoryScene extends Scene {
   private gameState: GameState;
@@ -16,64 +12,25 @@ export class InventoryScene extends Scene {
     'character_select';
   private tradeFromCharacter: number = 0;
   private tradeItem: string = '';
-  private asciiState?: InventoryASCIIState;
-  private asciiRenderer?: CanvasRenderer;
-  private useASCII: boolean = false;
 
   constructor(gameState: GameState, sceneManager: SceneManager) {
     super('Inventory');
     this.gameState = gameState;
     this.sceneManager = sceneManager;
-
-    // Check if ASCII rendering should be enabled
-    this.useASCII =
-      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
-      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_INVENTORY_SCENE);
-
-    if (this.useASCII) {
-      this.asciiState = new InventoryASCIIState(gameState, sceneManager);
-      DebugLogger.info('InventoryScene', 'ASCII rendering enabled for Inventory scene');
-    }
   }
 
   public enter(): void {
     this.selectedCharacter = 0;
     this.selectedItem = 0;
     this.mode = 'character_select';
-
-    // Check if ASCII should be enabled on enter
-    const shouldUseASCII =
-      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
-      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_INVENTORY_SCENE);
-
-    if (shouldUseASCII && !this.asciiState) {
-      this.asciiState = new InventoryASCIIState(this.gameState, this.sceneManager);
-      this.useASCII = true;
-      DebugLogger.info('InventoryScene', 'ASCII rendering enabled on enter');
-    } else if (!shouldUseASCII && this.asciiState) {
-      this.asciiState = undefined;
-      this.asciiRenderer = undefined;
-      this.useASCII = false;
-      DebugLogger.info('InventoryScene', 'ASCII rendering disabled on enter');
-    }
-
-    // Initialize ASCII state if enabled
-    if (this.asciiState) {
-      this.asciiState.enter();
-      this.syncASCIIState();
-    }
   }
 
   public exit(): void {
-    if (this.asciiState) {
-      this.asciiState.exit();
-    }
+    // Clean up when exiting
   }
 
   public update(_deltaTime: number): void {
-    if (this.asciiState) {
-      this.asciiState.update(_deltaTime);
-    }
+    // Update logic if needed
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
@@ -111,88 +68,44 @@ export class InventoryScene extends Scene {
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
-    // Check if ASCII should be enabled at runtime
-    const shouldUseASCII =
-      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
-      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_INVENTORY_SCENE);
-
-    if (shouldUseASCII && !this.asciiState) {
-      DebugLogger.info('InventoryScene', 'Initializing ASCII state in renderLayered');
-      this.asciiState = new InventoryASCIIState(this.gameState, this.sceneManager);
-      this.asciiState.enter();
-      this.syncASCIIState();
-      this.useASCII = true;
-    } else if (!shouldUseASCII && this.asciiState) {
-      DebugLogger.info('InventoryScene', 'Disabling ASCII state in renderLayered');
-      this.asciiState.exit();
-      this.asciiState = undefined;
-      this.asciiRenderer = undefined;
-      this.useASCII = false;
-    }
-
     const { renderManager } = renderContext;
 
-    if (shouldUseASCII && this.asciiState) {
-      // ASCII rendering
-      renderManager.renderBackground((ctx) => {
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      });
+    renderManager.renderBackground((ctx) => {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    });
 
-      renderManager.renderUI((ctx) => {
-        // Create ASCII renderer if needed
-        if (!this.asciiRenderer) {
-          this.asciiRenderer = new CanvasRenderer(ctx.canvas);
-        }
+    renderManager.renderUI((ctx) => {
+      ctx.fillStyle = '#fff';
+      ctx.font = '16px monospace';
 
-        // Update ASCII state with latest data
-        this.syncASCIIState();
+      switch (this.mode) {
+        case 'character_select':
+          this.renderCharacterSelect(ctx);
+          break;
+        case 'inventory':
+          this.renderInventory(ctx);
+          break;
+        case 'equipment':
+          this.renderEquipment(ctx);
+          break;
+        case 'trade_select':
+          this.renderTradeSelect(ctx);
+          break;
+        case 'trade_target':
+          this.renderTradeTarget(ctx);
+          break;
+      }
 
-        // Render ASCII grid
-        if (this.asciiState && this.asciiRenderer) {
-          const asciiGrid = this.asciiState.getGrid();
-          this.asciiRenderer.renderASCIIGrid(asciiGrid.getGrid());
-        }
-      });
-    } else {
-      // Original rendering code
-      renderManager.renderBackground((ctx) => {
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      });
-
-      renderManager.renderUI((ctx) => {
-        ctx.fillStyle = '#fff';
-        ctx.font = '16px monospace';
-
-        switch (this.mode) {
-          case 'character_select':
-            this.renderCharacterSelect(ctx);
-            break;
-          case 'inventory':
-            this.renderInventory(ctx);
-            break;
-          case 'equipment':
-            this.renderEquipment(ctx);
-            break;
-          case 'trade_select':
-            this.renderTradeSelect(ctx);
-            break;
-          case 'trade_target':
-            this.renderTradeTarget(ctx);
-            break;
-        }
-
-        // Instructions
-        ctx.fillStyle = '#888';
-        ctx.font = '12px monospace';
-        ctx.fillText(
-          'ESC: Back/Exit | ENTER: Select | UP/DOWN: Navigate',
-          10,
-          ctx.canvas.height - 10
-        );
-      });
-    }
+      // Instructions
+      ctx.fillStyle = '#888';
+      ctx.font = '12px monospace';
+      ctx.fillText(
+        'ESC: Back/Exit | ENTER: Select | UP/DOWN: Navigate',
+        10,
+        ctx.canvas.height - 10
+      );
+    });
   }
 
   private renderCharacterSelect(ctx: CanvasRenderingContext2D): void {
@@ -345,36 +258,19 @@ export class InventoryScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
-    // Check if ASCII rendering is currently active
-    const shouldUseASCII =
-      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_RENDERING) ||
-      FeatureFlags.isEnabled(FeatureFlagKey.ASCII_INVENTORY_SCENE);
-
-    let handled = false;
     switch (this.mode) {
       case 'character_select':
-        handled = this.handleCharacterSelect(key);
-        break;
+        return this.handleCharacterSelect(key);
       case 'inventory':
-        handled = this.handleInventory(key);
-        break;
+        return this.handleInventory(key);
       case 'equipment':
-        handled = this.handleEquipment(key);
-        break;
+        return this.handleEquipment(key);
       case 'trade_select':
-        handled = this.handleTradeSelect(key);
-        break;
+        return this.handleTradeSelect(key);
       case 'trade_target':
-        handled = this.handleTradeTarget(key);
-        break;
+        return this.handleTradeTarget(key);
     }
-
-    // Sync with ASCII state after handling input
-    if (shouldUseASCII && this.asciiState && handled) {
-      this.syncASCIIState();
-    }
-
-    return handled;
+    return false;
   }
 
   private handleCharacterSelect(key: string): boolean {
@@ -574,16 +470,5 @@ export class InventoryScene extends Scene {
       default:
         return null;
     }
-  }
-
-  private syncASCIIState(): void {
-    if (!this.asciiState) return;
-
-    // Sync state with ASCII renderer
-    this.asciiState.updateMode(this.mode);
-    this.asciiState.updateSelectedCharacter(this.selectedCharacter);
-    this.asciiState.updateSelectedItem(this.selectedItem);
-    this.asciiState.updateTradeFromCharacter(this.tradeFromCharacter);
-    this.asciiState.updateTradeItem(this.tradeItem);
   }
 }

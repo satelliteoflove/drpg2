@@ -1,8 +1,12 @@
 import { Character } from '../entities/Character';
-import { Encounter, Item, Monster, Spell } from '../types/GameTypes';
+import { Encounter, Item, Monster } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { InventorySystem } from './InventorySystem';
 import { DebugLogger } from '../utils/DebugLogger';
+import { SpellCaster } from './magic/SpellCaster';
+import { SpellCastingContext } from '../types/SpellTypes';
+import { DiceRoller } from '../utils/DiceRoller';
+import { EntityUtils } from '../utils/EntityUtils';
 
 interface CombatDebugData {
   currentTurn: string;
@@ -15,6 +19,7 @@ export class CombatSystem {
   private encounter: Encounter | null = null;
   private dungeonLevel: number = 1;
   private party: Character[] = [];
+  private spellCaster: SpellCaster;
   private onCombatEnd?: (
     victory: boolean,
     rewards?: { experience: number; gold: number; items: Item[] },
@@ -30,6 +35,10 @@ export class CombatSystem {
     escapeChances: [],
     isActive: false,
   };
+
+  constructor() {
+    this.spellCaster = SpellCaster.getInstance();
+  }
 
   public startCombat(
     monsters: Monster[],
@@ -49,7 +58,11 @@ export class CombatSystem {
     this.resetTurnState(); // Ensure clean state
 
     this.encounter = {
-      monsters: monsters.map((m) => ({ ...m })),
+      monsters: monsters.map((m) => ({
+        ...m,
+        currentHp: m.currentHp !== undefined ? m.currentHp : m.hp,
+        isDead: false
+      })),
       surprise: Math.random() < GAME_CONFIG.ENCOUNTER.SURPRISE_CHANCE,
       canRun: true, // Keep for compatibility, no longer used
       turnOrder: this.calculateTurnOrder(party, monsters),
@@ -57,7 +70,7 @@ export class CombatSystem {
     };
 
     if (this.encounter.surprise) {
-      this.encounter.turnOrder = this.encounter.turnOrder.filter((unit) => 'class' in unit);
+      this.encounter.turnOrder = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as any));
     }
 
     // Update debug data
@@ -84,14 +97,22 @@ export class CombatSystem {
     return this.encounter.turnOrder[this.encounter.currentTurn] || null;
   }
 
+  public getMonsters(): Monster[] {
+    return this.encounter?.monsters || [];
+  }
+
+  public getParty(): Character[] {
+    return this.party || [];
+  }
+
   public canPlayerAct(): boolean {
     const currentUnit = this.getCurrentUnit();
-    return currentUnit !== null && 'class' in currentUnit;
+    return currentUnit !== null && EntityUtils.isCharacter(currentUnit as any);
   }
 
   public getPlayerOptions(): string[] {
     const currentUnit = this.getCurrentUnit();
-    if (!currentUnit || !('class' in currentUnit)) return [];
+    if (!currentUnit || !EntityUtils.isCharacter(currentUnit as any)) return [];
 
     const options = ['Attack', 'Defend', 'Use Item', 'Escape'];
 
@@ -104,7 +125,7 @@ export class CombatSystem {
 
   public executePlayerAction(action: string, targetIndex?: number, spellId?: string): string {
     const currentUnit = this.getCurrentUnit();
-    if (!currentUnit || !('class' in currentUnit) || !this.encounter) {
+    if (!currentUnit || !EntityUtils.isCharacter(currentUnit) || !this.encounter) {
       return 'Invalid action';
     }
 
@@ -180,72 +201,48 @@ export class CombatSystem {
   private executeCastSpell(caster: Character, spellId?: string, targetIndex?: number): string {
     if (!this.encounter || !spellId) return 'Invalid spell';
 
-    const spell = caster.spells.find((s) => s.id === spellId);
+    const aliveMonsters = this.encounter.monsters.filter((m) => {
+      const hp = m.currentHp !== undefined ? m.currentHp : m.hp;
+      return !m.isDead && hp > 0;
+    });
+    const aliveParty = this.party.filter(c => !c.isDead);
+
+    let target: Character | Monster | undefined;
+    const spell = caster.getKnownSpells().find(s => s === spellId);
+
     if (!spell) return 'Spell not found';
 
-    if (caster.mp < spell.mpCost) return 'Not enough MP';
+    const spellData = this.spellCaster['registry'].getSpellById(spellId);
+    if (!spellData) return 'Invalid spell';
 
-    caster.mp -= spell.mpCost;
-
-    let target: Character | Monster | null = null;
-    let result = `${caster.name} casts ${spell.name}!`;
-
-    switch (spell.targetType) {
-      case 'enemy': {
-        const aliveMonsters = this.encounter.monsters.filter((m) => m.hp > 0);
-        target =
-          targetIndex !== undefined && targetIndex < aliveMonsters.length
-            ? aliveMonsters[targetIndex]
-            : aliveMonsters[Math.floor(Math.random() * aliveMonsters.length)];
-        break;
-      }
-      case 'ally':
-      case 'self':
-        target = caster;
-        break;
+    if (spellData.targetType === 'enemy' && aliveMonsters.length > 0) {
+      target = targetIndex !== undefined && targetIndex < aliveMonsters.length
+        ? aliveMonsters[targetIndex]
+        : aliveMonsters[Math.floor(Math.random() * aliveMonsters.length)];
+    } else if (spellData.targetType === 'ally' || spellData.targetType === 'self') {
+      target = caster;
     }
 
-    if (target) {
-      result += ' ' + this.applySpellEffect(spell, target);
-    }
+    const context: SpellCastingContext = {
+      casterId: caster.id,
+      caster: caster,
+      target: target,
+      party: aliveParty,
+      enemies: aliveMonsters,
+      inCombat: true
+    };
 
-    return result;
+    const result = this.spellCaster.castSpell(caster, spellId, context);
+
+    this.cleanupDeadUnits();
+
+    if (result.success) {
+      return result.messages.join(' ');
+    } else {
+      return result.messages[0] || 'Spell failed';
+    }
   }
 
-  private applySpellEffect(spell: Spell, target: Character | Monster): string {
-    // Process first effect for now - full effect processor will be implemented later
-    const primaryEffect = spell.effects[0];
-    if (!primaryEffect) return 'The spell has no effect!';
-
-    switch (primaryEffect.type) {
-      case 'damage': {
-        // Parse damage string like "1d8" - simplified for now
-        const baseDamage = typeof primaryEffect.power === 'string'
-          ? parseInt(primaryEffect.power.split('d')[1] || '8')
-          : (primaryEffect.power || 8);
-        const damage = baseDamage + Math.floor(Math.random() * 6);
-        if ('hp' in target) {
-          target.hp = Math.max(0, target.hp - damage);
-          return `${target.name} takes ${damage} damage!`;
-        }
-        break;
-      }
-      case 'heal':
-        if ('heal' in target) {
-          // Parse healing string like "1d8" - simplified for now
-          const baseHealing = typeof primaryEffect.power === 'string'
-            ? parseInt(primaryEffect.power.split('d')[1] || '8')
-            : (primaryEffect.power || 8);
-          const healing = baseHealing + Math.floor(Math.random() * 6);
-          target.heal(healing);
-          return `${target.name} recovers ${healing} HP!`;
-        }
-        break;
-      default:
-        return 'The spell has no effect!';
-    }
-    return '';
-  }
 
   public executeMonsterTurn(): string {
     const currentUnit = this.getCurrentUnit();
@@ -255,7 +252,7 @@ export class CombatSystem {
       return '';
     }
 
-    if ('class' in currentUnit) {
+    if (EntityUtils.isCharacter(currentUnit as any)) {
       // It's a player's turn, not a monster's - reset flag and skip
       this.isProcessingTurn = false;
       return '';
@@ -263,7 +260,7 @@ export class CombatSystem {
 
     const monster = currentUnit;
     const alivePlayers = this.encounter.turnOrder.filter(
-      (unit) => 'class' in unit && !unit.isDead
+      (unit) => EntityUtils.isCharacter(unit as any) && !(unit as Character).isDead
     ) as Character[];
 
     if (alivePlayers.length === 0) {
@@ -308,17 +305,7 @@ export class CombatSystem {
   }
 
   private rollDamage(damageString: string): number {
-    const match = damageString.match(/(\d+)d(\d+)(?:\+(\d+))?/);
-    if (!match) return 1;
-
-    const [, numDice, dieSize, bonus] = match;
-    let total = 0;
-
-    for (let i = 0; i < parseInt(numDice); i++) {
-      total += Math.floor(Math.random() * parseInt(dieSize)) + 1;
-    }
-
-    return total + (bonus ? parseInt(bonus) : 0);
+    return DiceRoller.roll(damageString);
   }
 
   private attemptEscape(character: Character): boolean {
@@ -361,7 +348,7 @@ export class CombatSystem {
     }
 
     const currentUnit = this.getCurrentUnit();
-    const isMonster = currentUnit && !('class' in currentUnit);
+    const isMonster = currentUnit && EntityUtils.isMonster(currentUnit as any);
 
     if (isMonster) {
       // Execute monster turn immediately
@@ -385,10 +372,12 @@ export class CombatSystem {
     if (!this.encounter) return;
 
     this.encounter.turnOrder = this.encounter.turnOrder.filter((unit) => {
-      if ('class' in unit) {
-        return !unit.isDead;
+      if (EntityUtils.isCharacter(unit as any)) {
+        return !(unit as Character).isDead;
       } else {
-        return unit.hp > 0;
+        const monster = unit as Monster;
+        const hp = monster.currentHp !== undefined ? monster.currentHp : monster.hp;
+        return hp > 0;
       }
     });
 
@@ -400,7 +389,7 @@ export class CombatSystem {
   private checkCombatEnd(): boolean {
     if (!this.encounter) return true;
 
-    const alivePlayers = this.encounter.turnOrder.filter((unit) => 'class' in unit && !unit.isDead);
+    const alivePlayers = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as any) && !(unit as Character).isDead);
     const aliveMonsters = this.encounter.monsters.filter((m) => m.hp > 0);
 
     if (alivePlayers.length === 0) {
@@ -445,7 +434,7 @@ export class CombatSystem {
   private getAveragePartyLevel(): number {
     if (!this.encounter) return 1;
 
-    const partyMembers = this.encounter.turnOrder.filter((unit) => 'class' in unit) as Character[];
+    const partyMembers = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as any)) as Character[];
     if (partyMembers.length === 0) return 1;
 
     const totalLevel = partyMembers.reduce((sum, character) => sum + character.level, 0);
@@ -481,7 +470,7 @@ export class CombatSystem {
 
     const aliveMonsters = this.encounter.monsters.filter((m) => m.hp > 0);
     const alivePlayers = this.encounter.turnOrder.filter(
-      (unit) => 'class' in unit && !unit.isDead
+      (unit) => EntityUtils.isCharacter(unit as any) && !(unit as Character).isDead
     ).length;
 
     return `Players: ${alivePlayers} | Monsters: ${aliveMonsters.length}`;
@@ -494,14 +483,14 @@ export class CombatSystem {
   private updateCombatDebugData(): void {
     const currentUnit = this.getCurrentUnit();
     const currentTurnName = currentUnit
-      ? 'class' in currentUnit
+      ? EntityUtils.isCharacter(currentUnit as any)
         ? currentUnit.name
         : currentUnit.name
       : 'No active unit';
 
     const turnOrderNames =
       this.encounter?.turnOrder.map((unit) =>
-        'class' in unit ? `${unit.name} (${unit.class})` : unit.name
+        EntityUtils.isCharacter(unit as any) ? `${unit.name} (${(unit as Character).class})` : unit.name
       ) || [];
 
     CombatSystem.debugData = {
@@ -515,7 +504,7 @@ export class CombatSystem {
   private calculateEscapeChances(): { name: string; chance: number }[] {
     if (!this.encounter) return [];
 
-    const partyMembers = this.encounter.turnOrder.filter((unit) => 'class' in unit) as Character[];
+    const partyMembers = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as any)) as Character[];
     return partyMembers.map((char) => {
       let escapeChance = 0.5;
       const agilityBonus = (char.stats.agility - 10) * 0.02;

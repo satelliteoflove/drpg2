@@ -67,19 +67,29 @@ export class StatusPanel {
     this.currentRenderCtx.fillStyle = statusColor;
     this.currentRenderCtx.fillText(`${char.status}`, x + 60, y + 24);
 
-    const hpBarWidth = width - 100;
+    const barWidth = Math.floor((width - 120) / 2);
     const hpPercent = char.maxHp > 0 ? char.hp / char.maxHp : 0;
+    const mpPercent = char.maxMp > 0 ? char.mp / char.maxMp : 0;
 
     this.currentRenderCtx.fillStyle = '#333';
-    this.currentRenderCtx.fillRect(x + 5, y + 28, hpBarWidth, 6);
+    this.currentRenderCtx.fillRect(x + 5, y + 28, barWidth, 6);
 
     this.currentRenderCtx.fillStyle =
       hpPercent > 0.5 ? '#00ff00' : hpPercent > 0.25 ? '#ffaa00' : '#ff0000';
-    this.currentRenderCtx.fillRect(x + 5, y + 28, hpBarWidth * hpPercent, 6);
+    this.currentRenderCtx.fillRect(x + 5, y + 28, barWidth * hpPercent, 6);
+
+    this.currentRenderCtx.fillStyle = '#333';
+    this.currentRenderCtx.fillRect(x + barWidth + 15, y + 28, barWidth, 6);
+
+    this.currentRenderCtx.fillStyle = '#0088ff';
+    this.currentRenderCtx.fillRect(x + barWidth + 15, y + 28, barWidth * mpPercent, 6);
 
     this.currentRenderCtx.fillStyle = '#fff';
     this.currentRenderCtx.font = '9px monospace';
     this.currentRenderCtx.fillText(`HP: ${char.hp}/${char.maxHp}`, x + 5, y + 40);
+
+    this.currentRenderCtx.fillStyle = '#8af';
+    this.currentRenderCtx.fillText(`MP: ${char.mp}/${char.maxMp}`, x + barWidth + 15, y + 40);
 
     this.currentRenderCtx.fillStyle = '#aaa';
     this.currentRenderCtx.font = '8px monospace';
@@ -90,10 +100,10 @@ export class StatusPanel {
     if (char.maxMp > 0) {
       const mpPercent = char.mp / char.maxMp;
       this.currentRenderCtx.fillStyle = '#333';
-      this.currentRenderCtx.fillRect(x + 5, y + 34, hpBarWidth, 4);
+      this.currentRenderCtx.fillRect(x + 5, y + 34, barWidth, 4);
 
       this.currentRenderCtx.fillStyle = '#0088ff';
-      this.currentRenderCtx.fillRect(x + 5, y + 34, hpBarWidth * mpPercent, 4);
+      this.currentRenderCtx.fillRect(x + 5, y + 34, barWidth * mpPercent, 4);
 
       this.currentRenderCtx.fillStyle = '#fff';
       this.currentRenderCtx.font = '8px monospace';
