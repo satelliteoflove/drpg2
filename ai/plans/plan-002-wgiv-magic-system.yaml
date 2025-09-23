@@ -151,10 +151,12 @@ nodes:
       - Add spell descriptions on hover/select
       - Create spell casting feedback messages
       - Handle invalid spell selections gracefully
+      - Extend AI Interface with spell menu navigation methods
     outputs:
       - "src/ui/SpellMenu.ts"
       - "src/ui/SpellTargetSelector.ts"
       - "src/scenes/CombatScene.ts (updated)"
+      - "src/core/AIInterface.ts (extended)"
     agent_action: "Create combat spell casting interface"
     role: "agent"
     downstream: ["spell-testing-phase1"]
@@ -164,17 +166,19 @@ nodes:
     materialization: 0.7
     description: "Test Phase 1 spell implementation"
     detailed_description: |
-      Create comprehensive tests for damage/healing spells.
-      - Write tests for spell learning on level up
-      - Test damage calculations and resistances
-      - Verify healing effects in and out of combat
-      - Test MP consumption and validation
-      - Verify spell fizzle mechanics
-      - Test group vs single targeting
+      Create comprehensive tests for damage/healing spells using AI Interface.
+      - Write tests using window.AI methods exclusively (no DOM selectors)
+      - Test spell learning on level up via AI.getParty()
+      - Verify damage calculations via AI.getCombat()
+      - Test healing effects via state comparisons
+      - Verify MP consumption via AI.getParty()
+      - Test spell fizzle mechanics through outcome verification
+      - Verify group vs single targeting via state changes
       - Ensure save/load compatibility
+      - Use AI.sendKey() for all spell casting simulation
     outputs:
       - "tests/magic-system-phase1.test.js"
-    agent_action: "Write and run Phase 1 spell tests"
+    agent_action: "Write and run Phase 1 spell tests using AI Interface"
     role: "agent"
     downstream: ["phase2-status-effects"]
 
@@ -213,9 +217,11 @@ nodes:
       - Add status effect notifications to message log
       - Create effect expiration messages
       - Update save/load to persist status effects
+      - Expose status effects via AI Interface for testing
     outputs:
       - "src/ui/StatusPanel.ts (updated)"
       - "src/scenes/CombatScene.ts (updated)"
+      - "src/core/AIInterface.ts (extended with status queries)"
     agent_action: "Integrate status effects with UI"
     role: "agent"
     downstream: ["spell-testing-phase2"]
@@ -225,16 +231,17 @@ nodes:
     materialization: 0.6
     description: "Test Phase 2 status effect implementation"
     detailed_description: |
-      Test the status effect system thoroughly.
-      - Test buff/debuff application and removal
-      - Verify duration tracking and expiration
-      - Test saving throws and resistance
-      - Verify effect stacking rules
-      - Test silence and anti-magic interactions
-      - Ensure status effects persist correctly
+      Test the status effect system thoroughly using AI Interface.
+      - Test buff/debuff application via AI Interface status queries
+      - Verify duration tracking via state comparisons
+      - Test saving throws and resistance through outcome verification
+      - Verify effect stacking rules via AI.getParty()
+      - Test silence and anti-magic interactions via AI.sendKey()
+      - Ensure status effects persist correctly through save/load
+      - All tests must use window.AI methods exclusively
     outputs:
       - "tests/magic-system-phase2.test.js"
-    agent_action: "Write and run Phase 2 status effect tests"
+    agent_action: "Write and run Phase 2 status effect tests using AI Interface"
     role: "agent"
     downstream: ["phase3-special-effects"]
 
@@ -266,16 +273,18 @@ nodes:
     description: "Integrate utility spells with dungeon exploration"
     detailed_description: |
       Connect utility spells to dungeon mechanics.
-      - Add spell casting option in dungeon menu
+      - Add spell casting option in dungeon menu via DungeonInputHandler
       - Implement Light spell visibility effects
       - Add Locate spell coordinate display
       - Create Teleport UI with safety checks
       - Add spell duration step counter
       - Implement anti-magic zone checking
       - Update message log for spell effects
+      - Extend AI Interface with dungeon spell methods
     outputs:
-      - "src/scenes/DungeonScene.ts (updated)"
+      - "src/systems/dungeon/DungeonInputHandler.ts (updated)"
       - "src/ui/DungeonSpellMenu.ts"
+      - "src/core/AIInterface.ts (extended)"
     agent_action: "Integrate utility spells with dungeon"
     role: "agent"
     downstream: ["spell-testing-phase3"]
@@ -285,16 +294,17 @@ nodes:
     materialization: 0.5
     description: "Test Phase 3 special effects implementation"
     detailed_description: |
-      Test all special and utility spell mechanics.
-      - Test Light spell duration and visibility
-      - Verify Teleport coordinate calculations
-      - Test Resurrection success/failure rates
-      - Verify instant death saves and immunities
-      - Test Identify spell functionality
-      - Ensure anti-magic zones work correctly
+      Test all special and utility spell mechanics using AI Interface.
+      - Test Light spell duration via AI.getDungeon()
+      - Verify Teleport via AI.getParty() location changes
+      - Test Resurrection rates through outcome verification
+      - Verify instant death saves via AI.getCombat()
+      - Test Identify spell via item state queries
+      - Ensure anti-magic zones work via AI.sendKey() failures
+      - All tests must use window.AI methods exclusively
     outputs:
       - "tests/magic-system-phase3.test.js"
-    agent_action: "Write and run Phase 3 special effect tests"
+    agent_action: "Write and run Phase 3 special effect tests using AI Interface"
     role: "agent"
     downstream: ["spell-documentation"]
 
@@ -310,9 +320,12 @@ nodes:
       - Provide casting UI guide
       - Document save/load considerations
       - Add developer notes for adding new spells
+      - Document AI Interface usage for spell testing
+      - Update docs/DOCS_INDEX.yaml with new documentation
     outputs:
       - "docs/magic-system-implementation.md"
       - "docs/spell-reference.md"
+      - "docs/DOCS_INDEX.yaml (updated)"
     agent_action: "Write magic system documentation"
     role: "agent"
     downstream: ["final-integration-testing"]
@@ -322,15 +335,16 @@ nodes:
     materialization: 0.3
     description: "Final integration testing of complete magic system"
     detailed_description: |
-      Perform end-to-end testing of the entire magic system.
-      - Test character progression with spell learning
-      - Verify all spell schools and classes work
-      - Test combat with mixed spell types
-      - Verify dungeon utility spells
-      - Test save/load with active effects
-      - Performance test with many effects
-      - Verify backwards compatibility
+      Perform end-to-end testing of the entire magic system using AI Interface.
+      - Test character progression with spell learning via AI.getParty()
+      - Verify all spell schools via programmatic state checks
+      - Test combat with mixed spell types via AI.sendKey() sequences
+      - Verify dungeon utility spells via AI.getDungeon()
+      - Test save/load with active effects via state persistence
+      - Performance test using AI Interface timing measurements
+      - Verify backwards compatibility through state validation
+      - All tests must use window.AI methods exclusively
     outputs:
       - "tests/magic-system-integration.test.js"
-    agent_action: "Perform final integration testing"
+    agent_action: "Perform final integration testing using AI Interface"
     role: "agent"
