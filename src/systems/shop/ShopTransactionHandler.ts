@@ -209,19 +209,23 @@ export class ShopTransactionHandler {
 
   public poolPartyGold(): void {
     let totalGold = 0;
-    const party = this.gameState.party.getCharacters();
+    const party = this.gameState.party.characters;
+
+    if (party.length === 0) {
+      return;
+    }
 
     for (const character of party) {
       totalGold += character.gold;
       character.gold = 0;
     }
 
-    this.gameState.party.pooledGold = (this.gameState.party.pooledGold || 0) + totalGold;
+    party[0].gold = totalGold;
 
     DebugLogger.info('ShopTransactionHandler',
-      `Pooled ${totalGold}g from party (total: ${this.gameState.party.pooledGold}g)`);
+      `Pooled ${totalGold}g to ${party[0].name}`);
 
-    this.messageLog?.addSystemMessage(`Pooled ${totalGold}g from the party`);
+    this.messageLog?.addSystemMessage(`Pooled ${totalGold}g to ${party[0].name}`);
   }
 
   public distributePooledGold(): void {

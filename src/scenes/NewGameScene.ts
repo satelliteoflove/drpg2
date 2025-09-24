@@ -127,9 +127,12 @@ export class NewGameScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
+    // Normalize key to lowercase
+    const normalizedKey = key.toLowerCase();
+
     // Use MenuInputHandler for navigation
     const action = MenuInputHandler.handleMenuInput(
-      key,
+      normalizedKey,
       {
         selectedIndex: this.selectedOption,
         maxIndex: this.menuOptions.length - 1,

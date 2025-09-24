@@ -139,8 +139,8 @@ nodes:
     downstream: ["combat-spell-ui", "spell-testing-phase1"]
 
   - id: "combat-spell-ui"
-    status: "Ready"
-    materialization: 0.7
+    status: "Complete"
+    materialization: 1.0
     description: "Create spell casting UI for combat"
     detailed_description: |
       Build the user interface for casting spells in combat.
@@ -163,7 +163,7 @@ nodes:
 
   - id: "spell-testing-phase1"
     status: "Ready"
-    materialization: 0.7
+    materialization: 0.8
     description: "Test Phase 1 spell implementation"
     detailed_description: |
       Create comprehensive tests for damage/healing spells using AI Interface.

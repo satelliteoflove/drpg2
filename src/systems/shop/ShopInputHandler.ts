@@ -144,7 +144,7 @@ export class ShopInputHandler {
   }
 
   private handleBuyConfirm(): boolean {
-    const characters = this.gameState.party.getCharacters();
+    const characters = this.gameState.party.characters;
     const buyer = characters[this.stateManager.selectedCharacterIndex];
     const item = this.stateManager.selectedItem;
 
@@ -166,7 +166,7 @@ export class ShopInputHandler {
   }
 
   private handleSellingCharacterConfirm(): boolean {
-    const characters = this.gameState.party.getCharacters();
+    const characters = this.gameState.party.characters;
     const character = characters[this.stateManager.selectedOption];
 
     if (character.inventory.length === 0) {

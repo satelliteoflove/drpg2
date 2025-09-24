@@ -397,8 +397,11 @@ export class CharacterCreationScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
+    // Normalize key to lowercase
+    const normalizedKey = key.toLowerCase();
+
     // Allow Escape to skip character creation and create a default party
-    if (key === 'escape') {
+    if (normalizedKey === 'escape') {
       this.createDefaultParty();
       this.generateNewDungeon();
       this.sceneManager.switchTo('dungeon');
@@ -407,19 +410,19 @@ export class CharacterCreationScene extends Scene {
 
     switch (this.currentStep) {
       case 'name':
-        return this.handleNameInput(key);
+        return this.handleNameInput(normalizedKey);
       case 'race':
-        return this.handleSelectionInput(key, this.races.length);
+        return this.handleSelectionInput(normalizedKey, this.races.length);
       case 'gender':
-        return this.handleSelectionInput(key, this.genders.length);
+        return this.handleSelectionInput(normalizedKey, this.genders.length);
       case 'class':
-        return this.handleSelectionInput(key, this.classes.length);
+        return this.handleSelectionInput(normalizedKey, this.classes.length);
       case 'alignment':
-        return this.handleSelectionInput(key, this.alignments.length);
+        return this.handleSelectionInput(normalizedKey, this.alignments.length);
       case 'confirm':
-        return this.handleConfirmInput(key);
+        return this.handleConfirmInput(normalizedKey);
       case 'party':
-        return this.handlePartyInput(key);
+        return this.handlePartyInput(normalizedKey);
     }
     return false;
   }

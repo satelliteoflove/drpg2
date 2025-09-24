@@ -17,6 +17,7 @@ test.describe('Essential Game Functionality', () => {
         getParty: typeof window.AI?.getParty === 'function',
         getDungeon: typeof window.AI?.getDungeon === 'function',
         getCombat: typeof window.AI?.getCombat === 'function',
+        getShop: typeof window.AI?.getShop === 'function',
         getActions: typeof window.AI?.getActions === 'function',
         describe: typeof window.AI?.describe === 'function',
         sendKey: typeof window.AI?.sendKey === 'function',
@@ -29,6 +30,7 @@ test.describe('Essential Game Functionality', () => {
     expect(aiMethodsExist.getParty).toBe(true);
     expect(aiMethodsExist.getDungeon).toBe(true);
     expect(aiMethodsExist.getCombat).toBe(true);
+    expect(aiMethodsExist.getShop).toBe(true);
     expect(aiMethodsExist.getActions).toBe(true);
     expect(aiMethodsExist.describe).toBe(true);
     expect(aiMethodsExist.sendKey).toBe(true);
@@ -53,7 +55,7 @@ test.describe('Essential Game Functionality', () => {
     expect(sceneName).toBe('MainMenu');
 
     const description = await page.evaluate(() => window.AI.describe());
-    expect(description).toContain('MainMenu');
+    expect(description).toContain('Main Menu');
   });
 
   test('should navigate from MainMenu to game', async ({ page }) => {
@@ -207,29 +209,21 @@ test.describe('Essential Game Functionality', () => {
     let sceneName = await page.evaluate(() => window.AI.getScene());
     expect(sceneName).toBe('Shop');
 
-    const initialShopState = await page.evaluate(() => {
-      const scene = window.game?.sceneManager?.getCurrentScene();
-      return scene?.currentState;
-    });
-    expect(initialShopState).toBe('main_menu');
+    const initialShopInfo = await page.evaluate(() => window.AI.getShop());
+    expect(initialShopInfo.inShop).toBe(true);
+    expect(initialShopInfo.currentState).toBe('main_menu');
 
     await page.evaluate(() => window.AI.sendKey('Enter'));
     await page.waitForTimeout(200);
 
-    const buyingState = await page.evaluate(() => {
-      const scene = window.game?.sceneManager?.getCurrentScene();
-      return scene?.currentState;
-    });
-    expect(buyingState).toBe('buying_category');
+    const buyingInfo = await page.evaluate(() => window.AI.getShop());
+    expect(buyingInfo.currentState).toBe('buying_category');
 
     await page.evaluate(() => window.AI.sendKey('Escape'));
     await page.waitForTimeout(200);
 
-    const backToMainState = await page.evaluate(() => {
-      const scene = window.game?.sceneManager?.getCurrentScene();
-      return scene?.currentState;
-    });
-    expect(backToMainState).toBe('main_menu');
+    const backToMainInfo = await page.evaluate(() => window.AI.getShop());
+    expect(backToMainInfo.currentState).toBe('main_menu');
   });
 
   test('should toggle feature flags', async ({ page }) => {

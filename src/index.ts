@@ -37,10 +37,14 @@ document.addEventListener('DOMContentLoaded', () => {
       getParty: () => aiInterface.getPartyInfo(),
       getDungeon: () => aiInterface.getDungeonInfo(),
       getCombat: () => aiInterface.getCombatInfo(),
+      getShop: () => aiInterface.getShopInfo(),
       getActions: () => aiInterface.getAvailableActions(),
       describe: () => aiInterface.getSceneDescription(),
       sendKey: (key: string) => aiInterface.simulateKeypress(key),
       roll: (dice: string) => aiInterface.rollDice(dice),
+      getSpellMenu: () => aiInterface.getSpellMenuInfo(),
+      selectSpell: (index: number) => aiInterface.selectSpellByIndex(index),
+      navigateSpellMenu: (direction: 'up' | 'down' | 'left' | 'right') => aiInterface.navigateSpellMenu(direction),
     };
 
     // Also expose drpg namespace for backward compatibility

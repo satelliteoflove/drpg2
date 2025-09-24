@@ -108,9 +108,9 @@ export class ShopStateManager {
       case 'buying_items':
         return this.getCurrentCategoryItems().length - 1;
       case 'buying_character_select':
-        return this.gameState.party.getCharacters().length - 1;
+        return this.gameState.party.characters.length - 1;
       case 'selling_character_select':
-        return this.gameState.party.getCharacters().length - 1;
+        return this.gameState.party.characters.length - 1;
       case 'selling_items':
         return this.selectedSellingCharacter
           ? this.selectedSellingCharacter.inventory.length - 1
@@ -139,7 +139,7 @@ export class ShopStateManager {
   }
 
   public selectCharacter(index: number): void {
-    const characters = this.gameState.party.getCharacters();
+    const characters = this.gameState.party.characters;
     if (index >= 0 && index < characters.length) {
       this.selectedCharacterIndex = index;
 

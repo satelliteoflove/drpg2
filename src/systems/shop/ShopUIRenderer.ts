@@ -89,7 +89,7 @@ export class ShopUIRenderer {
 
   private renderGoldDisplay(ctx: CanvasRenderingContext2D): void {
     const pooledGold = this.gameState.party.pooledGold || 0;
-    const partyGold = this.gameState.party.getCharacters().reduce((sum: number, char: Character) => sum + char.gold, 0);
+    const partyGold = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.gold, 0);
 
     ctx.fillStyle = '#ffa500';
     ctx.font = '14px monospace';
@@ -241,7 +241,7 @@ export class ShopUIRenderer {
   }
 
   private renderCharacterSelection(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
-    const characters = this.gameState.party.getCharacters();
+    const characters = this.gameState.party.characters;
 
     this.drawPanel(ctx, 100, 120, 600, 400);
 
@@ -289,7 +289,7 @@ export class ShopUIRenderer {
   }
 
   private renderSellingCharacterSelection(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
-    const characters = this.gameState.party.getCharacters();
+    const characters = this.gameState.party.characters;
 
     this.drawPanel(ctx, 100, 120, 600, 400);
 
@@ -444,7 +444,7 @@ export class ShopUIRenderer {
     ctx.font = '16px monospace';
     ctx.fillStyle = '#fff';
 
-    const characters = this.gameState.party.getCharacters();
+    const characters = this.gameState.party.characters;
     let totalGold = 0;
 
     ctx.textAlign = 'left';
@@ -486,7 +486,7 @@ export class ShopUIRenderer {
   }
 
   private renderPartyStatus(ctx: CanvasRenderingContext2D): void {
-    const party = this.gameState.party.getCharacters();
+    const party = this.gameState.party.characters;
     const startY = 450;
 
     ctx.fillStyle = '#333';
