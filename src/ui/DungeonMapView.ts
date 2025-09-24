@@ -126,7 +126,7 @@ export class DungeonMapView {
   }
 
   private drawTile(tile: DungeonTile, x: number, y: number): void {
-    if (!tile.discovered) {
+    if (!tile.discovered && tile.type !== 'wall') {
       this.currentRenderCtx.fillStyle = this.COLORS.undiscovered;
       this.currentRenderCtx.fillRect(x, y, this.TILE_SIZE, this.TILE_SIZE);
       return;

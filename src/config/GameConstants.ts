@@ -147,6 +147,8 @@ export const GAME_CONFIG = {
     MAX_EXTRA_ENCOUNTER_ZONES: 3,
     MIN_ZONE_SIZE: 3,
     MAX_ZONE_EXTRA_SIZE: 5,
+    // Fog of War / Discovery settings
+    VIEW_DISTANCE: 1, // How many tiles in each direction the player can see/discover (3 = 7x7 area)
   },
 
   EVENTS: {

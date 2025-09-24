@@ -2,6 +2,7 @@ import { GameState, DungeonTile, Direction } from '../../types/GameTypes';
 import { GameUtilities } from '../../utils/GameUtilities';
 import { DebugLogger } from '../../utils/DebugLogger';
 import { SceneManager } from '../../core/Scene';
+import { GAME_CONFIG } from '../../config/GameConstants';
 
 export interface MovementResult {
   moved: boolean;
@@ -42,7 +43,15 @@ export class DungeonMovementHandler {
       return { moved: false, blocked: true, triggered: null };
     }
 
-    const delta = GameUtilities.getMovementDelta(direction);
+    // Convert relative direction to absolute direction based on facing
+    let absoluteDirection: Direction;
+    if (direction === 'forward' || direction === 'backward') {
+      absoluteDirection = this.getAbsoluteDirection(direction, party.facing);
+    } else {
+      absoluteDirection = direction;
+    }
+
+    const delta = GameUtilities.getMovementDelta(absoluteDirection);
     const newX = party.x + delta.dx;
     const newY = party.y + delta.dy;
 
@@ -63,6 +72,8 @@ export class DungeonMovementHandler {
     this.gameState.turnCount++;
     this.lastMoveTime = now;
 
+    this.updateDiscoveredTiles();
+
     const tileResult = this.handleTileEffect(targetTile);
 
     if (this.shouldCheckRandomEncounter(targetTile)) {
@@ -82,11 +93,28 @@ export class DungeonMovementHandler {
     party.move(direction);
     this.gameState.turnCount++;
     this.lastMoveTime = Date.now();
+
+    this.updateDiscoveredTiles();
   }
 
   private canMoveTo(tile: DungeonTile | null): boolean {
     if (!tile) return false;
     return tile.type !== 'wall' && tile.type !== 'solid';
+  }
+
+  private getAbsoluteDirection(relativeDir: 'forward' | 'backward', facing: Direction): Direction {
+    // Convert relative direction based on current facing
+    if (relativeDir === 'forward') {
+      return facing as Direction;
+    } else { // backward
+      switch (facing) {
+        case 'north': return 'south';
+        case 'south': return 'north';
+        case 'east': return 'west';
+        case 'west': return 'east';
+        default: return facing as Direction;
+      }
+    }
   }
 
   private handleTileEffect(tile: DungeonTile): MovementResult['triggered'] {
@@ -103,7 +131,15 @@ export class DungeonMovementHandler {
 
     switch (tile.type) {
       case 'stairs_up':
-        if (this.gameState.currentFloor > 1) {
+        if (this.gameState.currentFloor === 1) {
+          // Special case for returning to town from floor 1
+          // Only show message if we haven't shown it for this position
+          if (!isSamePosition) {
+            this.messageLog?.addSystemMessage('You are at the castle entrance. Do you want to return to town? (Y/N)');
+            this.lastTileEventPosition = currentPosition;
+          }
+          return 'stairs';
+        } else if (this.gameState.currentFloor > 1) {
           this.handleStairsUp();
           this.lastTileEventPosition = null;
           return 'stairs';
@@ -159,16 +195,12 @@ export class DungeonMovementHandler {
     this.gameState.currentFloor--;
     const newFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
 
-    if (newFloor.stairsDown) {
+    if (newFloor && newFloor.stairsDown) {
       this.gameState.party.x = newFloor.stairsDown.x;
       this.gameState.party.y = newFloor.stairsDown.y;
     }
 
     this.messageLog?.addSystemMessage(`Ascended to floor ${this.gameState.currentFloor}`);
-
-    if (this.gameState.currentFloor === 0 && newFloor.properties?.isCastle) {
-      this.messageLog?.addSystemMessage('You have returned to the castle. Do you want to return to town? (Y/N)');
-    }
   }
 
   private handleStairsDown(): void {
@@ -350,5 +382,32 @@ export class DungeonMovementHandler {
       return currentFloor.stairsUp;
     }
     return null;
+  }
+
+  public updateDiscoveredTiles(): void {
+    const currentFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
+    if (!currentFloor) return;
+
+    const party = this.gameState.party;
+    const viewDistance = GAME_CONFIG.DUNGEON.VIEW_DISTANCE;
+
+    for (let dy = -viewDistance; dy <= viewDistance; dy++) {
+      for (let dx = -viewDistance; dx <= viewDistance; dx++) {
+        const tileX = party.x + dx;
+        const tileY = party.y + dy;
+
+        if (tileX >= 0 && tileX < currentFloor.width &&
+            tileY >= 0 && tileY < currentFloor.height) {
+          const tile = currentFloor.tiles[tileY][tileX];
+          if (tile) {
+            tile.discovered = true;
+          }
+        }
+      }
+    }
+  }
+
+  public resetLastTileEventPosition(): void {
+    this.lastTileEventPosition = null;
   }
 }
