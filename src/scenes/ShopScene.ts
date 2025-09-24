@@ -75,6 +75,12 @@ export class ShopScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
-    return this.inputHandler.handleInput(key);
+    // Normalize key to lowercase
+    const normalizedKey = key.toLowerCase();
+    return this.inputHandler.handleInput(normalizedKey);
+  }
+
+  public getCurrentState(): string {
+    return this.stateManager.currentState;
   }
 }

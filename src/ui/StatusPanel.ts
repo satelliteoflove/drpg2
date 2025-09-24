@@ -21,28 +21,29 @@ export class StatusPanel {
   public render(party: Party, ctx?: CanvasRenderingContext2D): void {
     this.currentRenderCtx = ctx || this.ctx;
 
-    this.currentRenderCtx.fillStyle = '#1a1a1a';
+    // Panel background with consistent style
+    this.currentRenderCtx.fillStyle = '#2a2a2a';
     this.currentRenderCtx.fillRect(this.x, this.y, this.width, this.height);
 
-    this.currentRenderCtx.strokeStyle = '#333';
+    this.currentRenderCtx.strokeStyle = '#666';
     this.currentRenderCtx.lineWidth = 2;
     this.currentRenderCtx.strokeRect(this.x, this.y, this.width, this.height);
 
     this.currentRenderCtx.fillStyle = '#fff';
-    this.currentRenderCtx.font = '14px monospace';
-    this.currentRenderCtx.fillText('PARTY STATUS', this.x + 10, this.y + 20);
+    this.currentRenderCtx.font = 'bold 14px monospace';
+    this.currentRenderCtx.textAlign = 'center';
+    this.currentRenderCtx.fillText('PARTY STATUS', this.x + this.width / 2, this.y + 20);
+    this.currentRenderCtx.textAlign = 'left';
 
-    const charHeight = 45;
+    const charHeight = 75;
     const startY = this.y + 40;
-    const availableHeight = this.height - 100; // Reserve space for party info
+    const availableHeight = this.height - 50; // More space for characters
     const maxChars = Math.floor(availableHeight / charHeight);
 
     party.characters.slice(0, maxChars).forEach((char, index) => {
       const charY = startY + index * charHeight;
       this.renderCharacterStatus(char, this.x + 10, charY, this.width - 20, charHeight - 5);
     });
-
-    this.renderPartyInfo(party);
   }
 
   private renderCharacterStatus(
@@ -58,93 +59,70 @@ export class StatusPanel {
     this.currentRenderCtx.lineWidth = 1;
     this.currentRenderCtx.strokeRect(x, y, width, height);
 
+    // Name and class on first line
     this.currentRenderCtx.fillStyle = '#fff';
-    this.currentRenderCtx.font = '11px monospace';
+    this.currentRenderCtx.font = '12px monospace';
+    this.currentRenderCtx.fillText(`${char.name} (${char.class})`, x + 5, y + 14);
 
-    this.currentRenderCtx.fillText(`${char.name} (${char.class})`, x + 5, y + 12);
-    this.currentRenderCtx.fillText(`Lv.${char.level}`, x + 5, y + 24);
+    // Level and status on second line
+    this.currentRenderCtx.font = '11px monospace';
+    this.currentRenderCtx.fillText(`Lv.${char.level}`, x + 5, y + 28);
 
     this.currentRenderCtx.fillStyle = statusColor;
-    this.currentRenderCtx.fillText(`${char.status}`, x + 60, y + 24);
+    this.currentRenderCtx.fillText(`${char.status}`, x + 50, y + 28);
 
-    const barWidth = Math.floor((width - 120) / 2);
+    // AC and Gold on the right
+    this.currentRenderCtx.fillStyle = '#aaa';
+    this.currentRenderCtx.font = '10px monospace';
+    this.currentRenderCtx.textAlign = 'right';
+    this.currentRenderCtx.fillText(`AC: ${char.ac}`, x + width - 5, y + 14);
+    this.currentRenderCtx.fillText(`Gold: ${char.gold}`, x + width - 5, y + 28);
+    this.currentRenderCtx.textAlign = 'left';
+
+    // HP, MP and XP bars
+    const barY = y + 35;
+    const barWidth = Math.floor((width - 20) / 2 - 5);
     const hpPercent = char.maxHp > 0 ? char.hp / char.maxHp : 0;
     const mpPercent = char.maxMp > 0 ? char.mp / char.maxMp : 0;
 
+    // Calculate XP progress to next level
+    const xpForNext = char.getExperienceForNextLevel();
+    const xpNeeded = char.getExperienceToNextLevel();
+    const xpProgress = xpForNext > 0 ?
+      1 - (xpNeeded / xpForNext) : 0;
+
+    // HP bar
     this.currentRenderCtx.fillStyle = '#333';
-    this.currentRenderCtx.fillRect(x + 5, y + 28, barWidth, 6);
+    this.currentRenderCtx.fillRect(x + 5, barY, barWidth, 8);
 
     this.currentRenderCtx.fillStyle =
       hpPercent > 0.5 ? '#00ff00' : hpPercent > 0.25 ? '#ffaa00' : '#ff0000';
-    this.currentRenderCtx.fillRect(x + 5, y + 28, barWidth * hpPercent, 6);
+    this.currentRenderCtx.fillRect(x + 5, barY, barWidth * hpPercent, 8);
 
+    // MP bar
     this.currentRenderCtx.fillStyle = '#333';
-    this.currentRenderCtx.fillRect(x + barWidth + 15, y + 28, barWidth, 6);
+    this.currentRenderCtx.fillRect(x + barWidth + 10, barY, barWidth, 8);
 
     this.currentRenderCtx.fillStyle = '#0088ff';
-    this.currentRenderCtx.fillRect(x + barWidth + 15, y + 28, barWidth * mpPercent, 6);
+    this.currentRenderCtx.fillRect(x + barWidth + 10, barY, barWidth * mpPercent, 8);
 
-    this.currentRenderCtx.fillStyle = '#fff';
-    this.currentRenderCtx.font = '9px monospace';
-    this.currentRenderCtx.fillText(`HP: ${char.hp}/${char.maxHp}`, x + 5, y + 40);
-
-    this.currentRenderCtx.fillStyle = '#8af';
-    this.currentRenderCtx.fillText(`MP: ${char.mp}/${char.maxMp}`, x + barWidth + 15, y + 40);
-
-    this.currentRenderCtx.fillStyle = '#aaa';
-    this.currentRenderCtx.font = '8px monospace';
-    this.currentRenderCtx.fillText(`AC: ${char.ac}`, x + width - 35, y + 12);
-    this.currentRenderCtx.fillText(`Gold: ${char.gold}`, x + width - 50, y + 24);
-    this.currentRenderCtx.fillText(`Exp: ${char.experience}`, x + width - 55, y + 36);
-
-    if (char.maxMp > 0) {
-      const mpPercent = char.mp / char.maxMp;
-      this.currentRenderCtx.fillStyle = '#333';
-      this.currentRenderCtx.fillRect(x + 5, y + 34, barWidth, 4);
-
-      this.currentRenderCtx.fillStyle = '#0088ff';
-      this.currentRenderCtx.fillRect(x + 5, y + 34, barWidth * mpPercent, 4);
-
-      this.currentRenderCtx.fillStyle = '#fff';
-      this.currentRenderCtx.font = '8px monospace';
-      this.currentRenderCtx.fillText(`MP: ${char.mp}/${char.maxMp}`, x + width - 55, y + 48);
-    }
-  }
-
-  private renderPartyInfo(party: Party): void {
-    const infoY = this.y + this.height - 60;
-
-    this.currentRenderCtx.fillStyle = '#333';
-    this.currentRenderCtx.fillRect(this.x + 10, infoY, this.width - 20, 50);
-
-    this.currentRenderCtx.strokeStyle = '#666';
-    this.currentRenderCtx.lineWidth = 1;
-    this.currentRenderCtx.strokeRect(this.x + 10, infoY, this.width - 20, 50);
-
+    // HP and MP text
     this.currentRenderCtx.fillStyle = '#fff';
     this.currentRenderCtx.font = '10px monospace';
-    this.currentRenderCtx.fillText('PARTY INFO', this.x + 15, infoY + 12);
+    this.currentRenderCtx.fillText(`HP: ${char.hp}/${char.maxHp}`, x + 5, barY + 20);
 
-    this.currentRenderCtx.font = '9px monospace';
-    this.currentRenderCtx.fillText(`Position: (${party.x}, ${party.y})`, this.x + 15, infoY + 25);
-    this.currentRenderCtx.fillText(`Facing: ${party.facing}`, this.x + 15, infoY + 35);
-    this.currentRenderCtx.fillText(`Floor: ${party.floor}`, this.x + 15, infoY + 45);
+    this.currentRenderCtx.fillStyle = '#8af';
+    this.currentRenderCtx.fillText(`MP: ${char.mp}/${char.maxMp}`, x + barWidth + 10, barY + 20);
 
-    const aliveCount = party.getAliveCharacters().length;
-    const totalGold = party.getTotalGold();
+    // XP bar (full width)
+    const xpBarY = barY + 30;
+    const xpBarWidth = width - 10;
 
-    this.currentRenderCtx.fillText(
-      `Alive: ${aliveCount}/${party.characters.length}`,
-      this.x + 180,
-      infoY + 25
-    );
-    this.currentRenderCtx.fillText(`Total Gold: ${totalGold}`, this.x + 180, infoY + 35);
+    this.currentRenderCtx.fillStyle = '#333';
+    this.currentRenderCtx.fillRect(x + 5, xpBarY, xpBarWidth, 6);
 
-    if (party.isWiped()) {
-      this.currentRenderCtx.fillStyle = '#ff0000';
-      this.currentRenderCtx.font = '10px monospace';
-      this.currentRenderCtx.fillText('PARTY WIPED!', this.x + 180, infoY + 45);
-    }
+    this.currentRenderCtx.fillStyle = '#ffaa00';
+    this.currentRenderCtx.fillRect(x + 5, xpBarY, xpBarWidth * xpProgress, 6);
   }
 
   public renderCombatStatus(
