@@ -9,6 +9,9 @@ import { InventorySystem } from '../systems/InventorySystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
 import { DebugLogger } from '../utils/DebugLogger';
 import { EntityUtils } from '../utils/EntityUtils';
+import { SpellMenu } from '../ui/SpellMenu';
+import { SpellTargetSelector } from '../ui/SpellTargetSelector';
+import { SpellRegistry } from '../systems/magic/SpellRegistry';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
@@ -20,16 +23,21 @@ export class CombatScene extends Scene {
   private selectedAction: number = 0;
   private selectedTarget: number = 0;
   private selectedSpell: number = 0;
-  private actionState: 'select_action' | 'select_target' | 'select_spell' | 'waiting' =
+  private actionState: 'select_action' | 'select_target' | 'select_spell' | 'spell_target' | 'waiting' =
     'select_action';
   private isProcessingAction: boolean = false; // Prevent multiple simultaneous actions
   private lastActionTime: number = 0; // Debounce rapid input
+  private spellMenu: SpellMenu;
+  private spellTargetSelector: SpellTargetSelector;
+  private pendingSpellId: string | null = null;
 
   constructor(gameState: GameState, sceneManager: SceneManager) {
     super('Combat');
     this.gameState = gameState;
     this.sceneManager = sceneManager;
     this.combatSystem = new CombatSystem();
+    this.spellMenu = new SpellMenu();
+    this.spellTargetSelector = new SpellTargetSelector();
 
     // Initialize messageLog immediately to avoid runtime errors
     this.messageLog = this.gameState.messageLog;
@@ -51,6 +59,8 @@ export class CombatScene extends Scene {
     this.selectedSpell = 0;
     this.isProcessingAction = false;
     this.lastActionTime = 0;
+    this.pendingSpellId = null;
+    this.spellMenu.close();
 
     DebugLogger.debug('CombatScene', 'Combat scene entered - UI state reset');
   }
@@ -307,7 +317,12 @@ export class CombatScene extends Scene {
       ctx.fillText('Use LEFT/RIGHT arrows to select target', menuX + 10, menuY + 50);
       ctx.fillText('Press ENTER to confirm', menuX + 10, menuY + 75);
     } else if (this.actionState === 'select_spell') {
-      this.renderSpellMenu(ctx, menuX, menuY);
+      this.spellMenu.render(ctx, menuX, menuY, menuWidth, menuHeight);
+    } else if (this.actionState === 'spell_target') {
+      const encounter = this.combatSystem.getEncounter();
+      if (encounter) {
+        this.spellTargetSelector.render(ctx, menuX + 100, menuY + 100);
+      }
     } else if (this.actionState === 'waiting') {
       ctx.fillText('Processing turn...', menuX + 10, menuY + 25);
     }
@@ -369,6 +384,8 @@ export class CombatScene extends Scene {
       return this.handleTargetSelection(key);
     } else if (this.actionState === 'select_spell') {
       return this.handleSpellSelection(key);
+    } else if (this.actionState === 'spell_target') {
+      return this.handleSpellTargetSelection(key);
     }
 
     return false;
@@ -390,8 +407,10 @@ export class CombatScene extends Scene {
         this.actionState = 'select_target';
         this.selectedTarget = 0;
       } else if (selectedActionText === 'Cast Spell') {
-        this.actionState = 'select_spell';
-        this.selectedSpell = 0;
+        const currentUnit = this.combatSystem.getCurrentUnit();
+        if (currentUnit && EntityUtils.isCharacter(currentUnit as any)) {
+          this.openSpellMenu(currentUnit as Character);
+        }
       } else {
         this.executeAction(selectedActionText);
       }
@@ -414,9 +433,9 @@ export class CombatScene extends Scene {
       this.selectedTarget = Math.min(aliveMonsters.length - 1, this.selectedTarget + 1);
       return true;
     } else if (key === KEY_BINDINGS.combat.confirm) {
-      const pendingSpell = (this as any).pendingSpellId;
-      if (pendingSpell) {
-        this.executeAction('Cast Spell', this.selectedTarget, pendingSpell);
+      if (this.pendingSpellId) {
+        this.executeAction('Cast Spell', this.selectedTarget, this.pendingSpellId);
+        this.pendingSpellId = null;
       } else {
         this.executeAction('Attack', this.selectedTarget);
       }
@@ -430,79 +449,81 @@ export class CombatScene extends Scene {
   }
 
   private handleSpellSelection(key: string): boolean {
-    const currentUnit = this.combatSystem.getCurrentUnit();
-    if (!currentUnit || !EntityUtils.isCharacter(currentUnit as any)) return false;
+    return this.spellMenu.handleInput(key);
+  }
 
-    const knownSpells = currentUnit.getKnownSpells();
+  private handleSpellTargetSelection(key: string): boolean {
+    const handled = this.spellTargetSelector.handleInput(key);
+    if (!this.spellTargetSelector.isActive()) {
+      // Target was selected or cancelled
+      this.actionState = 'select_action';
+    }
+    return handled;
+  }
+
+  private openSpellMenu(caster: Character): void {
+    const knownSpells = caster.getKnownSpells();
     if (knownSpells.length === 0) {
-      this.messageLog.addCombatMessage(`${currentUnit.name} doesn't know any spells!`);
-      this.actionState = 'select_action';
-      return true;
+      this.messageLog.addCombatMessage(`${caster.name} doesn't know any spells!`);
+      return;
     }
 
-    if (key === KEY_BINDINGS.combat.selectUp) {
-      this.selectedSpell = Math.max(0, this.selectedSpell - 1);
-      return true;
-    } else if (key === KEY_BINDINGS.combat.selectDown) {
-      this.selectedSpell = Math.min(knownSpells.length - 1, this.selectedSpell + 1);
-      return true;
-    } else if (key === KEY_BINDINGS.combat.confirm) {
-      const spellId = knownSpells[this.selectedSpell];
-      this.executeSpellCast(spellId);
-      return true;
-    } else if (key === KEY_BINDINGS.combat.cancel) {
-      this.actionState = 'select_action';
-      return true;
-    }
-
-    return false;
+    this.actionState = 'select_spell';
+    this.spellMenu.open(
+      caster,
+      (spellId: string) => {
+        this.handleSpellSelected(spellId);
+      },
+      () => {
+        this.actionState = 'select_action';
+      }
+    );
   }
 
-  private renderSpellMenu(ctx: CanvasRenderingContext2D, menuX: number, menuY: number): void {
-    const currentUnit = this.combatSystem.getCurrentUnit();
-    if (!currentUnit || !EntityUtils.isCharacter(currentUnit as any)) return;
-
-    const knownSpells = currentUnit.getKnownSpells();
-    const { SpellRegistry } = require('../systems/magic/SpellRegistry');
-    const registry = SpellRegistry.getInstance();
-
-    ctx.fillText('Select Spell:', menuX + 10, menuY + 25);
-    ctx.fillText(`MP: ${currentUnit.mp}/${currentUnit.maxMp}`, menuX + 200, menuY + 25);
-
-    knownSpells.forEach((spellId: string, index: number) => {
-      const spell = registry.getSpellById(spellId);
-      if (!spell) return;
-
-      const y = menuY + 50 + index * 25;
-      const canCast = currentUnit.mp >= spell.mpCost;
-
-      ctx.fillStyle = index === this.selectedSpell ? '#ffff00' : canCast ? '#fff' : '#666';
-      ctx.fillText(
-        `${index + 1}. ${spell.name} (${spell.mpCost} MP)`,
-        menuX + 20,
-        y
-      );
-    });
-  }
-
-  private executeSpellCast(spellId: string): void {
-    const { SpellRegistry } = require('../systems/magic/SpellRegistry');
+  private handleSpellSelected(spellId: string): void {
     const registry = SpellRegistry.getInstance();
     const spell = registry.getSpellById(spellId);
-
     if (!spell) {
       this.messageLog.addCombatMessage('Unknown spell!');
       this.actionState = 'select_action';
       return;
     }
 
-    if (spell.targetType === 'enemy') {
-      this.actionState = 'select_target';
-      this.selectedTarget = 0;
-      (this as any).pendingSpellId = spellId;
-    } else {
-      this.executeAction('Cast Spell', undefined, spellId);
+    const currentUnit = this.combatSystem.getCurrentUnit();
+    if (!currentUnit || !EntityUtils.isCharacter(currentUnit as any)) {
+      this.actionState = 'select_action';
+      return;
     }
+
+    const encounter = this.combatSystem.getEncounter();
+    if (!encounter) {
+      this.actionState = 'select_action';
+      return;
+    }
+
+    this.pendingSpellId = spellId;
+
+    this.spellTargetSelector.setupForSpell(
+      spell,
+      encounter.monsters,
+      this.gameState.party.getAliveCharacters(),
+      (targetIndex: number | null) => {
+        this.executeSpellWithTarget(spellId, targetIndex);
+      },
+      () => {
+        this.actionState = 'select_action';
+        this.pendingSpellId = null;
+      }
+    );
+
+    if (this.spellTargetSelector.isActive()) {
+      this.actionState = 'spell_target';
+    }
+  }
+
+  private executeSpellWithTarget(spellId: string, targetIndex: number | null): void {
+    this.executeAction('Cast Spell', targetIndex ?? undefined, spellId);
+    this.pendingSpellId = null;
   }
 
   private executeAction(action: string, targetIndex?: number, spellId?: string): void {
@@ -528,9 +549,9 @@ export class CombatScene extends Scene {
     if (action === 'Attack') {
       result = this.combatSystem.executePlayerAction(action, targetIndex ?? this.selectedTarget);
     } else if (action === 'Cast Spell') {
-      const pendingSpell = (this as any).pendingSpellId || spellId;
-      result = this.combatSystem.executePlayerAction(action, targetIndex ?? this.selectedTarget, pendingSpell);
-      delete (this as any).pendingSpellId;
+      const spellToUse = this.pendingSpellId || spellId;
+      result = this.combatSystem.executePlayerAction(action, targetIndex ?? this.selectedTarget, spellToUse);
+      this.pendingSpellId = null;
     } else {
       result = this.combatSystem.executePlayerAction(action);
     }
@@ -691,11 +712,14 @@ export class CombatScene extends Scene {
       monsters: this.combatSystem.getMonsters(),
       party: this.combatSystem.getParty(),
       spellMenuOpen: this.actionState === 'select_spell',
+      spellMenuState: this.spellMenu.getState(),
+      spellTargetSelectorState: this.spellTargetSelector.getState(),
       availableSpells: this.actionState === 'select_spell' ? this.getAvailableSpells() : [],
       selectedAction: this.selectedAction,
       selectedTarget: this.selectedTarget,
       selectedSpell: this.selectedSpell,
-      isProcessingAction: this.isProcessingAction
+      isProcessingAction: this.isProcessingAction,
+      pendingSpellId: this.pendingSpellId
     };
   }
 
