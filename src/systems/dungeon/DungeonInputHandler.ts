@@ -37,6 +37,10 @@ export class DungeonInputHandler {
     this.context = { ...this.context, ...context };
   }
 
+  public getIsAwaitingResponse(): boolean {
+    return this.context.isAwaitingCastleStairsResponse || false;
+  }
+
   public handleInput(key: string): boolean {
     if (key.includes('ctrl')) {
       DebugLogger.debug('DungeonInputHandler', 'Key pressed: ' + key);
@@ -75,25 +79,18 @@ export class DungeonInputHandler {
     let direction: Direction | null = null;
     let isTurn = false;
 
-    switch (key) {
-      case 'w':
-      case 'arrowup':
-        direction = 'forward';
-        break;
-      case 's':
-      case 'arrowdown':
-        direction = 'backward';
-        break;
-      case 'a':
-      case 'arrowleft':
-        direction = 'left';
-        isTurn = true;
-        break;
-      case 'd':
-      case 'arrowright':
-        direction = 'right';
-        isTurn = true;
-        break;
+    const movement = KEY_BINDINGS.movement;
+
+    if (key === movement.up || key === movement.alternateUp) {
+      direction = 'forward';
+    } else if (key === movement.down || key === movement.alternateDown) {
+      direction = 'backward';
+    } else if (key === movement.left || key === movement.alternateLeft) {
+      direction = 'left';
+      isTurn = true;
+    } else if (key === movement.right || key === movement.alternateRight) {
+      direction = 'right';
+      isTurn = true;
     }
 
     if (!direction) return false;
@@ -178,8 +175,20 @@ export class DungeonInputHandler {
 
     switch (currentTile.type) {
       case 'stairs_up':
-        if (this.gameState.currentFloor > 1) {
-          this.movementHandler.handleMovement('forward');
+        if (this.gameState.currentFloor === 1) {
+          // Special case for returning to town from floor 1
+          this.messageLog?.addSystemMessage('You are at the castle entrance. Do you want to return to town? (Y/N)');
+          this.context.isAwaitingCastleStairsResponse = true;
+        } else if (this.gameState.currentFloor > 1) {
+          // Go up one floor
+          this.gameState.currentFloor--;
+          const newFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
+          if (newFloor && newFloor.stairsDown) {
+            this.gameState.party.x = newFloor.stairsDown.x;
+            this.gameState.party.y = newFloor.stairsDown.y;
+          }
+          this.movementHandler.updateDiscoveredTiles();
+          this.messageLog?.addSystemMessage(`Ascended to floor ${this.gameState.currentFloor}`);
         } else {
           this.messageLog?.addSystemMessage("You're already on the top floor!");
         }
@@ -187,7 +196,15 @@ export class DungeonInputHandler {
 
       case 'stairs_down':
         if (this.gameState.currentFloor < this.gameState.dungeon.length) {
-          this.movementHandler.handleMovement('forward');
+          // Go down one floor
+          this.gameState.currentFloor++;
+          const newFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
+          if (newFloor && newFloor.stairsUp) {
+            this.gameState.party.x = newFloor.stairsUp.x;
+            this.gameState.party.y = newFloor.stairsUp.y;
+          }
+          this.movementHandler.updateDiscoveredTiles();
+          this.messageLog?.addSystemMessage(`Descended to floor ${this.gameState.currentFloor}`);
         } else {
           this.messageLog?.addSystemMessage("You're already on the bottom floor!");
         }
@@ -288,18 +305,34 @@ export class DungeonInputHandler {
   }
 
   private handleCastleStairsInput(key: string): boolean {
-    if (key === 'y') {
+    const normalizedKey = key.toLowerCase();
+    if (normalizedKey === 'y') {
+      this.context.isAwaitingCastleStairsResponse = false;
+      // Reset the movement handler's last position so the prompt can be triggered again
+      this.movementHandler.resetLastTileEventPosition();
       this.sceneManager.switchTo('town');
       return true;
-    } else if (key === 'n') {
+    } else if (normalizedKey === 'n') {
       this.context.isAwaitingCastleStairsResponse = false;
-      this.messageLog?.addSystemMessage('You remain in the castle.');
+      // Reset so player can trigger the prompt again
+      this.movementHandler.resetLastTileEventPosition();
+      this.messageLog?.addSystemMessage('You remain in the dungeon.');
       return true;
     }
     return false;
   }
 
   private checkForCastleReturn(): void {
+    // Check if we're on floor 1 and just used stairs up
+    if (this.gameState.currentFloor === 1) {
+      const currentTile = this.gameState.dungeon[0]?.tiles[this.gameState.party.y][this.gameState.party.x];
+      if (currentTile?.type === 'stairs_up') {
+        this.context.isAwaitingCastleStairsResponse = true;
+        // Message already shown by movement handler
+        return;
+      }
+    }
+
     const castleStairsPos = this.movementHandler.getCastleStairsPosition();
     if (castleStairsPos &&
         this.gameState.party.x === castleStairsPos.x &&

@@ -1,9 +1,19 @@
 {
   "movement": {
-    "up": "arrowup",
-    "down": "arrowdown",
-    "left": "arrowleft",
-    "right": "arrowright"
+    "up": "k",
+    "down": "j",
+    "left": "h",
+    "right": "l",
+    "alternateUp": "arrowup",
+    "alternateDown": "arrowdown",
+    "alternateLeft": "arrowleft",
+    "alternateRight": "arrowright"
+  },
+  "menu": {
+    "up": "k",
+    "down": "j",
+    "alternateUp": "arrowup",
+    "alternateDown": "arrowdown"
   },
   "dungeonActions": {
     "inventory": "tab",

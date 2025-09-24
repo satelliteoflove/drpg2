@@ -6,6 +6,16 @@ interface KeyBindings {
     down: string;
     left: string;
     right: string;
+    alternateUp: string;
+    alternateDown: string;
+    alternateLeft: string;
+    alternateRight: string;
+  };
+  menu: {
+    up: string;
+    down: string;
+    alternateUp: string;
+    alternateDown: string;
   };
   dungeonActions: {
     inventory: string;

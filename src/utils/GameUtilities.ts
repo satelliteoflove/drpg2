@@ -1,4 +1,5 @@
 import { Direction, ItemEffect } from '../types/GameTypes';
+import { KEY_BINDINGS } from '../config/KeyBindings';
 
 /**
  * Common game utility functions to reduce code duplication
@@ -18,36 +19,33 @@ export class GameUtilities {
   ): { newIndex: number; handled: boolean } {
     const { wrapAround = false } = options || {};
 
-    switch (key) {
-      case 'arrowup':
-      case 'w':
-        if (wrapAround) {
-          return {
-            newIndex: currentIndex > 0 ? currentIndex - 1 : maxIndex,
-            handled: true,
-          };
-        }
+    if (key === KEY_BINDINGS.menu.up || key === KEY_BINDINGS.menu.alternateUp) {
+      if (wrapAround) {
         return {
-          newIndex: Math.max(0, currentIndex - 1),
+          newIndex: currentIndex > 0 ? currentIndex - 1 : maxIndex,
           handled: true,
         };
-
-      case 'arrowdown':
-      case 's':
-        if (wrapAround) {
-          return {
-            newIndex: currentIndex < maxIndex ? currentIndex + 1 : 0,
-            handled: true,
-          };
-        }
-        return {
-          newIndex: Math.min(maxIndex, currentIndex + 1),
-          handled: true,
-        };
-
-      default:
-        return { newIndex: currentIndex, handled: false };
+      }
+      return {
+        newIndex: Math.max(0, currentIndex - 1),
+        handled: true,
+      };
     }
+
+    if (key === KEY_BINDINGS.menu.down || key === KEY_BINDINGS.menu.alternateDown) {
+      if (wrapAround) {
+        return {
+          newIndex: currentIndex < maxIndex ? currentIndex + 1 : 0,
+          handled: true,
+        };
+      }
+      return {
+        newIndex: Math.min(maxIndex, currentIndex + 1),
+        handled: true,
+      };
+    }
+
+    return { newIndex: currentIndex, handled: false };
   }
 
   /**
@@ -198,9 +196,11 @@ export class GameUtilities {
    * Check if a key is a movement key
    */
   static isMovementKey(key: string): boolean {
-    return ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(
-      key.toLowerCase()
-    );
+    const movement = KEY_BINDINGS.movement;
+    return [
+      movement.up, movement.down, movement.left, movement.right,
+      movement.alternateUp, movement.alternateDown, movement.alternateLeft, movement.alternateRight
+    ].includes(key.toLowerCase());
   }
 
   /**

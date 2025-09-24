@@ -2,6 +2,7 @@ import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState, Item } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { InventorySystem } from '../systems/InventorySystem';
+import { KEY_BINDINGS } from '../config/KeyBindings';
 
 export class InventoryScene extends Scene {
   private gameState: GameState;
@@ -276,10 +277,10 @@ export class InventoryScene extends Scene {
   private handleCharacterSelect(key: string): boolean {
     const characters = this.gameState.party.characters;
 
-    if (key === 'arrowup' || key === 'w') {
+    if (key === KEY_BINDINGS.inventory.moveUp || key === KEY_BINDINGS.menu.up || key === KEY_BINDINGS.menu.alternateUp) {
       this.selectedCharacter = Math.max(0, this.selectedCharacter - 1);
       return true;
-    } else if (key === 'arrowdown' || key === 's') {
+    } else if (key === KEY_BINDINGS.inventory.moveDown || key === KEY_BINDINGS.menu.down || key === KEY_BINDINGS.menu.alternateDown) {
       this.selectedCharacter = Math.min(characters.length - 1, this.selectedCharacter + 1);
       return true;
     } else if (key === 'i') {
@@ -306,10 +307,10 @@ export class InventoryScene extends Scene {
     const character = this.gameState.party.characters[this.selectedCharacter];
     const items = character.inventory;
 
-    if (key === 'arrowup' || key === 'w') {
+    if (key === KEY_BINDINGS.inventory.moveUp || key === KEY_BINDINGS.menu.up || key === KEY_BINDINGS.menu.alternateUp) {
       this.selectedItem = Math.max(0, this.selectedItem - 1);
       return true;
-    } else if (key === 'arrowdown' || key === 's') {
+    } else if (key === KEY_BINDINGS.inventory.moveDown || key === KEY_BINDINGS.menu.down || key === KEY_BINDINGS.menu.alternateDown) {
       this.selectedItem = Math.min(items.length - 1, this.selectedItem + 1);
       return true;
     } else if (key === 'q' && items.length > 0) {
@@ -356,7 +357,7 @@ export class InventoryScene extends Scene {
         }
       }
       return true;
-    } else if (key === 'd' && items.length > 0) {
+    } else if (key === KEY_BINDINGS.inventory.drop && items.length > 0) {
       const item = items[this.selectedItem];
       if (item) {
         const droppedItem = InventorySystem.dropItem(character, item.id);
@@ -391,10 +392,10 @@ export class InventoryScene extends Scene {
     const character = this.gameState.party.characters[this.tradeFromCharacter];
     const items = character.inventory;
 
-    if (key === 'arrowup' || key === 'w') {
+    if (key === KEY_BINDINGS.inventory.moveUp || key === KEY_BINDINGS.menu.up || key === KEY_BINDINGS.menu.alternateUp) {
       this.selectedItem = Math.max(0, this.selectedItem - 1);
       return true;
-    } else if (key === 'arrowdown' || key === 's') {
+    } else if (key === KEY_BINDINGS.inventory.moveDown || key === KEY_BINDINGS.menu.down || key === KEY_BINDINGS.menu.alternateDown) {
       this.selectedItem = Math.min(items.length - 1, this.selectedItem + 1);
       return true;
     } else if (key === 'enter' && items.length > 0) {
@@ -413,12 +414,12 @@ export class InventoryScene extends Scene {
   private handleTradeTarget(key: string): boolean {
     const characters = this.gameState.party.characters;
 
-    if (key === 'arrowup' || key === 'w') {
+    if (key === KEY_BINDINGS.inventory.moveUp || key === KEY_BINDINGS.menu.up || key === KEY_BINDINGS.menu.alternateUp) {
       do {
         this.selectedCharacter = Math.max(0, this.selectedCharacter - 1);
       } while (this.selectedCharacter === this.tradeFromCharacter && this.selectedCharacter > 0);
       return true;
-    } else if (key === 'arrowdown' || key === 's') {
+    } else if (key === KEY_BINDINGS.inventory.moveDown || key === KEY_BINDINGS.menu.down || key === KEY_BINDINGS.menu.alternateDown) {
       do {
         this.selectedCharacter = Math.min(characters.length - 1, this.selectedCharacter + 1);
       } while (

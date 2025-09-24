@@ -1,4 +1,5 @@
 import { GameUtilities } from '../../utils/GameUtilities';
+import { KEY_BINDINGS } from '../../config/KeyBindings';
 
 export interface MenuState {
   selectedIndex: number;
@@ -12,10 +13,10 @@ export interface MenuAction {
 }
 
 export class MenuInputHandler {
-  private static readonly UP_KEYS = ['arrowup', 'w'];
-  private static readonly DOWN_KEYS = ['arrowdown', 's'];
-  private static readonly LEFT_KEYS = ['arrowleft', 'a'];
-  private static readonly RIGHT_KEYS = ['arrowright', 'd'];
+  private static readonly UP_KEYS = [KEY_BINDINGS.menu.up, KEY_BINDINGS.menu.alternateUp];
+  private static readonly DOWN_KEYS = [KEY_BINDINGS.menu.down, KEY_BINDINGS.menu.alternateDown];
+  private static readonly LEFT_KEYS = [KEY_BINDINGS.movement.left, KEY_BINDINGS.movement.alternateLeft];
+  private static readonly RIGHT_KEYS = [KEY_BINDINGS.movement.right, KEY_BINDINGS.movement.alternateRight];
 
   static handleMenuInput(
     key: string,
