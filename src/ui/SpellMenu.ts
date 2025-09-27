@@ -1,6 +1,6 @@
 import { Character } from '../entities/Character';
 import { SpellRegistry } from '../systems/magic/SpellRegistry';
-import { SpellData } from '../types/SpellTypes';
+import { SpellData, SpellId } from '../types/SpellTypes';
 import { MenuInputHandler, MenuState } from './components/MenuInputHandler';
 import { KEY_BINDINGS } from '../config/KeyBindings';
 
@@ -54,7 +54,7 @@ export class SpellMenu {
 
     const knownSpells = caster.getKnownSpells();
     for (const spellId of knownSpells) {
-      const spell = this.registry.getSpellById(spellId);
+      const spell = this.registry.getSpellById(spellId as SpellId);
       if (spell) {
         if (!this.state.spellsByLevel.has(spell.level)) {
           this.state.spellsByLevel.set(spell.level, []);

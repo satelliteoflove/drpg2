@@ -24,7 +24,7 @@ import {
   canClassLearnSpells
 } from '../config/progression/SpellLearningTable';
 import { SpellLearning } from '../systems/magic/SpellLearning';
-import { SpellLearningResult } from '../types/SpellTypes';
+import { SpellLearningResult, SpellId } from '../types/SpellTypes';
 
 export class Character implements ICharacter {
   id: string;
@@ -240,34 +240,34 @@ export class Character implements ICharacter {
 
     // Starting spells for damage/healing testing
     if (this.class === 'Mage' || this.class === 'Bishop') {
-      const flameDart = SPELLS['flame_dart'];
+      const flameDart = SPELLS['m1_flame_dart' as SpellId];
       if (flameDart) {
         this.spells.push(flameDart);
-        this.knownSpells.push('flame_dart');
+        this.knownSpells.push('m1_flame_dart');
       }
     }
 
     if (this.class === 'Priest' || this.class === 'Bishop') {
-      const heal = SPELLS['heal'];
+      const heal = SPELLS['p1_heal' as SpellId];
       if (heal) {
         this.spells.push(heal);
-        this.knownSpells.push('heal');
+        this.knownSpells.push('p1_heal');
       }
     }
 
     if (this.class === 'Alchemist') {
-      const flameDart = SPELLS['flame_dart'];
-      if (flameDart) {
-        this.spells.push(flameDart);
-        this.knownSpells.push('flame_dart');
+      const poisonDart = SPELLS['a1_poison_dart' as SpellId];
+      if (poisonDart) {
+        this.spells.push(poisonDart);
+        this.knownSpells.push('a1_poison_dart');
       }
     }
 
     if (this.class === 'Psionic') {
-      const mindBlast = SPELLS['mind_blast'];
-      if (mindBlast) {
-        this.spells.push(mindBlast);
-        this.knownSpells.push('mind_blast');
+      const confusion = SPELLS['s1_confusion' as SpellId];
+      if (confusion) {
+        this.spells.push(confusion);
+        this.knownSpells.push('s1_confusion');
       }
     }
   }

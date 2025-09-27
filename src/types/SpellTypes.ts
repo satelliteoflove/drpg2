@@ -2,6 +2,19 @@ import { CharacterClass } from './GameTypes';
 
 export type SpellSchool = 'mage' | 'priest' | 'alchemist' | 'psionic';
 
+// Type-safe spell ID system
+export type SpellSchoolPrefix = 'm' | 'p' | 'a' | 's';
+export type SpellLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type SpellId = `${SpellSchoolPrefix}${SpellLevel}_${string}`;
+
+// Helper type to extract school from spell ID
+export type ExtractSchoolFromId<T extends SpellId> =
+  T extends `m${number}_${string}` ? 'mage' :
+  T extends `p${number}_${string}` ? 'priest' :
+  T extends `a${number}_${string}` ? 'alchemist' :
+  T extends `s${number}_${string}` ? 'psionic' :
+  never;
+
 export type SpellTargetType =
   | 'self'
   | 'ally'
@@ -91,7 +104,7 @@ export interface SpellRange {
 }
 
 export interface SpellData {
-  id: string;
+  id: SpellId;
   name: string;
   originalName?: string;
   school: SpellSchool;

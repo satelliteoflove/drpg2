@@ -2,7 +2,8 @@ import { Character } from '../../entities/Character';
 import {
   SpellData,
   SpellCastingContext,
-  SpellCastResult
+  SpellCastResult,
+  SpellId
 } from '../../types/SpellTypes';
 import { SpellRegistry } from './SpellRegistry';
 import { SpellEffectRegistry } from './SpellEffectRegistry';
@@ -41,7 +42,7 @@ export class SpellCaster {
     spellId: string,
     context: SpellCastingContext
   ): SpellCastResult {
-    const spell = this.registry.getSpellById(spellId);
+    const spell = this.registry.getSpellById(spellId as SpellId);
     if (!spell) {
       return {
         success: false,

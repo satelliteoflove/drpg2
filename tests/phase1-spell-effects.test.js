@@ -373,7 +373,7 @@ test.describe('Phase 1 Spell Effects - Damage and Healing', () => {
         mage.mp = 50;
         mage.maxMp = 50;
         mage.spellsKnown = mage.spellsKnown || [];
-        mage.spellsKnown.push('m3_fireball');
+        mage.spellsKnown.push('m3_flame_storm');
 
         const enemies = [
           { id: 'enemy1', name: 'Goblin 1', hp: 30, maxHp: 30, ac: 8 },
@@ -392,7 +392,7 @@ test.describe('Phase 1 Spell Effects - Damage and Healing', () => {
 
         const beforeHps = enemies.map(e => e.hp);
 
-        const result = await spellCaster.castSpell(mage, 'm3_fireball', {
+        const result = await spellCaster.castSpell(mage, 'm3_flame_storm', {
           caster: mage,
           enemies: enemies,
           inCombat: true
@@ -443,7 +443,7 @@ test.describe('Phase 1 Spell Effects - Damage and Healing', () => {
         priest.mp = 50;
         priest.maxMp = 50;
         priest.spellsKnown = priest.spellsKnown || [];
-        priest.spellsKnown.push('p3_heal_all');
+        priest.spellsKnown.push('p4_mass_heal');
 
         party.characters.forEach(char => {
           char.hp = Math.floor(char.maxHp * 0.5);
@@ -454,7 +454,7 @@ test.describe('Phase 1 Spell Effects - Damage and Healing', () => {
 
         const beforeHps = party.characters.map(c => c.hp);
 
-        const result = await spellCaster.castSpell(priest, 'p3_heal_all', {
+        const result = await spellCaster.castSpell(priest, 'p4_mass_heal', {
           caster: priest,
           party: party.characters,
           inCombat: false

@@ -12,6 +12,7 @@ import { EntityUtils } from '../utils/EntityUtils';
 import { SpellMenu } from '../ui/SpellMenu';
 import { SpellTargetSelector } from '../ui/SpellTargetSelector';
 import { SpellRegistry } from '../systems/magic/SpellRegistry';
+import { SpellId } from '../types/SpellTypes';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
@@ -482,7 +483,7 @@ export class CombatScene extends Scene {
 
   private handleSpellSelected(spellId: string): void {
     const registry = SpellRegistry.getInstance();
-    const spell = registry.getSpellById(spellId);
+    const spell = registry.getSpellById(spellId as SpellId);
     if (!spell) {
       this.messageLog.addCombatMessage('Unknown spell!');
       this.actionState = 'select_action';

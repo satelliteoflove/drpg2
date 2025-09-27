@@ -1,4 +1,4 @@
-import { SpellData, SpellSchool, SpellValidationResult } from '../../types/SpellTypes';
+import { SpellData, SpellSchool, SpellValidationResult, SpellId } from '../../types/SpellTypes';
 import { CharacterClass } from '../../types/GameTypes';
 import { SPELLS } from '../../data/spells/SpellDatabase';
 import { Character } from '../../entities/Character';
@@ -7,7 +7,7 @@ import { CharacterClasses } from './MagicConstants';
 export class SpellRegistry {
   private static instance: SpellRegistry;
   private spellsBySchool: Map<SpellSchool, Map<number, SpellData[]>>;
-  private spellsById: Map<string, SpellData>;
+  private spellsById: Map<SpellId, SpellData>;
   private spellsByName: Map<string, SpellData>;
 
   private constructor() {
@@ -26,7 +26,7 @@ export class SpellRegistry {
 
   private initializeRegistry(): void {
     for (const [id, spell] of Object.entries(SPELLS)) {
-      this.spellsById.set(id, spell);
+      this.spellsById.set(id as SpellId, spell);
       this.spellsByName.set(spell.name.toLowerCase(), spell);
 
       if (!this.spellsBySchool.has(spell.school)) {
@@ -42,7 +42,7 @@ export class SpellRegistry {
     }
   }
 
-  getSpellById(id: string): SpellData | undefined {
+  getSpellById(id: SpellId): SpellData | undefined {
     return this.spellsById.get(id);
   }
 

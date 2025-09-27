@@ -4,7 +4,7 @@ import { GAME_CONFIG } from '../config/GameConstants';
 import { InventorySystem } from './InventorySystem';
 import { DebugLogger } from '../utils/DebugLogger';
 import { SpellCaster } from './magic/SpellCaster';
-import { SpellCastingContext } from '../types/SpellTypes';
+import { SpellCastingContext, SpellId } from '../types/SpellTypes';
 import { DiceRoller } from '../utils/DiceRoller';
 import { EntityUtils } from '../utils/EntityUtils';
 
@@ -212,7 +212,7 @@ export class CombatSystem {
 
     if (!spell) return 'Spell not found';
 
-    const spellData = this.spellCaster['registry'].getSpellById(spellId);
+    const spellData = this.spellCaster['registry'].getSpellById(spellId as SpellId);
     if (!spellData) return 'Invalid spell';
 
     if (spellData.targetType === 'enemy' && aliveMonsters.length > 0) {
