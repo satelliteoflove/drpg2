@@ -341,7 +341,13 @@ export class CombatScene extends Scene {
     } else if (this.actionState === 'spell_target') {
       const encounter = this.combatSystem.getEncounter();
       if (encounter) {
-        this.spellTargetSelector.render(ctx, menuX + 100, menuY + 100);
+        // Center with combat area (x=260, width=500, center=510)
+        // Align bottom with party status box bottom (y=80+480=560)
+        const selectorWidth = 350;
+        const selectorHeight = 80;
+        const selectorX = 510 - (selectorWidth / 2);  // Center: 335
+        const selectorY = 560 - selectorHeight;        // Bottom aligned: 480
+        this.spellTargetSelector.render(ctx, selectorX, selectorY);
       }
     } else if (this.actionState === 'waiting') {
       ctx.fillText('Processing turn...', menuX + 10, menuY + 25);
