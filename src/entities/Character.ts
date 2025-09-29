@@ -233,10 +233,16 @@ export class Character implements ICharacter {
   }
 
   private learnStartingSpells(): void {
-    if (!this.canCastSpells()) return;
+    console.log(`[DEBUG] learnStartingSpells called for ${this.name} (${this.class})`);
+    if (!this.canCastSpells()) {
+      console.log(`[DEBUG] ${this.name} cannot cast spells`);
+      return;
+    }
+    console.log(`[DEBUG] ${this.name} can cast spells, assigning...`);
 
     // Import spell database
-    const { SPELLS } = require('../data/spells/SpellDatabase');
+    try {
+      const { SPELLS } = require('../data/spells/SpellDatabase');
 
     // Starting spells for damage/healing testing
     if (this.class === 'Mage' || this.class === 'Bishop') {
@@ -267,6 +273,22 @@ export class Character implements ICharacter {
       const confusion = SPELLS['s1_confusion' as SpellId];
       if (confusion) {
         this.spells.push(confusion);
+        this.knownSpells.push('s1_confusion');
+      }
+    }
+    } catch (error) {
+      console.error('Failed to load starting spells:', error);
+      // Fallback - just add the spell IDs directly
+      if (this.class === 'Mage' || this.class === 'Bishop') {
+        this.knownSpells.push('m1_flame_dart');
+      }
+      if (this.class === 'Priest' || this.class === 'Bishop') {
+        this.knownSpells.push('p1_heal');
+      }
+      if (this.class === 'Alchemist') {
+        this.knownSpells.push('a1_poison_dart');
+      }
+      if (this.class === 'Psionic') {
         this.knownSpells.push('s1_confusion');
       }
     }

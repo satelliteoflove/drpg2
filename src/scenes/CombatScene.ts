@@ -177,6 +177,7 @@ export class CombatScene extends Scene {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
+    this.renderCombatHeader(ctx);
     this.renderCombatArea(ctx);
     this.renderUI(ctx);
     this.renderCombatInfo(ctx);
@@ -196,6 +197,7 @@ export class CombatScene extends Scene {
     renderManager.renderBackground((ctx) => {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      this.renderCombatHeader(ctx);
     });
 
     renderManager.renderEntities((ctx) => {
@@ -214,7 +216,8 @@ export class CombatScene extends Scene {
   }
 
   private initializeUI(canvas: HTMLCanvasElement): void {
-    this.statusPanel = new StatusPanel(canvas, 650, 0, 374, 300);
+    // Use EXACT same position and dimensions as dungeon scene
+    this.statusPanel = new StatusPanel(canvas, 10, 80, 240, 480);
     this.debugOverlay = new DebugOverlay(canvas);
 
     // Only add combat message, don't create a new log
@@ -222,12 +225,13 @@ export class CombatScene extends Scene {
   }
 
   private renderCombatArea(ctx: CanvasRenderingContext2D): void {
+    // Main combat view area - match dungeon view position exactly
     ctx.fillStyle = '#1a0000';
-    ctx.fillRect(0, 0, 640, 400);
+    ctx.fillRect(260, 80, 500, 400);
 
     ctx.strokeStyle = '#600000';
     ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, 640, 400);
+    ctx.strokeRect(260, 80, 500, 400);
 
     const encounter = this.combatSystem.getEncounter();
     if (!encounter) return;
@@ -239,8 +243,9 @@ export class CombatScene extends Scene {
     monsters.forEach((monster, index) => {
       if (monster.hp <= 0) return;
 
-      const x = 100 + (index % 3) * 150;
-      const y = 80 + Math.floor(index / 3) * 120;
+      // Center monsters in the combat area
+      const x = 320 + (index % 3) * 140;
+      const y = 160 + Math.floor(index / 3) * 100;
 
       if (this.actionState === 'select_target' && index === this.selectedTarget) {
         ctx.fillStyle = '#ffff00';
@@ -286,12 +291,16 @@ export class CombatScene extends Scene {
   }
 
   private renderActionMenu(ctx: CanvasRenderingContext2D): void {
-    const menuX = 20;
-    const menuY = 420;
-    const menuWidth = 600;
-    const menuHeight = 320;
+    // Render turn order in top-right
+    this.renderTurnOrder(ctx);
 
-    ctx.fillStyle = '#222';
+    // Render combat options below turn order
+    const menuX = 770;
+    const menuY = 290;
+    const menuWidth = 240;
+    const menuHeight = 270;
+
+    ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(menuX, menuY, menuWidth, menuHeight);
 
     ctx.strokeStyle = '#666';
@@ -299,24 +308,34 @@ export class CombatScene extends Scene {
     ctx.strokeRect(menuX, menuY, menuWidth, menuHeight);
 
     ctx.fillStyle = '#fff';
-    ctx.font = '16px monospace';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('COMBAT OPTIONS', menuX + menuWidth / 2, menuY + 20);
     ctx.textAlign = 'left';
+    ctx.font = '12px monospace';
+
+    // Action menu
+    const actionsStartY = menuY + 45;
 
     if (this.actionState === 'select_action') {
       const actions = this.combatSystem.getPlayerOptions();
 
-      ctx.fillText('Select Action:', menuX + 10, menuY + 25);
+      ctx.fillStyle = '#fff';
+      ctx.font = '12px monospace';
+      ctx.fillText('Select Action:', menuX + 10, actionsStartY);
 
       actions.forEach((action, index) => {
-        const y = menuY + 50 + index * 25;
+        const y = actionsStartY + 20 + index * 18;
 
         ctx.fillStyle = index === this.selectedAction ? '#ffff00' : '#fff';
         ctx.fillText(`${index + 1}. ${action}`, menuX + 20, y);
       });
     } else if (this.actionState === 'select_target') {
-      ctx.fillText('Select Target:', menuX + 10, menuY + 25);
-      ctx.fillText('Use LEFT/RIGHT arrows to select target', menuX + 10, menuY + 50);
-      ctx.fillText('Press ENTER to confirm', menuX + 10, menuY + 75);
+      ctx.fillStyle = '#fff';
+      ctx.font = '12px monospace';
+      ctx.fillText('Select Target:', menuX + 10, actionsStartY);
+      ctx.fillText('LEFT/RIGHT: Select', menuX + 10, actionsStartY + 20);
+      ctx.fillText('ENTER: Confirm', menuX + 10, actionsStartY + 40);
     } else if (this.actionState === 'select_spell') {
       this.spellMenu.render(ctx, menuX, menuY, menuWidth, menuHeight);
     } else if (this.actionState === 'spell_target') {
@@ -329,25 +348,65 @@ export class CombatScene extends Scene {
     }
   }
 
-  private renderCombatInfo(ctx: CanvasRenderingContext2D): void {
-    const encounter = this.combatSystem.getEncounter();
-    if (!encounter) return;
+  private renderCombatHeader(ctx: CanvasRenderingContext2D): void {
+    // Header panel similar to dungeon scene
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(10, 10, ctx.canvas.width - 20, 60);
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, ctx.canvas.width - 20, 60);
 
+    // Title
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('COMBAT', ctx.canvas.width / 2, 45);
+
+    // Current turn info
     const currentUnit = this.combatSystem.getCurrentUnit();
-
     if (currentUnit) {
-      const turnOrder = encounter.turnOrder.map((unit) =>
-        EntityUtils.isCharacter(unit as any) ? unit.name : unit.name
-      );
-
-      this.statusPanel.renderCombatStatus(
-        EntityUtils.isCharacter(currentUnit as any) ? currentUnit.name : currentUnit.name,
-        turnOrder,
-        encounter.currentTurn,
-        ctx
-      );
+      ctx.fillStyle = '#ffa500';
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'right';
+      const unitName = EntityUtils.isCharacter(currentUnit as any) ? currentUnit.name : currentUnit.name;
+      ctx.fillText(`Current Turn: ${unitName}`, ctx.canvas.width - 30, 45);
     }
+  }
 
+  private renderTurnOrder(ctx: CanvasRenderingContext2D): void {
+    // Turn order panel - match dungeon info panel position
+    const orderX = 770;
+    const orderY = 80;
+    const orderWidth = 240;
+    const orderHeight = 200;
+
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(orderX, orderY, orderWidth, orderHeight);
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(orderX, orderY, orderWidth, orderHeight);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('TURN ORDER', orderX + orderWidth / 2, orderY + 20);
+    ctx.textAlign = 'left';
+
+    const encounter = this.combatSystem.getEncounter();
+    if (encounter) {
+      const turnOrder = encounter.turnOrder.slice(0, 6); // Show next 6 turns
+      ctx.font = '12px monospace';
+
+      turnOrder.forEach((unit, idx) => {
+        const unitName = EntityUtils.getName(unit as any);
+        const isCurrent = idx === 0;
+        ctx.fillStyle = isCurrent ? '#ffff00' : '#aaa';
+        ctx.fillText(`${idx + 1}. ${unitName}`, orderX + 10, orderY + 45 + idx * 18);
+      });
+    }
+  }
+
+  private renderCombatInfo(ctx: CanvasRenderingContext2D): void {
     // Show debug hint
     ctx.fillStyle = '#888';
     ctx.font = '10px monospace';

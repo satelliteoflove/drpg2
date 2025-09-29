@@ -89,6 +89,10 @@ export interface SpellEffect {
   subtype?: string;
   element?: ElementalType;
   power?: number | string;
+  baseDamage?: string;
+  baseHealing?: string;
+  damagePerLevel?: number;
+  healingPerLevel?: number;
   duration?: number | string;
   saveType?: 'physical' | 'mental' | 'magical' | 'death';
   saveModifier?: number;

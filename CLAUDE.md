@@ -112,6 +112,8 @@ The AI Interface (`window.AI`) is the **primary method** for testing and verifyi
    AI.getState();  // Verify state changes
    ```
 
+**Important**: When adding new properties to game entities (Character, Party, Monster, etc.), always update the AI Interface (`src/core/AIInterface.ts`) to expose that data for testing. For example, when `knownSpells` was added to Character, it needed to be added to the `getPartyInfo()` method so tests could verify spell assignments.
+
 2. **E2E Testing is Currently Disabled**
    - Do not write new Playwright/E2E tests
    - Use manual testing with the AI Interface in browser console

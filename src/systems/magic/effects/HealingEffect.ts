@@ -42,7 +42,7 @@ export class HealingEffect extends SpellEffectProcessor {
         const maxHP = this.getEntityMaxHP(target);
         healingAmount = Math.floor(maxHP * config.percentHeal / 100);
       } else {
-        const healingFormula = config.baseHealing || (effect as any).power || '1d6';
+        const healingFormula = config.baseHealing || '1d6';
         const baseHealing = this.evaluateFormula(healingFormula, caster.level);
         const perLevelBonus = config.healingPerLevel || 0;
         const baseAmount = baseHealing + (perLevelBonus * caster.level);

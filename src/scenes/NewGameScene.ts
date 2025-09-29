@@ -202,7 +202,8 @@ export class NewGameScene extends Scene {
         characterName,
         template.race as CharacterRace,
         template.class as CharacterClass,
-        template.alignment as CharacterAlignment
+        template.alignment as CharacterAlignment,
+        'male'  // Gender parameter - ensures spells are assigned
       );
 
       this.gameState.party.addCharacter(character);

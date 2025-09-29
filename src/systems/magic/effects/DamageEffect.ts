@@ -18,7 +18,7 @@ export class DamageEffect extends SpellEffectProcessor {
       messages: []
     };
 
-    const damageFormula = config.baseDamage || (effect as any).power || '1d6';
+    const damageFormula = config.baseDamage || '1d6';
     const baseDamage = this.evaluateFormula(damageFormula, caster.level);
     const perLevelBonus = config.damagePerLevel || 0;
     const baseAmount = baseDamage + (perLevelBonus * caster.level);

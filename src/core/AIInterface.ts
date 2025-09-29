@@ -29,6 +29,7 @@ export class AIInterface {
       mp: { current: number; max: number };
       status: string;
       isDead: boolean;
+      knownSpells?: string[];
     }>;
   } {
     const state = this.getGameState();
@@ -48,6 +49,7 @@ export class AIInterface {
         mp: { current: char.mp, max: char.maxMp },
         status: char.status,
         isDead: char.isDead,
+        knownSpells: char.knownSpells || [],
       })),
     };
   }

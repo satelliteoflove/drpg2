@@ -18,7 +18,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'fire',
-      power: '1d8'
+      baseDamage: '1d8'
     }],
     tags: ['offensive', 'elemental']
   },
@@ -142,7 +142,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'ice',
-      power: '6d6'
+      baseDamage: '6d6'
     }],
     tags: ['offensive', 'elemental', 'area']
   },
@@ -162,7 +162,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'fire',
-      power: '6d6'
+      baseDamage: '6d6'
     }],
     tags: ['offensive', 'elemental', 'area']
   },
@@ -183,7 +183,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'fire',
-      power: '8d8'
+      baseDamage: '8d8'
     }],
     tags: ['offensive', 'elemental', 'area']
   },
@@ -225,7 +225,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'lightning',
-      power: '10d8'
+      baseDamage: '10d8'
     }],
     tags: ['offensive', 'elemental', 'area']
   },
@@ -265,7 +265,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'fire',
-      power: '10d10'
+      baseDamage: '10d10'
     }],
     tags: ['offensive', 'elemental', 'ultimate', 'mass']
   },
@@ -323,7 +323,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     description: 'Restores health to a single ally',
     effects: [{
       type: 'heal',
-      power: '1d8'
+      baseHealing: '1d8'
     }],
     tags: ['healing', 'restoration']
   },
@@ -343,7 +343,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'holy',
-      power: '1d8'
+      baseDamage: '1d8'
     }],
     tags: ['offensive', 'divine']
   },
@@ -442,7 +442,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     description: 'More powerful healing spell',
     effects: [{
       type: 'heal',
-      power: '2d8'
+      baseHealing: '2d8'
     }],
     tags: ['healing', 'restoration']
   },
@@ -462,7 +462,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'holy',
-      power: '2d8'
+      baseDamage: '2d8'
     }],
     tags: ['offensive', 'divine']
   },
@@ -501,7 +501,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     description: 'Heals entire party',
     effects: [{
       type: 'heal',
-      power: '2d8'
+      baseHealing: '2d8'
     }],
     tags: ['healing', 'mass', 'party']
   },
@@ -522,7 +522,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'dark',
-      power: '4d8',
+      baseDamage: '4d8',
       special: 'level_drain'
     }],
     tags: ['offensive', 'dark', 'drain']
@@ -672,7 +672,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'acid',
-      power: '1d6'
+      baseDamage: '1d6'
     }, {
       type: 'status',
       statusEffect: 'poisoned',
@@ -755,7 +755,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'acid',
-      power: '4d6'
+      baseDamage: '4d6'
     }],
     tags: ['offensive', 'acid', 'area']
   },
@@ -813,7 +813,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'acid',
-      power: '3d6'
+      baseDamage: '3d6'
     }, {
       type: 'status',
       statusEffect: 'poisoned',
@@ -966,7 +966,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'psychic',
-      power: '1d6'
+      baseDamage: '1d6'
     }],
     tags: ['offensive', 'psychic']
   },
@@ -1010,7 +1010,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'psychic',
-      power: '3d8'
+      baseDamage: '3d8'
     }],
     tags: ['offensive', 'psychic', 'area']
   },
@@ -1053,7 +1053,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'psychic',
-      power: '4d8'
+      baseDamage: '4d8'
     }, {
       type: 'status',
       statusEffect: 'confused',
