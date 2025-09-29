@@ -67,7 +67,7 @@ export class SpellValidation {
 
     switch (targetType) {
       case 'self':
-        if (context.targetId && context.targetId !== context.casterId) {
+        if (context.target && (context.target as any).id !== context.casterId) {
           return {
             canCast: false,
             reason: 'This spell can only target yourself',
@@ -79,7 +79,7 @@ export class SpellValidation {
       case 'ally':
       case 'enemy':
       case 'dead':
-        if (!context.targetId) {
+        if (!context.target) {
           return {
             canCast: false,
             reason: 'This spell requires a target',
@@ -128,7 +128,7 @@ export class SpellValidation {
     }
 
     if (spell.range.special === 'self') {
-      if (context.targetId && context.targetId !== context.casterId) {
+      if (context.target && (context.target as any).id !== context.casterId) {
         return {
           canCast: false,
           reason: 'This spell has no range',
