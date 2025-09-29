@@ -202,8 +202,8 @@ nodes:
     downstream: ["overhaul-character-creation-ui"]
 
   - id: "overhaul-character-creation-ui"
-    status: "Ready"
-    materialization: 0.7
+    status: "Completed"
+    materialization: 1.0
     description: "Complete overhaul of character creation UI"
     detailed_description: |
       Redesign src/scenes/CharacterCreationScene.ts:
@@ -240,8 +240,8 @@ nodes:
     downstream: ["create-inn-scene"]
 
   - id: "create-inn-scene"
-    status: "Blocked"
-    materialization: 0.6
+    status: "Completed"
+    materialization: 1.0
     description: "Create Inn scene with level-up mechanics"
     detailed_description: |
       Create src/scenes/InnScene.ts with the following services:
@@ -283,8 +283,8 @@ nodes:
     downstream: ["update-town-scene", "update-game-constants", "update-save-system"]
 
   - id: "update-town-scene"
-    status: "Blocked"
-    materialization: 0.5
+    status: "Completed"
+    materialization: 1.0
     description: "Add Inn to Town scene"
     detailed_description: |
       Update src/scenes/TownScene.ts:
@@ -301,7 +301,7 @@ nodes:
     downstream: ["test-character-system"]
 
   - id: "update-game-constants"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.5
     description: "Update game constants for WGIV"
     detailed_description: |
@@ -317,7 +317,7 @@ nodes:
     downstream: ["test-character-system"]
 
   - id: "update-save-system"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.5
     description: "Add versioning to save game system"
     detailed_description: |
@@ -335,7 +335,7 @@ nodes:
     downstream: ["test-character-system"]
 
   - id: "test-character-system"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.4
     description: "Comprehensive testing of new character system"
     detailed_description: |
