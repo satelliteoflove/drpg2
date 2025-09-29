@@ -127,6 +127,19 @@ export const GAME_CONFIG = {
 
   SPELLCASTER_CLASSES: ['Mage', 'Priest', 'Bishop', 'Samurai', 'Lord', 'Ninja', 'Alchemist', 'Bard', 'Psionic', 'Valkyrie'] as const,
 
+  MAGIC: {
+    FIZZLE_PENALTIES: {
+      PURE_CASTER: 0,        // Mage, Priest, Alchemist, Psionic
+      BISHOP: 5,             // Bishop - multi-school caster
+      HYBRID_CASTER: 10,     // Lord, Valkyrie, Ranger, Bard
+      WARRIOR_CASTER: 15,    // Samurai, Monk, Ninja
+      NON_CASTER: 20,        // Fighter, Thief - multiclass penalty
+    },
+    TEST_MODE: {
+      DISABLE_FIZZLE: false, // Set to true in tests to disable spell fizzling
+    },
+  },
+
   DUNGEON: {
     DEFAULT_WIDTH: 20,
     DEFAULT_HEIGHT: 20,

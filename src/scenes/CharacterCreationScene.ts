@@ -400,11 +400,9 @@ export class CharacterCreationScene extends Scene {
     // Normalize key to lowercase
     const normalizedKey = key.toLowerCase();
 
-    // Allow Escape to skip character creation and create a default party
+    // Escape returns to new game menu
     if (normalizedKey === 'escape') {
-      this.createDefaultParty();
-      this.generateNewDungeon();
-      this.sceneManager.switchTo('dungeon');
+      this.sceneManager.switchTo('new-game-menu');
       return true;
     }
 
@@ -634,21 +632,6 @@ export class CharacterCreationScene extends Scene {
     this.gameState.party.facing = 'north';
   }
 
-  private createDefaultParty(): void {
-    // Create a default party for testing
-    if (this.gameState.party.characters.length === 0) {
-      const defaultCharacters = [
-        new Character('Fighter', 'Human', 'Fighter', 'Good'),
-        new Character('Mage', 'Elf', 'Mage', 'Good'),
-        new Character('Priest', 'Human', 'Priest', 'Good'),
-        new Character('Thief', 'Hobbit', 'Thief', 'Neutral'),
-      ];
-
-      // Add default characters to party
-      defaultCharacters.forEach((char) => {
-        char.gold = 100; // Give some starting gold for testing
-        this.gameState.party.addCharacter(char);
-      });
-    }
-  }
+  // Removed: createDefaultParty was only used for the Escape→Dungeon debug shortcut
+  // which has been removed. Use auto-generate party option instead.
 }

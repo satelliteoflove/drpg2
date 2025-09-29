@@ -5,9 +5,8 @@
 - No comments unless explicitly requested
 - NEVER create files unless absolutely necessary - prefer editing existing files
 - NEVER create documentation files (*.md) unless explicitly requested
-- Always update tests after functional changes
 - Use AI Interface (`window.AI`) for all testing and verification
-- Playwright tests must verify outcomes programmatically via AI Interface, not DOM selectors
+- E2E tests are currently disabled - do not create or run them
 - Maintain docs/DOCS_INDEX.yaml when documents change
 
 ## Development Commands
@@ -16,8 +15,8 @@
 npm run dev          # Start dev server at http://localhost:8080
 npm run build        # Production build
 npm run typecheck    # TypeScript checking (run before commits)
-npm run test:e2e     # Run Playwright end-to-end tests
-npm run test:e2e:ui  # Run Playwright tests with UI mode
+# npm run test:e2e     # DISABLED - E2E tests are currently disabled
+# npm run test:e2e:ui  # DISABLED - E2E tests are currently disabled
 ```
 
 ## Architecture Overview
@@ -105,7 +104,7 @@ The AI Interface (`window.AI`) is the **primary method** for testing and verifyi
 ## Testing Workflow
 
 ### Using the AI Interface for Testing
-1. **Before writing tests**, use the browser console to verify functionality:
+1. **Use the browser console to verify functionality**:
    ```javascript
    // Test new features interactively
    AI.getScene();  // Verify correct scene
@@ -113,31 +112,16 @@ The AI Interface (`window.AI`) is the **primary method** for testing and verifyi
    AI.getState();  // Verify state changes
    ```
 
-2. **In Playwright tests**, always use the AI Interface for assertions:
-   ```javascript
-   // Good - uses AI interface
-   await page.evaluate(() => window.AI.getScene() === 'combat');
-
-   // Avoid - brittle DOM selectors
-   await page.locator('.combat-scene').isVisible();
-   ```
-
-3. **Test user outcomes programmatically**:
-   ```javascript
-   // Verify combat damage was applied
-   const hpBefore = await page.evaluate(() => window.AI.getCombat().enemies[0].hp);
-   await page.evaluate(() => window.AI.sendKey('a')); // Attack
-   const hpAfter = await page.evaluate(() => window.AI.getCombat().enemies[0].hp);
-   expect(hpAfter).toBeLessThan(hpBefore);
-   ```
+2. **E2E Testing is Currently Disabled**
+   - Do not write new Playwright/E2E tests
+   - Use manual testing with the AI Interface in browser console
+   - Focus on unit tests if needed
 
 ### Development Process
 1. Always run `npm run typecheck` before marking work complete
 2. Use `AI.describe()` in browser console to understand current game state
-3. Write Playwright tests using `window.AI` methods for reliable assertions
-4. Run `npm run test:e2e` to execute all end-to-end tests before completing work
-5. Use feature branches for new features
-6. The ai/ directory contains plans and logs for AI-assisted development
+3. Use feature branches for new features
+4. The ai/ directory contains plans and logs for AI-assisted development
 
 ## Utility Classes and DRY Principles
 

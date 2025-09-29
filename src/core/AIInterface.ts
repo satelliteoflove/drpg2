@@ -43,6 +43,7 @@ export class AIInterface {
         name: char.name,
         class: char.class,
         level: char.level,
+        experience: char.experience,
         hp: { current: char.hp, max: char.maxHp },
         mp: { current: char.mp, max: char.maxMp },
         status: char.status,

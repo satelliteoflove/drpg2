@@ -1,0 +1,89 @@
+# TESTS_INDEX.yaml - Quick reference for test files
+# Maintained for efficient test discovery without reading full files
+# Update when adding/removing/modifying tests
+
+test_suite:
+  total_files: 11
+  last_updated: "2025-09-27"
+
+  categories:
+    character_system:
+      - file: character-creation-escape.test.js
+        tests: 1
+        purpose: "Escape key skips character creation with default party"
+
+      - file: character-creation-fixed.test.js
+        tests: 4
+        purpose: "Character creation flow, Valkyrie gender restriction, XP modifiers, party limits"
+
+      - file: character-development.test.js
+        tests: 2
+        purpose: "XP gain from combat, Inn leveling requirement, HP/MP increases"
+
+    dungeon_exploration:
+      - file: dungeon-map-discovery.test.js
+        tests: 2
+        purpose: "Fog of war tile discovery, map display of walls and discovered areas"
+
+      - file: dungeon-movement.test.js
+        tests: 3
+        purpose: "WASD movement, turning, wall collision detection"
+
+      - file: dungeon-town-transition.test.js
+        tests: 1
+        purpose: "Stairs from dungeon floor 1 to town"
+
+    core_functionality:
+      - file: essential-functionality.test.js
+        tests: 6
+        purpose: "AI interface availability, scene navigation, shop states, state persistence"
+
+      - file: utilities-basic.test.js
+        tests: 1
+        purpose: "Verify utility classes exposed on window object"
+
+    user_interface:
+      - file: shop-scene-fixed.test.js
+        tests: 6
+        purpose: "Shop menu navigation, buying categories, gold pooling, leave shop"
+
+      - file: spell-ui.test.js
+        tests: 2
+        purpose: "Spell menu in combat, target selection for spells"
+
+      - file: vim-navigation.test.js
+        tests: 2
+        purpose: "hjkl movement in dungeon, j/k menu navigation"
+
+  quick_find:
+    ai_interface: ["essential-functionality.test.js", "utilities-basic.test.js"]
+    character_creation: ["character-creation-escape.test.js", "character-creation-fixed.test.js"]
+    combat: ["spell-ui.test.js", "character-development.test.js"]
+    dungeon: ["dungeon-map-discovery.test.js", "dungeon-movement.test.js", "dungeon-town-transition.test.js"]
+    leveling: ["character-development.test.js"]
+    movement: ["dungeon-movement.test.js", "vim-navigation.test.js"]
+    shop: ["shop-scene-fixed.test.js"]
+    spells: ["spell-ui.test.js"]
+    town: ["dungeon-town-transition.test.js", "essential-functionality.test.js"]
+
+  test_patterns:
+    all_tests_must:
+      - "Use window.AI interface for all game interaction"
+      - "Use waitForFunction() instead of waitForTimeout() where possible"
+      - "Test user outcomes, not internal implementation"
+      - "Never access window.game internals directly"
+      - "Never manually manipulate character state"
+
+    common_antipatterns_to_avoid:
+      - "Tests that implement and test their own logic"
+      - "Hardcoded menu navigation by position instead of value"
+      - "Fixed timeouts instead of waiting for state changes"
+      - "Mixing input methods (keyboard.press vs AI.sendKey)"
+      - "Unit tests disguised as E2E tests"
+      - "Duplicate tests across multiple files"
+      - "Testing debug features that won't be in production"
+      - "API Contract Mismatch - assuming wrong structure (e.g. party.x vs party.location.x)"
+      - "Testing Against Bugs/Hacks - relying on debug shortcuts that shouldn't exist"
+      - "Incomplete API Surface - API missing data that tests reasonably need"
+      - "Nested Property Assumptions - accessing nested properties without checking structure"
+      - "Navigation Flow Dependencies - tests requiring unrelated scene navigation"

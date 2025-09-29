@@ -9,6 +9,7 @@ import { SpellCaster } from './systems/magic/SpellCaster';
 import { Character } from './entities/Character';
 import { Party } from './entities/Party';
 import { GameServices } from './services/GameServices';
+import { GAME_CONFIG } from './config/GameConstants';
 
 document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -62,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     (window as any).Character = Character;
     (window as any).Party = Party;
     (window as any).GameServices = GameServices;
+    (window as any).GAME_CONFIG = GAME_CONFIG;
 
     console.log('AI Interface available: window.AI.describe(), window.AI.getState(), window.AI.sendKey(key), etc.');
   }

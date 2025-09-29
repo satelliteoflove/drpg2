@@ -8,6 +8,7 @@ import {
 import { SpellRegistry } from './SpellRegistry';
 import { SpellEffectRegistry } from './SpellEffectRegistry';
 import { SpellValidation } from './SpellValidation';
+import { GAME_CONFIG } from '../../config/GameConstants';
 import { EffectTarget } from './SpellEffectProcessor';
 import { DamageEffect } from './effects/DamageEffect';
 import { HealingEffect } from './effects/HealingEffect';
@@ -174,6 +175,11 @@ export class SpellCaster {
     context: SpellCastingContext
   ): boolean {
     if ((window as any).testMode) {
+      return false;
+    }
+
+    // Allow tests to disable fizzle for deterministic testing
+    if (GAME_CONFIG.MAGIC.TEST_MODE.DISABLE_FIZZLE) {
       return false;
     }
 
