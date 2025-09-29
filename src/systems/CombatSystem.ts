@@ -60,7 +60,6 @@ export class CombatSystem {
     this.encounter = {
       monsters: monsters.map((m) => ({
         ...m,
-        currentHp: m.currentHp !== undefined ? m.currentHp : m.hp,
         isDead: false
       })),
       surprise: Math.random() < GAME_CONFIG.ENCOUNTER.SURPRISE_CHANCE,
@@ -123,7 +122,7 @@ export class CombatSystem {
     return options;
   }
 
-  public executePlayerAction(action: string, targetIndex?: number, spellId?: string): string {
+  public executePlayerAction(action: string, targetIndex?: number, spellId?: string, target?: Character | Monster): string {
     const currentUnit = this.getCurrentUnit();
     if (!currentUnit || !EntityUtils.isCharacter(currentUnit) || !this.encounter) {
       return 'Invalid action';
@@ -144,7 +143,7 @@ export class CombatSystem {
         result = this.executeAttack(currentUnit, targetIndex);
         break;
       case 'Cast Spell':
-        result = this.executeCastSpell(currentUnit, spellId, targetIndex);
+        result = this.executeCastSpell(currentUnit, spellId, target);
         break;
       case 'Defend':
         result = `${currentUnit.name} defends!`;
@@ -198,16 +197,14 @@ export class CombatSystem {
     return result;
   }
 
-  private executeCastSpell(caster: Character, spellId?: string, targetIndex?: number): string {
+  private executeCastSpell(caster: Character, spellId?: string, selectedTarget?: Character | Monster): string {
     if (!this.encounter || !spellId) return 'Invalid spell';
 
     const aliveMonsters = this.encounter.monsters.filter((m) => {
-      const hp = m.currentHp !== undefined ? m.currentHp : m.hp;
-      return !m.isDead && hp > 0;
+      return !m.isDead && m.hp > 0;
     });
     const aliveParty = this.party.filter(c => !c.isDead);
 
-    let target: Character | Monster | undefined;
     const spell = caster.getKnownSpells().find(s => s === spellId);
 
     if (!spell) return 'Spell not found';
@@ -215,12 +212,20 @@ export class CombatSystem {
     const spellData = this.spellCaster['registry'].getSpellById(spellId as SpellId);
     if (!spellData) return 'Invalid spell';
 
-    if (spellData.targetType === 'enemy' && aliveMonsters.length > 0) {
-      target = targetIndex !== undefined && targetIndex < aliveMonsters.length
-        ? aliveMonsters[targetIndex]
-        : aliveMonsters[Math.floor(Math.random() * aliveMonsters.length)];
-    } else if (spellData.targetType === 'ally' || spellData.targetType === 'self') {
+    let target: Character | Monster | undefined;
+
+    if (selectedTarget) {
+      // Use the target entity directly if provided
+      target = selectedTarget;
+    } else if (spellData.targetType === 'self') {
       target = caster;
+    } else {
+      // Fallback for any cases without explicit target
+      if (spellData.targetType === 'enemy' && aliveMonsters.length > 0) {
+        target = aliveMonsters[0];
+      } else if (spellData.targetType === 'ally') {
+        target = caster;
+      }
     }
 
     const context: SpellCastingContext = {
@@ -376,8 +381,7 @@ export class CombatSystem {
         return !(unit as Character).isDead;
       } else {
         const monster = unit as Monster;
-        const hp = monster.currentHp !== undefined ? monster.currentHp : monster.hp;
-        return hp > 0;
+        return monster.hp > 0;
       }
     });
 

@@ -17,11 +17,7 @@ export class EntityUtils {
   }
 
   static getHP(entity: CombatEntity): number {
-    if (this.isCharacter(entity)) {
-      return entity.hp;
-    } else {
-      return entity.currentHp !== undefined ? entity.currentHp : entity.hp;
-    }
+    return entity.hp;
   }
 
   static getMaxHP(entity: CombatEntity): number {
@@ -36,21 +32,19 @@ export class EntityUtils {
     const maxHP = this.getMaxHP(entity);
     const newHP = Math.max(0, Math.min(hp, maxHP));
 
-    if (this.isCharacter(entity)) {
-      entity.hp = newHP;
-    } else {
-      entity.hp = newHP;
-      entity.currentHp = newHP;
-      if (newHP === 0) {
-        entity.isDead = true;
-      }
+    entity.hp = newHP;
+
+    // Mark monsters as dead when HP reaches 0
+    if (this.isMonster(entity) && newHP === 0) {
+      entity.isDead = true;
     }
   }
 
   static applyDamage(entity: CombatEntity, damage: number): number {
     const currentHP = this.getHP(entity);
     const actualDamage = Math.min(damage, currentHP);
-    this.setHP(entity, currentHP - actualDamage);
+    const newHP = currentHP - actualDamage;
+    this.setHP(entity, newHP);
     return actualDamage;
   }
 
@@ -58,7 +52,9 @@ export class EntityUtils {
     const currentHP = this.getHP(entity);
     const maxHP = this.getMaxHP(entity);
     const actualHealing = Math.min(healing, maxHP - currentHP);
-    this.setHP(entity, currentHP + actualHealing);
+    const newHP = currentHP + actualHealing;
+    console.log(`[EntityUtils.applyHealing] ${entity.name}: currentHP=${currentHP}, maxHP=${maxHP}, healing=${healing}, actualHealing=${actualHealing}, newHP=${newHP}`);
+    this.setHP(entity, newHP);
     return actualHealing;
   }
 
