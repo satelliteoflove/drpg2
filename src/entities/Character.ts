@@ -24,7 +24,7 @@ import {
   canClassLearnSpells
 } from '../config/progression/SpellLearningTable';
 import { SpellLearning } from '../systems/magic/SpellLearning';
-import { SpellLearningResult } from '../types/SpellTypes';
+import { SpellLearningResult, SpellId } from '../types/SpellTypes';
 
 export class Character implements ICharacter {
   id: string;
@@ -233,30 +233,64 @@ export class Character implements ICharacter {
   }
 
   private learnStartingSpells(): void {
-    if (!this.canCastSpells()) return;
+    console.log(`[DEBUG] learnStartingSpells called for ${this.name} (${this.class})`);
+    if (!this.canCastSpells()) {
+      console.log(`[DEBUG] ${this.name} cannot cast spells`);
+      return;
+    }
+    console.log(`[DEBUG] ${this.name} can cast spells, assigning...`);
 
     // Import spell database
-    const { SPELLS } = require('../data/spells/SpellDatabase');
+    try {
+      const { SPELLS } = require('../data/spells/SpellDatabase');
 
-    // Placeholder starter spells - will be replaced by spell learning system
+    // Starting spells for damage/healing testing
     if (this.class === 'Mage' || this.class === 'Bishop') {
-      const flameDart = SPELLS['flame_dart'];
-      if (flameDart) this.spells.push(flameDart);
+      const flameDart = SPELLS['m1_flame_dart' as SpellId];
+      if (flameDart) {
+        this.spells.push(flameDart);
+        this.knownSpells.push('m1_flame_dart');
+      }
     }
 
     if (this.class === 'Priest' || this.class === 'Bishop') {
-      const heal = SPELLS['heal'];
-      if (heal) this.spells.push(heal);
+      const heal = SPELLS['p1_heal' as SpellId];
+      if (heal) {
+        this.spells.push(heal);
+        this.knownSpells.push('p1_heal');
+      }
     }
 
     if (this.class === 'Alchemist') {
-      const antidote = SPELLS['antidote'];
-      if (antidote) this.spells.push(antidote);
+      const poisonDart = SPELLS['a1_poison_dart' as SpellId];
+      if (poisonDart) {
+        this.spells.push(poisonDart);
+        this.knownSpells.push('a1_poison_dart');
+      }
     }
 
     if (this.class === 'Psionic') {
-      const mindShield = SPELLS['mind_shield'];
-      if (mindShield) this.spells.push(mindShield);
+      const confusion = SPELLS['s1_confusion' as SpellId];
+      if (confusion) {
+        this.spells.push(confusion);
+        this.knownSpells.push('s1_confusion');
+      }
+    }
+    } catch (error) {
+      console.error('Failed to load starting spells:', error);
+      // Fallback - just add the spell IDs directly
+      if (this.class === 'Mage' || this.class === 'Bishop') {
+        this.knownSpells.push('m1_flame_dart');
+      }
+      if (this.class === 'Priest' || this.class === 'Bishop') {
+        this.knownSpells.push('p1_heal');
+      }
+      if (this.class === 'Alchemist') {
+        this.knownSpells.push('a1_poison_dart');
+      }
+      if (this.class === 'Psionic') {
+        this.knownSpells.push('s1_confusion');
+      }
     }
   }
 

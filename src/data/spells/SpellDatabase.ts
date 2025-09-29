@@ -1,10 +1,10 @@
-import { SpellData } from '../../types/SpellTypes';
+import { SpellData, SpellId } from '../../types/SpellTypes';
 
-export const SPELLS: Record<string, SpellData> = {
+export const SPELLS: Record<SpellId, SpellData> = {
   // ============= MAGE SPELLS =============
   // Level 1 Mage Spells
-  flame_dart: {
-    id: 'flame_dart',
+  m1_flame_dart: {
+    id: 'm1_flame_dart' as SpellId,
     name: 'Flame Dart',
     originalName: 'HALITO',
     school: 'mage',
@@ -18,13 +18,13 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'fire',
-      power: '1d8'
+      baseDamage: '1d8'
     }],
     tags: ['offensive', 'elemental']
   },
 
-  armor_boost: {
-    id: 'armor_boost',
+  m1_armor_boost: {
+    id: 'm1_armor_boost' as SpellId,
     name: 'Armor Boost',
     originalName: 'MOGREF',
     school: 'mage',
@@ -43,8 +43,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['defensive', 'party']
   },
 
-  sleep: {
-    id: 'sleep',
+  m1_sleep: {
+    id: 'm1_sleep' as SpellId,
     name: 'Sleep',
     originalName: 'KATINO',
     school: 'mage',
@@ -64,8 +64,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['control', 'mental']
   },
 
-  locate: {
-    id: 'locate',
+  m1_locate: {
+    id: 'm1_locate' as SpellId,
     name: 'Locate',
     originalName: 'DUMAPIC',
     school: 'mage',
@@ -84,8 +84,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 2 Mage Spells
-  darkness: {
-    id: 'darkness',
+  m2_darkness: {
+    id: 'm2_darkness' as SpellId,
     name: 'Darkness',
     originalName: 'DILTO',
     school: 'mage',
@@ -106,8 +106,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['control', 'debuff']
   },
 
-  dispel_magic: {
-    id: 'dispel_magic',
+  m2_dispel_magic: {
+    id: 'm2_dispel_magic' as SpellId,
     name: 'Dispel Magic',
     originalName: 'MORLIS',
     school: 'mage',
@@ -127,8 +127,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 3 Mage Spells
-  ice_storm: {
-    id: 'ice_storm',
+  m3_ice_storm: {
+    id: 'm3_ice_storm' as SpellId,
     name: 'Ice Storm',
     originalName: 'DALTO',
     school: 'mage',
@@ -142,13 +142,13 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'ice',
-      power: '6d6'
+      baseDamage: '6d6'
     }],
     tags: ['offensive', 'elemental', 'area']
   },
 
-  flame_storm: {
-    id: 'flame_storm',
+  m3_flame_storm: {
+    id: 'm3_flame_storm' as SpellId,
     name: 'Flame Storm',
     originalName: 'LAHALITO',
     school: 'mage',
@@ -162,14 +162,14 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'fire',
-      power: '6d6'
+      baseDamage: '6d6'
     }],
     tags: ['offensive', 'elemental', 'area']
   },
 
   // Level 4 Mage Spells
-  greater_flame: {
-    id: 'greater_flame',
+  m4_greater_flame: {
+    id: 'm4_greater_flame' as SpellId,
     name: 'Greater Flame',
     originalName: 'MAHALITO',
     school: 'mage',
@@ -183,14 +183,14 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'fire',
-      power: '8d8'
+      baseDamage: '8d8'
     }],
     tags: ['offensive', 'elemental', 'area']
   },
 
   // Level 5 Mage Spells
-  mass_sleep: {
-    id: 'mass_sleep',
+  m5_mass_sleep: {
+    id: 'm5_mass_sleep' as SpellId,
     name: 'Mass Sleep',
     originalName: 'MAKATINO',
     school: 'mage',
@@ -210,8 +210,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 6 Mage Spells
-  lightning_bolt: {
-    id: 'lightning_bolt',
+  m6_lightning_bolt: {
+    id: 'm6_lightning_bolt' as SpellId,
     name: 'Lightning Bolt',
     originalName: 'LAKANITO',
     school: 'mage',
@@ -225,13 +225,13 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'lightning',
-      power: '10d8'
+      baseDamage: '10d8'
     }],
     tags: ['offensive', 'elemental', 'area']
   },
 
-  disintegrate: {
-    id: 'disintegrate',
+  m6_disintegrate: {
+    id: 'm6_disintegrate' as SpellId,
     name: 'Disintegrate',
     originalName: 'ZILWAN',
     school: 'mage',
@@ -251,8 +251,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 7 Mage Spells
-  nuclear_blast: {
-    id: 'nuclear_blast',
+  m7_nuclear_blast: {
+    id: 'm7_nuclear_blast' as SpellId,
     name: 'Nuclear Blast',
     originalName: 'TILTOWAIT',
     school: 'mage',
@@ -265,13 +265,13 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'fire',
-      power: '10d10'
+      baseDamage: '10d10'
     }],
     tags: ['offensive', 'elemental', 'ultimate', 'mass']
   },
 
-  teleport: {
-    id: 'teleport',
+  m7_teleport: {
+    id: 'm7_teleport' as SpellId,
     name: 'Teleport',
     originalName: 'MALOR',
     school: 'mage',
@@ -289,8 +289,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['utility', 'teleport', 'dangerous']
   },
 
-  wish: {
-    id: 'wish',
+  m7_wish: {
+    id: 'm7_wish' as SpellId,
     name: 'Wish',
     originalName: 'MAHAMAN',
     school: 'mage',
@@ -309,8 +309,8 @@ export const SPELLS: Record<string, SpellData> = {
 
   // ============= PRIEST SPELLS =============
   // Level 1 Priest Spells
-  heal: {
-    id: 'heal',
+  p1_heal: {
+    id: 'p1_heal' as SpellId,
     name: 'Heal',
     originalName: 'DIOS',
     school: 'priest',
@@ -323,13 +323,13 @@ export const SPELLS: Record<string, SpellData> = {
     description: 'Restores health to a single ally',
     effects: [{
       type: 'heal',
-      power: '1d8'
+      baseHealing: '1d8'
     }],
     tags: ['healing', 'restoration']
   },
 
-  harm: {
-    id: 'harm',
+  p1_harm: {
+    id: 'p1_harm' as SpellId,
     name: 'Harm',
     originalName: 'BADIOS',
     school: 'priest',
@@ -343,13 +343,13 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'holy',
-      power: '1d8'
+      baseDamage: '1d8'
     }],
     tags: ['offensive', 'divine']
   },
 
-  bless: {
-    id: 'bless',
+  p1_bless: {
+    id: 'p1_bless' as SpellId,
     name: 'Bless',
     originalName: 'KALKI',
     school: 'priest',
@@ -368,8 +368,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['defensive', 'blessing', 'party']
   },
 
-  light: {
-    id: 'light',
+  p1_light: {
+    id: 'p1_light' as SpellId,
     name: 'Light',
     originalName: 'MILWA',
     school: 'priest',
@@ -388,8 +388,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 2 Priest Spells
-  paralysis_cure: {
-    id: 'paralysis_cure',
+  p2_paralysis_cure: {
+    id: 'p2_paralysis_cure' as SpellId,
     name: 'Paralysis Cure',
     originalName: 'DIALKO',
     school: 'priest',
@@ -407,8 +407,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['healing', 'cure']
   },
 
-  protection: {
-    id: 'protection',
+  p2_protection: {
+    id: 'p2_protection' as SpellId,
     name: 'Protection',
     originalName: 'MAPORFIC',
     school: 'priest',
@@ -428,8 +428,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 3 Priest Spells
-  greater_heal: {
-    id: 'greater_heal',
+  p3_greater_heal: {
+    id: 'p3_greater_heal' as SpellId,
     name: 'Greater Heal',
     originalName: 'DIAL',
     school: 'priest',
@@ -442,13 +442,13 @@ export const SPELLS: Record<string, SpellData> = {
     description: 'More powerful healing spell',
     effects: [{
       type: 'heal',
-      power: '2d8'
+      baseHealing: '2d8'
     }],
     tags: ['healing', 'restoration']
   },
 
-  greater_harm: {
-    id: 'greater_harm',
+  p3_greater_harm: {
+    id: 'p3_greater_harm' as SpellId,
     name: 'Greater Harm',
     originalName: 'BADIAL',
     school: 'priest',
@@ -462,14 +462,14 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'holy',
-      power: '2d8'
+      baseDamage: '2d8'
     }],
     tags: ['offensive', 'divine']
   },
 
   // Level 4 Priest Spells
-  dispel_undead: {
-    id: 'dispel_undead',
+  p4_dispel_undead: {
+    id: 'p4_dispel_undead' as SpellId,
     name: 'Dispel Undead',
     originalName: 'LATUMAPIC',
     school: 'priest',
@@ -488,8 +488,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['offensive', 'holy', 'anti-undead']
   },
 
-  mass_heal: {
-    id: 'mass_heal',
+  p4_mass_heal: {
+    id: 'p4_mass_heal' as SpellId,
     name: 'Mass Heal',
     originalName: 'DIALMA',
     school: 'priest',
@@ -501,14 +501,14 @@ export const SPELLS: Record<string, SpellData> = {
     description: 'Heals entire party',
     effects: [{
       type: 'heal',
-      power: '2d8'
+      baseHealing: '2d8'
     }],
     tags: ['healing', 'mass', 'party']
   },
 
   // Level 5 Priest Spells
-  life_drain: {
-    id: 'life_drain',
+  p5_life_drain: {
+    id: 'p5_life_drain' as SpellId,
     name: 'Life Drain',
     originalName: 'BADI',
     school: 'priest',
@@ -522,14 +522,14 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'dark',
-      power: '4d8',
+      baseDamage: '4d8',
       special: 'level_drain'
     }],
     tags: ['offensive', 'dark', 'drain']
   },
 
-  resurrection: {
-    id: 'resurrection',
+  p5_resurrection: {
+    id: 'p5_resurrection' as SpellId,
     name: 'Resurrection',
     originalName: 'DI',
     school: 'priest',
@@ -549,8 +549,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 6 Priest Spells
-  full_heal: {
-    id: 'full_heal',
+  p6_full_heal: {
+    id: 'p6_full_heal' as SpellId,
     name: 'Full Heal',
     originalName: 'MADI',
     school: 'priest',
@@ -568,8 +568,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['healing', 'restoration', 'ultimate']
   },
 
-  greater_dispel: {
-    id: 'greater_dispel',
+  p6_greater_dispel: {
+    id: 'p6_greater_dispel' as SpellId,
     name: 'Greater Dispel',
     originalName: 'LABADI',
     school: 'priest',
@@ -589,8 +589,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 7 Priest Spells
-  greater_resurrection: {
-    id: 'greater_resurrection',
+  p7_greater_resurrection: {
+    id: 'p7_greater_resurrection' as SpellId,
     name: 'Greater Resurrection',
     originalName: 'KADORTO',
     school: 'priest',
@@ -609,8 +609,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['resurrection', 'restoration', 'ultimate']
   },
 
-  miracle: {
-    id: 'miracle',
+  p7_miracle: {
+    id: 'p7_miracle' as SpellId,
     name: 'Miracle',
     originalName: 'MABARIKO',
     school: 'priest',
@@ -637,8 +637,8 @@ export const SPELLS: Record<string, SpellData> = {
 
   // ============= ALCHEMIST SPELLS =============
   // Level 1 Alchemist Spells
-  shield: {
-    id: 'shield',
+  a1_shield: {
+    id: 'a1_shield' as SpellId,
     name: 'Shield',
     originalName: 'OSLO',
     school: 'alchemist',
@@ -657,8 +657,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['defensive', 'shield', 'party']
   },
 
-  poison_dart: {
-    id: 'poison_dart',
+  a1_poison_dart: {
+    id: 'a1_poison_dart' as SpellId,
     name: 'Poison Dart',
     originalName: 'VENAT',
     school: 'alchemist',
@@ -672,7 +672,7 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'acid',
-      power: '1d6'
+      baseDamage: '1d6'
     }, {
       type: 'status',
       statusEffect: 'poisoned',
@@ -682,8 +682,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['offensive', 'poison']
   },
 
-  antidote: {
-    id: 'antidote',
+  a1_antidote: {
+    id: 'a1_antidote' as SpellId,
     name: 'Antidote',
     originalName: 'ANTLE',
     school: 'alchemist',
@@ -701,8 +701,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['healing', 'cure']
   },
 
-  identify: {
-    id: 'identify',
+  a1_identify: {
+    id: 'a1_identify' as SpellId,
     name: 'Identify',
     originalName: 'MELIM',
     school: 'alchemist',
@@ -720,8 +720,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 2 Alchemist Spells
-  levitation: {
-    id: 'levitation',
+  a2_levitation: {
+    id: 'a2_levitation' as SpellId,
     name: 'Levitation',
     originalName: 'MEROLK',
     school: 'alchemist',
@@ -740,8 +740,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 3 Alchemist Spells
-  acid_splash: {
-    id: 'acid_splash',
+  a3_acid_splash: {
+    id: 'a3_acid_splash' as SpellId,
     name: 'Acid Splash',
     originalName: 'DALQUAR',
     school: 'alchemist',
@@ -755,13 +755,13 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'acid',
-      power: '4d6'
+      baseDamage: '4d6'
     }],
     tags: ['offensive', 'acid', 'area']
   },
 
-  group_antidote: {
-    id: 'group_antidote',
+  a3_group_antidote: {
+    id: 'a3_group_antidote' as SpellId,
     name: 'Group Antidote',
     originalName: 'PALNTE',
     school: 'alchemist',
@@ -779,8 +779,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 4 Alchemist Spells
-  stone_to_flesh: {
-    id: 'stone_to_flesh',
+  a4_stone_to_flesh: {
+    id: 'a4_stone_to_flesh' as SpellId,
     name: 'Stone to Flesh',
     originalName: 'DESTO',
     school: 'alchemist',
@@ -799,8 +799,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 5 Alchemist Spells
-  poison_cloud: {
-    id: 'poison_cloud',
+  a5_poison_cloud: {
+    id: 'a5_poison_cloud' as SpellId,
     name: 'Poison Cloud',
     originalName: 'MAVENAT',
     school: 'alchemist',
@@ -813,7 +813,7 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'acid',
-      power: '3d6'
+      baseDamage: '3d6'
     }, {
       type: 'status',
       statusEffect: 'poisoned',
@@ -824,8 +824,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 6 Alchemist Spells
-  transmutation: {
-    id: 'transmutation',
+  a6_transmutation: {
+    id: 'a6_transmutation' as SpellId,
     name: 'Transmutation',
     originalName: 'MALNYM',
     school: 'alchemist',
@@ -845,8 +845,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['offensive', 'transmutation']
   },
 
-  dispel_undead_alchemist: {
-    id: 'dispel_undead_alchemist',
+  a6_dispel_undead: {
+    id: 'a6_dispel_undead' as SpellId,
     name: 'Banish Undead',
     originalName: 'ZILWAN',
     school: 'alchemist',
@@ -867,8 +867,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 7 Alchemist Spells
-  disintegration: {
-    id: 'disintegration',
+  a7_disintegration: {
+    id: 'a7_disintegration' as SpellId,
     name: 'Disintegration',
     originalName: 'ABRIDAL',
     school: 'alchemist',
@@ -889,8 +889,8 @@ export const SPELLS: Record<string, SpellData> = {
 
   // ============= PSIONIC SPELLS =============
   // Level 1 Psionic Spells
-  mind_shield: {
-    id: 'mind_shield',
+  s1_mind_shield: {
+    id: 's1_mind_shield' as SpellId,
     name: 'Mind Shield',
     originalName: 'POBA',
     school: 'psionic',
@@ -910,8 +910,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['defensive', 'mental', 'party']
   },
 
-  confusion: {
-    id: 'confusion',
+  s1_confusion: {
+    id: 's1_confusion' as SpellId,
     name: 'Confusion',
     originalName: 'MENTAL',
     school: 'psionic',
@@ -932,8 +932,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['control', 'mental']
   },
 
-  detect: {
-    id: 'detect',
+  s1_detect: {
+    id: 's1_detect' as SpellId,
     name: 'Detect',
     originalName: 'DETECT',
     school: 'psionic',
@@ -951,8 +951,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['utility', 'exploration']
   },
 
-  telekinesis: {
-    id: 'telekinesis',
+  s1_telekinesis: {
+    id: 's1_telekinesis' as SpellId,
     name: 'Telekinesis',
     originalName: 'TILT',
     school: 'psionic',
@@ -966,14 +966,14 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'psychic',
-      power: '1d6'
+      baseDamage: '1d6'
     }],
     tags: ['offensive', 'psychic']
   },
 
   // Level 2 Psionic Spells
-  fear: {
-    id: 'fear',
+  s2_fear: {
+    id: 's2_fear' as SpellId,
     name: 'Fear',
     originalName: 'MORLIS',
     school: 'psionic',
@@ -995,8 +995,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 3 Psionic Spells
-  mind_blast: {
-    id: 'mind_blast',
+  s3_mind_blast: {
+    id: 's3_mind_blast' as SpellId,
     name: 'Mind Blast',
     originalName: 'BOLATU',
     school: 'psionic',
@@ -1010,14 +1010,14 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'psychic',
-      power: '3d8'
+      baseDamage: '3d8'
     }],
     tags: ['offensive', 'psychic', 'area']
   },
 
   // Level 4 Psionic Spells
-  charm: {
-    id: 'charm',
+  s4_charm: {
+    id: 's4_charm' as SpellId,
     name: 'Charm',
     originalName: 'VASKYRE',
     school: 'psionic',
@@ -1039,8 +1039,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 5 Psionic Spells
-  psychic_scream: {
-    id: 'psychic_scream',
+  s5_psychic_scream: {
+    id: 's5_psychic_scream' as SpellId,
     name: 'Psychic Scream',
     originalName: 'BAMORDI',
     school: 'psionic',
@@ -1053,7 +1053,7 @@ export const SPELLS: Record<string, SpellData> = {
     effects: [{
       type: 'damage',
       element: 'psychic',
-      power: '4d8'
+      baseDamage: '4d8'
     }, {
       type: 'status',
       statusEffect: 'confused',
@@ -1065,8 +1065,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 6 Psionic Spells
-  mass_hypnosis: {
-    id: 'mass_hypnosis',
+  s6_mass_hypnosis: {
+    id: 's6_mass_hypnosis' as SpellId,
     name: 'Mass Hypnosis',
     originalName: 'PACCSI',
     school: 'psionic',
@@ -1086,8 +1086,8 @@ export const SPELLS: Record<string, SpellData> = {
   },
 
   // Level 7 Psionic Spells
-  mind_kill: {
-    id: 'mind_kill',
+  s7_mind_kill: {
+    id: 's7_mind_kill' as SpellId,
     name: 'Mind Kill',
     originalName: 'MINDKILL',
     school: 'psionic',
@@ -1106,8 +1106,8 @@ export const SPELLS: Record<string, SpellData> = {
     tags: ['offensive', 'death', 'mental']
   },
 
-  astral_projection: {
-    id: 'astral_projection',
+  s7_astral_projection: {
+    id: 's7_astral_projection' as SpellId,
     name: 'Astral Projection',
     originalName: 'ASTRAL',
     school: 'psionic',
@@ -1127,7 +1127,7 @@ export const SPELLS: Record<string, SpellData> = {
   }
 };
 
-export function getSpellById(spellId: string): SpellData | undefined {
+export function getSpellById(spellId: SpellId): SpellData | undefined {
   return SPELLS[spellId];
 }
 
@@ -1143,6 +1143,27 @@ export function getSpellsBySchoolAndLevel(school: string, level: number): SpellD
   return Object.values(SPELLS).filter(
     spell => spell.school === school && spell.level === level
   );
+}
+
+// Helper function to extract school from spell ID
+export function getSchoolFromSpellId(spellId: SpellId): string {
+  const prefix = spellId.charAt(0);
+  switch(prefix) {
+    case 'm': return 'mage';
+    case 'p': return 'priest';
+    case 'a': return 'alchemist';
+    case 's': return 'psionic';
+    default: throw new Error(`Invalid spell ID: ${spellId}`);
+  }
+}
+
+// Helper function to extract level from spell ID
+export function getLevelFromSpellId(spellId: SpellId): number {
+  const level = parseInt(spellId.charAt(1));
+  if (isNaN(level) || level < 1 || level > 7) {
+    throw new Error(`Invalid spell level in ID: ${spellId}`);
+  }
+  return level;
 }
 
 export function getAllSpells(): SpellData[] {

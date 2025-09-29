@@ -117,6 +117,8 @@ export class Party implements IParty {
         return [1, 0];
       case 'west':
         return [-1, 0];
+      default:
+        return [0, 0];
     }
   }
 

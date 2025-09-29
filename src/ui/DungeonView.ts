@@ -8,8 +8,10 @@ export class DungeonView {
   private playerY: number = 0;
   private playerFacing: Direction = 'north';
 
-  private readonly VIEW_WIDTH = 400;
-  private readonly VIEW_HEIGHT = 300;
+  private readonly VIEW_WIDTH = 500;
+  private readonly VIEW_HEIGHT = 400;
+  private readonly VIEW_X = 260;  // Center in available space
+  private readonly VIEW_Y = 80;   // Below header
 
   constructor(canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
@@ -32,6 +34,18 @@ export class DungeonView {
     // Set the current rendering context
     this.currentRenderCtx = ctx || this.ctx;
 
+    // Draw panel frame around the dungeon view
+    this.currentRenderCtx.fillStyle = '#2a2a2a';
+    this.currentRenderCtx.fillRect(this.VIEW_X - 5, this.VIEW_Y - 5, this.VIEW_WIDTH + 10, this.VIEW_HEIGHT + 10);
+
+    this.currentRenderCtx.strokeStyle = '#666';
+    this.currentRenderCtx.lineWidth = 2;
+    this.currentRenderCtx.strokeRect(this.VIEW_X - 5, this.VIEW_Y - 5, this.VIEW_WIDTH + 10, this.VIEW_HEIGHT + 10);
+
+    // Save context state and translate to view position
+    this.currentRenderCtx.save();
+    this.currentRenderCtx.translate(this.VIEW_X, this.VIEW_Y);
+
     this.currentRenderCtx.fillStyle = '#000';
     this.currentRenderCtx.fillRect(0, 0, this.VIEW_WIDTH, this.VIEW_HEIGHT);
 
@@ -40,6 +54,9 @@ export class DungeonView {
     this.renderDepth1();
     this.renderCurrentPosition();
     this.renderUI();
+
+    // Restore context state
+    this.currentRenderCtx.restore();
   }
 
   private renderDepth3(): void {
@@ -155,6 +172,8 @@ export class DungeonView {
         return [1, 0];
       case 'west':
         return [-1, 0];
+      default:
+        return [0, 0];
     }
   }
 
@@ -364,6 +383,8 @@ export class DungeonView {
         return Math.PI;
       case 'west':
         return (3 * Math.PI) / 2;
+      default:
+        return 0;
     }
   }
 }

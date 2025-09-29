@@ -2,19 +2,33 @@ import { Character } from '../../entities/Character';
 import {
   SpellData,
   SpellCastingContext,
-  SpellCastResult
+  SpellCastResult,
+  SpellId
 } from '../../types/SpellTypes';
 import { SpellRegistry } from './SpellRegistry';
+import { SpellEffectRegistry } from './SpellEffectRegistry';
 import { SpellValidation } from './SpellValidation';
+import { GAME_CONFIG } from '../../config/GameConstants';
+import { EffectTarget } from './SpellEffectProcessor';
+import { DamageEffect } from './effects/DamageEffect';
+import { HealingEffect } from './effects/HealingEffect';
+import { DebugLogger } from '../../utils/DebugLogger';
 
 export class SpellCaster {
   private static instance: SpellCaster;
   private registry: SpellRegistry;
+  private effectRegistry: SpellEffectRegistry;
   private validation: SpellValidation;
+
+  private damageProcessor: DamageEffect;
+  private healingProcessor: HealingEffect;
 
   private constructor() {
     this.registry = SpellRegistry.getInstance();
+    this.effectRegistry = SpellEffectRegistry.getInstance();
     this.validation = new SpellValidation();
+    this.damageProcessor = new DamageEffect();
+    this.healingProcessor = new HealingEffect();
   }
 
   static getInstance(): SpellCaster {
@@ -29,7 +43,7 @@ export class SpellCaster {
     spellId: string,
     context: SpellCastingContext
   ): SpellCastResult {
-    const spell = this.registry.getSpellById(spellId);
+    const spell = this.registry.getSpellById(spellId as SpellId);
     if (!spell) {
       return {
         success: false,
@@ -66,48 +80,93 @@ export class SpellCaster {
       mpConsumed: spell.mpCost
     };
 
+    const targets = this.getTargets(spell, context);
+
     for (const effect of spell.effects) {
-      switch (effect.type) {
-        case 'damage':
-          this.processDamageEffect(caster, effect, context, result);
-          break;
-        case 'heal':
-          this.processHealEffect(caster, effect, context, result);
-          break;
-        case 'status':
-        case 'debuff':
-          this.processStatusEffect(caster, effect, context, result);
-          break;
-        case 'buff':
-          this.processBuffEffect(caster, effect, context, result);
-          break;
-        case 'cure':
-          this.processCureEffect(caster, effect, context, result);
-          break;
-        case 'instant_death':
-          this.processInstantDeathEffect(caster, effect, context, result);
-          break;
-        case 'resurrection':
-          this.processResurrectionEffect(caster, effect, context, result);
-          break;
-        case 'teleport':
-          this.processTeleportEffect(caster, effect, context, result);
-          break;
-        case 'utility':
-          this.processUtilityEffect(caster, effect, context, result);
-          break;
-        case 'dispel':
-          this.processDispelEffect(caster, effect, context, result);
-          break;
-        case 'special':
-          this.processSpecialEffect(caster, effect, context, result);
-          break;
-        default:
-          result.messages.push(`Unknown effect type: ${effect.type}`);
+      const effectResult = this.effectRegistry.processEffect(
+        caster,
+        spell,
+        effect,
+        targets,
+        context
+      );
+
+      if (effectResult) {
+        result.success = result.success && effectResult.success;
+        result.messages.push(...effectResult.messages);
+
+        if (effectResult.targets) {
+          for (const targetResult of effectResult.targets) {
+            if (targetResult.damage) {
+              result.damage = (result.damage || 0) + targetResult.damage;
+            }
+            if (targetResult.healing) {
+              result.healing = (result.healing || 0) + targetResult.healing;
+            }
+            if (targetResult.statusApplied) {
+              if (!result.statusesApplied) result.statusesApplied = [];
+              result.statusesApplied.push(targetResult.statusApplied as any);
+            }
+          }
+        }
+      } else {
+        // Fallback for effects without processors yet
+        this.processEffectLegacy(caster, spell, effect, targets, context, result);
       }
     }
 
     return result;
+  }
+
+  private processEffectLegacy(
+    caster: Character,
+    spell: SpellData,
+    effect: any,
+    targets: EffectTarget[],
+    context: SpellCastingContext,
+    result: SpellCastResult
+  ): void {
+    // Temporary fallback for effects without processors
+    DebugLogger.warn('SpellCaster', `Using legacy processing for effect type: ${effect.type}`);
+
+    switch (effect.type) {
+      case 'damage':
+        this.processDamageEffect(caster, spell, effect, targets, context, result);
+        break;
+      case 'heal':
+        this.processHealEffect(caster, spell, effect, targets, context, result);
+        break;
+      case 'status':
+      case 'debuff':
+        this.processStatusEffect(caster, effect, context, result);
+        break;
+      case 'buff':
+        this.processBuffEffect(caster, effect, context, result);
+        break;
+      case 'cure':
+        this.processCureEffect(caster, effect, context, result);
+        break;
+      case 'instant_death':
+        this.processInstantDeathEffect(caster, effect, context, result);
+        break;
+      case 'resurrection':
+        this.processResurrectionEffect(caster, effect, context, result);
+        break;
+      case 'teleport':
+        this.processTeleportEffect(caster, effect, context, result);
+        break;
+      case 'utility':
+        this.processUtilityEffect(caster, effect, context, result);
+        break;
+      case 'dispel':
+        this.processDispelEffect(caster, effect, context, result);
+        break;
+      case 'special':
+        this.processSpecialEffect(caster, effect, context, result);
+        break;
+      default:
+        result.messages.push(`Unknown effect type: ${effect.type}`);
+    }
   }
 
   private checkFizzle(
@@ -115,6 +174,15 @@ export class SpellCaster {
     spell: SpellData,
     context: SpellCastingContext
   ): boolean {
+    if ((window as any).testMode) {
+      return false;
+    }
+
+    // Allow tests to disable fizzle for deterministic testing
+    if (GAME_CONFIG.MAGIC.TEST_MODE.DISABLE_FIZZLE) {
+      return false;
+    }
+
     if (context.antiMagicZone) {
       return Math.random() < 0.75;
     }
@@ -132,21 +200,27 @@ export class SpellCaster {
   }
 
   private processDamageEffect(
-    _caster: Character,
-    _effect: any,
-    _context: SpellCastingContext,
+    caster: Character,
+    spell: SpellData,
+    effect: any,
+    targets: EffectTarget[],
+    context: SpellCastingContext,
     result: SpellCastResult
   ): void {
-    result.messages.push('Damage effect not yet implemented');
+    const effectResult = this.damageProcessor.processEffect(caster, spell, effect, targets, context);
+    result.messages.push(...effectResult.messages);
   }
 
   private processHealEffect(
-    _caster: Character,
-    _effect: any,
-    _context: SpellCastingContext,
+    caster: Character,
+    spell: SpellData,
+    effect: any,
+    targets: EffectTarget[],
+    context: SpellCastingContext,
     result: SpellCastResult
   ): void {
-    result.messages.push('Heal effect not yet implemented');
+    const effectResult = this.healingProcessor.processEffect(caster, spell, effect, targets, context);
+    result.messages.push(...effectResult.messages);
   }
 
   private processStatusEffect(
@@ -260,27 +334,8 @@ export class SpellCaster {
   }
 
   checkResistance(target: Character, saveType: string, saveModifier: number = 0): boolean {
-    let saveChance = 50;
-
-    switch (saveType) {
-      case 'physical':
-        saveChance -= Math.max(0, target.getStats().vitality - 10) * 3;
-        break;
-      case 'mental':
-        saveChance -= Math.max(0, target.getStats().intelligence - 10) * 3;
-        break;
-      case 'magical':
-        saveChance -= Math.max(0, target.getStats().piety - 10) * 3;
-        break;
-      case 'death':
-        saveChance -= Math.max(0, target.getStats().vitality - 10) * 2;
-        saveChance -= Math.max(0, target.getStats().luck - 10) * 2;
-        break;
-    }
-
-    saveChance += saveModifier;
-
-    return Math.random() * 100 >= saveChance;
+    const { SavingThrowCalculator } = require('../../utils/SavingThrowCalculator');
+    return SavingThrowCalculator.checkResistance(target, saveType, saveModifier);
   }
 
   getTargetIds(context: SpellCastingContext): string[] {
@@ -290,5 +345,64 @@ export class SpellCaster {
       return context.targetId;
     }
     return [];
+  }
+
+  private getTargets(spell: SpellData, context: SpellCastingContext): EffectTarget[] {
+    const targets: EffectTarget[] = [];
+
+    if ((spell.targetType as any) === 'self' || (spell.targetType as any) === 'caster') {
+      if (context.caster) {
+        targets.push({
+          entity: context.caster,
+          isAlly: true
+        });
+      }
+    } else if ((spell.targetType as any) === 'party' || spell.targetType === 'allAllies') {
+      if (context.party) {
+        for (const member of context.party) {
+          targets.push({
+            entity: member,
+            isAlly: true
+          });
+        }
+      }
+    } else if ((spell.targetType as any) === 'enemies' || spell.targetType === 'allEnemies') {
+      if (context.enemies) {
+        for (const enemy of context.enemies) {
+          targets.push({
+            entity: enemy,
+            isAlly: false
+          });
+        }
+      }
+    } else if (spell.targetType === 'enemy' || spell.targetType === 'ally') {
+      if (context.target) {
+        const isAlly = spell.targetType === 'ally' ||
+                      (context.party && context.party.includes(context.target as any)) || false;
+        targets.push({
+          entity: context.target,
+          isAlly: isAlly
+        });
+      }
+    } else if ((spell.targetType as any) === 'all' || spell.targetType === 'group') {
+      if (context.party) {
+        for (const member of context.party) {
+          targets.push({
+            entity: member,
+            isAlly: true
+          });
+        }
+      }
+      if (context.enemies) {
+        for (const enemy of context.enemies) {
+          targets.push({
+            entity: enemy,
+            isAlly: false
+          });
+        }
+      }
+    }
+
+    return targets;
   }
 }

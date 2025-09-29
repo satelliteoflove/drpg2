@@ -84,7 +84,7 @@ export class Game {
         this.playtimeStart = Date.now() - savedGame.playtimeSeconds * 1000;
 
         // Create a new MessageLog for loaded game (messages aren't saved)
-        this.gameState.messageLog = new MessageLog(this.canvas, 624, 500, 400, 268);
+        this.gameState.messageLog = new MessageLog(this.canvas, 10, 570, 750, 180);
         this.gameState.messageLog.addSystemMessage('Game loaded successfully');
       } else {
         ErrorHandler.logError(
@@ -113,7 +113,7 @@ export class Game {
       gameTime: 0,
       turnCount: 0,
       combatEnabled: true,
-      messageLog: new MessageLog(this.canvas, 624, 500, 400, 268),
+      messageLog: new MessageLog(this.canvas, 10, 570, 750, 180),
     };
 
     // Add initial game messages
@@ -404,5 +404,13 @@ export class Game {
 
   public getSceneManager(): SceneManager {
     return this.sceneManager;
+  }
+
+  public getServices(): GameServices {
+    return this.services;
+  }
+
+  public isGameRunning(): boolean {
+    return this.isRunning;
   }
 }

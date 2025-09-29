@@ -1,5 +1,6 @@
-import { SpellData, SpellSchool, SpellValidationResult } from '../../types/SpellTypes';
+import { SpellData, SpellSchool, SpellValidationResult, SpellId } from '../../types/SpellTypes';
 import { CharacterClass } from '../../types/GameTypes';
+import { GAME_CONFIG } from '../../config/GameConstants';
 import { SPELLS } from '../../data/spells/SpellDatabase';
 import { Character } from '../../entities/Character';
 import { CharacterClasses } from './MagicConstants';
@@ -7,7 +8,7 @@ import { CharacterClasses } from './MagicConstants';
 export class SpellRegistry {
   private static instance: SpellRegistry;
   private spellsBySchool: Map<SpellSchool, Map<number, SpellData[]>>;
-  private spellsById: Map<string, SpellData>;
+  private spellsById: Map<SpellId, SpellData>;
   private spellsByName: Map<string, SpellData>;
 
   private constructor() {
@@ -26,7 +27,7 @@ export class SpellRegistry {
 
   private initializeRegistry(): void {
     for (const [id, spell] of Object.entries(SPELLS)) {
-      this.spellsById.set(id, spell);
+      this.spellsById.set(id as SpellId, spell);
       this.spellsByName.set(spell.name.toLowerCase(), spell);
 
       if (!this.spellsBySchool.has(spell.school)) {
@@ -42,7 +43,7 @@ export class SpellRegistry {
     }
   }
 
-  getSpellById(id: string): SpellData | undefined {
+  getSpellById(id: SpellId): SpellData | undefined {
     return this.spellsById.get(id);
   }
 
@@ -292,24 +293,28 @@ export class SpellRegistry {
   }
 
   private getClassCastingModifier(characterClass: CharacterClass): number {
+    const penalties = GAME_CONFIG.MAGIC.FIZZLE_PENALTIES;
+
     switch (characterClass) {
       case CharacterClasses.MAGE:
       case CharacterClasses.PRIEST:
       case CharacterClasses.ALCHEMIST:
       case CharacterClasses.PSIONIC:
-        return 0;
+        return penalties.PURE_CASTER;
       case CharacterClasses.BISHOP:
-        return 5;
+        return penalties.BISHOP;
       case CharacterClasses.RANGER:
       case CharacterClasses.BARD:
       case CharacterClasses.LORD:
       case CharacterClasses.VALKYRIE:
-        return 10;
+        return penalties.HYBRID_CASTER;
       case CharacterClasses.SAMURAI:
       case CharacterClasses.MONK:
-        return 15;
+      case CharacterClasses.NINJA:
+        return penalties.WARRIOR_CASTER;
       default:
-        return 100;
+        // Non-casters (Fighter, Thief, etc.) - multiclass penalty
+        return penalties.NON_CASTER;
     }
   }
 

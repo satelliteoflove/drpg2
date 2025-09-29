@@ -2,6 +2,7 @@ import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { CharacterAlignment, CharacterClass, CharacterRace, GameState } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { DungeonGenerator } from '../utils/DungeonGenerator';
+import { MenuInputHandler } from '../ui/components/MenuInputHandler';
 
 export class CharacterCreationScene extends Scene {
   private gameState: GameState;
@@ -396,29 +397,30 @@ export class CharacterCreationScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
-    // Allow Escape to skip character creation and create a default party
-    if (key === 'escape') {
-      this.createDefaultParty();
-      this.generateNewDungeon();
-      this.sceneManager.switchTo('dungeon');
+    // Normalize key to lowercase
+    const normalizedKey = key.toLowerCase();
+
+    // Escape returns to new game menu
+    if (normalizedKey === 'escape') {
+      this.sceneManager.switchTo('new-game-menu');
       return true;
     }
 
     switch (this.currentStep) {
       case 'name':
-        return this.handleNameInput(key);
+        return this.handleNameInput(normalizedKey);
       case 'race':
-        return this.handleSelectionInput(key, this.races.length);
+        return this.handleSelectionInput(normalizedKey, this.races.length);
       case 'gender':
-        return this.handleSelectionInput(key, this.genders.length);
+        return this.handleSelectionInput(normalizedKey, this.genders.length);
       case 'class':
-        return this.handleSelectionInput(key, this.classes.length);
+        return this.handleSelectionInput(normalizedKey, this.classes.length);
       case 'alignment':
-        return this.handleSelectionInput(key, this.alignments.length);
+        return this.handleSelectionInput(normalizedKey, this.alignments.length);
       case 'confirm':
-        return this.handleConfirmInput(key);
+        return this.handleConfirmInput(normalizedKey);
       case 'party':
-        return this.handlePartyInput(key);
+        return this.handlePartyInput(normalizedKey);
     }
     return false;
   }
@@ -446,20 +448,27 @@ export class CharacterCreationScene extends Scene {
   }
 
   private handleSelectionInput(key: string, maxOptions: number): boolean {
-    if (key === 'arrowup' || key === 'w') {
-      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
-      return true;
-    } else if (key === 'arrowdown' || key === 's') {
-      this.selectedIndex = Math.min(maxOptions - 1, this.selectedIndex + 1);
-      return true;
-    } else if (key === 'enter') {
-      this.selectCurrentOption();
-      return true;
-    } else if (key === 'escape') {
-      this.goBack();
-      return true;
-    }
-    return false;
+    // Use MenuInputHandler for navigation
+    const action = MenuInputHandler.handleMenuInput(
+      key,
+      {
+        selectedIndex: this.selectedIndex,
+        maxIndex: maxOptions - 1,
+      },
+      {
+        onNavigate: (newIndex: number) => {
+          this.selectedIndex = newIndex;
+        },
+        onConfirm: () => {
+          this.selectCurrentOption();
+        },
+        onCancel: () => {
+          this.goBack();
+        },
+      }
+    );
+
+    return action.type !== 'none';
   }
 
   private selectCurrentOption(): void {
@@ -498,54 +507,69 @@ export class CharacterCreationScene extends Scene {
   }
 
   private handleConfirmInput(key: string): boolean {
-    if (key === 'arrowup' || key === 'w') {
-      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
-      return true;
-    } else if (key === 'arrowdown' || key === 's') {
-      this.selectedIndex = Math.min(1, this.selectedIndex + 1);
-      return true;
-    } else if (key === 'enter') {
-      if (this.selectedIndex === 0) {
-        this.createCharacter();
-      } else {
-        this.startOver();
+    // Use MenuInputHandler for navigation
+    const action = MenuInputHandler.handleMenuInput(
+      key,
+      {
+        selectedIndex: this.selectedIndex,
+        maxIndex: 1, // Accept and Start Over options (0 and 1)
+      },
+      {
+        onNavigate: (newIndex: number) => {
+          this.selectedIndex = newIndex;
+        },
+        onConfirm: () => {
+          if (this.selectedIndex === 0) {
+            this.createCharacter();
+          } else {
+            this.startOver();
+          }
+        },
+        onCancel: () => {
+          this.currentStep = 'alignment';
+          this.selectedIndex = 0;
+        },
       }
-      return true;
-    } else if (key === 'escape') {
-      this.currentStep = 'alignment';
-      this.selectedIndex = 0;
-      return true;
-    }
-    return false;
+    );
+
+    return action.type !== 'none';
   }
 
   private handlePartyInput(key: string): boolean {
-    if (key === 'arrowup' || key === 'w') {
-      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
-      return true;
-    } else if (key === 'arrowdown' || key === 's') {
-      this.selectedIndex = Math.min(2, this.selectedIndex + 1);
-      return true;
-    } else if (key === 'enter') {
-      if (this.selectedIndex === 0) {
-        if (this.gameState.party.characters.length < 6) {
-          this.startOver();
-        }
-      } else if (this.selectedIndex === 1) {
-        if (this.gameState.party.characters.length > 0) {
-          this.generateNewDungeon();
-          this.sceneManager.switchTo('dungeon');
-        }
-      } else if (this.selectedIndex === 2) {
-        if (this.gameState.party.characters.length > 0) {
-          this.gameState.party.characters.pop();
-        }
+    // Use MenuInputHandler for navigation
+    const action = MenuInputHandler.handleMenuInput(
+      key,
+      {
+        selectedIndex: this.selectedIndex,
+        maxIndex: 2, // Add another, Start adventure, Remove last (0, 1, 2)
+      },
+      {
+        onNavigate: (newIndex: number) => {
+          this.selectedIndex = newIndex;
+        },
+        onConfirm: () => {
+          if (this.selectedIndex === 0) {
+            if (this.gameState.party.characters.length < 6) {
+              this.startOver();
+            }
+          } else if (this.selectedIndex === 1) {
+            if (this.gameState.party.characters.length > 0) {
+              this.generateNewDungeon();
+              this.sceneManager.switchTo('dungeon');
+            }
+          } else if (this.selectedIndex === 2) {
+            if (this.gameState.party.characters.length > 0) {
+              this.gameState.party.characters.pop();
+            }
+          }
+        },
+        onCancel: () => {
+          // No cancel action in party step
+        },
       }
-      return true;
-    } else if (key === 'escape') {
-      return false;
-    }
-    return false;
+    );
+
+    return action.type !== 'none';
   }
 
   private createCharacter(): void {
@@ -608,21 +632,6 @@ export class CharacterCreationScene extends Scene {
     this.gameState.party.facing = 'north';
   }
 
-  private createDefaultParty(): void {
-    // Create a default party for testing
-    if (this.gameState.party.characters.length === 0) {
-      const defaultCharacters = [
-        new Character('Fighter', 'Human', 'Fighter', 'Good'),
-        new Character('Mage', 'Elf', 'Mage', 'Good'),
-        new Character('Priest', 'Human', 'Priest', 'Good'),
-        new Character('Thief', 'Hobbit', 'Thief', 'Neutral'),
-      ];
-
-      // Add default characters to party
-      defaultCharacters.forEach((char) => {
-        char.gold = 100; // Give some starting gold for testing
-        this.gameState.party.addCharacter(char);
-      });
-    }
-  }
+  // Removed: createDefaultParty was only used for the Escape→Dungeon debug shortcut
+  // which has been removed. Use auto-generate party option instead.
 }

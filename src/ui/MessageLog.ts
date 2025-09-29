@@ -45,15 +45,17 @@ export class MessageLog {
 
   public render(ctx?: CanvasRenderingContext2D): void {
     this.currentRenderCtx = ctx || this.ctx;
-    this.currentRenderCtx.fillStyle = '#0a0a0a';
+
+    // Panel background with consistent style
+    this.currentRenderCtx.fillStyle = '#2a2a2a';
     this.currentRenderCtx.fillRect(this.x, this.y, this.width, this.height);
 
-    this.currentRenderCtx.strokeStyle = '#333';
-    this.currentRenderCtx.lineWidth = 1;
+    this.currentRenderCtx.strokeStyle = '#666';
+    this.currentRenderCtx.lineWidth = 2;
     this.currentRenderCtx.strokeRect(this.x, this.y, this.width, this.height);
 
     this.currentRenderCtx.fillStyle = '#fff';
-    this.currentRenderCtx.font = '12px monospace';
+    this.currentRenderCtx.font = 'bold 12px monospace';
     this.currentRenderCtx.fillText('MESSAGE LOG', this.x + 5, this.y + 15);
 
     const lineHeight = 14;

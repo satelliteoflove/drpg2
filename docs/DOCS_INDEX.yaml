@@ -12,14 +12,10 @@ api_reference:
   topics: [API, classes, methods, interfaces, type definitions]
   summary: Complete API documentation for all game classes and interfaces
 
-ascii_rendering:
-  - file: ASCII_RENDERING_GUIDE.md
-    topics: [ASCII, rendering, text display, console output, terminal graphics]
-    summary: Guide for implementing ASCII-based rendering system
-
-  - file: ascii-system-documentation.md
-    topics: [ASCII system, implementation, architecture, rendering pipeline]
-    summary: Detailed documentation of the ASCII rendering system implementation
+ai_interface:
+  file: ai-interface.md
+  topics: [AI, automation, testing, programmatic control, agent interface]
+  summary: Documentation for the AI interface system that enables programmatic game control
 
 performance:
   - file: PERFORMANCE.md
@@ -119,6 +115,10 @@ development:
   - file: validation-report.md
     topics: [validation, testing, quality assurance, test results]
     summary: Validation and testing report for the game systems
+
+  - file: utilities-reference.md
+    topics: [utilities, DRY, code reuse, dice roller, entity utils, saving throws]
+    summary: Reference documentation for core utility classes (DiceRoller, EntityUtils, SavingThrowCalculator)
 
 # API Documentation Root
 api_root:
@@ -396,7 +396,7 @@ api_variables:
 
 # Search hints for common queries
 search_hints:
-  rendering: [ASCII_RENDERING_GUIDE.md, ascii-system-documentation.md, api/classes/RenderManager.md, api/classes/DungeonView.md]
+  rendering: [api/classes/RenderManager.md, api/classes/DungeonView.md, api/classes/StatusPanel.md]
   performance: [PERFORMANCE.md, performance-metrics-guide.md, api/classes/RenderingOptimizer.md]
   items: [wizardry-item-system.md, wizardry_gaiden_4_items_*.md, api/interfaces/Item.md, api/classes/InventorySystem.md]
   architecture: [ARCHITECTURE.md, API_REFERENCE.md, api/classes/Game.md]
@@ -411,3 +411,6 @@ search_hints:
   save_load: [api/classes/SaveManager.md, api/interfaces/GameState.md, api/interfaces/ISaveService.md, src/types/SaveGameTypes.ts]
   wgiv: [wizardry_gaiden_4_character_parameters.md, wizardry_gaiden_4_experience.md, wizardry_gaiden_4_spells.md, src/config/races/, src/config/classes/]
   progression: [wizardry_gaiden_4_experience.md, wizardry_gaiden_4_spell_learning.md, src/config/progression/]
+  utilities: [utilities-reference.md, src/utils/DiceRoller.ts, src/utils/EntityUtils.ts, src/utils/SavingThrowCalculator.ts]
+  magic: [wizardry_gaiden_4_spells.md, src/systems/magic/, src/data/spells/]
+  ai_testing: [ai-interface.md, src/core/AIInterface.ts]

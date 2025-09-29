@@ -79,12 +79,19 @@ export class InventorySystem {
       item = itemOrId;
     }
 
+    // Only stack identified consumables with the same ID
     const existingItem = character.inventory.find(
-      (i) => i.id === item.id && i.type === 'consumable'
+      (i) =>
+        i.id === item.id &&
+        i.type === 'consumable' &&
+        i.identified === true &&
+        item.identified === true
     );
-    if (existingItem && item.type === 'consumable') {
+
+    if (existingItem && item.type === 'consumable' && item.identified) {
       existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1);
     } else {
+      // For unidentified items or non-consumables, always add as a new inventory slot
       character.inventory.push(item);
     }
 

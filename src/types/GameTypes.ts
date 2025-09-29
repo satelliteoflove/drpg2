@@ -120,6 +120,8 @@ export interface Monster {
   name: string;
   hp: number;
   maxHp: number;
+  currentHp?: number;
+  isDead?: boolean;
   ac: number;
   attacks: Attack[];
   experience: number;
@@ -128,6 +130,10 @@ export interface Monster {
   lootDrops?: LootDrop[]; // New loot system (takes precedence if present)
   resistances: string[];
   weaknesses: string[];
+  magicResistance?: number;
+  resistance?: number;
+  level?: number;
+  monsterType?: string;
   sprite?: string;
 }
 
@@ -155,7 +161,7 @@ export interface LootDrop {
 export interface DungeonTile {
   x: number;
   y: number;
-  type: 'wall' | 'floor' | 'door' | 'stairs_up' | 'stairs_down' | 'chest' | 'trap' | 'event';
+  type: 'wall' | 'floor' | 'door' | 'stairs_up' | 'stairs_down' | 'chest' | 'trap' | 'event' | 'solid' | 'corridor';
   discovered: boolean;
   hasMonster: boolean;
   hasItem: boolean;
@@ -163,6 +169,20 @@ export interface DungeonTile {
   southWall: boolean;
   eastWall: boolean;
   westWall: boolean;
+  properties?: {
+    locked?: boolean;
+    opened?: boolean;
+    items?: Item[];
+    gold?: number;
+    trapType?: string;
+    damage?: number;
+    oneTime?: boolean;
+    eventType?: string;
+    message?: string;
+    targetX?: number;
+    targetY?: number;
+    monsters?: any[];
+  };
 }
 
 export interface DungeonLevel {
@@ -174,6 +194,11 @@ export interface DungeonLevel {
   events: DungeonEvent[];
   startX: number;
   startY: number;
+  stairsUp?: { x: number; y: number };
+  stairsDown?: { x: number; y: number };
+  properties?: {
+    isCastle?: boolean;
+  };
 }
 
 export interface OverrideZone {
@@ -224,7 +249,7 @@ export interface IParty {
 }
 
 export type Formation = 'front' | 'back';
-export type Direction = 'north' | 'south' | 'east' | 'west';
+export type Direction = 'north' | 'south' | 'east' | 'west' | 'forward' | 'backward' | 'left' | 'right';
 
 export interface GameState {
   party: any; // Using any here because Party class has methods that IParty interface doesn't
@@ -244,6 +269,11 @@ export interface GameState {
     monsterGroups?: string[];
   };
   pendingLoot?: Item[]; // Items waiting to be distributed after combat
+  combatContext?: {
+    monsters: any[];
+    floor: number;
+    surprised: boolean;
+  };
 }
 
 export interface Encounter {
