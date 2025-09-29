@@ -15,7 +15,7 @@ export interface SpellTargetState {
 
 export class SpellTargetSelector {
   private state: SpellTargetState;
-  private onTargetSelected?: (targetIndex: number | null) => void;
+  private onTargetSelected?: (target: Character | Monster | null) => void;
   private onCancel?: () => void;
 
   constructor() {
@@ -33,7 +33,7 @@ export class SpellTargetSelector {
     spell: SpellData,
     enemies: Monster[],
     party: Character[],
-    onTargetSelected: (targetIndex: number | null) => void,
+    onTargetSelected: (target: Character | Monster | null) => void,
     onCancel: () => void
   ): void {
     this.state.spell = spell;
@@ -131,7 +131,8 @@ export class SpellTargetSelector {
 
   private confirmTarget(): void {
     if (this.state.validTargets.length > 0) {
-      this.onTargetSelected?.(this.state.selectedTargetIndex);
+      const selectedTarget = this.state.validTargets[this.state.selectedTargetIndex];
+      this.onTargetSelected?.(selectedTarget);
       this.reset();
     }
   }

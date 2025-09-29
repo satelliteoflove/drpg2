@@ -573,8 +573,8 @@ export class CombatScene extends Scene {
       spell,
       encounter.monsters,
       this.gameState.party.getAliveCharacters(),
-      (targetIndex: number | null) => {
-        this.executeSpellWithTarget(spellId, targetIndex);
+      (target: Character | Monster | null) => {
+        this.executeSpellWithTarget(spellId, target);
       },
       () => {
         this.actionState = 'select_action';
@@ -587,12 +587,12 @@ export class CombatScene extends Scene {
     }
   }
 
-  private executeSpellWithTarget(spellId: string, targetIndex: number | null): void {
-    this.executeAction('Cast Spell', targetIndex ?? undefined, spellId);
+  private executeSpellWithTarget(spellId: string, target: Character | Monster | null): void {
+    this.executeAction('Cast Spell', undefined, spellId, target ?? undefined);
     this.pendingSpellId = null;
   }
 
-  private executeAction(action: string, targetIndex?: number, spellId?: string): void {
+  private executeAction(action: string, targetIndex?: number, spellId?: string, target?: Character | Monster): void {
     const now = Date.now();
 
     // Debounce rapid input - ignore if pressed too quickly
@@ -616,7 +616,7 @@ export class CombatScene extends Scene {
       result = this.combatSystem.executePlayerAction(action, targetIndex ?? this.selectedTarget);
     } else if (action === 'Cast Spell') {
       const spellToUse = this.pendingSpellId || spellId;
-      result = this.combatSystem.executePlayerAction(action, targetIndex ?? this.selectedTarget, spellToUse);
+      result = this.combatSystem.executePlayerAction(action, targetIndex ?? this.selectedTarget, spellToUse, target);
       this.pendingSpellId = null;
     } else {
       result = this.combatSystem.executePlayerAction(action);
