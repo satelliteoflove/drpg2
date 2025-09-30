@@ -69,16 +69,17 @@ nodes:
     downstream: ["create-temple-state-manager"]
 
   - id: "create-temple-state-manager"
-    status: "Ready"
-    materialization: 0.0
+    status: "Complete"
+    materialization: 1.0
     description: "Create Temple state management system"
     detailed_description: |
-      Create src/systems/temple/TempleStateManager.ts:
-      - Track current Temple state and selected character
-      - Available services based on character status
-      - Service eligibility checking (can't resurrect living, etc.)
-      - Service cost calculation
-      - Similar structure to InnStateManager
+      Created src/systems/temple/TempleStateManager.ts with:
+      - State tracking (main, selectService, selectCharacter, confirmService, serviceResult)
+      - Service eligibility checking based on character status
+      - Gold affordability validation
+      - Character filtering for services
+      - Service descriptions with cost and eligibility info
+      - TypeScript strict mode compliance
     outputs: ["src/systems/temple/TempleStateManager.ts"]
     agent_action: "Implement state manager"
     role: "agent"
