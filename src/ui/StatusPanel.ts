@@ -123,6 +123,15 @@ export class StatusPanel {
 
     this.currentRenderCtx.fillStyle = '#ffaa00';
     this.currentRenderCtx.fillRect(x + 5, xpBarY, xpBarWidth * xpProgress, 6);
+
+    // Show "LEVEL UP!" indicator if pending
+    if (char.pendingLevelUp) {
+      this.currentRenderCtx.fillStyle = '#ffaa00';
+      this.currentRenderCtx.font = 'bold 10px monospace';
+      this.currentRenderCtx.textAlign = 'center';
+      this.currentRenderCtx.fillText('LEVEL UP!', x + width / 2, xpBarY + 16);
+      this.currentRenderCtx.textAlign = 'left';
+    }
   }
 
   public renderCombatStatus(

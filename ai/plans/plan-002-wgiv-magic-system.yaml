@@ -122,14 +122,16 @@ nodes:
     materialization: 1.0
     description: "Phase 1: Implement damage and healing spell effects"
     detailed_description: |
-      Create the effect processors for basic damage and healing spells.
-      - Implement damage calculation with elemental types
-      - Create healing effect processor
-      - Add group vs single target handling
-      - Implement spell resistance checks for damage
-      - Create combat integration for spell effects
-      - Add out-of-combat healing functionality
-      - Update HP/damage display in combat
+      COMPLETED - All damage and healing spells are now fully functional.
+      - ✅ Implemented damage calculation with elemental types
+      - ✅ Created healing effect processor with proper target selection
+      - ✅ Added group vs single target handling
+      - ✅ Implemented spell resistance checks for damage
+      - ✅ Created combat integration for spell effects
+      - ✅ Fixed monster HP tracking (removed redundant currentHp)
+      - ✅ Fixed spell target validation (uses entity instead of ID)
+      - ✅ Fixed heal spell targeting (passes entities directly)
+      - ✅ Updated HP/damage display in combat
     outputs:
       - "src/systems/magic/effects/DamageEffect.ts"
       - "src/systems/magic/effects/HealingEffect.ts"
@@ -143,15 +145,17 @@ nodes:
     materialization: 1.0
     description: "Create spell casting UI for combat"
     detailed_description: |
-      Build the user interface for casting spells in combat.
-      - Add "Cast Spell" option to combat menu
-      - Create spell selection menu organized by level
-      - Implement target selection for spells
-      - Show MP costs and current MP in UI
-      - Add spell descriptions on hover/select
-      - Create spell casting feedback messages
-      - Handle invalid spell selections gracefully
-      - Extend AI Interface with spell menu navigation methods
+      COMPLETED - Full spell casting UI integrated into combat.
+      - ✅ Added "Cast Spell" option to combat menu
+      - ✅ Created spell selection menu organized by level
+      - ✅ Implemented target selection for all spell types
+      - ✅ Shows MP costs and current MP in UI
+      - ✅ Displays spell names and levels clearly
+      - ✅ Creates spell casting feedback messages
+      - ✅ Handles invalid spell selections gracefully
+      - ✅ Fixed UI layout to match dungeon exploration design
+      - ✅ Fixed target selector positioning (centered and aligned)
+      - ✅ Extended AI Interface with spell menu navigation methods
     outputs:
       - "src/ui/SpellMenu.ts"
       - "src/ui/SpellTargetSelector.ts"
@@ -162,8 +166,8 @@ nodes:
     downstream: ["spell-testing-phase1"]
 
   - id: "spell-testing-phase1"
-    status: "Ready"
-    materialization: 0.8
+    status: "In Progress"
+    materialization: 0.9
     description: "Test Phase 1 spell implementation"
     detailed_description: |
       Create comprehensive tests for damage/healing spells using AI Interface.
