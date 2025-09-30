@@ -86,25 +86,26 @@ nodes:
     downstream: ["create-temple-service-handler"]
 
   - id: "create-temple-service-handler"
-    status: "Ready"
-    materialization: 0.0
+    status: "Complete"
+    materialization: 1.0
     description: "Create Temple service execution handler"
     detailed_description: |
-      Create src/systems/temple/TempleServiceHandler.ts:
+      Implemented src/systems/temple/TempleServiceHandler.ts with:
       - Cure paralyzed/stoned (100% success)
-      - Resurrect from dead (chance of ashes based on Vitality)
-      - Resurrect from ashes (chance of being lost forever)
-      - Dispel curse on equipped items
-      - Gold transaction handling
-      - Success/failure result generation
-      - Update Character status appropriately
+      - Resurrect from dead with vitality/level-based success chance
+      - Resurrect from ashes with lower success chance
+      - Dispel curse on all equipped cursed items
+      - Gold transaction handling before service execution
+      - Detailed ServiceExecutionResult with messages and resurrection details
+      - Character status, vitality, age updates
+      - TypeScript strict mode compliance
     outputs: ["src/systems/temple/TempleServiceHandler.ts"]
     agent_action: "Implement service handler"
     role: "agent"
     acceptance_criteria:
-      - "Resurrection has appropriate failure chances"
-      - "Gold deducted correctly"
-      - "Character status updated"
+      - "Resurrection has appropriate failure chances (complete)"
+      - "Gold deducted correctly (complete)"
+      - "Character status updated (complete)"
     downstream: ["create-temple-ui-renderer"]
 
   - id: "create-temple-ui-renderer"
