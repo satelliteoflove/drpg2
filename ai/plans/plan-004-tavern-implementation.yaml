@@ -1,0 +1,279 @@
+version: "0.1"
+plan_id: "tavern-implementation-004"
+project_name: "Wizardry Gaiden IV Tavern Implementation"
+agent_profile: "ai-coding-agent-v1"
+entry_node: "analyze-tavern-requirements"
+
+context:
+  business_goal: "Implement Tavern for party management following WGIV mechanics"
+  non_functional_requirements:
+    - "Maintain TypeScript strict mode compliance"
+    - "Use existing UI patterns from Inn and Dungeon scenes"
+    - "Use key binding system for all inputs"
+    - "Use constants for all UI positioning and values"
+    - "Support character roster management"
+  personas:
+    - name: "Player"
+      need: "Manage party composition and character roster"
+    - name: "Developer"
+      need: "Clean party management system with consistent UI patterns"
+
+architecture:
+  overview: "Tavern scene for party member management based on WGIV's simplified mechanics"
+  constraints:
+    - "Focus on core party management only (no rumors/hints in WGIV)"
+    - "Maximum 6 party members active"
+    - "Support character roster storage"
+    - "No gold costs for party management"
+    - "Use existing three-panel UI layout pattern"
+  integration_points:
+    - "Town scene navigation"
+    - "Party system"
+    - "Character roster system"
+    - "Save system"
+    - "Key binding system"
+    - "UI component patterns"
+
+nodes:
+  - id: "analyze-tavern-requirements"
+    status: "Ready"
+    materialization: 0.0
+    description: "Document Tavern requirements from WGIV"
+    detailed_description: |
+      Based on research, WGIV Tavern (Benten Bar) mechanics:
+      - Add characters to party (from roster)
+      - Remove characters from party (to roster)
+      - Reorder party members
+      - Inspect character details
+      - Maximum 6 active party members
+      - Unlimited roster storage
+      - No gold costs
+      - No rumors/hints system (unlike earlier Wizardry games)
+    outputs: ["docs/tavern-requirements.md"]
+    agent_action: "Document requirements"
+    role: "agent"
+    downstream: ["create-tavern-types", "create-tavern-constants"]
+
+  - id: "create-tavern-constants"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create constants file for Tavern"
+    detailed_description: |
+      Create src/config/TavernConstants.ts:
+      - UI panel positions (matching Inn/Dungeon layout):
+        - LEFT_PANEL_X = 10, LEFT_PANEL_Y = 80
+        - LEFT_PANEL_WIDTH = 240, LEFT_PANEL_HEIGHT = 480
+        - CENTER_PANEL_X = 260, CENTER_PANEL_Y = 80
+        - CENTER_PANEL_WIDTH = 500, CENTER_PANEL_HEIGHT = 400
+        - RIGHT_PANEL_X = 770, RIGHT_PANEL_Y = 80
+        - RIGHT_PANEL_WIDTH = 240, RIGHT_PANEL_HEIGHT = 300
+      - Party limits: MAX_PARTY_SIZE = 6
+      - Colors and spacing from GameConstants
+      - Menu option constants
+    outputs: ["src/config/TavernConstants.ts"]
+    agent_action: "Create constants file"
+    role: "agent"
+    downstream: ["create-tavern-types"]
+
+  - id: "create-tavern-types"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create TypeScript types for Tavern"
+    detailed_description: |
+      Create types in src/types/TavernTypes.ts:
+      - TavernState type (main, roster, addCharacter, removeCharacter, reorderParty, inspectCharacter)
+      - RosterCharacter interface (stored character data)
+      - PartyOperation enum (add, remove, reorder, inspect)
+      - TavernMenuOption type
+    outputs: ["src/types/TavernTypes.ts"]
+    agent_action: "Create type definitions"
+    role: "agent"
+    downstream: ["create-roster-system"]
+
+  - id: "create-roster-system"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create character roster management system"
+    detailed_description: |
+      Create src/systems/RosterManager.ts:
+      - Store inactive characters
+      - Add/remove from roster
+      - Persist roster in save game
+      - Character data serialization
+      - Roster capacity management
+      - Search/filter roster (by name, class, level)
+    outputs: ["src/systems/RosterManager.ts"]
+    agent_action: "Implement roster manager"
+    role: "agent"
+    downstream: ["create-tavern-state-manager"]
+
+  - id: "create-tavern-state-manager"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create Tavern state management"
+    detailed_description: |
+      Create src/systems/tavern/TavernStateManager.ts:
+      - Track current state and selections
+      - Manage party/roster operations
+      - Validate party size limits (use MAX_PARTY_SIZE constant)
+      - Handle character transfers
+      - Track UI navigation state
+      - Follow pattern from InnStateManager
+    outputs: ["src/systems/tavern/TavernStateManager.ts"]
+    agent_action: "Implement state manager"
+    role: "agent"
+    downstream: ["create-party-operations-handler"]
+
+  - id: "create-party-operations-handler"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create party operations handler"
+    detailed_description: |
+      Create src/systems/tavern/PartyOperationsHandler.ts:
+      - Add character from roster to party
+      - Remove character from party to roster
+      - Reorder party members
+      - Swap party positions
+      - Validate party composition (use constants)
+      - Update party formation
+      - Follow pattern from InnTransactionHandler
+    outputs: ["src/systems/tavern/PartyOperationsHandler.ts"]
+    agent_action: "Implement operations handler"
+    role: "agent"
+    acceptance_criteria:
+      - "Party size limits enforced"
+      - "Character data preserved"
+      - "Reordering works correctly"
+    downstream: ["create-tavern-ui-renderer"]
+
+  - id: "create-tavern-ui-renderer"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create Tavern UI renderer"
+    detailed_description: |
+      Create src/systems/tavern/TavernUIRenderer.ts:
+      - Use exact three-panel layout from InnUIRenderer:
+        - Left panel (10, 80, 240×480): Current party with status
+        - Center panel (260, 80, 500×400): Main content area
+        - Right panel (770, 80, 240×300): Action menu
+      - Import and use TavernConstants for all positions
+      - Follow StatusPanel pattern for character display
+      - Visual indicators for empty slots
+      - Character summary info (name, class, level, HP)
+      - Reorder mode visualization
+      - Use existing color constants from GameConstants
+    outputs: ["src/systems/tavern/TavernUIRenderer.ts"]
+    agent_action: "Implement UI renderer"
+    role: "agent"
+    downstream: ["create-tavern-input-handler"]
+
+  - id: "create-tavern-input-handler"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create Tavern input handler"
+    detailed_description: |
+      Create src/systems/tavern/TavernInputHandler.ts:
+      - Extend or use MenuInputHandler pattern
+      - Use KEY_BINDINGS for all inputs:
+        - Menu navigation (KEY_BINDINGS.menu)
+        - Confirm/cancel (KEY_BINDINGS.combat.confirm/cancel)
+        - Escape (KEY_BINDINGS.ui.close)
+        - Number keys for character selection (1-6)
+      - No hardcoded keys - all through key binding system
+      - Follow InnInputHandler pattern for state-based input
+      - Add key bindings to KeyBindings.json if needed
+    outputs: ["src/systems/tavern/TavernInputHandler.ts"]
+    agent_action: "Implement input handler"
+    role: "agent"
+    downstream: ["update-key-bindings"]
+
+  - id: "update-key-bindings"
+    status: "Ready"
+    materialization: 0.0
+    description: "Update key bindings for Tavern actions"
+    detailed_description: |
+      Update src/config/KeyBindings.json:
+      - Add tavern section if needed:
+        - addCharacter: 'a'
+        - removeCharacter: 'r'
+        - reorderParty: 'o'
+        - inspectCharacter: 'i'
+      - Update KeyBindings.ts interface to include tavern
+      - Add helper method to KeyBindingHelper if needed
+    outputs: ["src/config/KeyBindings.json", "src/config/KeyBindings.ts"]
+    agent_action: "Update key bindings"
+    role: "agent"
+    downstream: ["create-tavern-scene"]
+
+  - id: "create-tavern-scene"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create main Tavern scene"
+    detailed_description: |
+      Create src/scenes/TavernScene.ts:
+      - Follow InnScene structure exactly
+      - Integrate all Tavern components
+      - Initialize with party and roster data
+      - Use SceneManager for transitions
+      - Message log integration (same pattern as Inn)
+      - Auto-save after changes
+      - ASCII layer support following Inn pattern
+    outputs: ["src/scenes/TavernScene.ts", "src/rendering/ascii/TavernASCII.ts"]
+    agent_action: "Implement Tavern scene"
+    role: "agent"
+    downstream: ["update-save-system-roster"]
+
+  - id: "update-save-system-roster"
+    status: "Ready"
+    materialization: 0.0
+    description: "Update save system for roster support"
+    detailed_description: |
+      Update src/utils/SaveManager.ts:
+      - Add roster array to save game structure
+      - Serialize/deserialize roster characters
+      - Version bump to 0.0.4
+      Update src/types/SaveGameTypes.ts:
+      - Add roster property
+    outputs: ["src/utils/SaveManager.ts", "src/types/SaveGameTypes.ts"]
+    agent_action: "Update save system"
+    role: "agent"
+    downstream: ["integrate-tavern-with-town"]
+
+  - id: "integrate-tavern-with-town"
+    status: "Ready"
+    materialization: 0.0
+    description: "Add Tavern to Town scene"
+    detailed_description: |
+      Update src/scenes/TownScene.ts:
+      - Add Tavern menu option (following Inn pattern)
+      - Scene transition to TavernScene
+      Update src/core/Game.ts:
+      - Register TavernScene
+      - Initialize RosterManager service
+    outputs: ["src/scenes/TownScene.ts", "src/core/Game.ts"]
+    agent_action: "Integrate Tavern"
+    role: "agent"
+    downstream: ["test-tavern-functionality"]
+
+  - id: "test-tavern-functionality"
+    status: "Ready"
+    materialization: 0.0
+    description: "Test Tavern functionality"
+    detailed_description: |
+      Test all Tavern features:
+      - Add/remove party members
+      - Reorder party
+      - Roster storage
+      - Save/load with roster
+      - Party size limits (MAX_PARTY_SIZE)
+      - UI navigation with key bindings
+      - Character inspection
+      - Three-panel layout matches Inn/Dungeon
+    outputs: ["test results"]
+    agent_action: "Manual testing via AI interface"
+    role: "agent"
+    acceptance_criteria:
+      - "Party management works"
+      - "Roster persists in saves"
+      - "UI displays correctly"
+      - "Key bindings function properly"

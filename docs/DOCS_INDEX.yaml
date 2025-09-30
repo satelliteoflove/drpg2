@@ -81,6 +81,10 @@ wizardry_gaiden_4_systems:
     topics: [spells, magic system, mage, priest, alchemist, psionic, wizardry gaiden]
     summary: Complete spell system including all four magic schools in Wizardry Gaiden IV
 
+  - file: temple-requirements.md
+    topics: [temple, services, resurrection, healing, status effects, cure, dispel curse, wizardry gaiden]
+    summary: Temple of Cant service requirements with resurrection mechanics, costs, and formulas for WGIV
+
 wgiv_implementation:
   - folder: src/config/races/
     topics: [race configuration, stat ranges, race bonuses, character creation]

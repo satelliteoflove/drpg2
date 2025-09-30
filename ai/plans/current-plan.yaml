@@ -1,1 +1,192 @@
-plan-001-wgiv-character-system.yaml
+version: "0.1"
+plan_id: "temple-implementation-002"
+project_name: "Wizardry Gaiden IV Temple Implementation"
+agent_profile: "ai-coding-agent-v1"
+entry_node: "analyze-temple-requirements"
+
+context:
+  business_goal: "Implement Temple services with authentic Wizardry Gaiden IV mechanics"
+  non_functional_requirements:
+    - "Maintain TypeScript strict mode compliance"
+    - "Use existing UI patterns from Inn and Shop scenes"
+    - "Integrate with existing Character status system"
+    - "Handle gold transactions consistently"
+  personas:
+    - name: "Player"
+      need: "Access to character healing and resurrection services"
+    - name: "Developer"
+      need: "Clean integration with existing town services architecture"
+
+architecture:
+  overview: "Temple scene providing status healing and resurrection services based on WGIV mechanics"
+  constraints:
+    - "Only implement services that exist in WGIV (no HP healing)"
+    - "Use existing UI component patterns"
+    - "Maintain save game compatibility"
+  integration_points:
+    - "Town scene navigation"
+    - "Character status system"
+    - "Gold transaction system"
+    - "Message log system"
+
+nodes:
+  - id: "analyze-temple-requirements"
+    status: "Complete"
+    materialization: 1.0
+    description: "Document Temple service requirements from WGIV"
+    detailed_description: |
+      Based on research, WGIV Temple services include:
+      - Cure Paralyzed (300g)
+      - Cure Stoned (300g)
+      - Resurrect from Dead (cost TBD - estimate 500g)
+      - Resurrect from Ashes (cost TBD - estimate 1000g)
+      - Dispel Curse (cost TBD - estimate 250g per item)
+
+      NOT included (per WGIV):
+      - HP restoration (Inn only)
+      - Poison cure (auto-cures on dungeon exit)
+      - MP restoration (Inn only)
+
+      Note: Resurrection can fail and turn dead to ashes
+    outputs: ["docs/temple-requirements.md"]
+    agent_action: "Document requirements"
+    role: "agent"
+    downstream: ["create-temple-types"]
+
+  - id: "create-temple-types"
+    status: "Complete"
+    materialization: 1.0
+    description: "Create TypeScript types for Temple services"
+    detailed_description: |
+      Create types in src/types/TempleTypes.ts:
+      - TempleService enum (cure_paralyzed, cure_stoned, resurrect_dead, resurrect_ashes, dispel_curse)
+      - TempleState type (main, selectCharacter, selectService, confirmService, serviceResult)
+      - ServiceCost interface with gold amounts
+      - ResurrectionResult type (success, turned_to_ashes, lost)
+    outputs: ["src/types/TempleTypes.ts"]
+    agent_action: "Create type definitions"
+    role: "agent"
+    downstream: ["create-temple-state-manager"]
+
+  - id: "create-temple-state-manager"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create Temple state management system"
+    detailed_description: |
+      Create src/systems/temple/TempleStateManager.ts:
+      - Track current Temple state and selected character
+      - Available services based on character status
+      - Service eligibility checking (can't resurrect living, etc.)
+      - Service cost calculation
+      - Similar structure to InnStateManager
+    outputs: ["src/systems/temple/TempleStateManager.ts"]
+    agent_action: "Implement state manager"
+    role: "agent"
+    downstream: ["create-temple-service-handler"]
+
+  - id: "create-temple-service-handler"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create Temple service execution handler"
+    detailed_description: |
+      Create src/systems/temple/TempleServiceHandler.ts:
+      - Cure paralyzed/stoned (100% success)
+      - Resurrect from dead (chance of ashes based on Vitality)
+      - Resurrect from ashes (chance of being lost forever)
+      - Dispel curse on equipped items
+      - Gold transaction handling
+      - Success/failure result generation
+      - Update Character status appropriately
+    outputs: ["src/systems/temple/TempleServiceHandler.ts"]
+    agent_action: "Implement service handler"
+    role: "agent"
+    acceptance_criteria:
+      - "Resurrection has appropriate failure chances"
+      - "Gold deducted correctly"
+      - "Character status updated"
+    downstream: ["create-temple-ui-renderer"]
+
+  - id: "create-temple-ui-renderer"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create Temple UI renderer"
+    detailed_description: |
+      Create src/systems/temple/TempleUIRenderer.ts:
+      - Use three-panel layout from Inn/Dungeon
+      - Left panel: Party status with conditions highlighted
+      - Center panel: Temple services menu and messages
+      - Right panel: Service costs and available gold
+      - Show only relevant services (e.g., resurrect only for dead)
+      - Service result messages (success/failure)
+    outputs: ["src/systems/temple/TempleUIRenderer.ts"]
+    agent_action: "Implement UI renderer"
+    role: "agent"
+    downstream: ["create-temple-input-handler"]
+
+  - id: "create-temple-input-handler"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create Temple input handler"
+    detailed_description: |
+      Create src/systems/temple/TempleInputHandler.ts:
+      - Navigate service menu with arrow keys
+      - Character selection for services
+      - Service confirmation prompts
+      - Escape to return to Town
+      - Number keys for quick character selection
+    outputs: ["src/systems/temple/TempleInputHandler.ts"]
+    agent_action: "Implement input handler"
+    role: "agent"
+    downstream: ["create-temple-scene"]
+
+  - id: "create-temple-scene"
+    status: "Ready"
+    materialization: 0.0
+    description: "Create main Temple scene"
+    detailed_description: |
+      Create src/scenes/TempleScene.ts:
+      - Integrate all Temple components
+      - Initialize with party data
+      - Handle scene transitions
+      - Message log integration
+      - Save after successful services
+      - ASCII layer support
+    outputs: ["src/scenes/TempleScene.ts", "src/rendering/ascii/TempleASCII.ts"]
+    agent_action: "Implement Temple scene"
+    role: "agent"
+    downstream: ["integrate-temple-with-town"]
+
+  - id: "integrate-temple-with-town"
+    status: "Ready"
+    materialization: 0.0
+    description: "Add Temple to Town scene"
+    detailed_description: |
+      Update src/scenes/TownScene.ts:
+      - Add Temple menu option
+      - Scene transition to TempleScene
+      Update src/core/Game.ts:
+      - Register TempleScene
+    outputs: ["src/scenes/TownScene.ts", "src/core/Game.ts"]
+    agent_action: "Integrate Temple with Town"
+    role: "agent"
+    downstream: ["test-temple-services"]
+
+  - id: "test-temple-services"
+    status: "Ready"
+    materialization: 0.0
+    description: "Test Temple services"
+    detailed_description: |
+      Test all Temple functionality:
+      - Status curing works correctly
+      - Resurrection success/failure mechanics
+      - Gold transactions
+      - UI displays properly
+      - Scene transitions work
+      - Save game after services
+    outputs: ["test results"]
+    agent_action: "Manual testing via AI interface"
+    role: "agent"
+    acceptance_criteria:
+      - "All services function correctly"
+      - "Gold deducted properly"
+      - "UI displays as expected"
