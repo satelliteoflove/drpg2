@@ -1,15 +1,8 @@
 import { Character } from '../../entities/Character';
 import { GameState } from '../../types/GameTypes';
-import { TempleService, ResurrectionResult, ResurrectionOutcome } from '../../types/TempleTypes';
+import { TempleService, ResurrectionResult, ResurrectionOutcome, ServiceExecutionResult } from '../../types/TempleTypes';
 import { DiceRoller } from '../../utils/DiceRoller';
 import { GAME_CONFIG } from '../../config/GameConstants';
-
-export interface ServiceExecutionResult {
-  success: boolean;
-  message: string;
-  goldSpent: number;
-  resurrectionResult?: ResurrectionResult;
-}
 
 export class TempleServiceHandler {
   private gameState: GameState;

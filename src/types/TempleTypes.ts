@@ -38,12 +38,19 @@ export interface ServiceInfo {
   eligibilityCheck: (character: Character) => boolean;
 }
 
+export interface ServiceExecutionResult {
+  success: boolean;
+  message: string;
+  goldSpent: number;
+  resurrectionResult?: ResurrectionResult;
+}
+
 export interface TempleStateContext {
   currentState: TempleState;
   selectedOption: number;
   selectedService: TempleService | null;
   selectedCharacterIndex: number;
-  serviceResult: ResurrectionResult | null;
+  serviceResult: ServiceExecutionResult | null;
   message: string | null;
   confirmationPrompt: string | null;
 }

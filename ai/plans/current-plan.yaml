@@ -109,18 +109,24 @@ nodes:
     downstream: ["create-temple-ui-renderer"]
 
   - id: "create-temple-ui-renderer"
-    status: "Ready"
-    materialization: 0.0
+    status: "Complete"
+    materialization: 1.0
     description: "Create Temple UI renderer"
     detailed_description: |
-      Create src/systems/temple/TempleUIRenderer.ts:
-      - Use three-panel layout from Inn/Dungeon
-      - Left panel: Party status with conditions highlighted
-      - Center panel: Temple services menu and messages
-      - Right panel: Service costs and available gold
-      - Show only relevant services (e.g., resurrect only for dead)
-      - Service result messages (success/failure)
-    outputs: ["src/systems/temple/TempleUIRenderer.ts"]
+      Created src/systems/temple/TempleUIRenderer.ts with comprehensive three-panel layout:
+      - Left panel: StatusPanel (10, 80, 240, 480) for party status with condition highlighting
+      - Center panel: (260, 80, 500, 480) context-aware screens for all Temple states
+        * Welcome screen with service list and party needs
+        * Service selection with costs and affordability indicators
+        * Character selection with eligibility checking
+        * Service confirmation with warnings
+        * Service result display with resurrection outcomes
+      - Right panel: (770, 80, 240, 480) service info, controls, and party status summary
+      - Consolidated ServiceExecutionResult type to TempleTypes for consistency
+      - Color-coded status conditions and eligibility indicators
+      - Resurrection warnings for dangerous services
+      - TypeScript strict mode compliance
+    outputs: ["src/systems/temple/TempleUIRenderer.ts", "src/types/TempleTypes.ts (updated)"]
     agent_action: "Implement UI renderer"
     role: "agent"
     downstream: ["create-temple-input-handler"]
