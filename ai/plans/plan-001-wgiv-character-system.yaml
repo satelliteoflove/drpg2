@@ -1,4 +1,4 @@
-version: "0.5"
+version: "1.0"
 plan_id: "wgiv-character-system-001"
 project_name: "Wizardry Gaiden IV Character System Implementation"
 agent_profile: "ai-coding-agent-v1"
@@ -301,8 +301,8 @@ nodes:
     downstream: ["test-character-system"]
 
   - id: "update-game-constants"
-    status: "Ready"
-    materialization: 0.5
+    status: "Completed"
+    materialization: 1.0
     description: "Update game constants for WGIV"
     detailed_description: |
       Update src/config/GameConstants.ts:
@@ -317,8 +317,8 @@ nodes:
     downstream: ["test-character-system"]
 
   - id: "update-save-system"
-    status: "Ready"
-    materialization: 0.5
+    status: "Completed"
+    materialization: 1.0
     description: "Add versioning to save game system"
     detailed_description: |
       Update src/utils/SaveManager.ts:
@@ -335,8 +335,8 @@ nodes:
     downstream: ["test-character-system"]
 
   - id: "test-character-system"
-    status: "Ready"
-    materialization: 0.4
+    status: "Completed"
+    materialization: 1.0
     description: "Comprehensive testing of new character system"
     detailed_description: |
       Test the following:
@@ -374,8 +374,8 @@ nodes:
     downstream: ["create-pull-request"]
 
   - id: "create-pull-request"
-    status: "Blocked"
-    materialization: 0.3
+    status: "Completed"
+    materialization: 1.0
     description: "Create PR for WGIV character system"
     detailed_description: |
       Create pull request to merge feature/wgiv-character-system into dev:
