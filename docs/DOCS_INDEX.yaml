@@ -85,6 +85,10 @@ wizardry_gaiden_4_systems:
     topics: [temple, services, resurrection, healing, status effects, cure, dispel curse, wizardry gaiden]
     summary: Temple of Cant service requirements with resurrection mechanics, costs, and formulas for WGIV
 
+  - file: temple-mechanics.md
+    topics: [temple, gold pooling, level-based costs, payment system, resurrection, service mechanics, wizardry gaiden]
+    summary: Complete temple mechanics including level-based pricing, automatic gold pooling, and service implementation details
+
 wgiv_implementation:
   - folder: src/config/races/
     topics: [race configuration, stat ranges, race bonuses, character creation]
@@ -418,3 +422,4 @@ search_hints:
   utilities: [utilities-reference.md, src/utils/DiceRoller.ts, src/utils/EntityUtils.ts, src/utils/SavingThrowCalculator.ts]
   magic: [wizardry_gaiden_4_spells.md, src/systems/magic/, src/data/spells/]
   ai_testing: [ai-interface.md, src/core/AIInterface.ts]
+  temple: [temple-mechanics.md, temple-requirements.md, src/systems/temple/, src/scenes/TempleScene.ts]
