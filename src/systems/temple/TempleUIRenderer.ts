@@ -2,16 +2,19 @@ import { GameState } from '../../types/GameTypes';
 import { Character } from '../../entities/Character';
 import { StatusPanel } from '../../ui/StatusPanel';
 import { TempleStateContext, TempleService } from '../../types/TempleTypes';
+import { TempleStateManager } from './TempleStateManager';
 
 export class TempleUIRenderer {
   private gameState: GameState;
   private messageLog: any;
+  private stateManager: TempleStateManager;
   private statusPanel: StatusPanel | null = null;
   private canvas: HTMLCanvasElement | null = null;
 
-  constructor(gameState: GameState, messageLog: any) {
+  constructor(gameState: GameState, messageLog: any, stateManager: TempleStateManager) {
     this.gameState = gameState;
     this.messageLog = messageLog;
+    this.stateManager = stateManager;
   }
 
   public render(ctx: CanvasRenderingContext2D, stateContext: TempleStateContext): void {
@@ -49,7 +52,7 @@ export class TempleUIRenderer {
     ctx.textAlign = 'center';
     ctx.fillText('TEMPLE OF DIVINE RESTORATION', ctx.canvas.width / 2, 45);
 
-    const partyGold = this.gameState.party.gold || 0;
+    const partyGold = this.gameState.party.characters?.reduce((sum: number, char: Character) => sum + char.gold, 0) || 0;
 
     ctx.fillStyle = '#ffa500';
     ctx.font = '14px monospace';
@@ -74,6 +77,9 @@ export class TempleUIRenderer {
         break;
       case 'selectCharacter':
         this.renderCharacterSelection(ctx, mainX, mainY, mainWidth, mainHeight, stateContext);
+        break;
+      case 'selectPayer':
+        this.renderPayerSelection(ctx, mainX, mainY, mainWidth, mainHeight, stateContext);
         break;
       case 'confirmService':
         this.renderConfirmation(ctx, mainX, mainY, mainWidth, mainHeight, stateContext);
@@ -101,15 +107,16 @@ export class TempleUIRenderer {
     ctx.fillStyle = '#fff';
     ctx.font = '14px monospace';
     const services = [
-      'Cure Paralysis - 300g',
-      'Cure Petrification - 300g',
-      'Resurrect from Dead - 500g',
-      'Resurrect from Ashes - 1000g',
-      'Dispel Curse - 250g'
+      { name: 'Cure Paralysis', service: 'cure_paralyzed' as TempleService },
+      { name: 'Cure Petrification', service: 'cure_stoned' as TempleService },
+      { name: 'Resurrect from Dead', service: 'resurrect_dead' as TempleService },
+      { name: 'Resurrect from Ashes', service: 'resurrect_ashes' as TempleService },
+      { name: 'Dispel Curse', service: 'dispel_curse' as TempleService }
     ];
 
     services.forEach((service, index) => {
-      ctx.fillText(`• ${service}`, x + width / 2, y + 175 + index * 30);
+      const baseCost = this.stateManager.getBaseCost(service.service);
+      ctx.fillText(`• ${service.name} - ${baseCost}g × Level`, x + width / 2, y + 175 + index * 30);
     });
 
     const charactersNeedingService = (this.gameState.party.characters || []).filter(
@@ -139,12 +146,12 @@ export class TempleUIRenderer {
     ctx.fillStyle = '#aaa';
     ctx.fillText('Choose the divine service you seek', x + width / 2, y + 70);
 
-    const services: Array<{service: TempleService, name: string, cost: number}> = [
-      { service: 'cure_paralyzed', name: 'Cure Paralysis', cost: 300 },
-      { service: 'cure_stoned', name: 'Cure Petrification', cost: 300 },
-      { service: 'resurrect_dead', name: 'Resurrect from Dead', cost: 500 },
-      { service: 'resurrect_ashes', name: 'Resurrect from Ashes', cost: 1000 },
-      { service: 'dispel_curse', name: 'Dispel Curse', cost: 250 }
+    const services: Array<{service: TempleService, name: string}> = [
+      { service: 'cure_paralyzed', name: 'Cure Paralysis' },
+      { service: 'cure_stoned', name: 'Cure Petrification' },
+      { service: 'resurrect_dead', name: 'Resurrect from Dead' },
+      { service: 'resurrect_ashes', name: 'Resurrect from Ashes' },
+      { service: 'dispel_curse', name: 'Dispel Curse' }
     ];
 
     ctx.textAlign = 'left';
@@ -152,23 +159,27 @@ export class TempleUIRenderer {
 
     services.forEach((service, index) => {
       const isSelected = index === stateContext.selectedOption;
-      const canAfford = this.gameState.party.gold >= service.cost;
+      const baseCost = this.stateManager.getBaseCost(service.service);
+      const eligibleCharacters = this.stateManager.getCharactersNeedingService(service.service);
+      const hasEligible = eligibleCharacters.length > 0;
 
       if (isSelected) {
         ctx.fillStyle = '#333';
         ctx.fillRect(x + 40, yPos - 15, width - 80, 30);
       }
 
-      ctx.fillStyle = !canAfford ? '#666' : isSelected ? '#ffa500' : '#fff';
+      ctx.fillStyle = !hasEligible ? '#666' : isSelected ? '#ffa500' : '#fff';
       ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
-      ctx.fillText(`${service.name} - ${service.cost}g`, x + 60, yPos);
+      ctx.fillText(`${service.name} - ${baseCost}g × Level`, x + 60, yPos);
 
-      if (!canAfford) {
+      if (!hasEligible) {
         ctx.font = '12px monospace';
-        ctx.fillStyle = '#a44';
-        ctx.textAlign = 'right';
-        ctx.fillText('(Insufficient gold)', x + width - 60, yPos);
-        ctx.textAlign = 'left';
+        ctx.fillStyle = '#666';
+        ctx.fillText('(No one needs this)', x + 350, yPos);
+      } else {
+        ctx.font = '12px monospace';
+        ctx.fillStyle = '#4a4';
+        ctx.fillText(`(${eligibleCharacters.length} need${eligibleCharacters.length === 1 ? 's' : ''})`, x + 350, yPos);
       }
 
       yPos += 45;
@@ -195,7 +206,64 @@ export class TempleUIRenderer {
     ctx.fillStyle = '#aaa';
     ctx.fillText(`For: ${serviceNames[stateContext.selectedService]}`, x + width / 2, y + 70);
 
+    const eligibleCharacters = this.stateManager.getCharactersNeedingService(stateContext.selectedService);
+
+    if (eligibleCharacters.length === 0) {
+      ctx.fillStyle = '#666';
+      ctx.fillText('No characters need this service', x + width / 2, y + 150);
+      return;
+    }
+
+    ctx.textAlign = 'left';
+    let yPos = y + 110;
+
+    eligibleCharacters.forEach((char: Character, index: number) => {
+      const isSelected = index === stateContext.selectedOption;
+      const cost = this.stateManager.getServiceCost(stateContext.selectedService!, char);
+      const canAfford = this.stateManager.canPartyAffordService(stateContext.selectedService!, char);
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 40, yPos - 15, width - 80, 35);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
+      ctx.fillText(`${index + 1}. ${char.name} (Lv.${char.level})`, x + 60, yPos);
+
+      ctx.font = '12px monospace';
+      const statusColor = this.getStatusColor(char.status);
+      ctx.fillStyle = statusColor;
+      ctx.fillText(char.status, x + 250, yPos);
+
+      ctx.fillStyle = canAfford ? '#4a4' : '#a44';
+      ctx.fillText(`${cost}g`, x + 350, yPos);
+      if (!canAfford) {
+        ctx.fillText('(Insufficient)', x + 400, yPos);
+      }
+
+      yPos += 45;
+    });
+  }
+
+  private renderPayerSelection(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, stateContext: TempleStateContext): void {
+    if (!stateContext.selectedService) return;
+
     const characters = this.gameState.party.characters || [];
+    if (characters.length === 0 || stateContext.selectedCharacterIndex >= characters.length) return;
+
+    const character = characters[stateContext.selectedCharacterIndex];
+    const cost = this.stateManager.getServiceCost(stateContext.selectedService, character);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('WHO WILL PAY?', x + width / 2, y + 40);
+
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(`Service cost: ${cost}g`, x + width / 2, y + 70);
+
     if (characters.length === 0) {
       ctx.fillStyle = '#666';
       ctx.fillText('No party members', x + width / 2, y + 150);
@@ -207,25 +275,24 @@ export class TempleUIRenderer {
 
     characters.forEach((char: Character, index: number) => {
       const isSelected = index === stateContext.selectedOption;
-      const isEligible = this.isCharacterEligible(char, stateContext.selectedService!);
+      const canAfford = char.gold >= cost;
 
       if (isSelected) {
         ctx.fillStyle = '#333';
         ctx.fillRect(x + 40, yPos - 15, width - 80, 35);
       }
 
-      ctx.fillStyle = !isEligible ? '#666' : isSelected ? '#ffa500' : '#fff';
+      ctx.fillStyle = !canAfford ? '#666' : isSelected ? '#ffa500' : '#fff';
       ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
       ctx.fillText(`${index + 1}. ${char.name}`, x + 60, yPos);
 
       ctx.font = '12px monospace';
-      const statusColor = this.getStatusColor(char.status);
-      ctx.fillStyle = statusColor;
-      ctx.fillText(char.status, x + 250, yPos);
+      ctx.fillStyle = canAfford ? '#4a4' : '#a44';
+      ctx.fillText(`${char.gold}g`, x + 250, yPos);
 
-      if (!isEligible) {
+      if (!canAfford) {
         ctx.fillStyle = '#666';
-        ctx.fillText('(Does not need this service)', x + 60, yPos + 15);
+        ctx.fillText('(Insufficient gold)', x + 60, yPos + 15);
       }
 
       yPos += 45;
@@ -246,13 +313,7 @@ export class TempleUIRenderer {
       'dispel_curse': 'Dispel Curse'
     };
 
-    const serviceCosts: Record<TempleService, number> = {
-      'cure_paralyzed': 300,
-      'cure_stoned': 300,
-      'resurrect_dead': 500,
-      'resurrect_ashes': 1000,
-      'dispel_curse': 250
-    };
+    const cost = this.stateManager.getServiceCost(stateContext.selectedService, character);
 
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 18px monospace';
@@ -270,7 +331,7 @@ export class TempleUIRenderer {
     ctx.fillStyle = '#ffa500';
     ctx.font = 'bold 18px monospace';
     ctx.fillText(
-      `Cost: ${serviceCosts[stateContext.selectedService]}g`,
+      `Cost: ${cost}g`,
       x + width / 2,
       y + 160
     );
@@ -289,12 +350,6 @@ export class TempleUIRenderer {
         ctx.font = '12px monospace';
         ctx.fillText('Failure will lose the character forever', x + width / 2, y + 225);
       }
-    }
-
-    if (stateContext.confirmationPrompt) {
-      ctx.fillStyle = '#fa0';
-      ctx.font = 'bold 14px monospace';
-      ctx.fillText(stateContext.confirmationPrompt, x + width / 2, y + 280);
     }
 
     ctx.fillStyle = '#aaa';
@@ -481,23 +536,6 @@ export class TempleUIRenderer {
       }
     }
     return false;
-  }
-
-  private isCharacterEligible(character: Character, service: TempleService): boolean {
-    switch (service) {
-      case 'cure_paralyzed':
-        return character.status === 'Paralyzed';
-      case 'cure_stoned':
-        return character.status === 'Stoned';
-      case 'resurrect_dead':
-        return character.status === 'Dead';
-      case 'resurrect_ashes':
-        return character.status === 'Ashed';
-      case 'dispel_curse':
-        return this.hasEquippedCursedItems(character);
-      default:
-        return false;
-    }
   }
 
   private getStatusColor(status: string): string {
