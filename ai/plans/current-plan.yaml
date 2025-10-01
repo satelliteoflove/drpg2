@@ -132,69 +132,117 @@ nodes:
     downstream: ["create-temple-input-handler"]
 
   - id: "create-temple-input-handler"
-    status: "Ready"
-    materialization: 0.0
+    status: "Complete"
+    materialization: 1.0
     description: "Create Temple input handler"
     detailed_description: |
-      Create src/systems/temple/TempleInputHandler.ts:
-      - Navigate service menu with arrow keys
-      - Character selection for services
-      - Service confirmation prompts
-      - Escape to return to Town
-      - Number keys for quick character selection
+      Implemented src/systems/temple/TempleInputHandler.ts with:
+      - Main menu navigation (Temple Services, Leave Temple)
+      - Service selection with gold/eligibility checks
+      - Character selection filtered by service eligibility
+      - Confirmation prompts with warnings for resurrection
+      - Service result display with cleanup
+      - Escape key navigation at all states
+      - MenuInputHandler integration for consistency
+      - TypeScript strict mode compliance
     outputs: ["src/systems/temple/TempleInputHandler.ts"]
     agent_action: "Implement input handler"
     role: "agent"
     downstream: ["create-temple-scene"]
 
   - id: "create-temple-scene"
-    status: "Ready"
-    materialization: 0.0
+    status: "Complete"
+    materialization: 1.0
     description: "Create main Temple scene"
     detailed_description: |
-      Create src/scenes/TempleScene.ts:
-      - Integrate all Temple components
-      - Initialize with party data
-      - Handle scene transitions
-      - Message log integration
-      - Save after successful services
-      - ASCII layer support
-    outputs: ["src/scenes/TempleScene.ts", "src/rendering/ascii/TempleASCII.ts"]
+      Created src/scenes/TempleScene.ts following established scene pattern:
+      - Integrated all Temple components (state manager, service handler, UI renderer, input handler)
+      - Initialize with party data and welcome message
+      - Scene lifecycle methods (enter, exit, update, render, renderLayered)
+      - Message log integration with proper error handling
+      - Input handling with key normalization
+      - TypeScript strict mode compliance verified
+      - Note: ASCII layer support not needed (no other scenes use it)
+    outputs: ["src/scenes/TempleScene.ts"]
     agent_action: "Implement Temple scene"
     role: "agent"
     downstream: ["integrate-temple-with-town"]
 
   - id: "integrate-temple-with-town"
-    status: "Ready"
-    materialization: 0.0
+    status: "Complete"
+    materialization: 1.0
     description: "Add Temple to Town scene"
     detailed_description: |
-      Update src/scenes/TownScene.ts:
-      - Add Temple menu option
-      - Scene transition to TempleScene
-      Update src/core/Game.ts:
-      - Register TempleScene
+      Successfully integrated Temple with Town scene:
+      - Updated src/scenes/TownScene.ts:
+        * Replaced console.log placeholder with sceneManager.switchTo('temple')
+        * Updated Temple description to "Cure ailments, resurrect the dead, and dispel curses."
+      - Updated src/core/Game.ts:
+        * Added TempleScene import
+        * Registered temple scene: sceneManager.addScene('temple', new TempleScene(...))
+      - TypeScript strict mode compliance verified
+      - Temple now accessible from Town menu (second option)
     outputs: ["src/scenes/TownScene.ts", "src/core/Game.ts"]
     agent_action: "Integrate Temple with Town"
     role: "agent"
     downstream: ["test-temple-services"]
 
   - id: "test-temple-services"
-    status: "Ready"
-    materialization: 0.0
-    description: "Test Temple services"
+    status: "In Progress"
+    materialization: 0.7
+    description: "Test Temple services and refine implementation"
     detailed_description: |
-      Test all Temple functionality:
-      - Status curing works correctly
-      - Resurrection success/failure mechanics
-      - Gold transactions
-      - UI displays properly
-      - Scene transitions work
-      - Save game after services
-    outputs: ["test results"]
-    agent_action: "Manual testing via AI interface"
+      Significant progress made, but more testing needed:
+
+      Completed refinements:
+      - Fixed gold display to show sum of all character gold
+      - Implemented level-based service costs (Base Cost × Character Level)
+      - Implemented automatic gold pooling (payer first, then other party members)
+      - Added "who will pay?" selection flow
+      - Fixed eligibility checks and navigation issues
+      - Moved costs to GAME_CONFIG.TEMPLE.SERVICE_COSTS and GAME_CONFIG.TEMPLE.RESURRECTION
+      - Created comprehensive temple-mechanics.md documentation
+      - Fixed confirmation screen cost display
+
+      Known issues/remaining work:
+      - More thorough testing needed for all service types
+      - Need to verify resurrection success/failure mechanics work correctly
+      - Need to test edge cases (insufficient gold, multiple resurrections, etc.)
+      - UI refinements may be needed based on further testing
+      - Save game persistence after services needs verification
+    outputs: [
+      "docs/temple-mechanics.md",
+      "docs/DOCS_INDEX.yaml (updated)",
+      "src/config/GameConstants.ts (updated)",
+      "src/systems/temple/TempleStateManager.ts (updated)",
+      "src/systems/temple/TempleServiceHandler.ts (updated)",
+      "src/systems/temple/TempleUIRenderer.ts (updated)",
+      "src/systems/temple/TempleInputHandler.ts (updated)"
+    ]
+    agent_action: "Testing, debugging, and refinement"
     role: "agent"
     acceptance_criteria:
-      - "All services function correctly"
-      - "Gold deducted properly"
-      - "UI displays as expected"
+      - "All services function correctly (partial - needs more testing)"
+      - "Gold deducted with automatic pooling (implemented, needs verification)"
+      - "Level-based costs implemented (complete)"
+      - "All magic numbers moved to constants (complete)"
+      - "UI displays correctly (mostly complete, may need refinements)"
+      - "Documentation complete (complete)"
+    downstream: ["refine-temple-ui"]
+
+  - id: "refine-temple-ui"
+    status: "Ready"
+    materialization: 0.0
+    description: "Refine Temple UI and complete testing"
+    detailed_description: |
+      Next steps for Temple completion:
+      - Test all five services thoroughly
+      - Verify resurrection mechanics (success/failure, vitality loss, age increase)
+      - Test automatic gold pooling in various scenarios
+      - Verify save game persistence
+      - Test edge cases and error handling
+      - Make any necessary UI refinements based on testing
+      - Ensure all services work with different character levels
+    outputs: ["Refined Temple implementation"]
+    agent_action: "Testing and refinement"
+    role: "agent"
