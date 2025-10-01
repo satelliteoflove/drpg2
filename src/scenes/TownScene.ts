@@ -116,7 +116,7 @@ export class TownScene extends Scene {
 
     const descriptions = [
       'Buy, sell, and identify items. Pool your gold for better purchases.',
-      'Heal your party and remove curses (not yet available)',
+      'Cure ailments, resurrect the dead, and dispel curses.',
       'Rest and recover your party. Apply pending level ups.',
       'Return to the dungeon depths'
     ];
@@ -220,7 +220,7 @@ export class TownScene extends Scene {
         break;
 
       case 1: // Temple
-        console.log('Temple not yet implemented');
+        this.sceneManager.switchTo('temple');
         break;
 
       case 2: // Inn

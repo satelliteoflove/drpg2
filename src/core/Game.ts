@@ -11,6 +11,7 @@ import { DebugScene } from '../scenes/DebugScene';
 import { TownScene } from '../scenes/TownScene';
 import { ShopScene } from '../scenes/ShopScene';
 import { InnScene } from '../scenes/InnScene';
+import { TempleScene } from '../scenes/TempleScene';
 import { Party } from '../entities/Party';
 import { Character } from '../entities/Character';
 import { GameState } from '../types/GameTypes';
@@ -225,6 +226,7 @@ export class Game {
     this.sceneManager.addScene('town', new TownScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('shop', new ShopScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('inn', new InnScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('temple', new TempleScene(this.gameState, this.sceneManager));
 
     // Set up scene change listener for performance monitoring
     this.sceneManager.onSceneChange = (sceneName: string) => {
