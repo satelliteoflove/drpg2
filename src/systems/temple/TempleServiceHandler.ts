@@ -1,30 +1,55 @@
 import { Character } from '../../entities/Character';
-import { GameState } from '../../types/GameTypes';
 import { TempleService, ResurrectionResult, ResurrectionOutcome, ServiceExecutionResult } from '../../types/TempleTypes';
 import { DiceRoller } from '../../utils/DiceRoller';
 import { GAME_CONFIG } from '../../config/GameConstants';
 
 export class TempleServiceHandler {
-  private gameState: GameState;
+  constructor() {
+  }
 
-  constructor(gameState: GameState) {
-    this.gameState = gameState;
+  private deductGoldWithPooling(payer: Character, cost: number, allCharacters: Character[]): void {
+    let remaining = cost;
+
+    if (payer.gold >= remaining) {
+      payer.gold -= remaining;
+      return;
+    }
+
+    remaining -= payer.gold;
+    payer.gold = 0;
+
+    for (const char of allCharacters) {
+      if (char === payer) continue;
+      if (remaining <= 0) break;
+
+      if (char.gold >= remaining) {
+        char.gold -= remaining;
+        remaining = 0;
+        break;
+      } else {
+        remaining -= char.gold;
+        char.gold = 0;
+      }
+    }
   }
 
   public executeService(
     service: TempleService,
     character: Character,
-    cost: number
+    payer: Character,
+    cost: number,
+    allCharacters: Character[]
   ): ServiceExecutionResult {
-    if (this.gameState.party.gold < cost) {
+    const totalGold = allCharacters.reduce((sum, char) => sum + char.gold, 0);
+    if (totalGold < cost) {
       return {
         success: false,
-        message: 'Insufficient gold for this service.',
+        message: `Party does not have enough gold. Need ${cost}g, have ${totalGold}g.`,
         goldSpent: 0
       };
     }
 
-    this.gameState.party.gold -= cost;
+    this.deductGoldWithPooling(payer, cost, allCharacters);
 
     switch (service) {
       case 'cure_paralyzed':
@@ -97,8 +122,8 @@ export class TempleServiceHandler {
     const levelBonus = character.level * GAME_CONFIG.DEATH_SYSTEM.LEVEL_BONUS_MULTIPLIER;
     const baseChance = GAME_CONFIG.DEATH_SYSTEM.BASE_SURVIVAL_CHANCE;
     const successChance = Math.min(
-      0.95,
-      baseChance + vitalityBonus * 0.01 + levelBonus
+      GAME_CONFIG.TEMPLE.RESURRECTION.MAX_SUCCESS_CHANCE,
+      baseChance + vitalityBonus * GAME_CONFIG.TEMPLE.RESURRECTION.VITALITY_BONUS_MULTIPLIER_DEAD + levelBonus
     );
 
     const roll = DiceRoller.rollPercentile();
@@ -110,7 +135,7 @@ export class TempleServiceHandler {
     if (success) {
       character.status = 'OK';
       character.isDead = false;
-      character.hp = 1;
+      character.hp = GAME_CONFIG.TEMPLE.RESURRECTION.HP_RESTORED_ON_SUCCESS;
 
       const vitalityLoss = GAME_CONFIG.DEATH_SYSTEM.VITALITY_LOSS_ON_DEATH;
       character.stats.vitality = Math.max(
@@ -123,7 +148,7 @@ export class TempleServiceHandler {
       resurrectionResult = {
         outcome,
         vitalityLost: vitalityLoss,
-        hpRestored: 1,
+        hpRestored: GAME_CONFIG.TEMPLE.RESURRECTION.HP_RESTORED_ON_SUCCESS,
         message: `${character.name} has been resurrected! (VT -${vitalityLoss})`
       };
 
@@ -171,10 +196,10 @@ export class TempleServiceHandler {
     const vitalityBonus = Math.floor(
       character.stats.vitality / GAME_CONFIG.DEATH_SYSTEM.VITALITY_BONUS_DIVISOR
     );
-    const baseChance = GAME_CONFIG.DEATH_SYSTEM.BASE_SURVIVAL_CHANCE * 0.5;
+    const baseChance = GAME_CONFIG.DEATH_SYSTEM.BASE_SURVIVAL_CHANCE * GAME_CONFIG.TEMPLE.RESURRECTION.ASHES_BASE_CHANCE_MULTIPLIER;
     const successChance = Math.max(
       GAME_CONFIG.DEATH_SYSTEM.MIN_SURVIVAL_CHANCE,
-      baseChance + vitalityBonus * 0.005
+      baseChance + vitalityBonus * GAME_CONFIG.TEMPLE.RESURRECTION.VITALITY_BONUS_MULTIPLIER_ASHES
     );
 
     const roll = DiceRoller.rollPercentile();
@@ -186,7 +211,7 @@ export class TempleServiceHandler {
     if (success) {
       character.status = 'OK';
       character.isDead = false;
-      character.hp = 1;
+      character.hp = GAME_CONFIG.TEMPLE.RESURRECTION.HP_RESTORED_ON_SUCCESS;
 
       const vitalityLoss = GAME_CONFIG.DEATH_SYSTEM.VITALITY_LOSS_ON_ASH;
       character.stats.vitality = Math.max(
@@ -199,7 +224,7 @@ export class TempleServiceHandler {
       resurrectionResult = {
         outcome,
         vitalityLost: vitalityLoss,
-        hpRestored: 1,
+        hpRestored: GAME_CONFIG.TEMPLE.RESURRECTION.HP_RESTORED_ON_SUCCESS,
         message: `${character.name} has been restored from ashes! (VT -${vitalityLoss})`
       };
 
