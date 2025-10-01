@@ -246,6 +246,7 @@ export interface IParty {
   y: number;
   facing: Direction;
   floor: number;
+  pooledGold: number;
 }
 
 export type Formation = 'front' | 'back';

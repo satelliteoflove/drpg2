@@ -11,6 +11,7 @@ export type TempleState =
   | 'main'
   | 'selectService'
   | 'selectCharacter'
+  | 'selectPayer'
   | 'confirmService'
   | 'serviceResult';
 
@@ -50,6 +51,7 @@ export interface TempleStateContext {
   selectedOption: number;
   selectedService: TempleService | null;
   selectedCharacterIndex: number;
+  payerCharacterIndex: number;
   serviceResult: ServiceExecutionResult | null;
   message: string | null;
   confirmationPrompt: string | null;
