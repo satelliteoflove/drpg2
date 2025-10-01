@@ -7,6 +7,7 @@ import {
   ServiceInfo,
   TempleStateContext
 } from '../../types/TempleTypes';
+import { GAME_CONFIG } from '../../config/GameConstants';
 
 export class TempleStateManager {
   private gameState: GameState;
@@ -14,46 +15,47 @@ export class TempleStateManager {
   public selectedOption: number = 0;
   public selectedService: TempleService | null = null;
   public selectedCharacterIndex: number = 0;
+  public payerCharacterIndex: number = 0;
   public message: string | null = null;
   public confirmationPrompt: string | null = null;
 
-  private static SERVICE_COSTS: ServiceCost = {
-    cure_paralyzed: 300,
-    cure_stoned: 300,
-    resurrect_dead: 500,
-    resurrect_ashes: 1000,
-    dispel_curse: 250
+  private static BASE_SERVICE_COSTS: ServiceCost = {
+    cure_paralyzed: GAME_CONFIG.TEMPLE.SERVICE_COSTS.CURE_PARALYZED,
+    cure_stoned: GAME_CONFIG.TEMPLE.SERVICE_COSTS.CURE_STONED,
+    resurrect_dead: GAME_CONFIG.TEMPLE.SERVICE_COSTS.RESURRECT_DEAD,
+    resurrect_ashes: GAME_CONFIG.TEMPLE.SERVICE_COSTS.RESURRECT_ASHES,
+    dispel_curse: GAME_CONFIG.TEMPLE.SERVICE_COSTS.DISPEL_CURSE
   };
 
   private static SERVICE_INFO: Record<TempleService, ServiceInfo> = {
     cure_paralyzed: {
       name: 'Cure Paralyzed',
-      cost: 300,
-      description: 'Remove paralysis from a character',
+      cost: GAME_CONFIG.TEMPLE.SERVICE_COSTS.CURE_PARALYZED,
+      description: 'Remove paralysis from a character (Base Cost × Level)',
       eligibilityCheck: (character: Character) => character.status === 'Paralyzed'
     },
     cure_stoned: {
       name: 'Cure Stoned',
-      cost: 300,
-      description: 'Restore a petrified character',
+      cost: GAME_CONFIG.TEMPLE.SERVICE_COSTS.CURE_STONED,
+      description: 'Restore a petrified character (Base Cost × Level)',
       eligibilityCheck: (character: Character) => character.status === 'Stoned'
     },
     resurrect_dead: {
       name: 'Resurrect from Dead',
-      cost: 500,
-      description: 'Attempt to bring back a dead character',
-      eligibilityCheck: (character: Character) => character.status === 'Dead' && !character.isDead
+      cost: GAME_CONFIG.TEMPLE.SERVICE_COSTS.RESURRECT_DEAD,
+      description: 'Attempt to bring back a dead character (Base Cost × Level)',
+      eligibilityCheck: (character: Character) => character.status === 'Dead'
     },
     resurrect_ashes: {
       name: 'Resurrect from Ashes',
-      cost: 1000,
-      description: 'Attempt to restore a character from ashes',
+      cost: GAME_CONFIG.TEMPLE.SERVICE_COSTS.RESURRECT_ASHES,
+      description: 'Attempt to restore a character from ashes (Base Cost × Level)',
       eligibilityCheck: (character: Character) => character.status === 'Ashed'
     },
     dispel_curse: {
       name: 'Dispel Curse',
-      cost: 250,
-      description: 'Remove curses from equipped items',
+      cost: GAME_CONFIG.TEMPLE.SERVICE_COSTS.DISPEL_CURSE,
+      description: 'Remove curses from equipped items (Base Cost × Level)',
       eligibilityCheck: (character: Character) => {
         if (!character.equipment) return false;
         return Object.values(character.equipment).some(item => item?.cursed === true);
@@ -70,6 +72,7 @@ export class TempleStateManager {
     this.selectedOption = 0;
     this.selectedService = null;
     this.selectedCharacterIndex = 0;
+    this.payerCharacterIndex = 0;
     this.message = null;
     this.confirmationPrompt = null;
   }
@@ -91,6 +94,7 @@ export class TempleStateManager {
       selectedOption: this.selectedOption,
       selectedService: this.selectedService,
       selectedCharacterIndex: this.selectedCharacterIndex,
+      payerCharacterIndex: this.payerCharacterIndex,
       serviceResult: null,
       message: this.message,
       confirmationPrompt: this.confirmationPrompt
@@ -118,8 +122,13 @@ export class TempleStateManager {
     return TempleStateManager.SERVICE_INFO[service];
   }
 
-  public getServiceCost(service: TempleService): number {
-    return TempleStateManager.SERVICE_COSTS[service];
+  public getServiceCost(service: TempleService, character: Character): number {
+    const baseCost = TempleStateManager.BASE_SERVICE_COSTS[service];
+    return baseCost * character.level;
+  }
+
+  public getBaseCost(service: TempleService): number {
+    return TempleStateManager.BASE_SERVICE_COSTS[service];
   }
 
   public getAvailableServices(character: Character): TempleService[] {
@@ -133,9 +142,14 @@ export class TempleStateManager {
     return serviceInfo.eligibilityCheck(character);
   }
 
-  public canAffordService(service: TempleService): boolean {
-    const cost = this.getServiceCost(service);
-    return this.gameState.party.gold >= cost;
+  public canPartyAffordService(service: TempleService, character: Character): boolean {
+    const cost = this.getServiceCost(service, character);
+    const partyTotalGold = this.gameState.party.characters.reduce((total: number, char: Character) => total + char.gold, 0);
+    return partyTotalGold >= cost;
+  }
+
+  public canAnyoneAffordService(service: TempleService, character: Character): boolean {
+    return this.canPartyAffordService(service, character);
   }
 
   public getCharactersNeedingService(service: TempleService): Character[] {
@@ -162,20 +176,24 @@ export class TempleStateManager {
 
   public getServiceDescription(service: TempleService, character?: Character): string {
     const serviceInfo = this.getServiceInfo(service);
-    const cost = this.getServiceCost(service);
-    const canAfford = this.canAffordService(service);
+    const baseCost = this.getBaseCost(service);
 
-    let description = `${serviceInfo.name} - ${cost}g\n${serviceInfo.description}`;
+    let description = `${serviceInfo.name} - ${baseCost}g × Level\n${serviceInfo.description}`;
 
     if (character) {
+      const cost = this.getServiceCost(service, character);
+      const canAfford = this.canPartyAffordService(service, character);
       const eligible = this.isServiceEligible(character, service);
+
+      description += `\n\nCost for ${character.name} (Lv.${character.level}): ${cost}g`;
+
       if (!eligible) {
         description += '\n(Character does not need this service)';
       }
-    }
 
-    if (!canAfford) {
-      description += '\n(Insufficient gold)';
+      if (!canAfford) {
+        description += '\n(Party cannot afford this service)';
+      }
     }
 
     return description;
