@@ -1,6 +1,7 @@
 import { Character } from '../../entities/Character';
 import { TempleService, ResurrectionResult, ResurrectionOutcome, ServiceExecutionResult } from '../../types/TempleTypes';
 import { DiceRoller } from '../../utils/DiceRoller';
+import { DebugLogger } from '../../utils/DebugLogger';
 import { GAME_CONFIG } from '../../config/GameConstants';
 
 export class TempleServiceHandler {
@@ -9,12 +10,20 @@ export class TempleServiceHandler {
 
   private deductGoldWithPooling(payer: Character, cost: number, allCharacters: Character[]): void {
     let remaining = cost;
+    const goldUsed: { name: string; amount: number }[] = [];
 
     if (payer.gold >= remaining) {
       payer.gold -= remaining;
+      goldUsed.push({ name: payer.name, amount: remaining });
+      DebugLogger.info('TempleService', `Gold payment complete from payer only`, {
+        payer: payer.name,
+        cost,
+        goldUsed
+      });
       return;
     }
 
+    goldUsed.push({ name: payer.name, amount: payer.gold });
     remaining -= payer.gold;
     payer.gold = 0;
 
@@ -24,13 +33,23 @@ export class TempleServiceHandler {
 
       if (char.gold >= remaining) {
         char.gold -= remaining;
+        goldUsed.push({ name: char.name, amount: remaining });
         remaining = 0;
         break;
       } else {
+        if (char.gold > 0) {
+          goldUsed.push({ name: char.name, amount: char.gold });
+        }
         remaining -= char.gold;
         char.gold = 0;
       }
     }
+
+    DebugLogger.info('TempleService', `Gold pooled from multiple characters`, {
+      cost,
+      goldUsed,
+      remainingUnpaid: remaining > 0 ? remaining : 0
+    });
   }
 
   public executeService(
@@ -41,7 +60,21 @@ export class TempleServiceHandler {
     allCharacters: Character[]
   ): ServiceExecutionResult {
     const totalGold = allCharacters.reduce((sum, char) => sum + char.gold, 0);
+
+    DebugLogger.info('TempleService', `Executing service: ${service}`, {
+      service,
+      character: character.name,
+      characterLevel: character.level,
+      payer: payer.name,
+      cost,
+      totalPartyGold: totalGold
+    });
+
     if (totalGold < cost) {
+      DebugLogger.warn('TempleService', 'Insufficient party gold for service', {
+        needed: cost,
+        available: totalGold
+      });
       return {
         success: false,
         message: `Party does not have enough gold. Need ${cost}g, have ${totalGold}g.`,
@@ -51,24 +84,39 @@ export class TempleServiceHandler {
 
     this.deductGoldWithPooling(payer, cost, allCharacters);
 
+    let result: ServiceExecutionResult;
     switch (service) {
       case 'cure_paralyzed':
-        return this.cureParalyzed(character, cost);
+        result = this.cureParalyzed(character, cost);
+        break;
       case 'cure_stoned':
-        return this.cureStoned(character, cost);
+        result = this.cureStoned(character, cost);
+        break;
       case 'resurrect_dead':
-        return this.resurrectFromDead(character, cost);
+        result = this.resurrectFromDead(character, cost);
+        break;
       case 'resurrect_ashes':
-        return this.resurrectFromAshes(character, cost);
+        result = this.resurrectFromAshes(character, cost);
+        break;
       case 'dispel_curse':
-        return this.dispelCurse(character, cost);
+        result = this.dispelCurse(character, cost);
+        break;
       default:
-        return {
+        result = {
           success: false,
           message: 'Unknown service requested.',
           goldSpent: 0
         };
     }
+
+    DebugLogger.info('TempleService', `Service complete: ${service}`, {
+      success: result.success,
+      message: result.message,
+      goldSpent: result.goldSpent,
+      resurrectionResult: result.resurrectionResult
+    });
+
+    return result;
   }
 
   private cureParalyzed(character: Character, cost: number): ServiceExecutionResult {
@@ -109,6 +157,10 @@ export class TempleServiceHandler {
 
   private resurrectFromDead(character: Character, cost: number): ServiceExecutionResult {
     if (character.status !== 'Dead') {
+      DebugLogger.warn('TempleService', 'Invalid resurrection attempt - character not dead', {
+        character: character.name,
+        status: character.status
+      });
       return {
         success: false,
         message: `${character.name} is not dead.`,
@@ -128,6 +180,17 @@ export class TempleServiceHandler {
 
     const roll = DiceRoller.rollPercentile();
     const success = roll <= successChance * 100;
+
+    DebugLogger.info('TempleService', 'Resurrection from dead attempt', {
+      character: character.name,
+      vitality: character.stats.vitality,
+      vitalityBonus,
+      levelBonus,
+      baseChance,
+      successChance,
+      roll,
+      success
+    });
 
     let resurrectionResult: ResurrectionResult;
     let outcome: ResurrectionOutcome;
@@ -186,6 +249,10 @@ export class TempleServiceHandler {
 
   private resurrectFromAshes(character: Character, cost: number): ServiceExecutionResult {
     if (character.status !== 'Ashed') {
+      DebugLogger.warn('TempleService', 'Invalid resurrection attempt - character not ashed', {
+        character: character.name,
+        status: character.status
+      });
       return {
         success: false,
         message: `${character.name} is not in ashes.`,
@@ -204,6 +271,16 @@ export class TempleServiceHandler {
 
     const roll = DiceRoller.rollPercentile();
     const success = roll <= successChance * 100;
+
+    DebugLogger.info('TempleService', 'Resurrection from ashes attempt', {
+      character: character.name,
+      vitality: character.stats.vitality,
+      vitalityBonus,
+      baseChance,
+      successChance,
+      roll,
+      success
+    });
 
     let resurrectionResult: ResurrectionResult;
     let outcome: ResurrectionOutcome;
