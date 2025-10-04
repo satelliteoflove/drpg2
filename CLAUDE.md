@@ -101,6 +101,35 @@ The AI Interface (`window.AI`) is the **primary method** for testing and verifyi
 - Avoid async functionality
 - Maintain docs/DOCS_INDEX.yaml for all doc changes
 
+## Logging and Debugging
+
+**CRITICAL: Always use DebugLogger instead of console.log**
+
+The project has a comprehensive DebugLogger system (`src/utils/DebugLogger.ts`) that must be used for all logging:
+
+```typescript
+// NEVER do this:
+console.log('Something happened');  // ❌ WRONG
+
+// ALWAYS do this:
+DebugLogger.info('ModuleName', 'Something happened', { data });  // ✅ CORRECT
+```
+
+### DebugLogger Usage:
+- `DebugLogger.debug()` - Detailed debug information
+- `DebugLogger.info()` - General information about execution
+- `DebugLogger.warn()` - Warning conditions
+- `DebugLogger.error()` - Error conditions
+
+### DebugLogger Features:
+- Configurable via localStorage settings
+- Export logs to file (Ctrl+Shift+L)
+- Maintains history for debugging
+- Integrates with development workflow
+- Can capture ASCII snapshots
+
+Even in test scripts or utilities, prefer DebugLogger over console.log for consistency and better debugging capabilities.
+
 ## Testing Workflow
 
 ### Using the AI Interface for Testing
