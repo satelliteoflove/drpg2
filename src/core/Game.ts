@@ -193,7 +193,37 @@ export class Game {
 
           // eslint-disable-next-line no-unused-expressions
           (void _name, void _race, void _charClass, void _alignment); // Mark as intentionally unused
+
+          // Save the initial spells from the constructor
+          const initialSpells = newChar.knownSpells ? [...newChar.knownSpells] : [];
+          // Save the statusEffects Map (it doesn't serialize to JSON properly)
+          const statusEffectsMap = newChar.statusEffects;
+
           Object.assign(newChar, restData);
+
+          // If saved data has no knownSpells or empty array, use the initial spells from constructor
+          if (!restData.knownSpells || (Array.isArray(restData.knownSpells) && restData.knownSpells.length === 0)) {
+            newChar.knownSpells = initialSpells;
+          }
+
+          // Restore statusEffects as a Map (it gets overwritten as a plain object from JSON)
+          // If there's saved statusEffects data and it's not a Map, convert it
+          if (restData.statusEffects && !(restData.statusEffects instanceof Map)) {
+            // If it's an object with entries, convert to Map
+            if (typeof restData.statusEffects === 'object' && restData.statusEffects !== null) {
+              newChar.statusEffects = new Map(Object.entries(restData.statusEffects));
+              DebugLogger.debug('Game', 'Converted statusEffects from object to Map', {
+                character: newChar.name,
+                entries: Object.entries(restData.statusEffects)
+              });
+            } else {
+              // Otherwise use the original Map
+              newChar.statusEffects = statusEffectsMap;
+            }
+          } else if (!restData.statusEffects) {
+            // No statusEffects in save data, use the original Map
+            newChar.statusEffects = statusEffectsMap;
+          }
           party.characters.push(newChar);
         } catch (error) {
           ErrorHandler.logError(
