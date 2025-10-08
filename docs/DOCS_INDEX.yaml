@@ -89,6 +89,14 @@ wizardry_gaiden_4_systems:
     topics: [temple, gold pooling, level-based costs, payment system, resurrection, service mechanics, wizardry gaiden]
     summary: Complete temple mechanics including level-based pricing, automatic gold pooling, and service implementation details
 
+  - file: training-grounds-mechanics.md
+    topics: [training grounds, character management, class change, roster, character creation, town services, wizardry gaiden]
+    summary: Training Grounds service for creating, managing, and re-classing characters in WGIV
+
+  - file: tavern-mechanics.md
+    topics: [tavern, party formation, party management, add character, remove character, divvy gold, gilgamesh, dungeon entry, wizardry gaiden]
+    summary: Gilgamesh's Tavern party management system for assembling active party, divvying gold, and dungeon entry requirements
+
 wgiv_implementation:
   - folder: src/config/races/
     topics: [race configuration, stat ranges, race bonuses, character creation]
@@ -127,6 +135,11 @@ development:
   - file: utilities-reference.md
     topics: [utilities, DRY, code reuse, dice roller, entity utils, saving throws]
     summary: Reference documentation for core utility classes (DiceRoller, EntityUtils, SavingThrowCalculator)
+
+ai_plans:
+  - file: ai/logs/tavern-implementation-analysis.md
+    topics: [tavern, implementation analysis, planning, architecture, party management]
+    summary: Analysis and planning document for Gilgamesh's Tavern implementation
 
 # API Documentation Root
 api_root:
@@ -423,3 +436,5 @@ search_hints:
   magic: [wizardry_gaiden_4_spells.md, src/systems/magic/, src/data/spells/]
   ai_testing: [ai-interface.md, src/core/AIInterface.ts]
   temple: [temple-mechanics.md, temple-requirements.md, src/systems/temple/, src/scenes/TempleScene.ts]
+  tavern: [tavern-mechanics.md, src/scenes/TavernScene.ts]
+  party_management: [tavern-mechanics.md, api/classes/Party.md]

@@ -31,6 +31,10 @@ export class MessageLog {
     }
   }
 
+  public add(text: string, color?: string): void {
+    this.addMessage(text, color);
+  }
+
   public getMessageCount(): number {
     return this.messages.length;
   }
@@ -56,7 +60,8 @@ export class MessageLog {
 
     this.currentRenderCtx.fillStyle = '#fff';
     this.currentRenderCtx.font = 'bold 12px monospace';
-    this.currentRenderCtx.fillText('MESSAGE LOG', this.x + 5, this.y + 15);
+    this.currentRenderCtx.textAlign = 'left';
+    this.currentRenderCtx.fillText('MESSAGE LOG', this.x + 10, this.y + 15);
 
     const lineHeight = 14;
     const startY = this.y + 30;
@@ -77,10 +82,11 @@ export class MessageLog {
       this.currentRenderCtx.globalAlpha = alpha;
       this.currentRenderCtx.fillStyle = message.color || '#fff';
       this.currentRenderCtx.font = '11px monospace';
+      this.currentRenderCtx.textAlign = 'left';
 
-      const wrappedLines = this.wrapText(message.text, this.width - 10);
+      const wrappedLines = this.wrapText(message.text, this.width - 20);
       wrappedLines.forEach((line, lineIndex) => {
-        this.currentRenderCtx.fillText(line, this.x + 5, messageY + lineIndex * lineHeight);
+        this.currentRenderCtx.fillText(line, this.x + 10, messageY + lineIndex * lineHeight);
       });
 
       this.currentRenderCtx.restore();
@@ -116,14 +122,14 @@ export class MessageLog {
   private renderScrollIndicator(): void {
     if (this.messages.length > Math.floor((this.height - 35) / 14)) {
       this.currentRenderCtx.fillStyle = '#666';
-      this.currentRenderCtx.fillRect(this.x + this.width - 10, this.y + 20, 5, this.height - 25);
+      this.currentRenderCtx.fillRect(this.x + this.width - 15, this.y + 20, 5, this.height - 25);
 
       const scrollPercent = Math.min(1, Math.floor((this.height - 35) / 14) / this.messages.length);
       const indicatorHeight = Math.max(10, (this.height - 25) * scrollPercent);
       const indicatorY = this.y + 20 + (this.height - 25 - indicatorHeight);
 
       this.currentRenderCtx.fillStyle = '#aaa';
-      this.currentRenderCtx.fillRect(this.x + this.width - 10, indicatorY, 5, indicatorHeight);
+      this.currentRenderCtx.fillRect(this.x + this.width - 15, indicatorY, 5, indicatorHeight);
     }
   }
 

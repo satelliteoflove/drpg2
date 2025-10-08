@@ -12,6 +12,8 @@ import { TownScene } from '../scenes/TownScene';
 import { ShopScene } from '../scenes/ShopScene';
 import { InnScene } from '../scenes/InnScene';
 import { TempleScene } from '../scenes/TempleScene';
+import { TavernScene } from '../scenes/TavernScene';
+import { TrainingGroundsScene } from '../scenes/TrainingGroundsScene';
 import { Party } from '../entities/Party';
 import { Character } from '../entities/Character';
 import { GameState } from '../types/GameTypes';
@@ -86,7 +88,7 @@ export class Game {
         this.playtimeStart = Date.now() - savedGame.playtimeSeconds * 1000;
 
         // Create a new MessageLog for loaded game (messages aren't saved)
-        this.gameState.messageLog = new MessageLog(this.canvas, 10, 570, 750, 180);
+        this.gameState.messageLog = new MessageLog(this.canvas, 10, 570, 1004, 180);
         this.gameState.messageLog.addSystemMessage('Game loaded successfully');
       } else {
         ErrorHandler.logError(
@@ -100,6 +102,9 @@ export class Game {
 
       if (this.gameState.combatEnabled === undefined) {
         this.gameState.combatEnabled = true;
+      }
+      if (this.gameState.characterRoster === undefined) {
+        this.gameState.characterRoster = [];
       }
     } else {
       this.createNewGameState();
@@ -115,7 +120,8 @@ export class Game {
       gameTime: 0,
       turnCount: 0,
       combatEnabled: true,
-      messageLog: new MessageLog(this.canvas, 10, 570, 750, 180),
+      messageLog: new MessageLog(this.canvas, 10, 570, 1004, 180),
+      characterRoster: [],
     };
 
     // Add initial game messages
@@ -257,6 +263,8 @@ export class Game {
     this.sceneManager.addScene('shop', new ShopScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('inn', new InnScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('temple', new TempleScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('tavern', new TavernScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('training_grounds', new TrainingGroundsScene(this.gameState, this.sceneManager));
 
     // Set up scene change listener for performance monitoring
     this.sceneManager.onSceneChange = (sceneName: string) => {
@@ -446,5 +454,14 @@ export class Game {
 
   public isGameRunning(): boolean {
     return this.isRunning;
+  }
+
+  public resetGame(): void {
+    DebugLogger.info('Game', 'Resetting game to new state');
+    this.createNewGameState();
+    this.playtimeStart = Date.now();
+    this.frameCount = 0;
+    this.autoSaveFrameCounter = 0;
+    this.sceneManager.switchTo('town');
   }
 }

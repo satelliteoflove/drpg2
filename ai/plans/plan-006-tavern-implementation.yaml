@@ -1,0 +1,358 @@
+version: "0.5"
+plan_id: "tavern-implementation-006"
+project_name: "Wizardry Gaiden IV - Gilgamesh's Tavern"
+agent_profile: "ai-coding-agent-v1"
+
+context:
+  business_goal: "Implement Gilgamesh's Tavern for party management following Wizardry Gaiden IV mechanics"
+  non_functional_requirements:
+    - "TypeScript strict mode compliance"
+    - "Follow InnScene/TrainingGroundsScene architectural patterns"
+    - "Free services - no gold costs"
+    - "Alignment compatibility enforcement"
+  personas:
+    - name: "Player"
+      need: "Manage active party composition from character roster"
+    - name: "Developer"
+      need: "Clean, maintainable tavern system following existing patterns"
+
+architecture:
+  overview: "Tavern scene for party management with Add/Remove/Divvy Gold services. Follows established scene pattern: StateManager + UIRenderer + InputHandler + ServiceHandler. Uses existing character roster from GameState."
+  constraints:
+    - "Maximum 6 active party members"
+    - "Alignment compatibility: Good cannot party with Evil, Neutral parties with all"
+    - "All services free (no gold costs)"
+    - "Character roster already exists in GameState"
+    - "At least 1 living character required to enter dungeon"
+  integration_points:
+    - "GameState.characterRoster for character storage"
+    - "Party.addCharacter/removeCharacter methods"
+    - "TownScene menu integration"
+    - "Dungeon entry validation"
+
+tooling:
+  primary_language: "TypeScript"
+  frameworks: ["Phaser", "Webpack"]
+  package_manager: "npm"
+  coding_standards:
+    lint: "eslint"
+    formatting: "prettier"
+    testing: "AI Interface manual testing"
+
+entry_node: "create-tavern-types"
+
+nodes:
+  - id: "create-tavern-types"
+    status: "Completed"
+    materialization: 1.0
+    description: "Create TypeScript types for Tavern"
+    detailed_description: |
+      Create src/types/TavernTypes.ts:
+
+      Types needed:
+      - TavernState: 'main' | 'addCharacter' | 'removeCharacter' | 'divvyGold' | 'confirmDivvy'
+      - TavernStateContext: Interface with current state, selected indices, error messages
+      - TavernMenuOption: Main menu options type
+
+      Keep types minimal and aligned with tavern-mechanics.md requirements.
+      Reference ai/logs/tavern-implementation-analysis.md for context.
+    outputs:
+      - "src/types/TavernTypes.ts"
+    agent_action: "Create type definitions following tavern requirements"
+    role: "agent"
+    downstream:
+      - "create-tavern-service-handler"
+
+  - id: "create-tavern-service-handler"
+    status: "Completed"
+    materialization: 0.9
+    description: "Create Tavern service handler for business logic"
+    detailed_description: |
+      Create src/systems/tavern/TavernServiceHandler.ts:
+
+      Implement methods:
+      1. addCharacterToParty(characterId: string): boolean
+         - Check party size < 6
+         - Check alignment compatibility
+         - Check character is alive (not Dead, Ashed, Lost)
+         - Use Party.addCharacter() method
+
+      2. removeCharacterFromParty(characterId: string): boolean
+         - Use Party.removeCharacter() method
+         - Character retains all equipment, gold, status
+
+      3. divvyGold(): void
+         - totalGold = sum of all party character gold
+         - sharePerMember = Math.floor(totalGold / party.length)
+         - remainder = totalGold % party.length
+         - Set each character.gold = sharePerMember
+         - Add remainder to first character
+
+      4. isAlignmentCompatible(character: Character, party: Character[]): boolean
+         - Good cannot party with Evil
+         - Evil cannot party with Good
+         - Neutral can party with anyone
+
+      Follow pattern from InnTransactionHandler.
+      Use DebugLogger for all logging.
+    outputs:
+      - "src/systems/tavern/TavernServiceHandler.ts"
+    agent_action: "Implement tavern business logic"
+    role: "agent"
+    acceptance_criteria:
+      - "Alignment compatibility correctly enforced"
+      - "Divvy gold algorithm matches spec"
+      - "Party size limits enforced"
+    downstream:
+      - "create-tavern-state-manager"
+
+  - id: "create-tavern-state-manager"
+    status: "Completed"
+    materialization: 0.8
+    description: "Create Tavern state manager"
+    detailed_description: |
+      Create src/systems/tavern/TavernStateManager.ts:
+
+      Follow InnStateManager pattern exactly:
+      - Track currentState: TavernState
+      - Track selectedRosterIndex: number (for character selection from roster)
+      - Track selectedPartyIndex: number (for character selection from party)
+      - Track errorMessage: string | null
+
+      Methods:
+      - reset(): void - Reset to main state
+      - setState(state: TavernState): void
+      - getStateContext(): TavernStateContext
+      - getEligibleRosterCharacters(): ICharacter[] - Filter for alive, alignment-compatible
+      - validateDungeonEntry(): boolean - Check at least 1 living party member
+
+      Use GameState for party and characterRoster access.
+    outputs:
+      - "src/systems/tavern/TavernStateManager.ts"
+    agent_action: "Implement state management following InnStateManager pattern"
+    role: "agent"
+    downstream:
+      - "create-tavern-ui-renderer"
+
+  - id: "create-tavern-ui-renderer"
+    status: "Completed"
+    materialization: 0.7
+    description: "Create Tavern UI renderer"
+    detailed_description: |
+      Create src/systems/tavern/TavernUIRenderer.ts:
+
+      Three-panel layout (follow InnUIRenderer exactly):
+      - Left panel (10, 80, 240x480): Current party status
+        - Show 6 slots (1-6)
+        - Character name, class, level, HP, alignment
+        - Empty slots shown as "[Empty]"
+
+      - Center panel (260, 80, 500x400): Main content area
+        - main state: Welcome text, instructions
+        - addCharacter state: Roster list with alignment indicators
+        - removeCharacter state: Party member list
+        - divvyGold/confirmDivvy states: Gold distribution preview
+
+      - Right panel (770, 80, 240x300): Action menu
+        - Add Character to Party
+        - Remove Character from Party
+        - Divvy Gold
+        - Leave
+
+      Use GameConstants for colors.
+      Show alignment compatibility indicators (gray out incompatible).
+      Include GILGAMESH'S TAVERN header.
+    outputs:
+      - "src/systems/tavern/TavernUIRenderer.ts"
+    agent_action: "Implement UI rendering with three-panel layout"
+    role: "agent"
+    downstream:
+      - "create-tavern-input-handler"
+
+  - id: "create-tavern-input-handler"
+    status: "Completed"
+    materialization: 0.6
+    description: "Create Tavern input handler"
+    detailed_description: |
+      Create src/systems/tavern/TavernInputHandler.ts:
+
+      Follow InnInputHandler pattern:
+      - Use MenuInputHandler for menu navigation
+      - Handle state-specific input:
+        - main: Menu selection (up/down/enter/escape)
+        - addCharacter: Number keys 1-9 for roster selection, escape to cancel
+        - removeCharacter: Number keys 1-6 for party selection, escape to cancel
+        - divvyGold: Y/N confirmation
+        - confirmDivvy: Y to execute, N to cancel
+
+      On successful operations:
+      - Add messageLog entries
+      - Return to main state
+      - Use DebugLogger
+
+      On escape from main: Return to town (sceneManager.switchTo('town'))
+    outputs:
+      - "src/systems/tavern/TavernInputHandler.ts"
+    agent_action: "Implement input handling following InnInputHandler pattern"
+    role: "agent"
+    downstream:
+      - "create-tavern-scene"
+
+  - id: "create-tavern-scene"
+    status: "Completed"
+    materialization: 1.0
+    description: "Create main Tavern scene"
+    detailed_description: |
+      Create src/scenes/TavernScene.ts:
+
+      Follow InnScene structure exactly:
+
+      ```typescript
+      export class TavernScene extends Scene {
+        private gameState: GameState;
+        private sceneManager: SceneManager;
+        private messageLog: any;
+
+        private uiRenderer!: TavernUIRenderer;
+        private stateManager!: TavernStateManager;
+        private inputHandler!: TavernInputHandler;
+        private serviceHandler!: TavernServiceHandler;
+
+        constructor(gameState: GameState, sceneManager: SceneManager) {
+          super('Tavern');
+          // Initialize components
+        }
+
+        private initializeComponents(): void { }
+        public enter(): void { }
+        public exit(): void { }
+        public update(_deltaTime: number): void { }
+        public render(ctx: CanvasRenderingContext2D): void { }
+        public renderLayered(renderContext: SceneRenderContext): void { }
+        public handleInput(key: string): boolean { }
+      }
+      ```
+
+      Use DebugLogger for all logging.
+      Delegate all rendering to uiRenderer.
+      Delegate all input to inputHandler.
+    outputs:
+      - "src/scenes/TavernScene.ts"
+    agent_action: "Implement TavernScene following InnScene pattern"
+    role: "agent"
+    downstream:
+      - "integrate-tavern-with-town"
+
+  - id: "integrate-tavern-with-town"
+    status: "Completed"
+    materialization: 1.0
+    description: "Add Tavern to Town scene and Game"
+    detailed_description: |
+      Update src/scenes/TownScene.ts:
+      - Add "Gilgamesh's Tavern" to menuOptions array (insert between Inn and Training Grounds)
+      - Update descriptions array with: "Assemble your party and manage your roster."
+      - Add case in selectCurrentOption() to switch to 'tavern' scene
+      - Update selectedOption indices for remaining options
+
+      Update src/core/Game.ts:
+      - Import TavernScene
+      - Register scene: this.sceneManager.registerScene('tavern', new TavernScene(this.gameState, this.sceneManager))
+
+      Verify scene transition works both ways (town → tavern → town).
+    outputs:
+      - "src/scenes/TownScene.ts"
+      - "src/core/Game.ts"
+    agent_action: "Integrate Tavern into town menu and game initialization"
+    role: "agent"
+    downstream:
+      - "add-dungeon-entry-validation"
+
+  - id: "add-dungeon-entry-validation"
+    status: "Completed"
+    materialization: 1.0
+    description: "Add dungeon entry validation"
+    detailed_description: |
+      Update src/scenes/TownScene.ts:
+
+      In selectCurrentOption() for "Return to Dungeon" case:
+      1. Check if party has at least 1 living character:
+         ```typescript
+         const livingCharacters = this.gameState.party.characters.filter(
+           (c: Character) => !c.isDead && c.status === 'OK'
+         );
+         ```
+
+      2. If livingCharacters.length === 0:
+         - Show messageLog warning: "You need at least one living party member to enter the dungeon!"
+         - Do NOT switch to dungeon scene
+         - Stay in town
+
+      3. If livingCharacters.length > 0:
+         - Proceed with dungeon scene transition
+
+      This prevents soft-lock where player cannot progress.
+    outputs:
+      - "src/scenes/TownScene.ts"
+    agent_action: "Add dungeon entry validation for living party members"
+    role: "agent"
+    acceptance_criteria:
+      - "Cannot enter dungeon with 0 living characters"
+      - "Warning message displayed to user"
+      - "Can enter dungeon with 1+ living characters"
+    downstream:
+      - "test-tavern-functionality"
+
+  - id: "test-tavern-functionality"
+    status: "Ready"
+    materialization: 0.2
+    description: "Test Tavern functionality via AI Interface"
+    detailed_description: |
+      Manual testing using AI Interface in browser console:
+
+      Test scenarios:
+      1. Add character to empty party
+         - Navigate to Tavern
+         - Select "Add Character"
+         - Add character from roster
+         - Verify: AI.getParty() shows character in party
+
+      2. Test alignment compatibility
+         - Create Good and Evil characters at Training Grounds
+         - Add Good character to party
+         - Attempt to add Evil character
+         - Verify: Evil character grayed out/rejected
+
+      3. Remove character from party
+         - Add multiple characters
+         - Remove one character
+         - Verify: Character back in roster, retains gold/equipment
+
+      4. Divvy gold
+         - Give characters different gold amounts
+         - Use Divvy Gold
+         - Verify: Math.floor(total/count) distribution with remainder to first
+
+      5. Dungeon entry validation
+         - Remove all living characters
+         - Attempt to enter dungeon from town
+         - Verify: Warning message, cannot enter
+
+      6. Save/load persistence
+         - Make party changes
+         - Save game
+         - Load game
+         - Verify: Party composition persists
+
+      Document any issues found.
+      Use DebugLogger.info() to track test progress.
+    outputs:
+      - "Test results via AI Interface"
+    agent_action: "Manual testing via browser console AI Interface"
+    role: "agent"
+    acceptance_criteria:
+      - "All party operations work correctly"
+      - "Alignment compatibility enforced"
+      - "Divvy gold math correct"
+      - "Dungeon entry validation works"
+      - "Save/load preserves party state"
+    downstream: []

@@ -115,6 +115,7 @@ export class TestUtils {
       gameTime: 0,
       turnCount: 0,
       combatEnabled: true,
+      characterRoster: [],
     };
 
     return { ...defaults, ...overrides };

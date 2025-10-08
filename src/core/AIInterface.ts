@@ -299,6 +299,293 @@ export class AIInterface {
 
     return this.simulateKeypress(keyMap[direction] || 'ArrowUp');
   }
+
+  public getTrainingGroundsInfo(): {
+    inTrainingGrounds: boolean;
+    currentState?: string;
+    rosterCount?: number;
+    selectedCharacter?: {
+      name: string;
+      race: string;
+      class: string;
+      level: number;
+      stats: { [key: string]: number };
+      hp: { current: number; max: number };
+      mp: { current: number; max: number };
+      age: number;
+      experience: number;
+      knownSpells?: string[];
+    };
+    creationData?: {
+      name: string;
+      race: string | null;
+      gender: string | null;
+      class: string | null;
+      alignment: string | null;
+      baseStats: { [key: string]: number } | null;
+      bonusPoints: number;
+      allocatedBonusPoints: { [key: string]: number };
+      remainingBonusPoints: number;
+      startAtLevel4: boolean;
+      eligibleClasses: string[];
+    };
+    availableActions?: string[];
+  } {
+    const scene = this.game.getSceneManager().getCurrentScene();
+    if (!scene || scene.getName().toLowerCase() !== 'traininggrounds') {
+      return { inTrainingGrounds: false };
+    }
+
+    const trainingScene = scene as any;
+    const currentState = trainingScene.getCurrentState ? trainingScene.getCurrentState() : 'unknown';
+    const state = this.getGameState();
+    const rosterCount = state.characterRoster?.length || 0;
+
+    const result: any = {
+      inTrainingGrounds: true,
+      currentState,
+      rosterCount,
+    };
+
+    if (trainingScene.stateManager) {
+      const stateContext = trainingScene.stateManager.getStateContext();
+
+      if (stateContext.selectedCharacterIndex >= 0 && state.characterRoster?.[stateContext.selectedCharacterIndex]) {
+        const char = state.characterRoster[stateContext.selectedCharacterIndex] as Character;
+        result.selectedCharacter = {
+          name: char.name,
+          race: char.race,
+          class: char.class,
+          level: char.level,
+          stats: {
+            strength: char.stats.strength,
+            intelligence: char.stats.intelligence,
+            piety: char.stats.piety,
+            vitality: char.stats.vitality,
+            agility: char.stats.agility,
+            luck: char.stats.luck,
+          },
+          hp: { current: char.hp, max: char.maxHp },
+          mp: { current: char.mp, max: char.maxMp },
+          age: char.age,
+          experience: char.experience,
+          knownSpells: char.knownSpells || [],
+        };
+      }
+
+      if (stateContext.creationData) {
+        const allocated = Object.values(stateContext.creationData.allocatedBonusPoints).reduce(
+          (sum: number, val: any) => sum + (val || 0), 0
+        );
+
+        result.creationData = {
+          name: stateContext.creationData.name,
+          race: stateContext.creationData.race,
+          gender: stateContext.creationData.gender,
+          class: stateContext.creationData.class,
+          alignment: stateContext.creationData.alignment,
+          baseStats: stateContext.creationData.baseStats ? {
+            strength: stateContext.creationData.baseStats.strength,
+            intelligence: stateContext.creationData.baseStats.intelligence,
+            piety: stateContext.creationData.baseStats.piety,
+            vitality: stateContext.creationData.baseStats.vitality,
+            agility: stateContext.creationData.baseStats.agility,
+            luck: stateContext.creationData.baseStats.luck,
+          } : null,
+          bonusPoints: stateContext.creationData.bonusPoints,
+          allocatedBonusPoints: stateContext.creationData.allocatedBonusPoints,
+          remainingBonusPoints: stateContext.creationData.bonusPoints - allocated,
+          startAtLevel4: stateContext.creationData.startAtLevel4,
+          eligibleClasses: stateContext.eligibleClasses,
+        };
+      }
+
+      const actionMap: { [key: string]: string[] } = {
+        'main': trainingScene.stateManager.getMainMenuOptions?.() || [],
+        'inspectMenu': trainingScene.stateManager.getInspectMenuOptions?.() || [],
+      };
+
+      result.availableActions = actionMap[currentState] || [];
+    }
+
+    return result;
+  }
+
+  public createCharacter(options: {
+    name: string;
+    race: string;
+    gender: 'male' | 'female';
+    class: string;
+    alignment: string;
+    statAllocations: { [key: string]: number };
+  }): boolean {
+    const info = this.getTrainingGroundsInfo();
+    if (!info.inTrainingGrounds || info.currentState !== 'main') {
+      return false;
+    }
+
+    this.simulateKeypress('ArrowUp');
+    this.simulateKeypress('Enter');
+
+    this.simulateKeypress(options.name);
+    this.simulateKeypress('Enter');
+
+    const races = ['Human', 'Elf', 'Dwarf', 'Gnome', 'Hobbit', 'Faerie', 'Lizman', 'Dracon', 'Rawulf', 'Mook', 'Felpurr'];
+    const raceIndex = races.indexOf(options.race);
+    if (raceIndex === -1) return false;
+
+    for (let i = 0; i < raceIndex; i++) {
+      this.simulateKeypress('ArrowDown');
+    }
+    this.simulateKeypress('Enter');
+
+    if (options.gender === 'female') {
+      this.simulateKeypress('ArrowDown');
+    }
+    this.simulateKeypress('Enter');
+
+    const stats = ['strength', 'intelligence', 'piety', 'vitality', 'agility', 'luck'];
+    for (let i = 0; i < stats.length; i++) {
+      const stat = stats[i];
+      const points = options.statAllocations[stat] || 0;
+
+      for (let j = 0; j < i; j++) {
+        this.simulateKeypress('ArrowDown');
+      }
+
+      for (let p = 0; p < points; p++) {
+        this.simulateKeypress('ArrowRight');
+      }
+    }
+
+    this.simulateKeypress('Enter');
+
+    const currentInfo = this.getTrainingGroundsInfo();
+    if (!currentInfo.creationData?.eligibleClasses.includes(options.class)) {
+      return false;
+    }
+
+    const classIndex = currentInfo.creationData.eligibleClasses.indexOf(options.class);
+    for (let i = 0; i < classIndex; i++) {
+      this.simulateKeypress('ArrowDown');
+    }
+    this.simulateKeypress('Enter');
+
+    const alignments = ['Good', 'Neutral', 'Evil'];
+    const alignmentIndex = alignments.indexOf(options.alignment);
+    if (alignmentIndex === -1) return false;
+
+    for (let i = 0; i < alignmentIndex; i++) {
+      this.simulateKeypress('ArrowDown');
+    }
+    this.simulateKeypress('Enter');
+
+    this.simulateKeypress('y');
+
+    return true;
+  }
+
+  public getRosterCharacters(): Array<{
+    name: string;
+    race: string;
+    class: string;
+    level: number;
+    status: string;
+    isDead: boolean;
+  }> {
+    const state = this.getGameState();
+    const roster = state.characterRoster as Character[];
+    return (roster || []).map((char: Character) => ({
+      name: char.name,
+      race: char.race,
+      class: char.class,
+      level: char.level,
+      status: char.status,
+      isDead: char.isDead,
+    }));
+  }
+
+  public inspectRosterCharacter(index: number): boolean {
+    const info = this.getTrainingGroundsInfo();
+    if (!info.inTrainingGrounds || info.currentState !== 'main') {
+      return false;
+    }
+
+    if (index < 0 || index >= (info.rosterCount || 0)) {
+      return false;
+    }
+
+    this.simulateKeypress('ArrowDown');
+    this.simulateKeypress('Enter');
+
+    for (let i = 0; i < index; i++) {
+      this.simulateKeypress('ArrowDown');
+    }
+    this.simulateKeypress('Enter');
+
+    return true;
+  }
+
+  public changeCharacterClass(characterIndex: number, newClass: string): boolean {
+    if (!this.inspectRosterCharacter(characterIndex)) {
+      return false;
+    }
+
+    this.simulateKeypress('ArrowDown');
+    this.simulateKeypress('Enter');
+
+    this.simulateKeypress('Enter');
+
+    const info = this.getTrainingGroundsInfo();
+    if (!info.creationData?.eligibleClasses.includes(newClass)) {
+      return false;
+    }
+
+    const classIndex = info.creationData.eligibleClasses.indexOf(newClass);
+    for (let i = 0; i < classIndex; i++) {
+      this.simulateKeypress('ArrowDown');
+    }
+    this.simulateKeypress('Enter');
+
+    this.simulateKeypress('y');
+
+    return true;
+  }
+
+  public deleteRosterCharacter(index: number): boolean {
+    if (!this.inspectRosterCharacter(index)) {
+      return false;
+    }
+
+    for (let i = 0; i < 3; i++) {
+      this.simulateKeypress('ArrowDown');
+    }
+    this.simulateKeypress('Enter');
+
+    this.simulateKeypress('y');
+
+    return true;
+  }
+
+  public renameRosterCharacter(index: number, newName: string): boolean {
+    if (!this.inspectRosterCharacter(index)) {
+      return false;
+    }
+
+    for (let i = 0; i < 2; i++) {
+      this.simulateKeypress('ArrowDown');
+    }
+    this.simulateKeypress('Enter');
+
+    for (let i = 0; i < 20; i++) {
+      this.simulateKeypress('Backspace');
+    }
+
+    this.simulateKeypress(newName);
+    this.simulateKeypress('Enter');
+
+    return true;
+  }
 }
 
 export function createAIInterface(game: Game): AIInterface {

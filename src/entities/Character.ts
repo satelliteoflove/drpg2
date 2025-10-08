@@ -5,7 +5,7 @@ import {
   CharacterStats,
   CharacterStatus,
   Equipment,
-  Character as ICharacter,
+  ICharacter,
   Item,
   Spell,
 } from '../types/GameTypes';
@@ -453,5 +453,28 @@ export class Character implements ICharacter {
 
   public getCurrentMP(): number {
     return this.mp;
+  }
+
+  public changeClass(newClass: CharacterClass): void {
+    const mpPercentage = this.maxMp > 0 ? this.mp / this.maxMp : 0;
+
+    Object.keys(this.equipment).forEach(slot => {
+      const item = this.equipment[slot as keyof Equipment];
+      if (item) {
+        this.inventory.push(item);
+        delete this.equipment[slot as keyof Equipment];
+      }
+    });
+
+    this.class = newClass;
+    this.level = 1;
+    this.experience = 0;
+    this.experienceModifier = getExperienceModifier(this.race, newClass);
+    this.pendingLevelUp = false;
+    this.age++;
+
+    this.maxHp = this.calculateMaxHp();
+    this.maxMp = this.calculateMaxMp();
+    this.mp = Math.floor(this.maxMp * mpPercentage);
   }
 }
