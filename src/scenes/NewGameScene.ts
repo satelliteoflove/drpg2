@@ -156,7 +156,7 @@ export class NewGameScene extends Scene {
   private selectCurrentOption(): void {
     if (this.selectedOption === 0) {
       this.clearGameStateForNewGame();
-      this.sceneManager.switchTo('character_creation');
+      this.sceneManager.switchTo('town');
     } else {
       this.autoGenerateParty();
     }

@@ -28,7 +28,9 @@ export class TrainingGroundsUIRenderer {
 
     this.renderHeader(ctx);
 
-    if (this.statusPanel) {
+    if (stateContext.currentState === 'createBonusPoints') {
+      this.renderClassEligibilityPanel(ctx, stateContext);
+    } else if (this.statusPanel) {
       this.statusPanel.render(this.gameState.party, ctx);
     }
 
@@ -148,14 +150,10 @@ export class TrainingGroundsUIRenderer {
       ctx.fillText(`• ${service}`, x + width / 2, y + 175 + index * 25);
     });
 
-    ctx.fillStyle = '#fa0';
-    ctx.font = 'bold 14px monospace';
-    ctx.fillText('All Training Grounds services are FREE!', x + width / 2, y + 300);
-
     if (this.gameState.characterRoster.length > 0) {
       ctx.fillStyle = '#4a4';
       ctx.font = '14px monospace';
-      ctx.fillText(`Current Roster: ${this.gameState.characterRoster.length} character(s)`, x + width / 2, y + 340);
+      ctx.fillText(`Current Roster: ${this.gameState.characterRoster.length} character(s)`, x + width / 2, y + 300);
     }
   }
 
@@ -433,10 +431,17 @@ export class TrainingGroundsUIRenderer {
 
     characters.forEach((char: Character, index: number) => {
       const isSelected = index === stateContext.selectedOption;
+      const isInParty = this.isCharacterInParty(char);
 
       if (isSelected) {
         ctx.fillStyle = '#333';
         ctx.fillRect(x + 40, yPos - 15, width - 80, 30);
+      }
+
+      if (isInParty) {
+        ctx.fillStyle = isSelected ? '#ffa500' : '#4a4';
+        ctx.font = 'bold 14px monospace';
+        ctx.fillText('★', x + 40, yPos);
       }
 
       ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
@@ -696,15 +701,25 @@ export class TrainingGroundsUIRenderer {
     ctx.textAlign = 'center';
     ctx.fillText('CHARACTER ROSTER', x + width / 2, y + 40);
 
+    const partyCount = this.gameState.party.characters.length;
+    const totalCount = this.gameState.characterRoster.length;
     ctx.font = '14px monospace';
     ctx.fillStyle = '#aaa';
-    ctx.fillText(`Total: ${this.gameState.characterRoster.length} character(s)`, x + width / 2, y + 70);
+    ctx.fillText(`Total: ${totalCount} (${partyCount} in active party)`, x + width / 2, y + 70);
 
     const characters = this.stateManager.getRosterCharacters();
     ctx.textAlign = 'left';
     let yPos = y + 110;
 
     characters.forEach((char: Character, index: number) => {
+      const isInParty = this.isCharacterInParty(char);
+
+      if (isInParty) {
+        ctx.fillStyle = '#4a4';
+        ctx.font = 'bold 14px monospace';
+        ctx.fillText('★', x + 40, yPos);
+      }
+
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 14px monospace';
       ctx.fillText(`${index + 1}. ${char.name}`, x + 60, yPos);
@@ -799,11 +814,49 @@ export class TrainingGroundsUIRenderer {
     }
   }
 
+  private renderClassEligibilityPanel(ctx: CanvasRenderingContext2D, stateContext: TrainingGroundsStateContext): void {
+    const panelX = 10;
+    const panelY = 80;
+    const panelWidth = 240;
+    const panelHeight = 480;
+
+    this.drawPanel(ctx, panelX, panelY, panelWidth, panelHeight);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('AVAILABLE CLASSES', panelX + panelWidth / 2, panelY + 25);
+
+    const allClasses: CharacterClass[] = [
+      'Fighter', 'Mage', 'Priest', 'Thief', 'Alchemist',
+      'Bishop', 'Bard', 'Ranger', 'Psionic',
+      'Valkyrie', 'Samurai', 'Lord', 'Monk', 'Ninja'
+    ];
+
+    const eligibleClasses = stateContext.eligibleClasses;
+
+    ctx.textAlign = 'left';
+    ctx.font = '12px monospace';
+
+    let yPos = panelY + 50;
+
+    allClasses.forEach((className) => {
+      const isEligible = eligibleClasses.includes(className);
+      ctx.fillStyle = isEligible ? '#fff' : '#666';
+      ctx.fillText(className, panelX + 15, yPos);
+      yPos += 20;
+    });
+  }
+
   private drawPanel(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): void {
     ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(x, y, width, height);
     ctx.strokeStyle = '#666';
     ctx.lineWidth = 2;
     ctx.strokeRect(x, y, width, height);
+  }
+
+  private isCharacterInParty(character: Character): boolean {
+    return this.gameState.party.characters.some((c: Character) => c.id === character.id);
   }
 }

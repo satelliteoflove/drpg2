@@ -109,17 +109,13 @@ export class TrainingGroundsStateManager {
     const raceConfig = RACES[this.creationData.race.toLowerCase()];
     if (!raceConfig) return;
 
-    const rollStatInRange = (min: number, max: number): number => {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    };
-
     this.creationData.baseStats = {
-      strength: rollStatInRange(raceConfig.stats.strength.min, raceConfig.stats.strength.max),
-      intelligence: rollStatInRange(raceConfig.stats.intelligence.min, raceConfig.stats.intelligence.max),
-      piety: rollStatInRange(raceConfig.stats.piety.min, raceConfig.stats.piety.max),
-      vitality: rollStatInRange(raceConfig.stats.vitality.min, raceConfig.stats.vitality.max),
-      agility: rollStatInRange(raceConfig.stats.agility.min, raceConfig.stats.agility.max),
-      luck: rollStatInRange(raceConfig.stats.luck.min, raceConfig.stats.luck.max)
+      strength: raceConfig.stats.strength.min,
+      intelligence: raceConfig.stats.intelligence.min,
+      piety: raceConfig.stats.piety.min,
+      vitality: raceConfig.stats.vitality.min,
+      agility: raceConfig.stats.agility.min,
+      luck: raceConfig.stats.luck.min
     };
 
     this.creationData.allocatedBonusPoints = {};
@@ -145,8 +141,18 @@ export class TrainingGroundsStateManager {
     return this.creationData.bonusPoints - allocated;
   }
 
-  public canAllocateBonusPoint(_stat: keyof CharacterStats): boolean {
-    return this.getRemainingBonusPoints() > 0;
+  public canAllocateBonusPoint(stat: keyof CharacterStats): boolean {
+    if (this.getRemainingBonusPoints() <= 0) return false;
+
+    if (!this.creationData.race || !this.creationData.baseStats) return false;
+
+    const raceConfig = RACES[this.creationData.race.toLowerCase()];
+    if (!raceConfig) return false;
+
+    const currentValue = this.getCurrentStats()[stat];
+    const maxValue = raceConfig.stats[stat].max;
+
+    return currentValue < maxValue;
   }
 
   public allocateBonusPoint(stat: keyof CharacterStats): void {
