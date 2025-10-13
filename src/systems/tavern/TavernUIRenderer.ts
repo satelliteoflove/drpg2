@@ -68,6 +68,9 @@ export class TavernUIRenderer {
       case 'removeCharacter':
         this.renderRemoveCharacter(ctx, mainX, mainY, mainWidth, mainHeight, stateContext);
         break;
+      case 'reorderParty':
+        this.renderReorderParty(ctx, mainX, mainY, mainWidth, mainHeight, stateContext);
+        break;
       case 'divvyGold':
         this.renderDivvyGold(ctx, mainX, mainY, mainWidth, mainHeight);
         break;
@@ -258,6 +261,54 @@ export class TavernUIRenderer {
     ctx.fillText('Press ENTER to continue', x + width / 2, y + 200);
   }
 
+  private renderReorderParty(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, stateContext: TavernStateContext): void {
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('REORDER PARTY', x + width / 2, y + 40);
+
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('LEFT/RIGHT to move | UP/DOWN to select | ENTER/ESC to finish', x + width / 2, y + 70);
+
+    const party = this.gameState.party.characters;
+
+    if (party.length <= 1) {
+      ctx.fillStyle = '#666';
+      ctx.fillText('Need at least 2 characters to reorder', x + width / 2, y + 150);
+      return;
+    }
+
+    ctx.textAlign = 'left';
+    let yPos = y + 110;
+
+    party.forEach((char: Character, index: number) => {
+      const isSelected = index === stateContext.selectedPartyIndex;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 40, yPos - 15, width - 80, 25);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
+
+      ctx.fillText(`${index + 1}.`, x + 50, yPos);
+
+      if (isSelected) {
+        ctx.fillText('>', x + 80, yPos);
+      }
+
+      ctx.fillText(`${char.name}`, x + 100, yPos);
+
+      ctx.font = '12px monospace';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText(`${char.class} Lv${char.level}`, x + 250, yPos);
+
+      yPos += 30;
+    });
+  }
+
   private renderActionMenu(ctx: CanvasRenderingContext2D, stateContext: TavernStateContext): void {
     const menuX = 770;
     const menuY = 80;
@@ -278,6 +329,7 @@ export class TavernUIRenderer {
       const options = [
         'Add Character to Party',
         'Remove Character from Party',
+        'Reorder Party',
         'Divvy Gold',
         'Leave'
       ];
@@ -309,6 +361,9 @@ export class TavernUIRenderer {
       if (stateContext.currentState === 'addCharacter' || stateContext.currentState === 'removeCharacter') {
         ctx.fillText('1-9: Select | ENTER: Confirm', menuX + menuWidth / 2, menuY + menuHeight - 30);
         ctx.fillText('ESC: Back to Main', menuX + menuWidth / 2, menuY + menuHeight - 15);
+      } else if (stateContext.currentState === 'reorderParty') {
+        ctx.fillText('LEFT/RIGHT: Move Position', menuX + menuWidth / 2, menuY + menuHeight - 30);
+        ctx.fillText('ENTER/ESC: Done', menuX + menuWidth / 2, menuY + menuHeight - 15);
       } else if (stateContext.currentState === 'divvyGold') {
         ctx.fillText('Y: Confirm | N: Cancel', menuX + menuWidth / 2, menuY + menuHeight - 15);
       } else if (stateContext.currentState === 'confirmDivvy') {
