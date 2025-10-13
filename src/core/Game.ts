@@ -25,6 +25,8 @@ import { LayerTestUtils } from '../utils/LayerTestUtils';
 import { MessageLog } from '../ui/MessageLog';
 import { DebugLogger } from '../utils/DebugLogger';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
+import { StarterCharacterFactory } from '../utils/StarterCharacterFactory';
+import { STARTER_CHARACTER_TEMPLATES } from '../config/StarterCharacters';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -124,7 +126,11 @@ export class Game {
       characterRoster: [],
     };
 
-    // Add initial game messages
+    STARTER_CHARACTER_TEMPLATES.forEach((template) => {
+      const character = StarterCharacterFactory.createFromTemplate(template);
+      this.gameState.characterRoster.push(character);
+    });
+
     this.gameState.messageLog.addSystemMessage('Welcome to the dungeon!');
     this.gameState.messageLog.addSystemMessage('Use WASD or arrow keys to move');
     this.gameState.messageLog.addSystemMessage('Press ENTER to interact, M for map');
@@ -458,7 +464,33 @@ export class Game {
 
   public resetGame(): void {
     DebugLogger.info('Game', 'Resetting game to new state');
-    this.createNewGameState();
+
+    this.gameState.party = new Party();
+    this.gameState.dungeon = [];
+    this.gameState.currentFloor = 1;
+    this.gameState.inCombat = false;
+    this.gameState.gameTime = 0;
+    this.gameState.turnCount = 0;
+    this.gameState.combatEnabled = true;
+    this.gameState.currentEncounter = undefined;
+    this.gameState.hasEnteredDungeon = false;
+    this.gameState.characterRoster = [];
+
+    STARTER_CHARACTER_TEMPLATES.forEach((template) => {
+      const character = StarterCharacterFactory.createFromTemplate(template);
+      this.gameState.characterRoster.push(character);
+    });
+
+    this.gameState.messageLog.clear();
+    this.gameState.messageLog.addSystemMessage('Welcome to the dungeon!');
+    this.gameState.messageLog.addSystemMessage('Use WASD or arrow keys to move');
+    this.gameState.messageLog.addSystemMessage('Press ENTER to interact, M for map');
+    this.gameState.messageLog.addSystemMessage('Press C to toggle combat encounters');
+    this.gameState.messageLog.addSystemMessage('Press T to trigger combat (testing)');
+    this.gameState.messageLog.addSystemMessage('Press R to rest, ESC to return to main menu');
+
+    this.generateNewDungeon();
+
     this.playtimeStart = Date.now();
     this.frameCount = 0;
     this.autoSaveFrameCounter = 0;
