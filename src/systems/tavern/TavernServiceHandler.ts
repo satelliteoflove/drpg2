@@ -78,6 +78,23 @@ export class TavernServiceHandler {
     return success;
   }
 
+  public reorderParty(fromIndex: number, toIndex: number): boolean {
+    const party = this.gameState.party.characters;
+    if (fromIndex < 0 || fromIndex >= party.length || toIndex < 0 || toIndex >= party.length) {
+      return false;
+    }
+
+    const [character] = party.splice(fromIndex, 1);
+    party.splice(toIndex, 0, character);
+
+    if (this.messageLog?.add) {
+      this.messageLog.add(`Moved ${character.name} to position ${toIndex + 1}.`);
+    }
+
+    DebugLogger.info('TavernServiceHandler', `Reordered party: moved ${character.name} from ${fromIndex} to ${toIndex}`);
+    return true;
+  }
+
   public divvyGold(): void {
     const party = this.gameState.party.characters;
 

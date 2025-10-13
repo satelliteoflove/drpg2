@@ -45,6 +45,7 @@ export class TavernStateManager {
     return [
       'Add Character to Party',
       'Remove Character from Party',
+      'Reorder Party',
       'Divvy Gold',
       'Leave'
     ];

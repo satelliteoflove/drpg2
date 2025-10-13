@@ -37,6 +37,8 @@ export class TavernInputHandler {
         return this.handleAddCharacterInput(key);
       case 'removeCharacter':
         return this.handleRemoveCharacterInput(key);
+      case 'reorderParty':
+        return this.handleReorderPartyInput(key);
       case 'divvyGold':
         return this.handleDivvyGoldInput(key);
       case 'confirmDivvy':
@@ -119,11 +121,24 @@ export class TavernInputHandler {
         DebugLogger.info('TavernInputHandler', 'Entering removeCharacter state');
         break;
       }
-      case 2:
+      case 2: {
+        const party = this.gameState.party.characters;
+        if (party.length <= 1) {
+          if (this.messageLog?.add) {
+            this.messageLog.add('Need at least 2 party members to reorder.');
+          }
+          return;
+        }
+        this.stateManager.setState('reorderParty');
+        this.stateManager.selectedPartyIndex = 0;
+        DebugLogger.info('TavernInputHandler', 'Entering reorderParty state');
+        break;
+      }
+      case 3:
         this.stateManager.setState('divvyGold');
         DebugLogger.info('TavernInputHandler', 'Entering divvyGold state');
         break;
-      case 3:
+      case 4:
         DebugLogger.info('TavernInputHandler', 'Leaving tavern, returning to town');
         this.sceneManager.switchTo('town');
         break;
@@ -221,6 +236,49 @@ export class TavernInputHandler {
     );
 
     return action.type !== 'none';
+  }
+
+  private handleReorderPartyInput(key: string): boolean {
+    const party = this.gameState.party.characters;
+    const selectedIndex = this.stateManager.selectedPartyIndex;
+
+    if (key === 'arrowup' || key === 'w') {
+      if (selectedIndex > 0) {
+        this.stateManager.selectedPartyIndex--;
+      }
+      return true;
+    }
+
+    if (key === 'arrowdown' || key === 's') {
+      if (selectedIndex < party.length - 1) {
+        this.stateManager.selectedPartyIndex++;
+      }
+      return true;
+    }
+
+    if (key === 'arrowleft' || key === 'a') {
+      if (selectedIndex > 0) {
+        this.serviceHandler.reorderParty(selectedIndex, selectedIndex - 1);
+        this.stateManager.selectedPartyIndex--;
+      }
+      return true;
+    }
+
+    if (key === 'arrowright' || key === 'd') {
+      if (selectedIndex < party.length - 1) {
+        this.serviceHandler.reorderParty(selectedIndex, selectedIndex + 1);
+        this.stateManager.selectedPartyIndex++;
+      }
+      return true;
+    }
+
+    if (key === 'escape' || key === 'esc' || key === 'enter' || key === 'return') {
+      this.stateManager.setState('main');
+      DebugLogger.info('TavernInputHandler', 'Exited reorderParty, returning to main');
+      return true;
+    }
+
+    return false;
   }
 
   private handleDivvyGoldInput(key: string): boolean {

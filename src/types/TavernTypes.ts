@@ -2,6 +2,7 @@ export type TavernState =
   | 'main'
   | 'addCharacter'
   | 'removeCharacter'
+  | 'reorderParty'
   | 'divvyGold'
   | 'confirmDivvy';
 
