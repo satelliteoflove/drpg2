@@ -75,9 +75,12 @@ src/
 
 ## AI Interface for Testing and Automation
 
-The AI Interface (`window.AI`) is the **primary method** for testing and verifying game functionality. Always use this instead of DOM manipulation or visual inspection.
+**CRITICAL DISTINCTION:**
+- **Claude Code (AI assistant)** uses the AI Interface (`window.AI`) for automated testing during development
+- **The user** ALWAYS tests by navigating menus and playing the game normally through the UI
+- **NEVER instruct the user to run AI commands in the console**
 
-### Quick Reference
+### AI Interface Quick Reference (for Claude Code only)
 - `AI.getState()` - Get complete game state
 - `AI.getScene()` - Get current scene name
 - `AI.getParty()` - Get party location and character info
@@ -88,12 +91,19 @@ The AI Interface (`window.AI`) is the **primary method** for testing and verifyi
 - `AI.sendKey(key)` - Simulate keyboard input
 - `AI.roll(dice)` - Roll dice (e.g., "3d6+2")
 
-### Testing Best Practices
+### Testing Best Practices (for Claude Code)
+- **Claude Code must use AI Interface** for all automated testing and verification during development
 - **Always verify state changes** through AI Interface, not visual output
 - **Use `AI.getActions()`** to know what inputs are valid before sending keys
 - **Check scene transitions** with `AI.getScene()` after actions that might change scenes
 - **Validate combat outcomes** by comparing before/after states from `AI.getCombat()`
 - **Debug with `AI.describe()`** for readable state information in console
+
+### User Testing Instructions
+When implementation is complete, inform the user that the feature is ready for testing. The user will test by:
+- Playing the game through normal UI/keyboard navigation
+- Observing visual output and game behavior
+- Reporting any issues found through manual gameplay
 
 ## Conventions
 - PascalCase for classes/interfaces
