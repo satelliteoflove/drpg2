@@ -29,15 +29,9 @@ export class StatusPanel {
     this.currentRenderCtx.lineWidth = 2;
     this.currentRenderCtx.strokeRect(this.x, this.y, this.width, this.height);
 
-    this.currentRenderCtx.fillStyle = '#fff';
-    this.currentRenderCtx.font = 'bold 14px monospace';
-    this.currentRenderCtx.textAlign = 'center';
-    this.currentRenderCtx.fillText('PARTY STATUS', this.x + this.width / 2, this.y + 20);
-    this.currentRenderCtx.textAlign = 'left';
-
     const charHeight = 75;
-    const startY = this.y + 40;
-    const availableHeight = this.height - 50; // More space for characters
+    const startY = this.y + 15;
+    const availableHeight = this.height - 25;
     const maxChars = Math.floor(availableHeight / charHeight);
 
     party.characters.slice(0, maxChars).forEach((char, index) => {
@@ -59,7 +53,7 @@ export class StatusPanel {
     this.currentRenderCtx.lineWidth = 1;
     this.currentRenderCtx.strokeRect(x, y, width, height);
 
-    // Name and class on first line
+    this.currentRenderCtx.textAlign = 'left';
     this.currentRenderCtx.fillStyle = '#fff';
     this.currentRenderCtx.font = '12px monospace';
     this.currentRenderCtx.fillText(`${char.name} (${char.class})`, x + 5, y + 14);

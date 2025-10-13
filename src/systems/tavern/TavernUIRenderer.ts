@@ -103,10 +103,6 @@ export class TavernUIRenderer {
       ctx.fillText(`• ${service}`, x + width / 2, y + 170 + index * 25);
     });
 
-    ctx.fillStyle = '#ffa500';
-    ctx.font = '12px monospace';
-    ctx.fillText('All services are free of charge!', x + width / 2, y + 280);
-
     const roster = this.gameState.characterRoster as Character[];
     const availableCharacters = roster.filter((c: Character) => !c.isDead);
     const partySize = this.gameState.party.characters.length;
