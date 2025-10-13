@@ -12,10 +12,22 @@ export class TrainingGroundsServiceHandler {
     this.gameState.characterRoster.push(character);
   }
 
-  public deleteCharacter(index: number): void {
-    if (index >= 0 && index < this.gameState.characterRoster.length) {
-      this.gameState.characterRoster.splice(index, 1);
+  public isCharacterInParty(characterId: string): boolean {
+    return this.gameState.party.characters.some((char: Character) => char.id === characterId);
+  }
+
+  public deleteCharacter(index: number): boolean {
+    if (index < 0 || index >= this.gameState.characterRoster.length) {
+      return false;
     }
+
+    const character = this.gameState.characterRoster[index];
+    if (this.isCharacterInParty(character.id)) {
+      return false;
+    }
+
+    this.gameState.characterRoster.splice(index, 1);
+    return true;
   }
 
   public changeCharacterClass(index: number, newClass: CharacterClass): void {

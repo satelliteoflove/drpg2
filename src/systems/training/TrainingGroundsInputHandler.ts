@@ -26,6 +26,7 @@ export class TrainingGroundsInputHandler {
   }
 
   public handleInput(key: string): boolean {
+    const normalizedKey = key.length > 1 ? key.toLowerCase() : key;
     const state = this.stateManager.currentState;
 
     switch (state) {
@@ -125,7 +126,9 @@ export class TrainingGroundsInputHandler {
   }
 
   private handleNameInput(key: string): boolean {
-    if (key === 'enter' || key === 'return') {
+    const normalizedKey = key.toLowerCase();
+
+    if (normalizedKey === 'enter' || normalizedKey === 'return') {
       if (this.stateManager.textInput.length > 0) {
         this.stateManager.creationData.name = this.stateManager.textInput;
         this.stateManager.setState('createRace');
@@ -134,13 +137,13 @@ export class TrainingGroundsInputHandler {
       return true;
     }
 
-    if (key === 'escape' || key === 'esc') {
+    if (normalizedKey === 'escape' || normalizedKey === 'esc') {
       this.stateManager.setState('main');
       this.stateManager.selectedOption = 0;
       return true;
     }
 
-    if (key === 'backspace') {
+    if (normalizedKey === 'backspace') {
       this.stateManager.textInput = this.stateManager.textInput.slice(0, -1);
       return true;
     }
@@ -431,12 +434,21 @@ export class TrainingGroundsInputHandler {
   private handleDeleteConfirmation(key: string): boolean {
     if (key === 'y') {
       const character = this.stateManager.getRosterCharacters()[this.stateManager.selectedCharacterIndex];
-      this.serviceHandler.deleteCharacter(this.stateManager.selectedCharacterIndex);
-      if (this.messageLog?.add) {
-        this.messageLog.add(`${character.name} has been deleted from the roster.`);
+      const deleted = this.serviceHandler.deleteCharacter(this.stateManager.selectedCharacterIndex);
+
+      if (deleted) {
+        if (this.messageLog?.add) {
+          this.messageLog.add(`${character.name} has been deleted from the roster.`);
+        }
+        this.stateManager.setState('main');
+        this.stateManager.selectedOption = 1;
+      } else {
+        if (this.messageLog?.add) {
+          this.messageLog.add(`Cannot delete ${character.name} - remove from party first.`);
+        }
+        this.stateManager.setState('inspectMenu');
+        this.stateManager.selectedOption = 0;
       }
-      this.stateManager.setState('main');
-      this.stateManager.selectedOption = 1;
       return true;
     } else if (key === 'n' || key === 'escape' || key === 'esc') {
       this.stateManager.setState('inspectMenu');
@@ -549,7 +561,9 @@ export class TrainingGroundsInputHandler {
   }
 
   private handleRenameInput(key: string): boolean {
-    if (key === 'enter' || key === 'return') {
+    const normalizedKey = key.toLowerCase();
+
+    if (normalizedKey === 'enter' || normalizedKey === 'return') {
       if (this.stateManager.textInput.length > 0) {
         this.serviceHandler.renameCharacter(this.stateManager.selectedCharacterIndex, this.stateManager.textInput);
         if (this.messageLog?.add) {
@@ -561,13 +575,13 @@ export class TrainingGroundsInputHandler {
       return true;
     }
 
-    if (key === 'escape' || key === 'esc') {
+    if (normalizedKey === 'escape' || normalizedKey === 'esc') {
       this.stateManager.setState('inspectMenu');
       this.stateManager.selectedOption = 2;
       return true;
     }
 
-    if (key === 'backspace') {
+    if (normalizedKey === 'backspace') {
       this.stateManager.textInput = this.stateManager.textInput.slice(0, -1);
       return true;
     }

@@ -79,8 +79,7 @@ export class TrainingGroundsScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
-    const normalizedKey = key.length === 1 ? key : key.toLowerCase();
-    return this.inputHandler.handleInput(normalizedKey);
+    return this.inputHandler.handleInput(key);
   }
 
   public getCurrentState(): string {
