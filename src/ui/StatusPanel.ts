@@ -109,7 +109,7 @@ export class StatusPanel {
     this.currentRenderCtx.fillText(`MP: ${char.mp}/${char.maxMp}`, x + barWidth + 10, barY + 20);
 
     // XP bar (full width)
-    const xpBarY = barY + 30;
+    const xpBarY = barY + 25;
     const xpBarWidth = width - 10;
 
     this.currentRenderCtx.fillStyle = '#333';
