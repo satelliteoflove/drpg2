@@ -87,22 +87,6 @@ export class TavernUIRenderer {
     ctx.fillStyle = '#aaa';
     ctx.fillText('Gather your party and prepare for adventure', x + width / 2, y + 90);
 
-    ctx.fillStyle = '#4a4';
-    ctx.font = '16px monospace';
-    ctx.fillText('Services Available:', x + width / 2, y + 140);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = '14px monospace';
-    const services = [
-      'Add characters to your active party',
-      'Remove characters from your party',
-      'Distribute gold evenly among party members'
-    ];
-
-    services.forEach((service, index) => {
-      ctx.fillText(`• ${service}`, x + width / 2, y + 170 + index * 25);
-    });
-
     const roster = this.gameState.characterRoster as Character[];
     const availableCharacters = roster.filter((c: Character) => !c.isDead);
     const partySize = this.gameState.party.characters.length;
