@@ -456,8 +456,6 @@ export class Character implements ICharacter {
   }
 
   public changeClass(newClass: CharacterClass): void {
-    const mpPercentage = this.maxMp > 0 ? this.mp / this.maxMp : 0;
-
     Object.keys(this.equipment).forEach(slot => {
       const item = this.equipment[slot as keyof Equipment];
       if (item) {
@@ -466,15 +464,24 @@ export class Character implements ICharacter {
       }
     });
 
+    const raceConfig = RACES[this.race.toLowerCase()];
+    if (raceConfig) {
+      this.stats = {
+        strength: raceConfig.stats.strength.min,
+        intelligence: raceConfig.stats.intelligence.min,
+        piety: raceConfig.stats.piety.min,
+        vitality: raceConfig.stats.vitality.min,
+        agility: raceConfig.stats.agility.min,
+        luck: raceConfig.stats.luck.min
+      };
+      this.baseStats = { ...this.stats };
+    }
+
     this.class = newClass;
     this.level = 1;
     this.experience = 0;
     this.experienceModifier = getExperienceModifier(this.race, newClass);
     this.pendingLevelUp = false;
     this.age++;
-
-    this.maxHp = this.calculateMaxHp();
-    this.maxMp = this.calculateMaxMp();
-    this.mp = Math.floor(this.maxMp * mpPercentage);
   }
 }

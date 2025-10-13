@@ -26,7 +26,6 @@ export class TrainingGroundsInputHandler {
   }
 
   public handleInput(key: string): boolean {
-    const normalizedKey = key.length > 1 ? key.toLowerCase() : key;
     const state = this.stateManager.currentState;
 
     switch (state) {
