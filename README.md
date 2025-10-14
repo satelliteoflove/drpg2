@@ -1,6 +1,6 @@
 # DRPG2 - Wizardry-like Dungeon RPG
 
-A full-featured dungeon role-playing game built with TypeScript and HTML5 Canvas, faithfully implementing the Wizardry Gaiden IV character and magic systems.
+A full-featured dungeon role-playing game built with TypeScript and HTML5 Canvas.
 
 ## Features
 
@@ -12,7 +12,7 @@ A full-featured dungeon role-playing game built with TypeScript and HTML5 Canvas
 - **Character Progression**: Level up characters at the Inn, improve stats, and learn new spells automatically by level
 - **Permadeath System**: Characters face permanent consequences including death and resurrection risks
 
-### Magic System (Wizardry Gaiden IV)
+### Magic System
 - **4 Spell Schools**: Mage, Priest, Alchemist, and Psionic magic with distinct spell lists
 - **7 Spell Levels**: Each school has 7 levels of increasingly powerful spells
 - **Automatic Spell Learning**: Characters learn spells automatically upon leveling up based on their class
@@ -68,7 +68,7 @@ npm run build
 
 ## Game Mechanics
 
-### Character Classes (Wizardry Gaiden IV)
+### Character Classes
 
 **Basic Classes** (Available to all):
 - **Fighter**: High HP, excellent melee combat
