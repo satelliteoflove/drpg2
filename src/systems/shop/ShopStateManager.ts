@@ -79,6 +79,10 @@ export class ShopStateManager {
   public selectMenuOption(index: number): void {
     const maxIndex = this.getMaxOptionIndex();
     this.selectedOption = Math.max(0, Math.min(index, maxIndex));
+
+    if (this.currentState === 'buying_character_select') {
+      this.selectedCharacterIndex = this.selectedOption;
+    }
   }
 
   public navigateUp(): void {
