@@ -1,50 +1,58 @@
 # DRPG2 - Wizardry-like Dungeon RPG
 
-A full-featured dungeon role-playing game built with TypeScript and HTML5 Canvas, inspired by the classic Wizardry series.
+A full-featured dungeon role-playing game built with TypeScript and HTML5 Canvas, faithfully implementing the Wizardry Gaiden IV character and magic systems.
 
 ## Features
 
-### ASCII Rendering Mode (AI-Friendly)
-- **80x25 ASCII Grid Display**: Text-based rendering for AI systems to understand game state
-- **Feature Flag System**: Toggle ASCII mode via `window.FeatureFlags.enable('ascii_rendering')`
-- **Scene-Specific Toggles**: Enable ASCII for individual scenes (town, dungeon, combat, etc.)
-- **Bidirectional Sync**: Prototype changes in ASCII before implementing in canvas
-- **Full Test Coverage**: 42+ Playwright tests for ASCII functionality
-
 ### Core Gameplay
-- **Character Creation**: Create characters with different races (Human, Elf, Dwarf, Gnome, Hobbit) and classes (Fighter, Mage, Priest, Thief, Bishop, Samurai, Lord, Ninja)
-- **Party Management**: Form parties of up to 6 characters with tactical positioning
-- **First-Person Dungeon Exploration**: Navigate through procedurally generated dungeons with a classic wireframe 3D view
+- **Character Creation**: Create characters from 11 races (Human, Elf, Dwarf, Gnome, Hobbit, Faerie, Lizman, Dracon, Rawulf, Mook, Felpurr) and 14 classes across three tiers
+- **Party Management**: Form parties of up to 6 characters with tactical front/back positioning
+- **First-Person Dungeon Exploration**: Navigate through procedurally generated dungeons with fog of war and classic wireframe 3D view
 - **Turn-Based Combat**: Engage in strategic battles with monsters using attacks, spells, and items
-- **Character Progression**: Level up characters, improve stats, and learn new spells
+- **Character Progression**: Level up characters at the Inn, improve stats, and learn new spells automatically by level
 - **Permadeath System**: Characters face permanent consequences including death and resurrection risks
 
+### Magic System (Wizardry Gaiden IV)
+- **4 Spell Schools**: Mage, Priest, Alchemist, and Psionic magic with distinct spell lists
+- **7 Spell Levels**: Each school has 7 levels of increasingly powerful spells
+- **Automatic Spell Learning**: Characters learn spells automatically upon leveling up based on their class
+- **Class-Based Casting**: Different fizzle penalties for pure casters, hybrids, and warrior-casters
+- **Comprehensive Spell Database**: 50+ spells including damage, healing, buffs, debuffs, utility, and instant death effects
+
+### Town Services
+- **Temple of Cant**: Resurrection (from death or ashes), healing, cure paralysis/petrification, and curse removal with authentic level-based pricing
+- **Training Grounds**: Create new characters, manage roster, change classes (when qualified)
+- **Gilgamesh's Tavern**: Form and manage your active party, distribute gold, and prepare for dungeon expeditions
+- **Inn**: Rest to recover HP/MP and level up pending characters with authentic Wizardry mechanics
+- **Shop**: Buy, sell, identify items, and uncurse equipment
+
 ### Advanced Systems
-- **Equipment & Inventory**: Comprehensive item system with weapons, armor, and magical items
-- **Spell System**: Mage and Priest spells with MP costs and level requirements  
-- **Dungeon Generation**: Procedurally generated multi-floor dungeons with rooms, corridors, traps, and treasures
-- **Save/Load System**: Persistent game saves with automatic backup and permadeath mechanics
+- **Equipment & Inventory**: Comprehensive item system with weapons, armor, magical items, and enchantments
+- **Dungeon Generation**: Procedurally generated multi-floor dungeons with rooms, corridors, and encounter zones
+- **Fog of War**: Discover the dungeon as you explore with limited vision range
+- **Save/Load System**: Persistent game saves with automatic backup and versioning
+- **AI Interface**: Programmatic game control via `window.AI` for automated testing and development
 - **Beautiful Graphics**: Retro-inspired pixel-perfect rendering with smooth animations
 
 ## Controls
 
-### Movement
-- **W/↑** - Move forward
-- **S/↓** - Move backward  
-- **A/←** - Turn left
-- **D/→** - Turn right
+### Dungeon Exploration
+- **KJHL** or **Arrow Keys** - Move (vim-style: K=forward, J=back, H=left, L=right)
+- **M** - Open map overlay
+- **Tab** - Open inventory
+- **R** - Rest party
+- **Esc** - Return to town
 
-### Actions
-- **Enter/Space** - Interact with objects (doors, chests, stairs)
-- **R** - Rest party (recover HP/MP)
-- **M/Tab** - Menu (character status, inventory)
-- **Esc** - Go back/Cancel
+### Town Navigation
+- **K/J** or **↑/↓** - Navigate menu options
+- **Enter** - Select option
+- **Esc** - Go back/Exit to main menu
 
 ### Combat
-- **↑/↓** - Select actions/targets
-- **←/→** - Select targets
-- **Enter** - Confirm action
-- **Esc** - Go back
+- **↑/↓** - Select action from menu (Attack, Cast Spell, Defend, Run)
+- **Enter** - Confirm selected action
+- **←/→** - Select target (when attacking or casting)
+- **Esc** - Cancel/Go back
 
 ## Getting Started
 
@@ -52,34 +60,42 @@ A full-featured dungeon role-playing game built with TypeScript and HTML5 Canvas
 # Install dependencies
 npm install
 
-# Start development server
+# Start development server (http://localhost:8080)
 npm run dev
 
 # Build for production
 npm run build
 
-# Type checking
+# Type checking (run before commits)
 npm run typecheck
 
-# Run tests
+# Run unit tests
 npm test
-
-# Run specific ASCII tests
-npm test -- dungeon-ascii
-npm test -- town-ascii
 ```
 
 ## Game Mechanics
 
-### Character Classes
-- **Fighter**: High HP, excellent combat skills
-- **Mage**: Powerful offensive magic, low HP
-- **Priest**: Healing and support magic
-- **Thief**: High agility, can disarm traps
-- **Bishop**: Both mage and priest spells
-- **Samurai**: Elite fighter with some magic (high requirements)
-- **Lord**: Ultimate fighter-priest hybrid (very high requirements)  
-- **Ninja**: Master of all trades (extremely high requirements)
+### Character Classes (Wizardry Gaiden IV)
+
+**Basic Classes** (Available to all):
+- **Fighter**: High HP, excellent melee combat
+- **Mage**: Powerful offensive magic school spells
+- **Priest**: Divine healing and support magic
+- **Thief**: High agility, backstab abilities
+- **Alchemist**: Alchemy school spells, item identification
+
+**Advanced Classes** (Higher stat requirements):
+- **Bishop**: Multi-school caster (Mage + Priest spells)
+- **Bard**: Hybrid fighter-caster with unique abilities
+- **Ranger**: Nature warrior with combat and support magic
+- **Psionic**: Master of mental/psychic school magic
+
+**Elite Classes** (Very high stat requirements):
+- **Valkyrie**: Holy warrior, female only, combines combat and divine magic
+- **Samurai**: Master swordsman with limited magic access
+- **Lord**: Paladin combining fighter prowess with priest magic
+- **Monk**: Unarmed combat specialist with high damage potential
+- **Ninja**: Ultimate hybrid with access to all equipment and abilities
 
 ### Permadeath System
 When a character dies, they must be resurrected. Each death:
@@ -98,12 +114,15 @@ When a character dies, they must be resurrected. Each death:
 
 ## Technical Details
 
-- Built with TypeScript for type safety
+- Built with TypeScript for type safety with strict mode enabled
 - HTML5 Canvas rendering for retro graphics
-- Webpack for bundling and development
+- Webpack for bundling and hot module reloading in development
 - Hybrid architecture combining service-oriented infrastructure with traditional OOP game logic
-- Comprehensive save/load system
+- Comprehensive spell database with 50+ spells across 4 schools
+- Service-based magic system with SpellCaster and SpellRegistry
+- Comprehensive save/load system with versioning
 - Auto-save every 30 seconds
+- AI Interface for automated testing and development
 
 ## Architecture
 
@@ -130,23 +149,32 @@ The game uses a **hybrid architecture** that combines the best of both worlds:
 
 The codebase is fully TypeScript with strict type checking enabled. All game systems are modular and extensible for easy modification and enhancement.
 
-### Feature Flags
+### AI Interface (Developer Tool)
 
-Enable features at runtime via the browser console:
+The AI Interface provides programmatic access to the game for automated testing and debugging. Access it via `window.AI` in the browser console:
 
 ```javascript
-// Enable ASCII rendering globally
-window.FeatureFlags.enable('ascii_rendering')
+// Query game state
+AI.getState()           // Complete game state
+AI.getScene()           // Current scene name
+AI.getParty()           // Party location and characters
+AI.getDungeon()         // Dungeon state
+AI.getCombat()          // Combat information
 
-// Enable for specific scenes
-window.FeatureFlags.enable('ascii_town_scene')
+// Perform actions
+AI.sendKey("ArrowUp")   // Simulate keyboard input
+AI.getActions()         // Get valid actions for current scene
 
-// Check feature status
-window.FeatureFlags.status()
+// Utilities
+AI.describe()           // Human-readable scene description
+AI.roll("3d6+2")        // Dice rolling
 
-// Or use URL parameters
-// http://localhost:8080?ff_ascii_rendering=true
+// Example: Navigate to dungeon
+AI.sendKey("ArrowDown") // Select "Enter Dungeon"
+AI.sendKey("Enter")     // Confirm
 ```
+
+For complete AI Interface documentation, see `docs/ai-interface.md`.
 
 ### Documentation
 
