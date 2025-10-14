@@ -586,6 +586,45 @@ export class AIInterface {
 
     return true;
   }
+
+  public getTavernInfo(): {
+    inTavern: boolean;
+    currentState?: string;
+    partySize?: number;
+    rosterSize?: number;
+    selectedPartyIndex?: number;
+    selectedRosterIndex?: number;
+    selectedMenuOption?: number;
+    availableActions?: string[];
+  } {
+    const scene = this.game.getSceneManager().getCurrentScene();
+    if (!scene || scene.getName().toLowerCase() !== 'tavern') {
+      return { inTavern: false };
+    }
+
+    const tavernScene = scene as any;
+    const currentState = tavernScene.getCurrentState ? tavernScene.getCurrentState() : 'unknown';
+    const state = this.getGameState();
+
+    const result: any = {
+      inTavern: true,
+      currentState,
+      partySize: state.party.characters.length,
+      rosterSize: state.characterRoster?.length || 0,
+    };
+
+    if (tavernScene.stateManager) {
+      const stateContext = tavernScene.stateManager.getStateContext();
+      result.selectedPartyIndex = stateContext.selectedPartyIndex;
+      result.selectedRosterIndex = stateContext.selectedRosterIndex;
+      result.selectedMenuOption = stateContext.selectedMenuOption;
+
+      const mainMenuOptions = tavernScene.stateManager.getMainMenuOptions?.() || [];
+      result.availableActions = mainMenuOptions;
+    }
+
+    return result;
+  }
 }
 
 export function createAIInterface(game: Game): AIInterface {

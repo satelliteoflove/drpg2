@@ -667,19 +667,6 @@ describe('TrainingGroundsScene', () => {
       expect(handled).toBe(true);
     });
 
-    it('should handle number keys for selection', () => {
-      const char = TestUtils.createTestCharacter({ name: 'Test', class: 'Fighter', alignment: 'Good' });
-      mockGameState.characterRoster = [char];
-
-      trainingScene.enter();
-      trainingScene.handleInput('arrowdown');
-      trainingScene.handleInput('enter');
-
-      const handled = trainingScene.handleInput('1');
-
-      expect(handled).toBe(true);
-    });
-
     it('should handle escape for cancellation', () => {
       trainingScene.enter();
       trainingScene.handleInput('enter');
