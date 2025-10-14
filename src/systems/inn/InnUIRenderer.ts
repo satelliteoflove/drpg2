@@ -65,7 +65,7 @@ export class InnUIRenderer {
     const mainX = 260;
     const mainY = 80;
     const mainWidth = 500;
-    const mainHeight = 400;
+    const mainHeight = 480;
 
     this.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
 
@@ -392,7 +392,7 @@ export class InnUIRenderer {
     const menuX = 770;
     const menuY = 80;
     const menuWidth = 240;
-    const menuHeight = 300;
+    const menuHeight = 480;
 
     this.drawPanel(ctx, menuX, menuY, menuWidth, menuHeight);
 
