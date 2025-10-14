@@ -480,7 +480,7 @@ export class InnUIRenderer {
       controlText = 'Y: Confirm | N: Cancel';
     } else if (stateContext.currentState === 'levelupResult') {
       controlText = 'ENTER: Continue';
-    } else if (stateContext.currentState !== 'main' && stateContext.currentState !== 'party') {
+    } else if (stateContext.currentState !== 'main') {
       controlText = 'ESC: Back';
     }
     ctx.fillText(controlText, menuX + menuWidth / 2, menuY + menuHeight - 15);
