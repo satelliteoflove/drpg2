@@ -31,7 +31,6 @@ A full-featured dungeon role-playing game built with TypeScript and HTML5 Canvas
 - **Dungeon Generation**: Procedurally generated multi-floor dungeons with rooms, corridors, and encounter zones
 - **Fog of War**: Discover the dungeon as you explore with limited vision range
 - **Save/Load System**: Persistent game saves with automatic backup and versioning
-- **AI Interface**: Programmatic game control via `window.AI` for automated testing and development
 - **Beautiful Graphics**: Retro-inspired pixel-perfect rendering with smooth animations
 
 ## Controls
@@ -60,17 +59,11 @@ A full-featured dungeon role-playing game built with TypeScript and HTML5 Canvas
 # Install dependencies
 npm install
 
-# Start development server (http://localhost:8080)
+# Start the game (http://localhost:8080)
 npm run dev
 
 # Build for production
 npm run build
-
-# Type checking (run before commits)
-npm run typecheck
-
-# Run unit tests
-npm test
 ```
 
 ## Game Mechanics
@@ -114,85 +107,7 @@ When a character dies, they must be resurrected. Each death:
 
 ## Technical Details
 
-- Built with TypeScript for type safety with strict mode enabled
-- HTML5 Canvas rendering for retro graphics
-- Webpack for bundling and hot module reloading in development
-- Hybrid architecture combining service-oriented infrastructure with traditional OOP game logic
+- Built with TypeScript and HTML5 Canvas for retro graphics
 - Comprehensive spell database with 50+ spells across 4 schools
-- Service-based magic system with SpellCaster and SpellRegistry
-- Comprehensive save/load system with versioning
-- Auto-save every 30 seconds
-- AI Interface for automated testing and development
-
-## Architecture
-
-The game uses a **hybrid architecture** that combines the best of both worlds:
-
-### Service-Oriented Layer (Infrastructure)
-- **Core**: Game engine with dependency injection
-- **Services**: IoC container for RenderManager, InputManager, SceneManager
-- **Rendering**: Dual rendering system (Canvas and ASCII modes)
-- **Scene Management**: State transitions and lifecycle
-
-### Traditional OOP Layer (Game Logic)
-- **Entities**: Character, Party, Monster classes with inheritance
-- **Systems**: Utility classes for Combat, Inventory, Shop mechanics
-- **Game Data**: Items, spells, and equipment as traditional objects
-- **Business Logic**: Encapsulated within entity methods
-
-### Supporting Components
-- **UI**: Interface components and rendering
-- **Utils**: Dungeon generation, save management, error handling
-- **Types**: TypeScript interfaces and type definitions
-
-## Development
-
-The codebase is fully TypeScript with strict type checking enabled. All game systems are modular and extensible for easy modification and enhancement.
-
-### AI Interface (Developer Tool)
-
-The AI Interface provides programmatic access to the game for automated testing and debugging. Access it via `window.AI` in the browser console:
-
-```javascript
-// Query game state
-AI.getState()           // Complete game state
-AI.getScene()           // Current scene name
-AI.getParty()           // Party location and characters
-AI.getDungeon()         // Dungeon state
-AI.getCombat()          // Combat information
-
-// Perform actions
-AI.sendKey("ArrowUp")   // Simulate keyboard input
-AI.getActions()         // Get valid actions for current scene
-
-// Utilities
-AI.describe()           // Human-readable scene description
-AI.roll("3d6+2")        // Dice rolling
-
-// Example: Navigate to dungeon
-AI.sendKey("ArrowDown") // Select "Enter Dungeon"
-AI.sendKey("Enter")     // Confirm
-```
-
-For complete AI Interface documentation, see `docs/ai-interface.md`.
-
-### Documentation
-
-**Important**: Always refer to `/docs/DOCS_INDEX.yaml` as the primary documentation index. This file is kept up-to-date and provides a searchable index of all available documentation with topics and summaries.
-
-```yaml
-# Example: Finding documentation about a specific topic
-# Look in docs/DOCS_INDEX.yaml for entries like:
-architecture:
-  file: ARCHITECTURE.md
-  topics: [system design, components, game architecture]
-
-ascii_rendering:
-  file: ASCII_RENDERING_GUIDE.md
-  topics: [ASCII, rendering, text display]
-```
-
-The DOCS_INDEX.yaml file should be:
-- Referenced first when looking for any documentation
-- Updated immediately when any document is added, modified, or removed
-- Used by AI systems (like Claude) to efficiently navigate documentation
+- Save/load system with versioning and auto-save every 30 seconds
+- Modular, extensible codebase
