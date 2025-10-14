@@ -87,6 +87,18 @@ export class ShopInputHandler {
       case 'selling_confirmation':
         return this.handleSellConfirmation();
 
+      case 'identifying_character_select':
+        return this.handleIdentifyCharacterConfirm();
+
+      case 'identifying_items':
+        return this.handleIdentifyItemConfirm();
+
+      case 'identifying_payer_select':
+        return this.handleIdentifyPayerConfirm();
+
+      case 'identifying_confirmation':
+        return this.handleIdentifyConfirmation();
+
       case 'pooling_gold':
         return this.handlePoolGoldConfirm();
 
@@ -108,7 +120,12 @@ export class ShopInputHandler {
         return true;
 
       case 'Identify Items':
-        this.messageLog?.addSystemMessage('Item identification not yet implemented');
+        const charactersWithUnidentified = this.stateManager.getCharactersWithUnidentifiedItems();
+        if (charactersWithUnidentified.length === 0) {
+          this.messageLog?.addWarningMessage('No characters have unidentified items');
+        } else {
+          this.stateManager.transitionTo('identifying_character_select');
+        }
         return true;
 
       case 'Pool Gold':
@@ -234,6 +251,90 @@ export class ShopInputHandler {
     }
 
     this.stateManager.transitionTo('main_menu');
+    return true;
+  }
+
+  private handleIdentifyCharacterConfirm(): boolean {
+    const charactersWithUnidentified = this.stateManager.getCharactersWithUnidentifiedItems();
+    const character = charactersWithUnidentified[this.stateManager.selectedOption];
+
+    if (!character) {
+      DebugLogger.warn('ShopInputHandler', 'No character selected for identification');
+      return false;
+    }
+
+    const unidentifiedItems = this.stateManager.getUnidentifiedItemsForCharacter(character);
+    if (unidentifiedItems.length === 0) {
+      this.messageLog?.addWarningMessage(`${character.name} has no unidentified items`);
+      return true;
+    }
+
+    this.stateManager.selectedIdentifyingCharacter = character;
+    this.stateManager.transitionTo('identifying_items');
+    return true;
+  }
+
+  private handleIdentifyItemConfirm(): boolean {
+    const item = this.stateManager.getSelectedIdentifyingItem();
+
+    if (!item) {
+      DebugLogger.warn('ShopInputHandler', 'No item selected for identification');
+      return false;
+    }
+
+    this.stateManager.selectItem(item);
+    this.stateManager.transitionTo('identifying_payer_select');
+    return true;
+  }
+
+  private handleIdentifyPayerConfirm(): boolean {
+    const characters = this.gameState.party.characters;
+    const payer = characters[this.stateManager.selectedOption];
+
+    if (!payer) {
+      DebugLogger.warn('ShopInputHandler', 'No payer selected for identification');
+      return false;
+    }
+
+    this.stateManager.selectedPayerCharacter = payer;
+    this.stateManager.transitionTo('identifying_confirmation');
+    return true;
+  }
+
+  private handleIdentifyConfirmation(): boolean {
+    if (this.stateManager.selectedOption === 0) {
+      const payer = this.stateManager.selectedPayerCharacter;
+      const item = this.stateManager.selectedItem;
+
+      if (!payer || !item) {
+        DebugLogger.warn('ShopInputHandler', 'Missing payer or item for identification');
+        return false;
+      }
+
+      const result = this.transactionHandler.identifyItem(item, payer);
+
+      if (result.success) {
+        this.messageLog?.addItemMessage(result.message);
+
+        if (this.stateManager.selectedIdentifyingCharacter) {
+          const remainingUnidentified = this.stateManager.getUnidentifiedItemsForCharacter(
+            this.stateManager.selectedIdentifyingCharacter
+          );
+          if (remainingUnidentified.length > 0) {
+            this.stateManager.transitionTo('identifying_items');
+          } else {
+            this.stateManager.transitionTo('main_menu');
+          }
+        } else {
+          this.stateManager.transitionTo('main_menu');
+        }
+      } else {
+        this.messageLog?.addWarningMessage(result.message);
+      }
+    } else {
+      this.stateManager.transitionTo('identifying_items');
+    }
+
     return true;
   }
 }

@@ -11,6 +11,10 @@ export type ShopState =
   | 'selling_character_select'
   | 'selling_items'
   | 'selling_confirmation'
+  | 'identifying_character_select'
+  | 'identifying_items'
+  | 'identifying_payer_select'
+  | 'identifying_confirmation'
   | 'pooling_gold';
 
 export class ShopStateManager {
@@ -22,6 +26,8 @@ export class ShopStateManager {
   public selectedItem: Item | null = null;
   public selectedCharacterIndex: number = 0;
   public selectedSellingCharacter: Character | null = null;
+  public selectedIdentifyingCharacter: Character | null = null;
+  public selectedPayerCharacter: Character | null = null;
 
   public readonly menuOptions: string[] = [
     'Buy Items',
@@ -50,6 +56,8 @@ export class ShopStateManager {
     this.selectedItem = null;
     this.selectedCharacterIndex = 0;
     this.selectedSellingCharacter = null;
+    this.selectedIdentifyingCharacter = null;
+    this.selectedPayerCharacter = null;
 
     DebugLogger.debug('ShopStateManager', 'State reset to main menu');
   }
@@ -66,12 +74,19 @@ export class ShopStateManager {
       case 'main_menu':
         this.selectedItem = null;
         this.selectedSellingCharacter = null;
+        this.selectedIdentifyingCharacter = null;
+        this.selectedPayerCharacter = null;
         break;
       case 'buying_category':
         this.selectedCategory = 'weapons';
         break;
       case 'selling_character_select':
         this.selectedSellingCharacter = null;
+        break;
+      case 'identifying_character_select':
+        this.selectedIdentifyingCharacter = null;
+        this.selectedPayerCharacter = null;
+        this.selectedItem = null;
         break;
     }
   }
@@ -119,7 +134,16 @@ export class ShopStateManager {
         return this.selectedSellingCharacter
           ? this.selectedSellingCharacter.inventory.length - 1
           : 0;
+      case 'identifying_character_select':
+        return this.getCharactersWithUnidentifiedItems().length - 1;
+      case 'identifying_items':
+        return this.selectedIdentifyingCharacter
+          ? this.getUnidentifiedItemsForCharacter(this.selectedIdentifyingCharacter).length - 1
+          : 0;
+      case 'identifying_payer_select':
+        return this.gameState.party.characters.length - 1;
       case 'selling_confirmation':
+      case 'identifying_confirmation':
       case 'pooling_gold':
         return 1; // Yes/No options
       default:
@@ -178,6 +202,26 @@ export class ShopStateManager {
     return null;
   }
 
+  public getCharactersWithUnidentifiedItems(): Character[] {
+    return this.gameState.party.characters.filter((char: Character) =>
+      char.inventory.some((item: Item) => !item.identified)
+    );
+  }
+
+  public getUnidentifiedItemsForCharacter(character: Character): Item[] {
+    return character.inventory.filter((item: Item) => !item.identified);
+  }
+
+  public getSelectedIdentifyingItem(): Item | null {
+    if (!this.selectedIdentifyingCharacter) return null;
+
+    const unidentifiedItems = this.getUnidentifiedItemsForCharacter(this.selectedIdentifyingCharacter);
+    if (this.selectedOption >= 0 && this.selectedOption < unidentifiedItems.length) {
+      return unidentifiedItems[this.selectedOption];
+    }
+    return null;
+  }
+
   public canTransitionTo(state: ShopState): boolean {
     switch (state) {
       case 'buying_items':
@@ -188,6 +232,12 @@ export class ShopStateManager {
         return this.selectedSellingCharacter !== null;
       case 'selling_confirmation':
         return this.selectedItem !== null && this.selectedSellingCharacter !== null;
+      case 'identifying_items':
+        return this.selectedIdentifyingCharacter !== null;
+      case 'identifying_payer_select':
+        return this.selectedItem !== null;
+      case 'identifying_confirmation':
+        return this.selectedItem !== null && this.selectedPayerCharacter !== null;
       default:
         return true;
     }
@@ -207,6 +257,14 @@ export class ShopStateManager {
         return 'selling_character_select';
       case 'selling_confirmation':
         return 'selling_items';
+      case 'identifying_character_select':
+        return 'main_menu';
+      case 'identifying_items':
+        return 'identifying_character_select';
+      case 'identifying_payer_select':
+        return 'identifying_items';
+      case 'identifying_confirmation':
+        return 'identifying_payer_select';
       case 'pooling_gold':
         return 'main_menu';
       default:
@@ -231,6 +289,8 @@ export class ShopStateManager {
       selectedItem: this.selectedItem,
       selectedCharacterIndex: this.selectedCharacterIndex,
       selectedSellingCharacter: this.selectedSellingCharacter,
+      selectedIdentifyingCharacter: this.selectedIdentifyingCharacter,
+      selectedPayerCharacter: this.selectedPayerCharacter,
       menuOptions: this.menuOptions,
       categoryOptions: this.categoryOptions,
       shopInventory: require('../ShopSystem').ShopSystem.getShopInventory()

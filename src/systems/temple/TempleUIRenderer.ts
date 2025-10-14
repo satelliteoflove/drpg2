@@ -100,25 +100,6 @@ export class TempleUIRenderer {
     ctx.fillStyle = '#aaa';
     ctx.fillText('Divine power can heal what mortal means cannot', x + width / 2, y + 90);
 
-    ctx.fillStyle = '#4a4';
-    ctx.font = '16px monospace';
-    ctx.fillText('Services Available:', x + width / 2, y + 140);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = '14px monospace';
-    const services = [
-      { name: 'Cure Paralysis', service: 'cure_paralyzed' as TempleService },
-      { name: 'Cure Petrification', service: 'cure_stoned' as TempleService },
-      { name: 'Resurrect from Dead', service: 'resurrect_dead' as TempleService },
-      { name: 'Resurrect from Ashes', service: 'resurrect_ashes' as TempleService },
-      { name: 'Dispel Curse', service: 'dispel_curse' as TempleService }
-    ];
-
-    services.forEach((service, index) => {
-      const baseCost = this.stateManager.getBaseCost(service.service);
-      ctx.fillText(`• ${service.name} - ${baseCost}g × Level`, x + width / 2, y + 175 + index * 30);
-    });
-
     const charactersNeedingService = (this.gameState.party.characters || []).filter(
       (char: Character) => {
         return char.status !== 'OK' || this.hasEquippedCursedItems(char);

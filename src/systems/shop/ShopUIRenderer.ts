@@ -2,6 +2,7 @@ import { GameState, Item } from '../../types/GameTypes';
 import { Character } from '../../entities/Character';
 import { ShopInventory } from '../ShopSystem';
 import { StatusPanel } from '../../ui/StatusPanel';
+import { GAME_CONFIG } from '../../config/GameConstants';
 
 export type ShopState =
   | 'main_menu'
@@ -11,6 +12,10 @@ export type ShopState =
   | 'selling_character_select'
   | 'selling_items'
   | 'selling_confirmation'
+  | 'identifying_character_select'
+  | 'identifying_items'
+  | 'identifying_payer_select'
+  | 'identifying_confirmation'
   | 'pooling_gold';
 
 export interface ShopRenderContext {
@@ -20,6 +25,8 @@ export interface ShopRenderContext {
   selectedItem: Item | null;
   selectedCharacterIndex: number;
   selectedSellingCharacter: Character | null;
+  selectedIdentifyingCharacter?: Character | null;
+  selectedPayerCharacter?: Character | null;
   shopInventory: ShopInventory;
   menuOptions: string[];
   categoryOptions: Array<{ key: keyof ShopInventory['categories']; name: string }>;
@@ -117,6 +124,18 @@ export class ShopUIRenderer {
         break;
       case 'selling_confirmation':
         this.renderSellingConfirmation(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'identifying_character_select':
+        this.renderIdentifyingCharacterSelection(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'identifying_items':
+        this.renderIdentifyingItemList(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'identifying_payer_select':
+        this.renderIdentifyingPayerSelection(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'identifying_confirmation':
+        this.renderIdentifyingConfirmation(ctx, mainX, mainY, mainWidth, mainHeight, context);
         break;
       case 'pooling_gold':
         this.renderPoolingGold(ctx, mainX, mainY, mainWidth, mainHeight, context);
@@ -474,6 +493,198 @@ export class ShopUIRenderer {
     });
   }
 
+  private renderIdentifyingCharacterSelection(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
+    const charactersWithUnidentified = this.gameState.party.characters.filter((char: Character) =>
+      char.inventory.some((item: Item) => !item.identified)
+    );
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('WHO HAS ITEMS TO IDENTIFY?', x + width / 2, y + 40);
+
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Choose a character with unidentified items', x + width / 2, y + 70);
+
+    if (charactersWithUnidentified.length === 0) {
+      ctx.fillStyle = '#999';
+      ctx.fillText('No characters have unidentified items', x + width / 2, y + 150);
+      return;
+    }
+
+    ctx.textAlign = 'left';
+    let yPos = y + 110;
+
+    charactersWithUnidentified.forEach((character: Character, index: number) => {
+      const isSelected = index === context.selectedOption;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 40, yPos - 15, width - 80, 50);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
+
+      if (isSelected) {
+        ctx.fillText('>', x + 50, yPos);
+      }
+
+      ctx.fillText(`${character.name} (${character.class})`, x + 70, yPos);
+
+      ctx.font = '12px monospace';
+      ctx.fillStyle = '#999';
+      const unidentifiedCount = character.inventory.filter((item: Item) => !item.identified).length;
+      ctx.fillText(`Unidentified: ${unidentifiedCount}`, x + 70, yPos + 18);
+
+      yPos += 60;
+    });
+  }
+
+  private renderIdentifyingItemList(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
+    if (!context.selectedIdentifyingCharacter) return;
+
+    const unidentifiedItems = context.selectedIdentifyingCharacter.inventory.filter((item: Item) => !item.identified);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${context.selectedIdentifyingCharacter.name}'s Unidentified Items`, x + width / 2, y + 40);
+
+    if (unidentifiedItems.length === 0) {
+      ctx.fillStyle = '#999';
+      ctx.font = '14px monospace';
+      ctx.fillText('No unidentified items', x + width / 2, y + 150);
+      return;
+    }
+
+    const startY = y + 80;
+    const itemHeight = 30;
+
+    unidentifiedItems.forEach((item, index) => {
+      const itemY = startY + index * itemHeight;
+      const isSelected = index === context.selectedOption;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 20, itemY - 18, width - 40, 28);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
+      ctx.textAlign = 'left';
+
+      if (isSelected) {
+        ctx.fillText('>', x + 25, itemY);
+      }
+
+      const itemName = item.unidentifiedName || '?Item';
+      ctx.fillText(itemName, x + 45, itemY);
+
+      const identifyCost = Math.floor(item.value * GAME_CONFIG.ITEMS.SHOP.IDENTIFY_COST_MULTIPLIER);
+      ctx.fillStyle = '#ffa500';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${identifyCost}g`, x + width - 30, itemY);
+    });
+  }
+
+  private renderIdentifyingPayerSelection(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
+    const characters = this.gameState.party.characters;
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('WHO WILL PAY FOR IDENTIFICATION?', x + width / 2, y + 40);
+
+    if (context.selectedItem) {
+      const identifyCost = Math.floor(context.selectedItem.value * GAME_CONFIG.ITEMS.SHOP.IDENTIFY_COST_MULTIPLIER);
+      ctx.font = '14px monospace';
+      ctx.fillStyle = '#ffa500';
+      const itemName = context.selectedItem.unidentifiedName || '?Item';
+      ctx.fillText(`${itemName} - ${identifyCost}g`, x + width / 2, y + 70);
+    }
+
+    ctx.textAlign = 'left';
+    let yPos = y + 110;
+
+    characters.forEach((character: Character, index: number) => {
+      const isSelected = index === context.selectedOption;
+      const identifyCost = context.selectedItem
+        ? Math.floor(context.selectedItem.value * GAME_CONFIG.ITEMS.SHOP.IDENTIFY_COST_MULTIPLIER)
+        : 0;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 40, yPos - 15, width - 80, 45);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
+
+      if (isSelected) {
+        ctx.fillText('>', x + 50, yPos);
+      }
+
+      ctx.fillText(`${character.name} (${character.class})`, x + 70, yPos);
+
+      ctx.font = '12px monospace';
+      ctx.fillStyle = character.gold >= identifyCost ? '#0f0' : '#f66';
+      ctx.fillText(`Gold: ${character.gold}g`, x + 70, yPos + 18);
+
+      yPos += 55;
+    });
+  }
+
+  private renderIdentifyingConfirmation(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
+    if (!context.selectedItem || !context.selectedPayerCharacter) return;
+
+    const identifyCost = Math.floor(context.selectedItem.value * GAME_CONFIG.ITEMS.SHOP.IDENTIFY_COST_MULTIPLIER);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('CONFIRM IDENTIFICATION', x + width / 2, y + 60);
+
+    ctx.font = '16px monospace';
+    const itemName = context.selectedItem.unidentifiedName || '?Item';
+
+    ctx.fillText(`Identify ${itemName}`, x + width / 2, y + 120);
+
+    ctx.fillStyle = '#ffa500';
+    ctx.fillText(`for ${identifyCost} gold?`, x + width / 2, y + 160);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px monospace';
+    ctx.fillText(`Payer: ${context.selectedPayerCharacter.name}`, x + width / 2, y + 190);
+
+    const options = ['Confirm', 'Cancel'];
+    let yPos = y + 240;
+
+    options.forEach((option, index) => {
+      const isSelected = index === context.selectedOption;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 150, yPos - 20, 200, 35);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 16px monospace' : '16px monospace';
+      ctx.textAlign = 'center';
+
+      if (isSelected) {
+        ctx.textAlign = 'left';
+        ctx.fillText('>', x + 160, yPos);
+        ctx.textAlign = 'center';
+      }
+
+      ctx.fillText(option, x + width / 2, yPos);
+
+      yPos += 45;
+    });
+  }
+
   private renderPoolingGold(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 18px monospace';
@@ -586,6 +797,14 @@ export class ShopUIRenderer {
       case 'selling_items':
         return 'UP/DOWN: Select\nENTER: Sell Item\nESC: Back';
       case 'selling_confirmation':
+        return 'UP/DOWN: Select\nENTER: Confirm\nESC: Cancel';
+      case 'identifying_character_select':
+        return 'UP/DOWN: Select\nENTER: Choose\nESC: Back';
+      case 'identifying_items':
+        return 'UP/DOWN: Select\nENTER: Identify\nESC: Back';
+      case 'identifying_payer_select':
+        return 'UP/DOWN: Select\nENTER: Choose\nESC: Back';
+      case 'identifying_confirmation':
         return 'UP/DOWN: Select\nENTER: Confirm\nESC: Cancel';
       case 'pooling_gold':
         return 'UP/DOWN: Select\nENTER: Confirm\nESC: Cancel';
