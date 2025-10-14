@@ -1,6 +1,8 @@
 import { GameState, Item } from '../../types/GameTypes';
 import { Character } from '../../entities/Character';
 import { ShopInventory } from '../ShopSystem';
+import { StatusPanel } from '../../ui/StatusPanel';
+import { GAME_CONFIG } from '../../config/GameConstants';
 
 export type ShopState =
   | 'main_menu'
@@ -10,6 +12,10 @@ export type ShopState =
   | 'selling_character_select'
   | 'selling_items'
   | 'selling_confirmation'
+  | 'identifying_character_select'
+  | 'identifying_items'
+  | 'identifying_payer_select'
+  | 'identifying_confirmation'
   | 'pooling_gold';
 
 export interface ShopRenderContext {
@@ -19,6 +25,8 @@ export interface ShopRenderContext {
   selectedItem: Item | null;
   selectedCharacterIndex: number;
   selectedSellingCharacter: Character | null;
+  selectedIdentifyingCharacter?: Character | null;
+  selectedPayerCharacter?: Character | null;
   shopInventory: ShopInventory;
   menuOptions: string[];
   categoryOptions: Array<{ key: keyof ShopInventory['categories']; name: string }>;
@@ -26,9 +34,13 @@ export interface ShopRenderContext {
 
 export class ShopUIRenderer {
   private gameState: GameState;
+  private messageLog: any;
+  private statusPanel: StatusPanel | null = null;
+  private canvas: HTMLCanvasElement | null = null;
 
-  constructor(gameState: GameState, _messageLog: any) {
+  constructor(gameState: GameState, messageLog: any) {
     this.gameState = gameState;
+    this.messageLog = messageLog;
   }
 
   private drawPanel(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): void {
@@ -40,192 +52,237 @@ export class ShopUIRenderer {
   }
 
   public render(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
+    if (!this.canvas) {
+      this.canvas = ctx.canvas;
+      this.statusPanel = new StatusPanel(ctx.canvas, 10, 80, 240, 480);
+    }
+
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
     this.renderShopHeader(ctx);
-    this.renderGoldDisplay(ctx);
 
-    switch (context.state) {
-      case 'main_menu':
-        this.renderMainMenu(ctx, context);
-        break;
-      case 'buying_category':
-        this.renderCategorySelection(ctx, context);
-        break;
-      case 'buying_items':
-        this.renderItemList(ctx, context);
-        break;
-      case 'buying_character_select':
-        this.renderCharacterSelection(ctx, context);
-        break;
-      case 'selling_character_select':
-        this.renderSellingCharacterSelection(ctx, context);
-        break;
-      case 'selling_items':
-        this.renderSellingItemList(ctx, context);
-        break;
-      case 'selling_confirmation':
-        this.renderSellingConfirmation(ctx, context);
-        break;
-      case 'pooling_gold':
-        this.renderPoolingGold(ctx, context);
-        break;
+    if (this.statusPanel) {
+      this.statusPanel.render(this.gameState.party, ctx);
     }
 
-    this.renderControls(ctx, context.state);
+    this.renderMainArea(ctx, context);
+    this.renderActionMenu(ctx, context);
+
+    if (this.messageLog) {
+      this.messageLog.render(ctx);
+    }
   }
 
   private renderShopHeader(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(10, 10, ctx.canvas.width - 20, 60);
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, ctx.canvas.width - 20, 60);
+
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 24px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('SHOP', ctx.canvas.width / 2, 40);
+    ctx.fillText('BOLTAC\'S TRADING POST', ctx.canvas.width / 2, 45);
 
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, ctx.canvas.width - 20, 50);
-  }
-
-  private renderGoldDisplay(ctx: CanvasRenderingContext2D): void {
     const pooledGold = this.gameState.party.pooledGold || 0;
     const partyGold = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.gold, 0);
 
     ctx.fillStyle = '#ffa500';
     ctx.font = '14px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`Pooled: ${pooledGold}g | Party: ${partyGold}g`, ctx.canvas.width - 20, 40);
+    ctx.fillText(`Pooled: ${pooledGold}g | Party: ${partyGold}g`, ctx.canvas.width - 30, 45);
   }
 
-  private renderMainMenu(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
-    const menuY = 120;
-    const menuHeight = 280;
+  private renderMainArea(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
+    const mainX = 260;
+    const mainY = 80;
+    const mainWidth = 500;
+    const mainHeight = 480;
 
-    this.drawPanel(ctx, 100, menuY, 600, menuHeight);
+    this.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
 
+    switch (context.state) {
+      case 'main_menu':
+        this.renderMainMenu(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'buying_category':
+        this.renderCategorySelection(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'buying_items':
+        this.renderItemList(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'buying_character_select':
+        this.renderCharacterSelection(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'selling_character_select':
+        this.renderSellingCharacterSelection(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'selling_items':
+        this.renderSellingItemList(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'selling_confirmation':
+        this.renderSellingConfirmation(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'identifying_character_select':
+        this.renderIdentifyingCharacterSelection(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'identifying_items':
+        this.renderIdentifyingItemList(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'identifying_payer_select':
+        this.renderIdentifyingPayerSelection(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'identifying_confirmation':
+        this.renderIdentifyingConfirmation(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+      case 'pooling_gold':
+        this.renderPoolingGold(ctx, mainX, mainY, mainWidth, mainHeight, context);
+        break;
+    }
+  }
+
+  private renderMainMenu(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
     ctx.fillStyle = '#fff';
-    ctx.font = '18px monospace';
+    ctx.font = 'bold 20px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Welcome to Boltac\'s Trading Post', x + width / 2, y + 60);
+
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Buy and sell items, manage gold', x + width / 2, y + 90);
+
     ctx.textAlign = 'left';
+    let yPos = y + 140;
 
     context.menuOptions.forEach((option, index) => {
-      const y = menuY + 50 + index * 40;
       const isSelected = index === context.selectedOption;
 
       if (isSelected) {
         ctx.fillStyle = '#333';
-        ctx.fillRect(120, y - 25, 560, 35);
-      }
-
-      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
-      ctx.font = isSelected ? 'bold 18px monospace' : '18px monospace';
-      ctx.fillText(option, 140, y);
-
-      if (isSelected) {
-        ctx.fillText('>', 125, y);
-      }
-    });
-
-    this.renderPartyStatus(ctx);
-  }
-
-  private renderCategorySelection(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
-    this.drawPanel(ctx, 100, 120, 600, 350);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('Select Category', ctx.canvas.width / 2, 160);
-
-    context.categoryOptions.forEach((category, index) => {
-      const y = 200 + index * 40;
-      const isSelected = index === context.selectedOption;
-
-      if (isSelected) {
-        ctx.fillStyle = '#333';
-        ctx.fillRect(120, y - 25, 560, 35);
-      }
-
-      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
-      ctx.font = isSelected ? 'bold 18px monospace' : '18px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(category.name, 140, y);
-
-      if (isSelected) {
-        ctx.fillText('>', 125, y);
-      }
-    });
-  }
-
-  private renderItemList(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
-    const items = context.shopInventory.categories[context.selectedCategory] || [];
-
-    this.drawPanel(ctx, 50, 100, 700, 400);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${context.selectedCategory.toUpperCase()} FOR SALE`, ctx.canvas.width / 2, 140);
-
-    if (items.length === 0) {
-      ctx.fillStyle = '#999';
-      ctx.font = '16px monospace';
-      ctx.fillText('No items available in this category', ctx.canvas.width / 2, 250);
-      return;
-    }
-
-    const startY = 180;
-    const itemHeight = 35;
-
-    items.forEach((item, index) => {
-      const y = startY + index * itemHeight;
-      const isSelected = index === context.selectedOption;
-
-      if (isSelected) {
-        ctx.fillStyle = '#333';
-        ctx.fillRect(70, y - 20, 660, 30);
+        ctx.fillRect(x + 40, yPos - 15, width - 80, 30);
       }
 
       ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
       ctx.font = isSelected ? 'bold 16px monospace' : '16px monospace';
+
+      if (isSelected) {
+        ctx.fillText('>', x + 50, yPos);
+      }
+
+      ctx.fillText(option, x + 70, yPos);
+
+      yPos += 40;
+    });
+  }
+
+  private renderCategorySelection(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SELECT CATEGORY', x + width / 2, y + 40);
+
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Choose what to buy', x + width / 2, y + 70);
+
+    ctx.textAlign = 'left';
+    let yPos = y + 120;
+
+    context.categoryOptions.forEach((category, index) => {
+      const isSelected = index === context.selectedOption;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 40, yPos - 15, width - 80, 30);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 16px monospace' : '16px monospace';
+
+      if (isSelected) {
+        ctx.fillText('>', x + 50, yPos);
+      }
+
+      ctx.fillText(category.name, x + 70, yPos);
+
+      yPos += 40;
+    });
+  }
+
+  private renderItemList(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, context: ShopRenderContext): void {
+    const items = context.shopInventory.categories[context.selectedCategory] || [];
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${context.selectedCategory.toUpperCase()} FOR SALE`, x + width / 2, y + 40);
+
+    if (items.length === 0) {
+      ctx.fillStyle = '#999';
+      ctx.font = '14px monospace';
+      ctx.fillText('No items available in this category', x + width / 2, y + 150);
+      return;
+    }
+
+    const startY = y + 80;
+    const itemHeight = 30;
+    const maxItems = 10;
+
+    items.slice(0, maxItems).forEach((item, index) => {
+      const itemY = startY + index * itemHeight;
+      const isSelected = index === context.selectedOption;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 20, itemY - 18, width - 40, 28);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
       ctx.textAlign = 'left';
 
+      if (isSelected) {
+        ctx.fillText('>', x + 25, itemY);
+      }
+
       const itemName = item.identified ? item.name : item.unidentifiedName || '?Item';
-      ctx.fillText(itemName, 90, y);
+      ctx.fillText(itemName, x + 45, itemY);
 
       ctx.fillStyle = '#ffa500';
       ctx.textAlign = 'right';
-      ctx.fillText(`${item.value}g`, 700, y);
+      ctx.fillText(`${item.value}g`, x + width - 30, itemY);
 
       if (isSelected) {
-        ctx.fillStyle = '#ffa500';
-        ctx.textAlign = 'left';
-        ctx.fillText('>', 75, y);
-
-        this.renderItemDetails(ctx, item);
+        this.renderItemDetails(ctx, item, x, y, width, height);
       }
     });
   }
 
-  private renderItemDetails(ctx: CanvasRenderingContext2D, item: Item): void {
-    const detailY = 420;
-    this.drawPanel(ctx, 50, detailY, 700, 120);
+  private renderItemDetails(ctx: CanvasRenderingContext2D, item: Item, x: number, y: number, width: number, height: number): void {
+    const detailY = y + height - 100;
+
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 20, detailY, width - 40, 90);
 
     ctx.fillStyle = '#fff';
-    ctx.font = '14px monospace';
+    ctx.font = '12px monospace';
     ctx.textAlign = 'left';
 
     if (!item.identified) {
       ctx.fillStyle = '#999';
-      ctx.fillText('Unidentified - properties unknown', 70, detailY + 30);
+      ctx.fillText('Unidentified - properties unknown', x + 30, detailY + 25);
       return;
     }
 
     const details: string[] = [];
     if (item.type === 'weapon') {
-      details.push('Weapon');
+      details.push('Type: Weapon');
     }
     if (item.type === 'armor') {
-      details.push('Armor');
+      details.push('Type: Armor');
     }
     if (item.enchantment) {
       details.push(`Enchantment: ${item.enchantment > 0 ? '+' : ''}${item.enchantment}`);
@@ -236,313 +293,524 @@ export class ShopUIRenderer {
     }
 
     details.forEach((detail, index) => {
-      ctx.fillText(detail, 70, detailY + 30 + index * 20);
+      ctx.fillText(detail, x + 30, detailY + 25 + index * 18);
     });
   }
 
-  private renderCharacterSelection(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
+  private renderCharacterSelection(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
     const characters = this.gameState.party.characters;
 
-    this.drawPanel(ctx, 100, 120, 600, 400);
-
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px monospace';
+    ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Who will buy this item?', ctx.canvas.width / 2, 160);
+    ctx.fillText('WHO WILL BUY THIS ITEM?', x + width / 2, y + 40);
 
     if (context.selectedItem) {
-      ctx.font = '16px monospace';
+      ctx.font = '14px monospace';
       ctx.fillStyle = '#ffa500';
       const itemName = context.selectedItem.identified
         ? context.selectedItem.name
         : context.selectedItem.unidentifiedName || '?Item';
-      ctx.fillText(`${itemName} - ${context.selectedItem.value}g`, ctx.canvas.width / 2, 185);
+      ctx.fillText(`${itemName} - ${context.selectedItem.value}g`, x + width / 2, y + 70);
     }
 
+    ctx.textAlign = 'left';
+    let yPos = y + 110;
+
     characters.forEach((character: Character, index: number) => {
-      const y = 220 + index * 50;
       const isSelected = index === context.selectedCharacterIndex;
 
       if (isSelected) {
         ctx.fillStyle = '#333';
-        ctx.fillRect(120, y - 25, 560, 45);
+        ctx.fillRect(x + 40, yPos - 15, width - 80, 45);
       }
 
       ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
-      ctx.font = isSelected ? 'bold 16px monospace' : '16px monospace';
-      ctx.textAlign = 'left';
-
-      ctx.fillText(`${character.name} (${character.class})`, 140, y);
-
-      ctx.font = '14px monospace';
-      ctx.fillStyle = character.gold >= (context.selectedItem?.value || 0) ? '#0f0' : '#f66';
-      ctx.fillText(`Gold: ${character.gold}g`, 140, y + 20);
-
-      ctx.fillStyle = '#999';
-      ctx.fillText(`Inv: ${character.inventory.length}/10`, 280, y + 20);
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
 
       if (isSelected) {
-        ctx.fillStyle = '#ffa500';
-        ctx.fillText('>', 125, y);
+        ctx.fillText('>', x + 50, yPos);
       }
+
+      ctx.fillText(`${character.name} (${character.class})`, x + 70, yPos);
+
+      ctx.font = '12px monospace';
+      ctx.fillStyle = character.gold >= (context.selectedItem?.value || 0) ? '#0f0' : '#f66';
+      ctx.fillText(`Gold: ${character.gold}g`, x + 70, yPos + 18);
+
+      ctx.fillStyle = '#999';
+      ctx.fillText(`Inv: ${character.inventory.length}/10`, x + 220, yPos + 18);
+
+      yPos += 55;
     });
   }
 
-  private renderSellingCharacterSelection(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
+  private renderSellingCharacterSelection(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
     const characters = this.gameState.party.characters;
 
-    this.drawPanel(ctx, 100, 120, 600, 400);
-
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px monospace';
+    ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Who is selling items?', ctx.canvas.width / 2, 160);
+    ctx.fillText('WHO IS SELLING ITEMS?', x + width / 2, y + 40);
+
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Choose a character to sell items', x + width / 2, y + 70);
+
+    ctx.textAlign = 'left';
+    let yPos = y + 110;
 
     characters.forEach((character: Character, index: number) => {
-      const y = 200 + index * 60;
       const isSelected = index === context.selectedOption;
 
       if (isSelected) {
         ctx.fillStyle = '#333';
-        ctx.fillRect(120, y - 25, 560, 50);
+        ctx.fillRect(x + 40, yPos - 15, width - 80, 50);
       }
 
       ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
-      ctx.font = isSelected ? 'bold 16px monospace' : '16px monospace';
-      ctx.textAlign = 'left';
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
 
-      ctx.fillText(`${character.name} (${character.class})`, 140, y);
+      if (isSelected) {
+        ctx.fillText('>', x + 50, yPos);
+      }
 
-      ctx.font = '14px monospace';
+      ctx.fillText(`${character.name} (${character.class})`, x + 70, yPos);
+
+      ctx.font = '12px monospace';
       ctx.fillStyle = '#999';
       const itemCount = character.inventory.length;
-      ctx.fillText(`Items: ${itemCount}`, 140, y + 20);
+      ctx.fillText(`Items: ${itemCount}`, x + 70, yPos + 18);
 
       if (itemCount > 0) {
         const totalValue = character.inventory.reduce((sum: number, item: Item) => sum + Math.floor(item.value * 0.5), 0);
         ctx.fillStyle = '#ffa500';
-        ctx.fillText(`Est. value: ${totalValue}g`, 280, y + 20);
+        ctx.fillText(`Est. value: ${totalValue}g`, x + 200, yPos + 18);
       }
 
-      if (isSelected) {
-        ctx.fillStyle = '#ffa500';
-        ctx.textAlign = 'left';
-        ctx.fillText('>', 125, y);
-      }
+      yPos += 60;
     });
   }
 
-  private renderSellingItemList(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
+  private renderSellingItemList(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
     if (!context.selectedSellingCharacter) return;
 
     const items = context.selectedSellingCharacter.inventory;
 
-    this.drawPanel(ctx, 50, 100, 700, 450);
-
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px monospace';
+    ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`${context.selectedSellingCharacter.name}'s Inventory`, ctx.canvas.width / 2, 140);
+    ctx.fillText(`${context.selectedSellingCharacter.name}'s Inventory`, x + width / 2, y + 40);
 
     if (items.length === 0) {
       ctx.fillStyle = '#999';
-      ctx.font = '16px monospace';
-      ctx.fillText('No items to sell', ctx.canvas.width / 2, 250);
+      ctx.font = '14px monospace';
+      ctx.fillText('No items to sell', x + width / 2, y + 150);
       return;
     }
 
-    const startY = 180;
-    const itemHeight = 35;
+    const startY = y + 80;
+    const itemHeight = 30;
 
     items.forEach((item, index) => {
-      const y = startY + index * itemHeight;
+      const itemY = startY + index * itemHeight;
       const isSelected = index === context.selectedOption;
 
       if (isSelected) {
         ctx.fillStyle = '#333';
-        ctx.fillRect(70, y - 20, 660, 30);
+        ctx.fillRect(x + 20, itemY - 18, width - 40, 28);
       }
 
       ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
-      ctx.font = isSelected ? 'bold 16px monospace' : '16px monospace';
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
       ctx.textAlign = 'left';
 
+      if (item.equipped) {
+        ctx.fillStyle = '#0f0';
+        ctx.font = '10px monospace';
+        ctx.fillText('[E]', x + 25, itemY);
+        ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+        ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
+      }
+
+      if (isSelected) {
+        ctx.fillText('>', x + 35, itemY);
+      }
+
       const itemName = item.identified ? item.name : item.unidentifiedName || '?Item';
-      ctx.fillText(itemName, 90, y);
+      ctx.fillText(itemName, x + (item.equipped ? 55 : 55), itemY);
 
       const sellPrice = Math.floor(item.value * 0.5);
       ctx.fillStyle = '#ffa500';
       ctx.textAlign = 'right';
-      ctx.fillText(`${sellPrice}g`, 700, y);
-
-      if (item.equipped) {
-        ctx.fillStyle = '#0f0';
-        ctx.font = '12px monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText('[E]', 60, y);
-      }
-
-      if (isSelected) {
-        ctx.fillStyle = '#ffa500';
-        ctx.textAlign = 'left';
-        ctx.fillText('>', 75, y);
-      }
+      ctx.fillText(`${sellPrice}g`, x + width - 30, itemY);
     });
   }
 
-  private renderSellingConfirmation(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
+  private renderSellingConfirmation(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
     if (!context.selectedItem || !context.selectedSellingCharacter) return;
 
-    this.drawPanel(ctx, 150, 200, 500, 250);
-
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px monospace';
+    ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Confirm Sale', ctx.canvas.width / 2, 240);
+    ctx.fillText('CONFIRM SALE', x + width / 2, y + 60);
 
     ctx.font = '16px monospace';
     const itemName = context.selectedItem.identified
       ? context.selectedItem.name
       : context.selectedItem.unidentifiedName || '?Item';
 
-    ctx.fillText(`Sell ${itemName}`, ctx.canvas.width / 2, 280);
+    ctx.fillText(`Sell ${itemName}`, x + width / 2, y + 120);
 
     const sellPrice = Math.floor(context.selectedItem.value * 0.5);
     ctx.fillStyle = '#ffa500';
-    ctx.fillText(`for ${sellPrice} gold?`, ctx.canvas.width / 2, 310);
+    ctx.fillText(`for ${sellPrice} gold?`, x + width / 2, y + 160);
 
     const options = ['Confirm', 'Cancel'];
+    let yPos = y + 220;
+
     options.forEach((option, index) => {
-      const y = 360 + index * 40;
       const isSelected = index === context.selectedOption;
 
       if (isSelected) {
         ctx.fillStyle = '#333';
-        ctx.fillRect(250, y - 20, 300, 35);
+        ctx.fillRect(x + 150, yPos - 20, 200, 35);
       }
 
       ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
-      ctx.font = isSelected ? 'bold 18px monospace' : '18px monospace';
+      ctx.font = isSelected ? 'bold 16px monospace' : '16px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(option, ctx.canvas.width / 2, y);
 
       if (isSelected) {
         ctx.textAlign = 'left';
-        ctx.fillText('>', 260, y);
+        ctx.fillText('>', x + 160, yPos);
+        ctx.textAlign = 'center';
       }
+
+      ctx.fillText(option, x + width / 2, yPos);
+
+      yPos += 45;
     });
   }
 
-  private renderPoolingGold(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
-    this.drawPanel(ctx, 100, 150, 600, 350);
+  private renderIdentifyingCharacterSelection(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
+    const charactersWithUnidentified = this.gameState.party.characters.filter((char: Character) =>
+      char.inventory.some((item: Item) => !item.identified)
+    );
 
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px monospace';
+    ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Pool Party Gold', ctx.canvas.width / 2, 190);
+    ctx.fillText('WHO HAS ITEMS TO IDENTIFY?', x + width / 2, y + 40);
+
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Choose a character with unidentified items', x + width / 2, y + 70);
+
+    if (charactersWithUnidentified.length === 0) {
+      ctx.fillStyle = '#999';
+      ctx.fillText('No characters have unidentified items', x + width / 2, y + 150);
+      return;
+    }
+
+    ctx.textAlign = 'left';
+    let yPos = y + 110;
+
+    charactersWithUnidentified.forEach((character: Character, index: number) => {
+      const isSelected = index === context.selectedOption;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 40, yPos - 15, width - 80, 50);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
+
+      if (isSelected) {
+        ctx.fillText('>', x + 50, yPos);
+      }
+
+      ctx.fillText(`${character.name} (${character.class})`, x + 70, yPos);
+
+      ctx.font = '12px monospace';
+      ctx.fillStyle = '#999';
+      const unidentifiedCount = character.inventory.filter((item: Item) => !item.identified).length;
+      ctx.fillText(`Unidentified: ${unidentifiedCount}`, x + 70, yPos + 18);
+
+      yPos += 60;
+    });
+  }
+
+  private renderIdentifyingItemList(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
+    if (!context.selectedIdentifyingCharacter) return;
+
+    const unidentifiedItems = context.selectedIdentifyingCharacter.inventory.filter((item: Item) => !item.identified);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${context.selectedIdentifyingCharacter.name}'s Unidentified Items`, x + width / 2, y + 40);
+
+    if (unidentifiedItems.length === 0) {
+      ctx.fillStyle = '#999';
+      ctx.font = '14px monospace';
+      ctx.fillText('No unidentified items', x + width / 2, y + 150);
+      return;
+    }
+
+    const startY = y + 80;
+    const itemHeight = 30;
+
+    unidentifiedItems.forEach((item, index) => {
+      const itemY = startY + index * itemHeight;
+      const isSelected = index === context.selectedOption;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 20, itemY - 18, width - 40, 28);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
+      ctx.textAlign = 'left';
+
+      if (isSelected) {
+        ctx.fillText('>', x + 25, itemY);
+      }
+
+      const itemName = item.unidentifiedName || '?Item';
+      ctx.fillText(itemName, x + 45, itemY);
+
+      const identifyCost = Math.floor(item.value * GAME_CONFIG.ITEMS.SHOP.IDENTIFY_COST_MULTIPLIER);
+      ctx.fillStyle = '#ffa500';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${identifyCost}g`, x + width - 30, itemY);
+    });
+  }
+
+  private renderIdentifyingPayerSelection(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
+    const characters = this.gameState.party.characters;
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('WHO WILL PAY FOR IDENTIFICATION?', x + width / 2, y + 40);
+
+    if (context.selectedItem) {
+      const identifyCost = Math.floor(context.selectedItem.value * GAME_CONFIG.ITEMS.SHOP.IDENTIFY_COST_MULTIPLIER);
+      ctx.font = '14px monospace';
+      ctx.fillStyle = '#ffa500';
+      const itemName = context.selectedItem.unidentifiedName || '?Item';
+      ctx.fillText(`${itemName} - ${identifyCost}g`, x + width / 2, y + 70);
+    }
+
+    ctx.textAlign = 'left';
+    let yPos = y + 110;
+
+    characters.forEach((character: Character, index: number) => {
+      const isSelected = index === context.selectedOption;
+      const identifyCost = context.selectedItem
+        ? Math.floor(context.selectedItem.value * GAME_CONFIG.ITEMS.SHOP.IDENTIFY_COST_MULTIPLIER)
+        : 0;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 40, yPos - 15, width - 80, 45);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
+
+      if (isSelected) {
+        ctx.fillText('>', x + 50, yPos);
+      }
+
+      ctx.fillText(`${character.name} (${character.class})`, x + 70, yPos);
+
+      ctx.font = '12px monospace';
+      ctx.fillStyle = character.gold >= identifyCost ? '#0f0' : '#f66';
+      ctx.fillText(`Gold: ${character.gold}g`, x + 70, yPos + 18);
+
+      yPos += 55;
+    });
+  }
+
+  private renderIdentifyingConfirmation(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
+    if (!context.selectedItem || !context.selectedPayerCharacter) return;
+
+    const identifyCost = Math.floor(context.selectedItem.value * GAME_CONFIG.ITEMS.SHOP.IDENTIFY_COST_MULTIPLIER);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('CONFIRM IDENTIFICATION', x + width / 2, y + 60);
 
     ctx.font = '16px monospace';
+    const itemName = context.selectedItem.unidentifiedName || '?Item';
+
+    ctx.fillText(`Identify ${itemName}`, x + width / 2, y + 120);
+
+    ctx.fillStyle = '#ffa500';
+    ctx.fillText(`for ${identifyCost} gold?`, x + width / 2, y + 160);
+
     ctx.fillStyle = '#fff';
+    ctx.font = '14px monospace';
+    ctx.fillText(`Payer: ${context.selectedPayerCharacter.name}`, x + width / 2, y + 190);
+
+    const options = ['Confirm', 'Cancel'];
+    let yPos = y + 240;
+
+    options.forEach((option, index) => {
+      const isSelected = index === context.selectedOption;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 150, yPos - 20, 200, 35);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 16px monospace' : '16px monospace';
+      ctx.textAlign = 'center';
+
+      if (isSelected) {
+        ctx.textAlign = 'left';
+        ctx.fillText('>', x + 160, yPos);
+        ctx.textAlign = 'center';
+      }
+
+      ctx.fillText(option, x + width / 2, yPos);
+
+      yPos += 45;
+    });
+  }
+
+  private renderPoolingGold(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, context: ShopRenderContext): void {
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('POOL PARTY GOLD', x + width / 2, y + 40);
+
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Combine all party gold into shared pool', x + width / 2, y + 70);
 
     const characters = this.gameState.party.characters;
     let totalGold = 0;
 
     ctx.textAlign = 'left';
-    characters.forEach((character: Character, index: number) => {
-      const y = 240 + index * 30;
+    let yPos = y + 120;
+
+    characters.forEach((character: Character) => {
       ctx.fillStyle = '#fff';
-      ctx.fillText(`${character.name}:`, 150, y);
+      ctx.font = '14px monospace';
+      ctx.fillText(`${character.name}:`, x + 60, yPos);
       ctx.fillStyle = '#ffa500';
       ctx.textAlign = 'right';
-      ctx.fillText(`${character.gold}g`, 550, y);
+      ctx.fillText(`${character.gold}g`, x + width - 60, yPos);
       ctx.textAlign = 'left';
       totalGold += character.gold;
+      yPos += 28;
     });
 
+    yPos += 10;
     ctx.strokeStyle = '#666';
     ctx.beginPath();
-    ctx.moveTo(150, 380);
-    ctx.lineTo(550, 380);
+    ctx.moveTo(x + 60, yPos);
+    ctx.lineTo(x + width - 60, yPos);
     ctx.stroke();
 
+    yPos += 25;
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 18px monospace';
+    ctx.font = 'bold 16px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Total:', 150, 410);
+    ctx.fillText('Total:', x + 60, yPos);
     ctx.fillStyle = '#ffa500';
     ctx.textAlign = 'right';
-    ctx.fillText(`${totalGold}g`, 550, 410);
+    ctx.fillText(`${totalGold}g`, x + width - 60, yPos);
 
     const options = ['Confirm Pool', 'Cancel'];
+    yPos = y + 350;
+
     options.forEach((option, index) => {
-      const y = 450 + index * 35;
       const isSelected = index === context.selectedOption;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 120, yPos - 20, 260, 35);
+      }
 
       ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
       ctx.font = isSelected ? 'bold 16px monospace' : '16px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(option, ctx.canvas.width / 2, y);
+
+      if (isSelected) {
+        ctx.textAlign = 'left';
+        ctx.fillText('>', x + 130, yPos);
+        ctx.textAlign = 'center';
+      }
+
+      ctx.fillText(option, x + width / 2, yPos);
+
+      yPos += 45;
     });
   }
 
-  private renderPartyStatus(ctx: CanvasRenderingContext2D): void {
-    const party = this.gameState.party.characters;
-    const startY = 450;
+  private renderActionMenu(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
+    const menuX = 770;
+    const menuY = 80;
+    const menuWidth = 240;
+    const menuHeight = 480;
 
-    ctx.fillStyle = '#333';
-    ctx.fillRect(50, startY - 10, 700, 120);
+    this.drawPanel(ctx, menuX, menuY, menuWidth, menuHeight);
 
     ctx.fillStyle = '#fff';
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('Party Status:', 60, startY + 10);
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SHOP SERVICES', menuX + menuWidth / 2, menuY + 25);
 
-    party.forEach((character: Character, index: number) => {
-      const x = 60 + (index % 3) * 240;
-      const y = startY + 30 + Math.floor(index / 3) * 40;
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px monospace';
 
-      ctx.fillStyle = character.isDead ? '#666' : '#fff';
-      ctx.font = '11px monospace';
-      ctx.fillText(`${character.name} (${character.class})`, x, y);
+    const controlText = this.getControlText(context.state);
+    const lines = controlText.split('\n');
+    let yPos = menuY + menuHeight - 15 - (lines.length - 1) * 15;
 
-      if (!character.isDead) {
-        ctx.fillStyle = '#0f0';
-        ctx.fillText(`HP: ${character.hp}/${character.maxHp}`, x, y + 15);
-        ctx.fillStyle = '#ffa500';
-        ctx.fillText(`Gold: ${character.gold}`, x + 100, y + 15);
-      } else {
-        ctx.fillStyle = '#f66';
-        ctx.fillText('DEAD', x, y + 15);
-      }
+    lines.forEach(line => {
+      ctx.fillText(line, menuX + menuWidth / 2, yPos);
+      yPos += 15;
     });
   }
 
-  private renderControls(ctx: CanvasRenderingContext2D, state: ShopState): void {
-    const controls = this.getControlsForState(state);
-
-    ctx.fillStyle = '#666';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(controls, ctx.canvas.width / 2, ctx.canvas.height - 10);
-  }
-
-  private getControlsForState(state: ShopState): string {
+  private getControlText(state: ShopState): string {
     switch (state) {
       case 'main_menu':
-        return 'Arrow Keys: Navigate | Enter: Select | Escape: Leave Shop';
+        return 'UP/DOWN: Select\nENTER: Choose\nESC: Leave Shop';
       case 'buying_category':
+        return 'UP/DOWN: Select\nENTER: Choose\nESC: Back';
       case 'buying_items':
+        return 'UP/DOWN: Select\nENTER: Buy Item\nESC: Back';
       case 'buying_character_select':
-        return 'Arrow Keys: Navigate | Enter: Select | Escape: Back';
+        return 'UP/DOWN: Select\nENTER: Confirm\nESC: Cancel';
       case 'selling_character_select':
+        return 'UP/DOWN: Select\nENTER: Choose\nESC: Back';
       case 'selling_items':
-        return 'Arrow Keys: Navigate | Enter: Select | Escape: Cancel';
+        return 'UP/DOWN: Select\nENTER: Sell Item\nESC: Back';
       case 'selling_confirmation':
-        return 'Arrow Keys: Select | Enter: Confirm | Escape: Cancel';
+        return 'UP/DOWN: Select\nENTER: Confirm\nESC: Cancel';
+      case 'identifying_character_select':
+        return 'UP/DOWN: Select\nENTER: Choose\nESC: Back';
+      case 'identifying_items':
+        return 'UP/DOWN: Select\nENTER: Identify\nESC: Back';
+      case 'identifying_payer_select':
+        return 'UP/DOWN: Select\nENTER: Choose\nESC: Back';
+      case 'identifying_confirmation':
+        return 'UP/DOWN: Select\nENTER: Confirm\nESC: Cancel';
       case 'pooling_gold':
-        return 'Arrow Keys: Select | Enter: Confirm | Escape: Cancel';
+        return 'UP/DOWN: Select\nENTER: Confirm\nESC: Cancel';
       default:
-        return 'Escape: Back';
+        return 'ESC: Back';
     }
   }
+
 }

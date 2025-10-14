@@ -2,17 +2,21 @@ import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { MenuInputHandler } from '../ui/components/MenuInputHandler';
 import { GameState } from '../types/GameTypes';
 import { Character } from '../entities/Character';
+import { StatusPanel } from '../ui/StatusPanel';
 
 export class TownScene extends Scene {
   private sceneManager: SceneManager;
   private gameState: GameState;
   private selectedOption: number = 0;
-  private menuOptions: string[] = ["Boltac's Trading Post", 'Temple', 'Inn', 'Return to Dungeon'];
+  private menuOptions: string[] = ["Boltac's Trading Post", 'Temple', 'Inn', "Gilgamesh's Tavern", 'Training Grounds', 'Explore the Dungeon'];
+  private statusPanel: StatusPanel | null = null;
+  private messageLog: any;
 
   constructor(gameState: GameState, sceneManager: SceneManager) {
     super('Town');
     this.gameState = gameState;
     this.sceneManager = sceneManager;
+    this.messageLog = this.gameState.messageLog;
   }
 
   private drawPanel(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): void {
@@ -34,17 +38,33 @@ export class TownScene extends Scene {
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
+    if (!this.statusPanel) {
+      this.statusPanel = new StatusPanel(ctx.canvas, 10, 80, 240, 480);
+    }
+
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-    this.renderTownHeader(ctx);
-    this.renderGoldDisplay(ctx);
-    this.renderMainMenu(ctx);
-    this.renderControls(ctx);
+    this.renderHeader(ctx);
+
+    if (this.statusPanel) {
+      this.statusPanel.render(this.gameState.party, ctx);
+    }
+
+    this.renderMainArea(ctx);
+    this.renderActionMenu(ctx);
+
+    if (this.messageLog) {
+      this.messageLog.render(ctx);
+    }
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
-    const { renderManager } = renderContext;
+    const { renderManager, mainContext } = renderContext;
+
+    if (!this.statusPanel) {
+      this.statusPanel = new StatusPanel(mainContext.canvas, 10, 80, 240, 480);
+    }
 
     renderManager.renderBackground((ctx) => {
       ctx.fillStyle = '#1a1a1a';
@@ -52,143 +72,104 @@ export class TownScene extends Scene {
     });
 
     renderManager.renderUI((ctx) => {
-      this.renderTownHeader(ctx);
-      this.renderGoldDisplay(ctx);
-      this.renderMainMenu(ctx);
-      this.renderControls(ctx);
+      this.renderHeader(ctx);
+
+      if (this.statusPanel) {
+        this.statusPanel.render(this.gameState.party, ctx);
+      }
+
+      this.renderMainArea(ctx);
+      this.renderActionMenu(ctx);
+
+      if (this.messageLog) {
+        this.messageLog.render(ctx);
+      }
     });
   }
 
-  private renderTownHeader(ctx: CanvasRenderingContext2D): void {
+  private renderHeader(ctx: CanvasRenderingContext2D): void {
+    this.drawPanel(ctx, 10, 10, ctx.canvas.width - 20, 60);
+
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 24px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('TOWN OF LLYLGAMYN', ctx.canvas.width / 2, 40);
+    ctx.fillText('TOWN OF LLYLGAMYN', ctx.canvas.width / 2, 45);
 
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, ctx.canvas.width - 20, 50);
-  }
-
-  private renderGoldDisplay(ctx: CanvasRenderingContext2D): void {
     const pooledGold = this.gameState.party.pooledGold || 0;
     const partyGold = this.gameState.party.characters?.reduce((sum: number, char: Character) => sum + char.gold, 0) || 0;
 
     ctx.fillStyle = '#ffa500';
     ctx.font = '14px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`Pooled: ${pooledGold}g | Party: ${partyGold}g`, ctx.canvas.width - 20, 40);
+    ctx.fillText(`Pooled: ${pooledGold}g | Party: ${partyGold}g`, ctx.canvas.width - 30, 45);
   }
 
-  private renderMainMenu(ctx: CanvasRenderingContext2D): void {
-    const menuY = 120;
-    const menuHeight = 280;
+  private renderMainArea(ctx: CanvasRenderingContext2D): void {
+    const mainX = 260;
+    const mainY = 80;
+    const mainWidth = 500;
+    const mainHeight = 480;
 
-    this.drawPanel(ctx, 100, menuY, 600, menuHeight);
+    this.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
 
     ctx.fillStyle = '#fff';
-    ctx.font = '18px monospace';
+    ctx.font = 'bold 20px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Welcome to Llylgamyn', mainX + mainWidth / 2, mainY + 60);
+
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('The town offers various services for adventurers', mainX + mainWidth / 2, mainY + 100);
+    ctx.fillText('Select a destination from the menu', mainX + mainWidth / 2, mainY + 130);
+
+    const party = this.gameState.party.characters;
+    const roster = this.gameState.characterRoster || [];
+    const livingParty = party.filter((c: Character) => !c.isDead);
+
+    ctx.fillStyle = '#aaa';
+    ctx.font = '12px monospace';
+    ctx.fillText(`Active Party: ${livingParty.length}/${party.length} alive`, mainX + mainWidth / 2, mainY + 300);
+    ctx.fillText(`Character Roster: ${roster.length} total`, mainX + mainWidth / 2, mainY + 320);
+  }
+
+  private renderActionMenu(ctx: CanvasRenderingContext2D): void {
+    const menuX = 770;
+    const menuY = 80;
+    const menuWidth = 240;
+    const menuHeight = 480;
+
+    this.drawPanel(ctx, menuX, menuY, menuWidth, menuHeight);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('TOWN SERVICES', menuX + menuWidth / 2, menuY + 25);
+
+    ctx.font = '12px monospace';
     ctx.textAlign = 'left';
 
+    const startY = menuY + 60;
     this.menuOptions.forEach((option, index) => {
-      const y = menuY + 50 + index * 60;
+      const y = startY + index * 50;
       const isSelected = index === this.selectedOption;
 
       if (isSelected) {
         ctx.fillStyle = '#333';
-        ctx.fillRect(120, y - 25, 560, 35);
+        ctx.fillRect(menuX + 10, y - 15, menuWidth - 20, 35);
       }
 
       ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
-      ctx.font = isSelected ? 'bold 18px monospace' : '18px monospace';
-      ctx.fillText(option, 140, y);
-
-      if (isSelected) {
-        ctx.fillText('>', 125, y);
-      }
+      ctx.font = isSelected ? 'bold 12px monospace' : '12px monospace';
+      ctx.fillText(`${index + 1}. ${option}`, menuX + 20, y);
     });
 
-    // Description panel
-    this.drawPanel(ctx, 100, 420, 600, 80);
-    ctx.fillStyle = '#aaa';
-    ctx.font = '14px monospace';
-    ctx.textAlign = 'center';
-
-    const descriptions = [
-      'Buy, sell, and identify items. Pool your gold for better purchases.',
-      'Heal your party and remove curses (not yet available)',
-      'Rest and recover your party. Apply pending level ups.',
-      'Return to the dungeon depths'
-    ];
-
-    ctx.fillText(descriptions[this.selectedOption], ctx.canvas.width / 2, 460);
-
-    // Party status panel
-    this.renderPartyStatus(ctx);
-  }
-
-  private renderPartyStatus(ctx: CanvasRenderingContext2D): void {
-    const partyY = 520;
-    const partyHeight = 150;
-
-    this.drawPanel(ctx, 100, partyY, 600, partyHeight);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = '14px monospace';
-    ctx.textAlign = 'left';
-
-    if (!this.gameState.party.characters || this.gameState.party.characters.length === 0) {
-      ctx.fillStyle = '#666';
-      ctx.textAlign = 'center';
-      ctx.fillText('No party members', ctx.canvas.width / 2, partyY + 75);
-      return;
-    }
-
-    const characters = this.gameState.party.characters.slice(0, 3);
-    characters.forEach((char: Character, index: number) => {
-      const x = 130 + index * 190;
-      const y = partyY + 30;
-
-      ctx.fillStyle = char.isDead ? '#666' : '#fff';
-      ctx.fillText(char.name, x, y);
-
-      ctx.font = '12px monospace';
-      ctx.fillStyle = char.isDead ? '#444' : '#aaa';
-      ctx.fillText(`${char.class} Lv${char.level}`, x, y + 20);
-
-      if (!char.isDead) {
-        ctx.fillStyle = '#4a4';
-        ctx.fillText(`HP: ${char.hp}/${char.maxHp}`, x, y + 40);
-
-        if (char.maxMp > 0) {
-          ctx.fillStyle = '#44a';
-          ctx.fillText(`MP: ${char.mp}/${char.maxMp}`, x, y + 60);
-        }
-
-        ctx.fillStyle = '#aa0';
-        ctx.fillText(`Gold: ${char.gold}`, x, y + 80);
-      } else {
-        ctx.fillStyle = '#a44';
-        ctx.fillText('DEAD', x, y + 40);
-      }
-
-      ctx.font = '14px monospace';
-    });
-  }
-
-  private renderControls(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = '#666';
-    ctx.font = '12px monospace';
+    ctx.font = '11px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(
-      'UP/DOWN to select, ENTER to choose, ESC to return to dungeon',
-      ctx.canvas.width / 2,
-      ctx.canvas.height - 20
-    );
+    ctx.fillText('UP/DOWN: Select | ENTER: Choose', menuX + menuWidth / 2, menuY + menuHeight - 15);
   }
 
   public handleInput(key: string): boolean {
-    // Normalize key to lowercase
     const normalizedKey = key.toLowerCase();
 
     const action = MenuInputHandler.handleMenuInput(
@@ -204,9 +185,6 @@ export class TownScene extends Scene {
         onConfirm: () => {
           this.selectCurrentOption();
         },
-        onCancel: () => {
-          this.sceneManager.switchTo('dungeon');
-        },
       }
     );
 
@@ -220,15 +198,33 @@ export class TownScene extends Scene {
         break;
 
       case 1: // Temple
-        console.log('Temple not yet implemented');
+        this.sceneManager.switchTo('temple');
         break;
 
       case 2: // Inn
         this.sceneManager.switchTo('inn');
         break;
 
-      case 3: // Return to Dungeon
-        this.sceneManager.switchTo('dungeon');
+      case 3: // Gilgamesh's Tavern
+        this.sceneManager.switchTo('tavern');
+        break;
+
+      case 4: // Training Grounds
+        this.sceneManager.switchTo('training_grounds');
+        break;
+
+      case 5:
+        const livingCharacters = this.gameState.party.characters.filter(
+          (c: Character) => !c.isDead && c.status === 'OK'
+        );
+
+        if (livingCharacters.length === 0) {
+          if (this.gameState.messageLog?.add) {
+            this.gameState.messageLog.add('You need at least one living party member to enter the dungeon!');
+          }
+        } else {
+          this.sceneManager.switchTo('dungeon');
+        }
         break;
     }
   }

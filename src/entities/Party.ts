@@ -8,6 +8,7 @@ export class Party implements IParty {
   y: number;
   facing: Direction;
   floor: number;
+  pooledGold: number;
 
   constructor() {
     this.characters = [];
@@ -16,6 +17,7 @@ export class Party implements IParty {
     this.y = 0;
     this.facing = 'north';
     this.floor = 1;
+    this.pooledGold = 0;
   }
 
   public addCharacter(character: Character): boolean {

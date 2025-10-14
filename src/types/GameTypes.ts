@@ -36,7 +36,7 @@ export interface CharacterStats {
   luck: number;
 }
 
-export interface Character {
+export interface ICharacter {
   id: string;
   name: string;
   race: CharacterRace;
@@ -240,12 +240,13 @@ export interface DungeonEvent {
 }
 
 export interface IParty {
-  characters: Character[];
+  characters: ICharacter[];
   formation: Formation;
   x: number;
   y: number;
   facing: Direction;
   floor: number;
+  pooledGold: number;
 }
 
 export type Formation = 'front' | 'back';
@@ -274,12 +275,13 @@ export interface GameState {
     floor: number;
     surprised: boolean;
   };
+  characterRoster: ICharacter[];
 }
 
 export interface Encounter {
   monsters: Monster[];
   surprise: boolean;
   canRun: boolean;
-  turnOrder: (Character | Monster)[];
+  turnOrder: (ICharacter | Monster)[];
   currentTurn: number;
 }

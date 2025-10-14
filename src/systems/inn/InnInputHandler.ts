@@ -40,8 +40,6 @@ export class InnInputHandler {
         return this.handleConfirmRestInput(key);
       case 'levelupResult':
         return this.handleLevelUpResultInput(key);
-      case 'party':
-        return this.handlePartyMenuInput(key);
       case 'poolGold':
         return this.handlePoolGoldInput(key);
       case 'selectPoolTarget':
@@ -85,10 +83,7 @@ export class InnInputHandler {
         this.stateManager.setState('poolGold');
         this.stateManager.selectedOption = 0;
         break;
-      case 2: // Party Management
-        this.stateManager.setState('party');
-        break;
-      case 3: // Leave Inn
+      case 2: // Leave Inn
         this.sceneManager.switchTo('town');
         break;
     }
@@ -241,61 +236,6 @@ export class InnInputHandler {
     }
 
     return false;
-  }
-
-
-  private handlePartyMenuInput(key: string): boolean {
-    const options = this.stateManager.getPartyOptions();
-    const action = MenuInputHandler.handleMenuInput(
-      key,
-      {
-        selectedIndex: this.stateManager.selectedOption,
-        maxIndex: options.length - 1,
-      },
-      {
-        onNavigate: (newIndex: number) => {
-          this.stateManager.selectedOption = newIndex;
-        },
-        onConfirm: () => {
-          this.selectPartyOption();
-        },
-        onCancel: () => {
-          this.stateManager.setState('main');
-        },
-      }
-    );
-
-    return action.type !== 'none';
-  }
-
-  private selectPartyOption(): void {
-    const options = this.stateManager.getPartyOptions();
-    const selectedOption = options[this.stateManager.selectedOption];
-
-    switch (selectedOption) {
-      case 'Inspect Character':
-        if (this.messageLog?.add) {
-          this.messageLog.add('Character inspection not yet implemented.');
-        }
-        break;
-      case 'Remove from Party':
-        if (this.gameState.party.characters && this.gameState.party.characters.length > 1) {
-          this.transactionHandler.removeFromParty(0);
-        } else {
-          if (this.messageLog?.add) {
-            this.messageLog.add('Cannot remove the last party member!');
-          }
-        }
-        break;
-      case 'Reorder Party':
-        if (this.messageLog?.add) {
-          this.messageLog.add('Party reordering not yet implemented.');
-        }
-        break;
-      case 'Back to Main':
-        this.stateManager.setState('main');
-        break;
-    }
   }
 
   private handlePoolGoldInput(key: string): boolean {

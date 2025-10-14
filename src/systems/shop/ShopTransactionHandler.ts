@@ -1,6 +1,7 @@
 import { GameState, Item } from '../../types/GameTypes';
 import { Character } from '../../entities/Character';
 import { DebugLogger } from '../../utils/DebugLogger';
+import { GAME_CONFIG } from '../../config/GameConstants';
 
 export interface TransactionResult {
   success: boolean;
@@ -95,7 +96,7 @@ export class ShopTransactionHandler {
       };
     }
 
-    const identifyCost = 100;
+    const identifyCost = Math.floor(item.value * GAME_CONFIG.ITEMS.SHOP.IDENTIFY_COST_MULTIPLIER);
 
     if (character.gold < identifyCost) {
       return {

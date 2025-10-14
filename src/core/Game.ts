@@ -11,6 +11,9 @@ import { DebugScene } from '../scenes/DebugScene';
 import { TownScene } from '../scenes/TownScene';
 import { ShopScene } from '../scenes/ShopScene';
 import { InnScene } from '../scenes/InnScene';
+import { TempleScene } from '../scenes/TempleScene';
+import { TavernScene } from '../scenes/TavernScene';
+import { TrainingGroundsScene } from '../scenes/TrainingGroundsScene';
 import { Party } from '../entities/Party';
 import { Character } from '../entities/Character';
 import { GameState } from '../types/GameTypes';
@@ -22,6 +25,8 @@ import { LayerTestUtils } from '../utils/LayerTestUtils';
 import { MessageLog } from '../ui/MessageLog';
 import { DebugLogger } from '../utils/DebugLogger';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
+import { StarterCharacterFactory } from '../utils/StarterCharacterFactory';
+import { STARTER_CHARACTER_TEMPLATES } from '../config/StarterCharacters';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -85,7 +90,7 @@ export class Game {
         this.playtimeStart = Date.now() - savedGame.playtimeSeconds * 1000;
 
         // Create a new MessageLog for loaded game (messages aren't saved)
-        this.gameState.messageLog = new MessageLog(this.canvas, 10, 570, 750, 180);
+        this.gameState.messageLog = new MessageLog(this.canvas, 10, 570, 1004, 180);
         this.gameState.messageLog.addSystemMessage('Game loaded successfully');
       } else {
         ErrorHandler.logError(
@@ -99,6 +104,9 @@ export class Game {
 
       if (this.gameState.combatEnabled === undefined) {
         this.gameState.combatEnabled = true;
+      }
+      if (this.gameState.characterRoster === undefined) {
+        this.gameState.characterRoster = [];
       }
     } else {
       this.createNewGameState();
@@ -114,10 +122,15 @@ export class Game {
       gameTime: 0,
       turnCount: 0,
       combatEnabled: true,
-      messageLog: new MessageLog(this.canvas, 10, 570, 750, 180),
+      messageLog: new MessageLog(this.canvas, 10, 570, 1004, 180),
+      characterRoster: [],
     };
 
-    // Add initial game messages
+    STARTER_CHARACTER_TEMPLATES.forEach((template) => {
+      const character = StarterCharacterFactory.createFromTemplate(template);
+      this.gameState.characterRoster.push(character);
+    });
+
     this.gameState.messageLog.addSystemMessage('Welcome to the dungeon!');
     this.gameState.messageLog.addSystemMessage('Use WASD or arrow keys to move');
     this.gameState.messageLog.addSystemMessage('Press ENTER to interact, M for map');
@@ -192,7 +205,37 @@ export class Game {
 
           // eslint-disable-next-line no-unused-expressions
           (void _name, void _race, void _charClass, void _alignment); // Mark as intentionally unused
+
+          // Save the initial spells from the constructor
+          const initialSpells = newChar.knownSpells ? [...newChar.knownSpells] : [];
+          // Save the statusEffects Map (it doesn't serialize to JSON properly)
+          const statusEffectsMap = newChar.statusEffects;
+
           Object.assign(newChar, restData);
+
+          // If saved data has no knownSpells or empty array, use the initial spells from constructor
+          if (!restData.knownSpells || (Array.isArray(restData.knownSpells) && restData.knownSpells.length === 0)) {
+            newChar.knownSpells = initialSpells;
+          }
+
+          // Restore statusEffects as a Map (it gets overwritten as a plain object from JSON)
+          // If there's saved statusEffects data and it's not a Map, convert it
+          if (restData.statusEffects && !(restData.statusEffects instanceof Map)) {
+            // If it's an object with entries, convert to Map
+            if (typeof restData.statusEffects === 'object' && restData.statusEffects !== null) {
+              newChar.statusEffects = new Map(Object.entries(restData.statusEffects));
+              DebugLogger.debug('Game', 'Converted statusEffects from object to Map', {
+                character: newChar.name,
+                entries: Object.entries(restData.statusEffects)
+              });
+            } else {
+              // Otherwise use the original Map
+              newChar.statusEffects = statusEffectsMap;
+            }
+          } else if (!restData.statusEffects) {
+            // No statusEffects in save data, use the original Map
+            newChar.statusEffects = statusEffectsMap;
+          }
           party.characters.push(newChar);
         } catch (error) {
           ErrorHandler.logError(
@@ -225,6 +268,9 @@ export class Game {
     this.sceneManager.addScene('town', new TownScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('shop', new ShopScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('inn', new InnScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('temple', new TempleScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('tavern', new TavernScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('training_grounds', new TrainingGroundsScene(this.gameState, this.sceneManager));
 
     // Set up scene change listener for performance monitoring
     this.sceneManager.onSceneChange = (sceneName: string) => {
@@ -414,5 +460,40 @@ export class Game {
 
   public isGameRunning(): boolean {
     return this.isRunning;
+  }
+
+  public resetGame(): void {
+    DebugLogger.info('Game', 'Resetting game to new state');
+
+    this.gameState.party = new Party();
+    this.gameState.dungeon = [];
+    this.gameState.currentFloor = 1;
+    this.gameState.inCombat = false;
+    this.gameState.gameTime = 0;
+    this.gameState.turnCount = 0;
+    this.gameState.combatEnabled = true;
+    this.gameState.currentEncounter = undefined;
+    this.gameState.hasEnteredDungeon = false;
+    this.gameState.characterRoster = [];
+
+    STARTER_CHARACTER_TEMPLATES.forEach((template) => {
+      const character = StarterCharacterFactory.createFromTemplate(template);
+      this.gameState.characterRoster.push(character);
+    });
+
+    this.gameState.messageLog.clear();
+    this.gameState.messageLog.addSystemMessage('Welcome to the dungeon!');
+    this.gameState.messageLog.addSystemMessage('Use WASD or arrow keys to move');
+    this.gameState.messageLog.addSystemMessage('Press ENTER to interact, M for map');
+    this.gameState.messageLog.addSystemMessage('Press C to toggle combat encounters');
+    this.gameState.messageLog.addSystemMessage('Press T to trigger combat (testing)');
+    this.gameState.messageLog.addSystemMessage('Press R to rest, ESC to return to main menu');
+
+    this.generateNewDungeon();
+
+    this.playtimeStart = Date.now();
+    this.frameCount = 0;
+    this.autoSaveFrameCounter = 0;
+    this.sceneManager.switchTo('town');
   }
 }

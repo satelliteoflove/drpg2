@@ -65,7 +65,7 @@ export class InnUIRenderer {
     const mainX = 260;
     const mainY = 80;
     const mainWidth = 500;
-    const mainHeight = 400;
+    const mainHeight = 480;
 
     this.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
 
@@ -84,9 +84,6 @@ export class InnUIRenderer {
         break;
       case 'levelupResult':
         this.renderLevelUpAnimation(ctx, mainX, mainY, mainWidth, mainHeight, stateContext);
-        break;
-      case 'party':
-        this.renderPartyManagement(ctx, mainX, mainY, mainWidth, mainHeight, stateContext);
         break;
       case 'poolGold':
         this.renderPoolGoldConfirmation(ctx, mainX, mainY, mainWidth, mainHeight);
@@ -107,22 +104,6 @@ export class InnUIRenderer {
     ctx.fillStyle = '#aaa';
     ctx.fillText('Rest your bodies and spirits here', x + width / 2, y + 90);
     ctx.fillText('at the Adventurer\'s Inn', x + width / 2, y + 110);
-
-    ctx.fillStyle = '#4a4';
-    ctx.font = '16px monospace';
-    ctx.fillText('Services Available:', x + width / 2, y + 160);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = '14px monospace';
-    const services = [
-      'Full restoration of HP and MP',
-      'Application of pending level ups',
-      'Party management and organization'
-    ];
-
-    services.forEach((service, index) => {
-      ctx.fillText(`• ${service}`, x + width / 2, y + 190 + index * 25);
-    });
 
     const pendingLevelUps = (this.gameState.party.characters || []).filter(
       (char: Character) => !char.isDead && char.pendingLevelUp
@@ -332,48 +313,6 @@ export class InnUIRenderer {
     ctx.fillText('Press ENTER to continue', x + width / 2, height - 30);
   }
 
-
-  private renderPartyManagement(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, _stateContext: InnStateContext): void {
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 18px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('PARTY MANAGEMENT', x + width / 2, y + 40);
-
-    ctx.font = '14px monospace';
-    ctx.fillStyle = '#aaa';
-    ctx.fillText('Manage your party composition', x + width / 2, y + 70);
-
-    if (!this.gameState.party.characters || this.gameState.party.characters.length === 0) {
-      ctx.fillStyle = '#666';
-      ctx.fillText('No party members to manage', x + width / 2, y + 150);
-      return;
-    }
-
-    ctx.fillStyle = '#fff';
-    ctx.textAlign = 'left';
-    let yPos = y + 120;
-
-    this.gameState.party.characters.forEach((char: Character, index: number) => {
-      ctx.fillStyle = char.isDead ? '#666' : '#fff';
-      ctx.font = 'bold 14px monospace';
-      ctx.fillText(`${index + 1}. ${char.name}`, x + 60, yPos);
-
-      ctx.font = '12px monospace';
-      ctx.fillStyle = char.isDead ? '#444' : '#aaa';
-      ctx.fillText(`${char.class} Level ${char.level}`, x + 200, yPos);
-
-      if (char.isDead) {
-        ctx.fillStyle = '#a44';
-        ctx.fillText('DEAD', x + 380, yPos);
-      } else {
-        ctx.fillStyle = '#4a4';
-        ctx.fillText(`HP: ${char.hp}/${char.maxHp}`, x + 340, yPos);
-      }
-
-      yPos += 30;
-    });
-  }
-
   private renderPoolGoldConfirmation(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number): void {
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 18px monospace';
@@ -453,7 +392,7 @@ export class InnUIRenderer {
     const menuX = 770;
     const menuY = 80;
     const menuWidth = 240;
-    const menuHeight = 300;
+    const menuHeight = 480;
 
     this.drawPanel(ctx, menuX, menuY, menuWidth, menuHeight);
 
@@ -470,15 +409,7 @@ export class InnUIRenderer {
       options = [
         'Rest Character',
         'Pool Gold',
-        'Party Management',
         'Leave Inn'
-      ];
-    } else if (stateContext.currentState === 'party') {
-      options = [
-        'Inspect Character',
-        'Remove from Party',
-        'Reorder Party',
-        'Back to Main'
       ];
     } else if (stateContext.currentState === 'selectCharacter') {
       ctx.fillStyle = '#aaa';
@@ -549,7 +480,7 @@ export class InnUIRenderer {
       controlText = 'Y: Confirm | N: Cancel';
     } else if (stateContext.currentState === 'levelupResult') {
       controlText = 'ENTER: Continue';
-    } else if (stateContext.currentState !== 'main' && stateContext.currentState !== 'party') {
+    } else if (stateContext.currentState !== 'main') {
       controlText = 'ESC: Back';
     }
     ctx.fillText(controlText, menuX + menuWidth / 2, menuY + menuHeight - 15);

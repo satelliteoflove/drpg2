@@ -3,6 +3,8 @@ import { CharacterAlignment, CharacterClass, CharacterRace, GameState } from '..
 import { Character } from '../entities/Character';
 import { DungeonGenerator } from '../utils/DungeonGenerator';
 import { MenuInputHandler } from '../ui/components/MenuInputHandler';
+import { StarterCharacterFactory } from '../utils/StarterCharacterFactory';
+import { STARTER_CHARACTER_TEMPLATES } from '../config/StarterCharacters';
 
 export class NewGameScene extends Scene {
   private gameState: GameState;
@@ -156,7 +158,7 @@ export class NewGameScene extends Scene {
   private selectCurrentOption(): void {
     if (this.selectedOption === 0) {
       this.clearGameStateForNewGame();
-      this.sceneManager.switchTo('character_creation');
+      this.sceneManager.switchTo('town');
     } else {
       this.autoGenerateParty();
     }
@@ -226,6 +228,12 @@ export class NewGameScene extends Scene {
     this.gameState.party.y = 0;
     this.gameState.party.floor = 1;
     this.gameState.party.facing = 'north';
+
+    this.gameState.characterRoster = [];
+    STARTER_CHARACTER_TEMPLATES.forEach((template) => {
+      const character = StarterCharacterFactory.createFromTemplate(template);
+      this.gameState.characterRoster.push(character);
+    });
   }
 
   private generateNewDungeon(): void {

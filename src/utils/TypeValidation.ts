@@ -1,5 +1,5 @@
 import {
-  Character,
+  ICharacter,
   CharacterAlignment,
   CharacterClass,
   CharacterRace,
@@ -49,7 +49,7 @@ export class TypeValidation {
     );
   }
 
-  static isValidCharacter(value: any): value is Character {
+  static isValidCharacter(value: any): value is ICharacter {
     if (typeof value !== 'object' || value === null) return false;
 
     const requiredFields = [
@@ -141,7 +141,7 @@ export class TypeValidation {
   static safeValidateCharacter(
     value: any,
     context: string = 'Character Validation'
-  ): Character | null {
+  ): ICharacter | null {
     try {
       if (this.isValidCharacter(value)) {
         return value;

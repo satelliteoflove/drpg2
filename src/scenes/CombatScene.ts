@@ -401,11 +401,12 @@ export class CombatScene extends Scene {
     const encounter = this.combatSystem.getEncounter();
     if (encounter) {
       const turnOrder = encounter.turnOrder.slice(0, 6); // Show next 6 turns
+      const currentUnit = this.combatSystem.getCurrentUnit();
       ctx.font = '12px monospace';
 
       turnOrder.forEach((unit, idx) => {
         const unitName = EntityUtils.getName(unit as any);
-        const isCurrent = idx === 0;
+        const isCurrent = unit === currentUnit;
         ctx.fillStyle = isCurrent ? '#ffff00' : '#aaa';
         ctx.fillText(`${idx + 1}. ${unitName}`, orderX + 10, orderY + 45 + idx * 18);
       });

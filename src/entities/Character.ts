@@ -5,7 +5,7 @@ import {
   CharacterStats,
   CharacterStatus,
   Equipment,
-  Character as ICharacter,
+  ICharacter,
   Item,
   Spell,
 } from '../types/GameTypes';
@@ -453,5 +453,35 @@ export class Character implements ICharacter {
 
   public getCurrentMP(): number {
     return this.mp;
+  }
+
+  public changeClass(newClass: CharacterClass): void {
+    Object.keys(this.equipment).forEach(slot => {
+      const item = this.equipment[slot as keyof Equipment];
+      if (item) {
+        this.inventory.push(item);
+        delete this.equipment[slot as keyof Equipment];
+      }
+    });
+
+    const raceConfig = RACES[this.race.toLowerCase()];
+    if (raceConfig) {
+      this.stats = {
+        strength: raceConfig.stats.strength.min,
+        intelligence: raceConfig.stats.intelligence.min,
+        piety: raceConfig.stats.piety.min,
+        vitality: raceConfig.stats.vitality.min,
+        agility: raceConfig.stats.agility.min,
+        luck: raceConfig.stats.luck.min
+      };
+      this.baseStats = { ...this.stats };
+    }
+
+    this.class = newClass;
+    this.level = 1;
+    this.experience = 0;
+    this.experienceModifier = getExperienceModifier(this.race, newClass);
+    this.pendingLevelUp = false;
+    this.age++;
   }
 }

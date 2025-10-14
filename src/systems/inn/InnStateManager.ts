@@ -1,7 +1,7 @@
 import { GameState } from '../../types/GameTypes';
 import { Character } from '../../entities/Character';
 
-export type InnState = 'main' | 'selectCharacter' | 'selectRoom' | 'confirmRest' | 'levelupResult' | 'party' | 'poolGold' | 'selectPoolTarget';
+export type InnState = 'main' | 'selectCharacter' | 'selectRoom' | 'confirmRest' | 'levelupResult' | 'poolGold' | 'selectPoolTarget';
 
 export type RoomType = 'stables' | 'cots' | 'economy' | 'merchant' | 'royal';
 
@@ -132,18 +132,7 @@ export class InnStateManager {
     return [
       'Rest Character',
       'Pool Gold',
-      'Party Management',
       'Leave Inn'
-    ];
-  }
-
-
-  public getPartyOptions(): string[] {
-    return [
-      'Inspect Character',
-      'Remove from Party',
-      'Reorder Party',
-      'Back to Main'
     ];
   }
 

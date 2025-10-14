@@ -134,6 +134,14 @@ export class CombatSystem {
       return 'Action already in progress';
     }
 
+    DebugLogger.info('CombatSystem', 'Executing player action', {
+      action,
+      currentUnit: currentUnit.name,
+      currentTurnIndex: this.encounter.currentTurn,
+      targetIndex,
+      spellId
+    });
+
     this.isProcessingTurn = true;
 
     let result = '';
@@ -341,7 +349,15 @@ export class CombatSystem {
     }
 
     // Advance to next turn
+    const previousTurn = this.encounter.currentTurn;
     this.encounter.currentTurn = (this.encounter.currentTurn + 1) % this.encounter.turnOrder.length;
+
+    DebugLogger.debug('CombatSystem', 'Turn advanced', {
+      previousTurn,
+      newTurn: this.encounter.currentTurn,
+      nextUnit: this.encounter.turnOrder[this.encounter.currentTurn] ?
+        EntityUtils.getName(this.encounter.turnOrder[this.encounter.currentTurn] as any) : 'none'
+    });
 
     // Remove dead units from turn order
     this.cleanupDeadUnits();

@@ -1,4 +1,4 @@
-import { GameState, Character as ICharacter } from '../types/GameTypes';
+import { GameState, ICharacter } from '../types/GameTypes';
 import { DebugLogger } from './DebugLogger';
 
 export interface SaveData {
@@ -75,6 +75,14 @@ export class SaveManager {
       }
     });
 
+    if (sanitized.characterRoster) {
+      sanitized.characterRoster.forEach((char: ICharacter) => {
+        if (char.isDead && char.status === 'Dead') {
+          this.applyPermadeath(char);
+        }
+      });
+    }
+
     return sanitized;
   }
 
@@ -117,7 +125,8 @@ export class SaveManager {
       typeof gameState.inCombat === 'boolean' &&
       typeof gameState.gameTime === 'number' &&
       typeof gameState.turnCount === 'number' &&
-      (gameState.combatEnabled === undefined || typeof gameState.combatEnabled === 'boolean')
+      (gameState.combatEnabled === undefined || typeof gameState.combatEnabled === 'boolean') &&
+      (gameState.characterRoster === undefined || Array.isArray(gameState.characterRoster))
     );
   }
 
