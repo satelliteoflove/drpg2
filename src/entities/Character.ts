@@ -9,6 +9,7 @@ import {
   Item,
   Spell,
 } from '../types/GameTypes';
+import { ActiveStatusEffect } from '../types/StatusEffectTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { TypeValidation } from '../utils/TypeValidation';
 import { RACES } from '../config/races';
@@ -44,7 +45,7 @@ export class Character implements ICharacter {
   mp: number;
   maxMp: number;
   ac: number;
-  status: CharacterStatus;
+  statuses: ActiveStatusEffect[];
   age: number;
   gold: number;
   equipment: Equipment;
@@ -85,7 +86,7 @@ export class Character implements ICharacter {
     this.statusEffects = new Map();
     this.isDead = false;
     this.deathCount = 0;
-    this.status = 'OK';
+    this.statuses = [];
 
     this.baseStats = this.rollStats();
     this.stats = { ...this.baseStats };
@@ -341,7 +342,7 @@ export class Character implements ICharacter {
   public takeDamage(amount: number): void {
     this.hp = Math.max(0, this.hp - amount);
     if (this.hp === 0 && !this.isDead) {
-      this.status = 'Dead';
+      this.statuses = [{ type: 'Dead' }];
       this.isDead = true;
       this.deathCount++;
     }
@@ -360,12 +361,12 @@ export class Character implements ICharacter {
       GAME_CONFIG.DEATH_SYSTEM.BASE_SURVIVAL_CHANCE +
         this.deathCount * GAME_CONFIG.DEATH_SYSTEM.DEATH_PENALTY_MULTIPLIER
     ) {
-      this.status = 'Ashed';
+      this.statuses = [{ type: 'Ashed' }];
       return;
     }
 
     this.isDead = false;
-    this.status = 'OK';
+    this.statuses = [];
     this.hp = 1;
     this.stats.vitality = Math.max(
       GAME_CONFIG.CHARACTER.STAT_MIN,
@@ -433,6 +434,18 @@ export class Character implements ICharacter {
 
   public hasStatusEffect(effect: string): boolean {
     return this.statusEffects.has(effect);
+  }
+
+  public hasStatus(statusType: CharacterStatus): boolean {
+    return this.statuses.some(s => s.type === statusType);
+  }
+
+  public getStatus(statusType: CharacterStatus): ActiveStatusEffect | undefined {
+    return this.statuses.find(s => s.type === statusType);
+  }
+
+  public getAllStatuses(): ActiveStatusEffect[] {
+    return [...this.statuses];
   }
 
   public getAlignment(): CharacterAlignment {

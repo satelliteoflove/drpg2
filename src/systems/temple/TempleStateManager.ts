@@ -32,25 +32,25 @@ export class TempleStateManager {
       name: 'Cure Paralyzed',
       cost: GAME_CONFIG.TEMPLE.SERVICE_COSTS.CURE_PARALYZED,
       description: 'Remove paralysis from a character (Base Cost × Level)',
-      eligibilityCheck: (character: Character) => character.status === 'Paralyzed'
+      eligibilityCheck: (character: Character) => character.hasStatus('Paralyzed')
     },
     cure_stoned: {
       name: 'Cure Stoned',
       cost: GAME_CONFIG.TEMPLE.SERVICE_COSTS.CURE_STONED,
       description: 'Restore a petrified character (Base Cost × Level)',
-      eligibilityCheck: (character: Character) => character.status === 'Stoned'
+      eligibilityCheck: (character: Character) => character.hasStatus('Stoned')
     },
     resurrect_dead: {
       name: 'Resurrect from Dead',
       cost: GAME_CONFIG.TEMPLE.SERVICE_COSTS.RESURRECT_DEAD,
       description: 'Attempt to bring back a dead character (Base Cost × Level)',
-      eligibilityCheck: (character: Character) => character.status === 'Dead'
+      eligibilityCheck: (character: Character) => character.hasStatus('Dead')
     },
     resurrect_ashes: {
       name: 'Resurrect from Ashes',
       cost: GAME_CONFIG.TEMPLE.SERVICE_COSTS.RESURRECT_ASHES,
       description: 'Attempt to restore a character from ashes (Base Cost × Level)',
-      eligibilityCheck: (character: Character) => character.status === 'Ashed'
+      eligibilityCheck: (character: Character) => character.hasStatus('Ashed')
     },
     dispel_curse: {
       name: 'Dispel Curse',

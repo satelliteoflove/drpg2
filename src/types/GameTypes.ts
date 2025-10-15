@@ -1,4 +1,5 @@
 import { SpellData } from './SpellTypes';
+import { ActiveStatusEffect } from './StatusEffectTypes';
 
 export type CharacterClass =
   | 'Fighter'
@@ -54,7 +55,7 @@ export interface ICharacter {
   mp: number;
   maxMp: number;
   ac: number;
-  status: CharacterStatus;
+  statuses: ActiveStatusEffect[];
   age: number;
   gold: number;
   equipment: Equipment;

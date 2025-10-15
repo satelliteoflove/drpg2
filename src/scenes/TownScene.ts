@@ -215,7 +215,7 @@ export class TownScene extends Scene {
 
       case 5:
         const livingCharacters = this.gameState.party.characters.filter(
-          (c: Character) => !c.isDead && c.status === 'OK'
+          (c: Character) => !c.isDead && c.statuses.length === 0
         );
 
         if (livingCharacters.length === 0) {

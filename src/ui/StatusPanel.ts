@@ -47,7 +47,7 @@ export class StatusPanel {
     width: number,
     height: number
   ): void {
-    const statusColor = char.isDead ? '#ff0000' : char.status !== 'OK' ? '#ffaa00' : '#00ff00';
+    const statusColor = char.isDead ? '#ff0000' : char.statuses.length > 0 ? '#ffaa00' : '#00ff00';
 
     this.currentRenderCtx.strokeStyle = statusColor;
     this.currentRenderCtx.lineWidth = 1;
@@ -63,7 +63,8 @@ export class StatusPanel {
     this.currentRenderCtx.fillText(`Lv.${char.level}`, x + 5, y + 28);
 
     this.currentRenderCtx.fillStyle = statusColor;
-    this.currentRenderCtx.fillText(`${char.status}`, x + 50, y + 28);
+    const statusText = char.statuses.length > 0 ? char.statuses[0].type : 'OK';
+    this.currentRenderCtx.fillText(`${statusText}`, x + 50, y + 28);
 
     // AC and Gold on the right
     this.currentRenderCtx.fillStyle = '#aaa';

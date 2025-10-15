@@ -102,7 +102,7 @@ export class TempleUIRenderer {
 
     const charactersNeedingService = (this.gameState.party.characters || []).filter(
       (char: Character) => {
-        return char.status !== 'OK' || this.hasEquippedCursedItems(char);
+        return char.statuses.length > 0 || this.hasEquippedCursedItems(char);
       }
     );
 
@@ -213,9 +213,10 @@ export class TempleUIRenderer {
       ctx.fillText(`${index + 1}. ${char.name} (Lv.${char.level})`, x + 60, yPos);
 
       ctx.font = '12px monospace';
-      const statusColor = this.getStatusColor(char.status);
+      const statusText = char.statuses.length > 0 ? char.statuses[0].type : 'OK';
+      const statusColor = this.getStatusColor(statusText);
       ctx.fillStyle = statusColor;
-      ctx.fillText(char.status, x + 250, yPos);
+      ctx.fillText(statusText, x + 250, yPos);
 
       ctx.fillStyle = canAfford ? '#4a4' : '#a44';
       ctx.fillText(`${cost}g`, x + 350, yPos);
@@ -458,10 +459,10 @@ export class TempleUIRenderer {
     };
 
     (this.gameState.party.characters || []).forEach((char: Character) => {
-      if (char.status === 'Paralyzed') counts.paralyzed++;
-      if (char.status === 'Stoned') counts.stoned++;
-      if (char.status === 'Dead') counts.dead++;
-      if (char.status === 'Ashed') counts.ashed++;
+      if (char.hasStatus('Paralyzed')) counts.paralyzed++;
+      if (char.hasStatus('Stoned')) counts.stoned++;
+      if (char.hasStatus('Dead')) counts.dead++;
+      if (char.hasStatus('Ashed')) counts.ashed++;
       if (this.hasEquippedCursedItems(char)) counts.cursed++;
     });
 

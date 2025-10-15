@@ -730,7 +730,8 @@ export class TrainingGroundsUIRenderer {
 
       const statusColor = char.isDead ? '#a44' : '#4a4';
       ctx.fillStyle = statusColor;
-      ctx.fillText(char.status, x + 380, yPos);
+      const statusText = char.statuses.length > 0 ? char.statuses[0].type : 'OK';
+      ctx.fillText(statusText, x + 380, yPos);
 
       yPos += 30;
     });

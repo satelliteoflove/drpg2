@@ -10,6 +10,7 @@ import { SpellCaster } from '../systems/magic/SpellCaster';
 import { SpellRegistry } from '../systems/magic/SpellRegistry';
 import { SpellValidation } from '../systems/magic/SpellValidation';
 import { CombatSystem } from '../systems/CombatSystem';
+import { StatusEffectSystem } from '../systems/StatusEffectSystem';
 
 export interface GameServiceDependencies {
   canvas: HTMLCanvasElement;
@@ -91,6 +92,13 @@ export class GameServices {
       () => new CombatSystem(),
       { singleton: true }
     );
+
+    // Register Status Effect System
+    this.container.register(
+      ServiceIdentifiers.StatusEffectSystem,
+      () => StatusEffectSystem.getInstance(),
+      { singleton: true }
+    );
   }
 
   public getRenderManager(): RenderManager {
@@ -131,6 +139,10 @@ export class GameServices {
 
   public getCombatSystem(): CombatSystem {
     return this.container.resolve(ServiceIdentifiers.CombatSystem);
+  }
+
+  public getStatusEffectSystem(): StatusEffectSystem {
+    return this.container.resolve(ServiceIdentifiers.StatusEffectSystem);
   }
 
   public dispose(): void {

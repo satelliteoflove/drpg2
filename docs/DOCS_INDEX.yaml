@@ -97,6 +97,10 @@ wizardry_gaiden_4_systems:
     topics: [tavern, party formation, party management, add character, remove character, divvy gold, gilgamesh, dungeon entry, wizardry gaiden]
     summary: Gilgamesh's Tavern party management system for assembling active party, divvying gold, and dungeon entry requirements
 
+  - file: status-effects.md
+    topics: [status effects, conditions, ailments, poison, paralysis, sleep, stone, death, ashes, lost, silence, blind, confusion, fear, charm, curse, disease, level drain, spells, cure, inflict, wizardry gaiden]
+    summary: Comprehensive status effects reference including all conditions, infliction methods, cure methods, racial resistances, and spell cross-reference for WGIV
+
 wgiv_implementation:
   - folder: src/config/races/
     topics: [race configuration, stat ranges, race bonuses, character creation]
@@ -438,3 +442,6 @@ search_hints:
   temple: [temple-mechanics.md, temple-requirements.md, src/systems/temple/, src/scenes/TempleScene.ts]
   tavern: [tavern-mechanics.md, src/scenes/TavernScene.ts]
   party_management: [tavern-mechanics.md, api/classes/Party.md]
+  status_effects: [status-effects.md, temple-requirements.md, api/type-aliases/CharacterStatus.md]
+  conditions: [status-effects.md, temple-mechanics.md]
+  cure: [status-effects.md, wizardry_gaiden_4_spells.md, temple-requirements.md]

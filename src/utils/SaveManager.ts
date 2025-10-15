@@ -10,7 +10,7 @@ export interface SaveData {
 
 export class SaveManager {
   private static readonly SAVE_KEY = 'drpg2_save';
-  private static readonly VERSION = '0.0.3';
+  private static readonly VERSION = '0.0.4';
   private static readonly MAX_SAVES = 5;
 
   public static saveGame(gameState: GameState, playtimeSeconds: number): boolean {
@@ -70,14 +70,14 @@ export class SaveManager {
     const sanitized = JSON.parse(JSON.stringify(gameState));
 
     sanitized.party.characters.forEach((char: ICharacter) => {
-      if (char.isDead && char.status === 'Dead') {
+      if (char.isDead && char.statuses.some((s: any) => s.type === 'Dead')) {
         this.applyPermadeath(char);
       }
     });
 
     if (sanitized.characterRoster) {
       sanitized.characterRoster.forEach((char: ICharacter) => {
-        if (char.isDead && char.status === 'Dead') {
+        if (char.isDead && char.statuses.some((s: any) => s.type === 'Dead')) {
           this.applyPermadeath(char);
         }
       });
@@ -90,17 +90,17 @@ export class SaveManager {
     const deathRollChance = 0.5 + character.deathCount * 0.1;
 
     if (Math.random() < deathRollChance) {
-      character.status = 'Ashed';
+      character.statuses = [{ type: 'Ashed' }];
       character.stats.vitality = Math.max(3, character.stats.vitality - 2);
       character.age += 5;
     }
 
     if (character.deathCount >= 5) {
-      character.status = 'Ashed';
+      character.statuses = [{ type: 'Ashed' }];
     }
 
-    if (character.status === 'Ashed' && Math.random() < 0.1) {
-      character.status = 'Lost';
+    if (character.statuses.some((s: any) => s.type === 'Ashed') && Math.random() < 0.1) {
+      character.statuses = [{ type: 'Lost' }];
     }
   }
 
@@ -263,7 +263,7 @@ export class SaveManager {
 
     if (survived) {
       character.isDead = false;
-      character.status = 'OK';
+      character.statuses = [];
       character.hp = 1;
       character.stats.vitality = Math.max(3, character.stats.vitality - 1);
       character.age += 1;
@@ -274,7 +274,7 @@ export class SaveManager {
         message: `${character.name} barely survives with permanent injuries!`,
       };
     } else {
-      character.status = 'Ashed';
+      character.statuses = [{ type: 'Ashed' }];
       character.stats.vitality = Math.max(3, character.stats.vitality - 2);
 
       return {
