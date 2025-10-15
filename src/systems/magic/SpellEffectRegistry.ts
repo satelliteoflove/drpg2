@@ -4,6 +4,7 @@ import { SpellData, SpellCastingContext, SpellEffect } from '../../types/SpellTy
 import { SpellEffectConfig } from '../../data/spells/SpellEffectTypes';
 import { DamageEffect } from './effects/DamageEffect';
 import { HealingEffect } from './effects/HealingEffect';
+import { StatusEffect } from './effects/StatusEffect';
 import { DebugLogger } from '../../utils/DebugLogger';
 
 export type SpellEffectType =
@@ -40,6 +41,7 @@ export class SpellEffectRegistry {
   private initializeProcessors(): void {
     this.registerProcessor('damage', new DamageEffect());
     this.registerProcessor('heal', new HealingEffect());
+    this.registerProcessor('status', new StatusEffect());
 
     DebugLogger.info('SpellEffectRegistry', `Initialized with ${this.processors.size} effect processors`);
   }

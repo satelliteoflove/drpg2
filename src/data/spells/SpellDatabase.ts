@@ -57,7 +57,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     description: 'Causes 1-3 enemies in a group to fall asleep',
     effects: [{
       type: 'status',
-      statusEffect: 'sleep',
+      statusType: 'sleep',
       saveType: 'mental',
       saveModifier: 0
     }],
@@ -98,7 +98,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     description: 'Blinds a group of enemies with magical darkness',
     effects: [{
       type: 'status',
-      statusEffect: 'blinded',
+      statusType: 'blinded',
       duration: '2d4',
       saveType: 'mental',
       saveModifier: 0
@@ -202,7 +202,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     description: 'Attempts to put all enemies to sleep',
     effects: [{
       type: 'status',
-      statusEffect: 'sleep',
+      statusType: 'sleep',
       saveType: 'mental',
       saveModifier: -5
     }],
@@ -401,8 +401,8 @@ export const SPELLS: Record<SpellId, SpellData> = {
     outOfCombat: true,
     description: 'Removes paralysis from target',
     effects: [{
-      type: 'cure',
-      statusEffect: 'paralyzed'
+      type: 'heal',
+      cureStatuses: ['paralyzed']
     }],
     tags: ['healing', 'cure']
   },
@@ -622,14 +622,12 @@ export const SPELLS: Record<SpellId, SpellData> = {
     description: 'Divine intervention restores and protects party',
     effects: [{
       type: 'heal',
-      special: 'full_heal'
-    }, {
-      type: 'cure',
-      statusEffect: 'all'
+      fullHeal: true,
+      cureStatuses: ['poisoned', 'paralyzed', 'stoned', 'sleep', 'confused', 'afraid', 'charmed', 'berserk', 'blinded', 'silenced', 'cursed']
     }, {
       type: 'buff',
       buffType: 'protection',
-      power: 5,
+      value: 5,
       duration: 'combat'
     }],
     tags: ['healing', 'protection', 'ultimate', 'divine']
@@ -675,7 +673,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
       baseDamage: '1d6'
     }, {
       type: 'status',
-      statusEffect: 'poisoned',
+      statusType: 'poisoned',
       saveType: 'physical',
       saveModifier: 0
     }],
@@ -695,8 +693,8 @@ export const SPELLS: Record<SpellId, SpellData> = {
     outOfCombat: true,
     description: 'Cures poison',
     effects: [{
-      type: 'cure',
-      statusEffect: 'poisoned'
+      type: 'heal',
+      cureStatuses: ['poisoned']
     }],
     tags: ['healing', 'cure']
   },
@@ -772,8 +770,8 @@ export const SPELLS: Record<SpellId, SpellData> = {
     outOfCombat: true,
     description: 'Cures poison for entire party',
     effects: [{
-      type: 'cure',
-      statusEffect: 'poisoned'
+      type: 'heal',
+      cureStatuses: ['poisoned']
     }],
     tags: ['healing', 'cure', 'party']
   },
@@ -792,8 +790,8 @@ export const SPELLS: Record<SpellId, SpellData> = {
     outOfCombat: true,
     description: 'Reverses petrification',
     effects: [{
-      type: 'cure',
-      statusEffect: 'stoned'
+      type: 'heal',
+      cureStatuses: ['stoned']
     }],
     tags: ['healing', 'cure', 'restoration']
   },
@@ -816,7 +814,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
       baseDamage: '3d6'
     }, {
       type: 'status',
-      statusEffect: 'poisoned',
+      statusType: 'poisoned',
       saveType: 'physical',
       saveModifier: -5
     }],
@@ -838,7 +836,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     description: 'Transforms enemy matter',
     effects: [{
       type: 'status',
-      statusEffect: 'stoned',
+      statusType: 'stoned',
       saveType: 'magical',
       saveModifier: -10
     }],
@@ -924,7 +922,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     description: 'Confuses single enemy',
     effects: [{
       type: 'status',
-      statusEffect: 'confused',
+      statusType: 'confused',
       duration: '1d4',
       saveType: 'mental',
       saveModifier: 0
@@ -986,7 +984,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     description: 'Terrifies enemy group',
     effects: [{
       type: 'status',
-      statusEffect: 'afraid',
+      statusType: 'afraid',
       duration: '2d4',
       saveType: 'mental',
       saveModifier: 0
@@ -1030,7 +1028,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     description: 'Takes control of enemy mind',
     effects: [{
       type: 'status',
-      statusEffect: 'charmed',
+      statusType: 'charmed',
       duration: '3d4',
       saveType: 'mental',
       saveModifier: -5
@@ -1056,7 +1054,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
       baseDamage: '4d8'
     }, {
       type: 'status',
-      statusEffect: 'confused',
+      statusType: 'confused',
       duration: '1d4',
       saveType: 'mental',
       saveModifier: -3
@@ -1078,7 +1076,7 @@ export const SPELLS: Record<SpellId, SpellData> = {
     description: 'Attempts to hypnotize all enemies',
     effects: [{
       type: 'status',
-      statusEffect: 'sleep',
+      statusType: 'sleep',
       saveType: 'mental',
       saveModifier: -10
     }],
