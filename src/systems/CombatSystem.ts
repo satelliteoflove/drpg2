@@ -1,5 +1,5 @@
 import { Character } from '../entities/Character';
-import { Encounter, Item, Monster } from '../types/GameTypes';
+import { Encounter, Item, Monster, CharacterStatus } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { InventorySystem } from './InventorySystem';
 import { DebugLogger } from '../utils/DebugLogger';
@@ -7,6 +7,7 @@ import { SpellCaster } from './magic/SpellCaster';
 import { SpellCastingContext, SpellId } from '../types/SpellTypes';
 import { DiceRoller } from '../utils/DiceRoller';
 import { EntityUtils } from '../utils/EntityUtils';
+import { StatusEffectSystem } from './StatusEffectSystem';
 
 interface CombatDebugData {
   currentTurn: string;
@@ -20,6 +21,7 @@ export class CombatSystem {
   private dungeonLevel: number = 1;
   private party: Character[] = [];
   private spellCaster: SpellCaster;
+  private statusEffectSystem: StatusEffectSystem;
   private onCombatEnd?: (
     victory: boolean,
     rewards?: { experience: number; gold: number; items: Item[] },
@@ -38,6 +40,7 @@ export class CombatSystem {
 
   constructor() {
     this.spellCaster = SpellCaster.getInstance();
+    this.statusEffectSystem = StatusEffectSystem.getInstance();
   }
 
   public startCombat(
@@ -289,12 +292,45 @@ export class CombatSystem {
       const damage = this.rollDamage(attack.damage);
       target.takeDamage(damage);
 
-      // Don't call nextTurn() here - let the timeout handler manage turn progression
-      return `${monster.name} uses ${attack.name} on ${target.name} for ${damage} damage!`;
+      let message = `${monster.name} uses ${attack.name} on ${target.name} for ${damage} damage!`;
+
+      if (attack.effect && !target.isDead) {
+        const effectType = this.mapMonsterEffectToStatus(attack.effect);
+        if (effectType) {
+          const applied = this.statusEffectSystem.applyStatusEffect(target, effectType, {
+            ignoreResistance: false
+          });
+
+          if (applied) {
+            message += ` ${target.name} is ${this.getEffectDescription(attack.effect)}!`;
+          }
+        }
+      }
+
+      return message;
     } else {
-      // Don't call nextTurn() here - let the timeout handler manage turn progression
       return `${monster.name} attacks ${target.name} but misses!`;
     }
+  }
+
+  private mapMonsterEffectToStatus(effect: string): CharacterStatus | null {
+    const effectMap: Record<string, CharacterStatus> = {
+      'poison': 'Poisoned',
+      'paralysis': 'Paralyzed',
+      'sleep': 'Sleeping',
+      'petrify': 'Stoned'
+    };
+    return effectMap[effect.toLowerCase()] || null;
+  }
+
+  private getEffectDescription(effect: string): string {
+    const descriptions: Record<string, string> = {
+      'poison': 'poisoned',
+      'paralysis': 'paralyzed',
+      'sleep': 'put to sleep',
+      'petrify': 'turned to stone'
+    };
+    return descriptions[effect.toLowerCase()] || effect;
   }
 
   private calculateDamage(attacker: Character, target: Monster): number {
@@ -369,6 +405,21 @@ export class CombatSystem {
     }
 
     const currentUnit = this.getCurrentUnit();
+
+    if (currentUnit && EntityUtils.isCharacter(currentUnit as any)) {
+      this.statusEffectSystem.tick(currentUnit as Character, 'combat');
+
+      if ((currentUnit as Character).isDead) {
+        this.cleanupDeadUnits();
+        if (this.checkCombatEnd()) {
+          this.resetTurnState();
+          return;
+        }
+        this.nextTurn();
+        return;
+      }
+    }
+
     const isMonster = currentUnit && EntityUtils.isMonster(currentUnit as any);
 
     if (isMonster) {

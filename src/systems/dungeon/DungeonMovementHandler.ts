@@ -3,6 +3,7 @@ import { GameUtilities } from '../../utils/GameUtilities';
 import { DebugLogger } from '../../utils/DebugLogger';
 import { SceneManager } from '../../core/Scene';
 import { GAME_CONFIG } from '../../config/GameConstants';
+import { StatusEffectSystem } from '../StatusEffectSystem';
 
 export interface MovementResult {
   moved: boolean;
@@ -19,6 +20,7 @@ export class DungeonMovementHandler {
   private gameState: GameState;
   private messageLog: any;
   private sceneManager: SceneManager;
+  private statusEffectSystem: StatusEffectSystem;
   private lastMoveTime: number = 0;
   private lastTileEventPosition: { x: number; y: number; floor: number } | null = null;
   private lastEncounterPosition: { x: number; y: number; floor: number } | null = null;
@@ -27,6 +29,7 @@ export class DungeonMovementHandler {
     this.gameState = gameState;
     this.messageLog = messageLog;
     this.sceneManager = sceneManager;
+    this.statusEffectSystem = StatusEffectSystem.getInstance();
   }
 
   public handleMovement(direction: Direction): MovementResult {
@@ -72,6 +75,8 @@ export class DungeonMovementHandler {
     this.gameState.turnCount++;
     this.lastMoveTime = now;
 
+    this.tickAllPartyMembers();
+
     this.updateDiscoveredTiles();
 
     const tileResult = this.handleTileEffect(targetTile);
@@ -94,7 +99,20 @@ export class DungeonMovementHandler {
     this.gameState.turnCount++;
     this.lastMoveTime = Date.now();
 
+    this.tickAllPartyMembers();
+
     this.updateDiscoveredTiles();
+  }
+
+  private tickAllPartyMembers(): void {
+    const party = this.gameState.party;
+    if (!party || !party.characters) return;
+
+    party.characters.forEach((char: any) => {
+      if (!char.isDead) {
+        this.statusEffectSystem.tick(char, 'exploration');
+      }
+    });
   }
 
   private canMoveTo(tile: DungeonTile | null): boolean {
