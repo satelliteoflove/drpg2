@@ -8,6 +8,7 @@ import { SpellCastingContext, SpellId } from '../types/SpellTypes';
 import { DiceRoller } from '../utils/DiceRoller';
 import { EntityUtils } from '../utils/EntityUtils';
 import { StatusEffectSystem } from './StatusEffectSystem';
+import { ModifierSystem } from './ModifierSystem';
 
 interface CombatDebugData {
   currentTurn: string;
@@ -22,6 +23,7 @@ export class CombatSystem {
   private party: Character[] = [];
   private spellCaster: SpellCaster;
   private statusEffectSystem: StatusEffectSystem;
+  private modifierSystem: ModifierSystem;
   private onCombatEnd?: (
     victory: boolean,
     rewards?: { experience: number; gold: number; items: Item[] },
@@ -41,6 +43,7 @@ export class CombatSystem {
   constructor() {
     this.spellCaster = SpellCaster.getInstance();
     this.statusEffectSystem = StatusEffectSystem.getInstance();
+    this.modifierSystem = ModifierSystem.getInstance();
   }
 
   public startCombat(
@@ -349,6 +352,10 @@ export class CombatSystem {
       }
     }
 
+    const attackBonus = attacker.effectiveAttack - Math.floor(attacker.level / 2);
+    const damageBonus = attacker.effectiveDamage;
+    baseDamage += attackBonus + damageBonus;
+
     const defense = Math.floor(target.ac / 2);
     return Math.max(1, baseDamage - defense);
   }
@@ -407,9 +414,11 @@ export class CombatSystem {
     const currentUnit = this.getCurrentUnit();
 
     if (currentUnit && EntityUtils.isCharacter(currentUnit as any)) {
-      this.statusEffectSystem.tick(currentUnit as Character, 'combat');
+      const char = currentUnit as Character;
+      this.statusEffectSystem.tick(char, 'combat');
+      this.modifierSystem.tick(char, 'combat');
 
-      if ((currentUnit as Character).isDead) {
+      if (char.isDead) {
         this.cleanupDeadUnits();
         if (this.checkCombatEnd()) {
           this.resetTurnState();

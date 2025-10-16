@@ -41,6 +41,17 @@ export interface BuffEffectConfig {
   percentBonus?: boolean;
 }
 
+export interface ModifierEffectConfig {
+  type: 'modifier';
+  stat: 'ac' | 'attack' | 'damage' | 'speed';
+  value: number;
+  duration?: string;
+  countsOnlyInCombat?: boolean;
+  affectsEnemies?: boolean;
+  affectsAllies?: boolean;
+  partyWide?: boolean;
+}
+
 export interface InstantDeathEffectConfig {
   type: 'instant_death';
   saveType: 'death';
@@ -95,6 +106,7 @@ export type SpellEffectConfig =
   | HealingEffectConfig
   | StatusEffectConfig
   | BuffEffectConfig
+  | ModifierEffectConfig
   | InstantDeathEffectConfig
   | ResurrectionEffectConfig
   | TeleportEffectConfig

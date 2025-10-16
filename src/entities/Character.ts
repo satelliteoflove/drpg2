@@ -10,6 +10,7 @@ import {
   Spell,
 } from '../types/GameTypes';
 import { ActiveStatusEffect } from '../types/StatusEffectTypes';
+import { ActiveModifier, ModifierSystem } from '../systems/ModifierSystem';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { TypeValidation } from '../utils/TypeValidation';
 import { RACES } from '../config/races';
@@ -46,6 +47,7 @@ export class Character implements ICharacter {
   maxMp: number;
   ac: number;
   statuses: ActiveStatusEffect[];
+  modifiers?: ActiveModifier[];
   age: number;
   gold: number;
   equipment: Equipment;
@@ -87,6 +89,7 @@ export class Character implements ICharacter {
     this.isDead = false;
     this.deathCount = 0;
     this.statuses = [];
+    this.modifiers = [];
 
     this.baseStats = this.rollStats();
     this.stats = { ...this.baseStats };
@@ -496,5 +499,21 @@ export class Character implements ICharacter {
     this.experienceModifier = getExperienceModifier(this.race, newClass);
     this.pendingLevelUp = false;
     this.age++;
+  }
+
+  get effectiveAC(): number {
+    const modifierSystem = ModifierSystem.getInstance();
+    return this.ac + modifierSystem.getTotalModifier(this, 'ac');
+  }
+
+  get effectiveAttack(): number {
+    const modifierSystem = ModifierSystem.getInstance();
+    const baseAttack = Math.floor(this.level / 2) + Math.floor((this.stats.strength - 10) / 2);
+    return baseAttack + modifierSystem.getTotalModifier(this, 'attack');
+  }
+
+  get effectiveDamage(): number {
+    const modifierSystem = ModifierSystem.getInstance();
+    return modifierSystem.getTotalModifier(this, 'damage');
   }
 }

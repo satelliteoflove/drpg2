@@ -35,7 +35,10 @@ export class StatusEffectSystem {
 
     const effect: ActiveStatusEffect = {
       type: effectType,
-      turnsRemaining: options.duration
+      turnsRemaining: options.duration,
+      source: options.source,
+      power: options.power,
+      casterLevel: options.casterLevel
     };
 
     if (!Array.isArray(target.statuses)) {
@@ -158,6 +161,35 @@ export class StatusEffectSystem {
       return [];
     }
     return [...target.statuses];
+  }
+
+  public getStatusesBySource(target: ICharacter, source: string): ActiveStatusEffect[] {
+    if (!Array.isArray(target.statuses)) {
+      return [];
+    }
+    return target.statuses.filter(s => s.source === source);
+  }
+
+  public removeStatusBySource(target: ICharacter, source: string): number {
+    if (!Array.isArray(target.statuses)) {
+      target.statuses = [];
+      return 0;
+    }
+
+    const initialLength = target.statuses.length;
+    target.statuses = target.statuses.filter(s => s.source !== source);
+    const removedCount = initialLength - target.statuses.length;
+
+    if (removedCount > 0) {
+      DebugLogger.info('StatusEffectSystem', `Removed ${removedCount} status(es) from ${target.name} with source: ${source}`);
+
+      const hasDeathStatus = target.statuses.some(s =>
+        s.type === 'Dead' || s.type === 'Ashed' || s.type === 'Lost'
+      );
+      target.isDead = hasDeathStatus;
+    }
+
+    return removedCount;
   }
 
   private handleExclusiveStatuses(target: ICharacter, newEffectType: CharacterStatus): void {

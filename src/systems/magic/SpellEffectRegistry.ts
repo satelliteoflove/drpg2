@@ -5,12 +5,14 @@ import { SpellEffectConfig } from '../../data/spells/SpellEffectTypes';
 import { DamageEffect } from './effects/DamageEffect';
 import { HealingEffect } from './effects/HealingEffect';
 import { StatusEffect } from './effects/StatusEffect';
+import { ModifierEffect } from './effects/ModifierEffect';
 import { DebugLogger } from '../../utils/DebugLogger';
 
 export type SpellEffectType =
   | 'damage'
   | 'heal'
   | 'status'
+  | 'modifier'
   | 'debuff'
   | 'buff'
   | 'cure'
@@ -42,6 +44,7 @@ export class SpellEffectRegistry {
     this.registerProcessor('damage', new DamageEffect());
     this.registerProcessor('heal', new HealingEffect());
     this.registerProcessor('status', new StatusEffect());
+    this.registerProcessor('modifier', new ModifierEffect());
 
     DebugLogger.info('SpellEffectRegistry', `Initialized with ${this.processors.size} effect processors`);
   }

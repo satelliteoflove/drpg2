@@ -4,6 +4,7 @@ import { DebugLogger } from '../../utils/DebugLogger';
 import { SceneManager } from '../../core/Scene';
 import { GAME_CONFIG } from '../../config/GameConstants';
 import { StatusEffectSystem } from '../StatusEffectSystem';
+import { ModifierSystem } from '../ModifierSystem';
 
 export interface MovementResult {
   moved: boolean;
@@ -21,6 +22,7 @@ export class DungeonMovementHandler {
   private messageLog: any;
   private sceneManager: SceneManager;
   private statusEffectSystem: StatusEffectSystem;
+  private modifierSystem: ModifierSystem;
   private lastMoveTime: number = 0;
   private lastTileEventPosition: { x: number; y: number; floor: number } | null = null;
   private lastEncounterPosition: { x: number; y: number; floor: number } | null = null;
@@ -30,6 +32,7 @@ export class DungeonMovementHandler {
     this.messageLog = messageLog;
     this.sceneManager = sceneManager;
     this.statusEffectSystem = StatusEffectSystem.getInstance();
+    this.modifierSystem = ModifierSystem.getInstance();
   }
 
   public handleMovement(direction: Direction): MovementResult {
@@ -111,6 +114,7 @@ export class DungeonMovementHandler {
     party.characters.forEach((char: any) => {
       if (!char.isDead) {
         this.statusEffectSystem.tick(char, 'exploration');
+        this.modifierSystem.tick(char, 'exploration');
       }
     });
   }
