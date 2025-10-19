@@ -275,10 +275,31 @@ export class CombatScene extends Scene {
       ctx.font = '10px monospace';
       ctx.fillText(`${monster.hp}/${monster.maxHp}`, x + 50, y + 50);
 
-      ctx.fillStyle = '#fff';
-      ctx.font = '36px monospace';
-      ctx.fillText('👹', x + 50, y + 85);
+      if (monster.statuses && monster.statuses.length > 0) {
+        ctx.fillStyle = '#ffaa00';
+        ctx.font = '9px monospace';
+        const statusText = monster.statuses.map(s => this.getStatusIcon(s.type)).join(' ');
+        ctx.fillText(statusText, x + 50, y + 62);
+      }
     });
+  }
+
+  private getStatusIcon(statusType: string): string {
+    const icons: Record<string, string> = {
+      'Sleeping': 'SLP',
+      'Paralyzed': 'PAR',
+      'Poisoned': 'PSN',
+      'Stoned': 'STN',
+      'Silenced': 'SIL',
+      'Blinded': 'BLD',
+      'Confused': 'CNF',
+      'Afraid': 'FER',
+      'Charmed': 'CHM',
+      'Berserk': 'BRK',
+      'Blessed': 'BLS',
+      'Cursed': 'CRS'
+    };
+    return icons[statusType] || statusType.substring(0, 3).toUpperCase();
   }
 
   private renderUI(ctx: CanvasRenderingContext2D): void {
@@ -299,6 +320,11 @@ export class CombatScene extends Scene {
     const menuY = 290;
     const menuWidth = 240;
     const menuHeight = 270;
+
+    const spellMenuX = 280;
+    const spellMenuY = 150;
+    const spellMenuWidth = 600;
+    const spellMenuHeight = 400;
 
     ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(menuX, menuY, menuWidth, menuHeight);
@@ -337,7 +363,7 @@ export class CombatScene extends Scene {
       ctx.fillText('LEFT/RIGHT: Select', menuX + 10, actionsStartY + 20);
       ctx.fillText('ENTER: Confirm', menuX + 10, actionsStartY + 40);
     } else if (this.actionState === 'select_spell') {
-      this.spellMenu.render(ctx, menuX, menuY, menuWidth, menuHeight);
+      this.spellMenu.render(ctx, spellMenuX, spellMenuY, spellMenuWidth, spellMenuHeight);
     } else if (this.actionState === 'spell_target') {
       const encounter = this.combatSystem.getEncounter();
       if (encounter) {
