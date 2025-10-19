@@ -12,6 +12,7 @@ import { GAME_CONFIG } from '../../config/GameConstants';
 import { EffectTarget } from './SpellEffectProcessor';
 import { DamageEffect } from './effects/DamageEffect';
 import { HealingEffect } from './effects/HealingEffect';
+import { StatusEffect } from './effects/StatusEffect';
 import { DebugLogger } from '../../utils/DebugLogger';
 
 export class SpellCaster {
@@ -22,6 +23,7 @@ export class SpellCaster {
 
   private damageProcessor: DamageEffect;
   private healingProcessor: HealingEffect;
+  private statusProcessor: StatusEffect;
 
   private constructor() {
     this.registry = SpellRegistry.getInstance();
@@ -29,6 +31,7 @@ export class SpellCaster {
     this.validation = new SpellValidation();
     this.damageProcessor = new DamageEffect();
     this.healingProcessor = new HealingEffect();
+    this.statusProcessor = new StatusEffect();
   }
 
   static getInstance(): SpellCaster {
@@ -81,8 +84,17 @@ export class SpellCaster {
     };
 
     const targets = this.getTargets(spell, context);
+    DebugLogger.info('SpellCaster', `Casting ${spell.name}: found ${targets.length} target(s)`, {
+      spellId: spell.id,
+      targetType: spell.targetType,
+      contextHasTarget: !!context.target,
+      contextHasEnemies: !!context.enemies,
+      targetNames: targets.map(t => (t.entity as any).name)
+    });
 
     for (const effect of spell.effects) {
+      DebugLogger.debug('SpellCaster', `Processing effect: ${effect.type}`, { effect });
+
       const effectResult = this.effectRegistry.processEffect(
         caster,
         spell,
@@ -90,6 +102,12 @@ export class SpellCaster {
         targets,
         context
       );
+
+      DebugLogger.info('SpellCaster', `Effect result for ${effect.type}:`, {
+        success: effectResult?.success,
+        messageCount: effectResult?.messages?.length || 0,
+        messages: effectResult?.messages
+      });
 
       if (effectResult) {
         result.success = result.success && effectResult.success;
@@ -138,7 +156,7 @@ export class SpellCaster {
         break;
       case 'status':
       case 'debuff':
-        this.processStatusEffect(caster, effect, context, result);
+        this.processStatusEffect(caster, spell, effect, targets, context, result);
         break;
       case 'buff':
         this.processBuffEffect(caster, effect, context, result);
@@ -224,12 +242,15 @@ export class SpellCaster {
   }
 
   private processStatusEffect(
-    _caster: Character,
-    _effect: any,
-    _context: SpellCastingContext,
+    caster: Character,
+    spell: SpellData,
+    effect: any,
+    targets: EffectTarget[],
+    context: SpellCastingContext,
     result: SpellCastResult
   ): void {
-    result.messages.push('Status effect not yet implemented');
+    const effectResult = this.statusProcessor.processEffect(caster, spell, effect, targets, context);
+    result.messages.push(...effectResult.messages);
   }
 
   private processBuffEffect(
@@ -384,7 +405,19 @@ export class SpellCaster {
           isAlly: isAlly
         });
       }
-    } else if ((spell.targetType as any) === 'all' || spell.targetType === 'group') {
+    } else if (spell.targetType === 'group') {
+      if (context.target && context.enemies) {
+        const targetName = (context.target as any).name;
+        for (const enemy of context.enemies) {
+          if (enemy.name === targetName) {
+            targets.push({
+              entity: enemy,
+              isAlly: false
+            });
+          }
+        }
+      }
+    } else if ((spell.targetType as any) === 'all') {
       if (context.party) {
         for (const member of context.party) {
           targets.push({
