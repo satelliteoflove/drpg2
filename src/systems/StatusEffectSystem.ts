@@ -1,4 +1,4 @@
-import { ICharacter, CharacterStatus } from '../types/GameTypes';
+import { ICharacter, CharacterStatus, Monster } from '../types/GameTypes';
 import {
   ActiveStatusEffect,
   StatusEffectContext,
@@ -8,11 +8,16 @@ import {
 } from '../types/StatusEffectTypes';
 import { DiceRoller } from '../utils/DiceRoller';
 import { DebugLogger } from '../utils/DebugLogger';
+import { EquipmentModifierManager } from './EquipmentModifierManager';
+
 
 export class StatusEffectSystem {
   private static instance: StatusEffectSystem;
+  private equipmentManager: EquipmentModifierManager;
 
-  constructor() {}
+  constructor() {
+    this.equipmentManager = EquipmentModifierManager.getInstance();
+  }
 
   public static getInstance(): StatusEffectSystem {
     if (!StatusEffectSystem.instance) {
@@ -22,7 +27,7 @@ export class StatusEffectSystem {
   }
 
   public applyStatusEffect(
-    target: ICharacter,
+    target: ICharacter | Monster,
     effectType: CharacterStatus,
     options: StatusApplicationOptions = {}
   ): boolean {
@@ -61,7 +66,7 @@ export class StatusEffectSystem {
     return true;
   }
 
-  public removeStatusEffect(target: ICharacter, effectType: CharacterStatus): boolean {
+  public removeStatusEffect(target: ICharacter | Monster, effectType: CharacterStatus): boolean {
     if (!Array.isArray(target.statuses)) {
       target.statuses = [];
       return false;
@@ -87,7 +92,7 @@ export class StatusEffectSystem {
   }
 
   public canInflict(
-    target: ICharacter,
+    target: ICharacter | Monster,
     effectType: CharacterStatus,
     ignoreResistance: boolean = false
   ): boolean {
@@ -110,7 +115,7 @@ export class StatusEffectSystem {
     return true;
   }
 
-  public tick(target: ICharacter, context: StatusEffectContext): void {
+  public tick(target: ICharacter | Monster, context: StatusEffectContext): void {
     if (!Array.isArray(target.statuses)) {
       target.statuses = [];
       return;
@@ -121,7 +126,7 @@ export class StatusEffectSystem {
 
       this.applyEffectTick(target, effect, context);
 
-      if (effect.turnsRemaining !== undefined) {
+      if (effect.turnsRemaining !== undefined && effect.turnsRemaining > 0) {
         effect.turnsRemaining--;
         if (effect.turnsRemaining <= 0) {
           target.statuses.splice(i, 1);
@@ -131,46 +136,52 @@ export class StatusEffectSystem {
     }
   }
 
-  public getResistanceChance(target: ICharacter, effectType: CharacterStatus): number {
+  public getResistanceChance(target: ICharacter | Monster, effectType: CharacterStatus): number {
     let resistance = 0;
 
-    const racialResistances = RACIAL_RESISTANCES[target.race];
-    if (racialResistances && racialResistances.includes(effectType)) {
-      resistance += 50;
+    if (this.isCharacter(target)) {
+      const character = target as ICharacter;
+      const racialResistances = RACIAL_RESISTANCES[character.race];
+      if (racialResistances && racialResistances.includes(effectType)) {
+        resistance += 50;
+      }
+
+      const equipmentResistance = this.equipmentManager.getEquipmentResistanceChance(character, effectType);
+      resistance += equipmentResistance;
     }
 
     return Math.min(resistance, 100);
   }
 
-  public hasStatus(target: ICharacter, effectType: CharacterStatus): boolean {
+  public hasStatus(target: ICharacter | Monster, effectType: CharacterStatus): boolean {
     if (!Array.isArray(target.statuses)) {
       return false;
     }
     return target.statuses.some(s => s.type === effectType);
   }
 
-  public getStatus(target: ICharacter, effectType: CharacterStatus): ActiveStatusEffect | undefined {
+  public getStatus(target: ICharacter | Monster, effectType: CharacterStatus): ActiveStatusEffect | undefined {
     if (!Array.isArray(target.statuses)) {
       return undefined;
     }
     return target.statuses.find(s => s.type === effectType);
   }
 
-  public getAllStatuses(target: ICharacter): ActiveStatusEffect[] {
+  public getAllStatuses(target: ICharacter | Monster): ActiveStatusEffect[] {
     if (!Array.isArray(target.statuses)) {
       return [];
     }
     return [...target.statuses];
   }
 
-  public getStatusesBySource(target: ICharacter, source: string): ActiveStatusEffect[] {
+  public getStatusesBySource(target: ICharacter | Monster, source: string): ActiveStatusEffect[] {
     if (!Array.isArray(target.statuses)) {
       return [];
     }
     return target.statuses.filter(s => s.source === source);
   }
 
-  public removeStatusBySource(target: ICharacter, source: string): number {
+  public removeStatusBySource(target: ICharacter | Monster, source: string): number {
     if (!Array.isArray(target.statuses)) {
       target.statuses = [];
       return 0;
@@ -192,7 +203,17 @@ export class StatusEffectSystem {
     return removedCount;
   }
 
-  private handleExclusiveStatuses(target: ICharacter, newEffectType: CharacterStatus): void {
+  public isDisabled(target: ICharacter | Monster): boolean {
+    return this.hasStatus(target, 'Sleeping') ||
+           this.hasStatus(target, 'Paralyzed') ||
+           this.hasStatus(target, 'Stoned');
+  }
+
+  private isCharacter(target: ICharacter | Monster): target is ICharacter {
+    return 'race' in target;
+  }
+
+  private handleExclusiveStatuses(target: ICharacter | Monster, newEffectType: CharacterStatus): void {
     for (const group of EXCLUSIVE_STATUS_GROUPS) {
       if (group.includes(newEffectType)) {
         if (!Array.isArray(target.statuses)) {
@@ -206,7 +227,7 @@ export class StatusEffectSystem {
     }
   }
 
-  private applyEffectTick(target: ICharacter, effect: ActiveStatusEffect, context: StatusEffectContext): void {
+  private applyEffectTick(target: ICharacter | Monster, effect: ActiveStatusEffect, context: StatusEffectContext): void {
     switch (effect.type) {
       case 'Poisoned':
         if (context === 'combat') {
@@ -230,6 +251,64 @@ export class StatusEffectSystem {
             this.removeStatusEffect(target, 'Sleeping');
             DebugLogger.info('StatusEffectSystem', `${target.name} woke up naturally`);
           }
+        }
+        break;
+
+      case 'Silenced':
+        if (context === 'combat' && effect.casterLevel && this.isCharacter(target)) {
+          const character = target as ICharacter;
+          const recoveryChance = Math.min(20 + character.level * 2, 60);
+          const roll = DiceRoller.rollPercentile();
+          if (roll <= recoveryChance) {
+            this.removeStatusEffect(target, 'Silenced');
+            DebugLogger.info('StatusEffectSystem', `${target.name} recovered from silence`);
+          }
+        }
+        break;
+
+      case 'Confused':
+        if (context === 'combat') {
+          const recoveryChance = 15;
+          const roll = DiceRoller.rollPercentile();
+          if (roll <= recoveryChance) {
+            this.removeStatusEffect(target, 'Confused');
+            DebugLogger.info('StatusEffectSystem', `${target.name} is no longer confused`);
+          }
+        }
+        break;
+
+      case 'Afraid':
+        if (context === 'combat' && this.isCharacter(target)) {
+          const character = target as ICharacter;
+          const mpDrain = 1;
+          character.mp = Math.max(0, character.mp - mpDrain);
+          DebugLogger.debug('StatusEffectSystem', `${character.name} loses ${mpDrain} MP from fear`);
+
+          const recoveryChance = 10 + character.level;
+          const roll = DiceRoller.rollPercentile();
+          if (roll <= recoveryChance) {
+            this.removeStatusEffect(target, 'Afraid');
+            DebugLogger.info('StatusEffectSystem', `${character.name} overcomes their fear`);
+          }
+        }
+        break;
+
+      case 'Blinded':
+        if (context === 'combat') {
+          const recoveryChance = 10;
+          const roll = DiceRoller.rollPercentile();
+          if (roll <= recoveryChance) {
+            this.removeStatusEffect(target, 'Blinded');
+            DebugLogger.info('StatusEffectSystem', `${target.name} can see again`);
+          }
+        }
+        break;
+
+      case 'Cursed':
+        if (context === 'exploration') {
+          const damage = DiceRoller.roll('1d2');
+          target.hp = Math.max(1, target.hp - damage);
+          DebugLogger.debug('StatusEffectSystem', `${target.name} takes ${damage} damage from curse while exploring`);
         }
         break;
     }
