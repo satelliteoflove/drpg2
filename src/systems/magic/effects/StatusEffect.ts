@@ -27,14 +27,22 @@ export class StatusEffect extends SpellEffectProcessor {
       messages: []
     };
 
+    const { DebugLogger } = require('../../../utils/DebugLogger');
+    DebugLogger.info('StatusEffect', `Processing status effect: ${config.statusType}`, {
+      spell: spell.name,
+      targetCount: targets.length,
+      statusType: config.statusType,
+      duration: config.duration
+    });
+
     for (const targetInfo of targets) {
       const target = targetInfo.entity;
       const targetName = this.getEntityName(target);
 
-      if (!this.isCharacter(target) && !targetInfo.isAlly) {
-        result.messages.push(`${spell.name} has no effect on ${targetName}!`);
-        continue;
-      }
+      DebugLogger.debug('StatusEffect', `Processing target: ${targetName}`, {
+        isDead: this.isCharacter(target) ? target.isDead : (target as any).isDead,
+        isCharacter: this.isCharacter(target)
+      });
 
       if (this.isCharacter(target) && target.isDead) {
         result.messages.push(`${targetName} is dead and cannot be affected!`);
@@ -44,6 +52,12 @@ export class StatusEffect extends SpellEffectProcessor {
       const saveSuccess = config.saveType && config.saveModifier !== undefined
         ? this.checkSavingThrow(target, config.saveType, config.saveModifier)
         : false;
+
+      DebugLogger.debug('StatusEffect', `Saving throw result for ${targetName}:`, {
+        saveSuccess,
+        saveType: config.saveType,
+        saveModifier: config.saveModifier
+      });
 
       if (saveSuccess) {
         result.targets.push({
@@ -65,12 +79,21 @@ export class StatusEffect extends SpellEffectProcessor {
 
       const ignoreResistance = config.resistanceCheck === false;
 
-      const applied = this.isCharacter(target)
-        ? this.statusEffectSystem.applyStatusEffect(target, statusType, {
-            duration,
-            ignoreResistance
-          })
-        : false;
+      DebugLogger.debug('StatusEffect', `Applying ${statusType} to ${targetName}`, {
+        duration,
+        ignoreResistance
+      });
+
+      const applied = this.statusEffectSystem.applyStatusEffect(target, statusType, {
+        duration,
+        ignoreResistance
+      });
+
+      DebugLogger.info('StatusEffect', `Status application result for ${targetName}:`, {
+        applied,
+        statusType,
+        duration
+      });
 
       if (applied) {
         result.targets.push({
@@ -79,21 +102,32 @@ export class StatusEffect extends SpellEffectProcessor {
         });
 
         const durationText = duration ? ` for ${duration} turns` : '';
-        result.messages.push(`${targetName} is ${this.getStatusPastTense(config.statusType)}${durationText}!`);
+        const message = `${targetName} is ${this.getStatusPastTense(config.statusType)}${durationText}!`;
+        result.messages.push(message);
       } else {
         result.targets.push({
           target: targetInfo,
           immune: true,
           statusApplied: undefined
         });
-        result.messages.push(`${targetName} resists ${config.statusType}!`);
+        const message = `${targetName} resists ${config.statusType}!`;
+        result.messages.push(message);
       }
     }
+
+    DebugLogger.info('StatusEffect', `Returning result with ${result.messages.length} message(s)`, {
+      messages: result.messages,
+      targetCount: result.targets?.length || 0
+    });
 
     return result;
   }
 
-  private evaluateDuration(durationFormula: string, level: number): number {
+  private evaluateDuration(durationFormula: string | number, level: number): number {
+    if (typeof durationFormula === 'number') {
+      return durationFormula;
+    }
+
     if (durationFormula === 'combat') {
       return -1;
     }
@@ -110,7 +144,17 @@ export class StatusEffect extends SpellEffectProcessor {
       'sleep': 'Sleeping',
       'paralyzed': 'Paralyzed',
       'poisoned': 'Poisoned',
-      'stoned': 'Stoned'
+      'stoned': 'Stoned',
+      'silenced': 'Silenced',
+      'blinded': 'Blinded',
+      'confused': 'Confused',
+      'afraid': 'Afraid',
+      'charmed': 'Charmed',
+      'berserk': 'Berserk',
+      'blessed': 'Blessed',
+      'cursed': 'Cursed',
+      'dead': 'Dead',
+      'ashed': 'Ashed'
     };
 
     return mapping[statusEffectType] || null;
@@ -130,7 +174,9 @@ export class StatusEffect extends SpellEffectProcessor {
       'lost': 'lost',
       'afraid': 'frightened',
       'charmed': 'charmed',
-      'berserk': 'enraged'
+      'berserk': 'enraged',
+      'blessed': 'blessed',
+      'cursed': 'cursed'
     };
 
     return pastTenseMap[statusType] || statusType;
