@@ -17,9 +17,9 @@
   },
   "dungeonActions": {
     "inventory": "tab",
-    "rest": "r",
+    "camp": "c",
     "map": "m",
-    "toggleCombat": "c",
+    "toggleCombat": "x",
     "debugOverlay": "ctrl+d"
   },
   "combat": {

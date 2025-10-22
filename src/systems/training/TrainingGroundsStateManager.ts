@@ -13,6 +13,7 @@ export class TrainingGroundsStateManager {
   public textInput: string = '';
   public message: string | null = null;
   public confirmationPrompt: string | null = null;
+  public scrollOffset: number = 0;
 
   public creationData: CharacterCreationData = {
     name: '',
@@ -40,6 +41,7 @@ export class TrainingGroundsStateManager {
     this.textInput = '';
     this.message = null;
     this.confirmationPrompt = null;
+    this.scrollOffset = 0;
     this.resetCreationData();
   }
 
@@ -78,7 +80,8 @@ export class TrainingGroundsStateManager {
       eligibleClasses: this.getEligibleClasses(),
       message: this.message,
       confirmationPrompt: this.confirmationPrompt,
-      rosterCount: this.gameState.characterRoster.length
+      rosterCount: this.gameState.characterRoster.length,
+      scrollOffset: this.scrollOffset
     };
   }
 
@@ -241,5 +244,17 @@ export class TrainingGroundsStateManager {
       'Delete',
       'Back'
     ];
+  }
+
+  public scrollUp(): void {
+    this.scrollOffset = Math.max(0, this.scrollOffset - 20);
+  }
+
+  public scrollDown(): void {
+    this.scrollOffset += 20;
+  }
+
+  public resetScroll(): void {
+    this.scrollOffset = 0;
   }
 }

@@ -4,7 +4,8 @@ export type TavernState =
   | 'removeCharacter'
   | 'reorderParty'
   | 'divvyGold'
-  | 'confirmDivvy';
+  | 'confirmDivvy'
+  | 'inspectSelectCharacter';
 
 export interface TavernStateContext {
   currentState: TavernState;

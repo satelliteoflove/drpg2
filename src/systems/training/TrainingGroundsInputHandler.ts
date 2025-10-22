@@ -422,7 +422,18 @@ export class TrainingGroundsInputHandler {
   }
 
   private handleInspectView(key: string): boolean {
+    if (key === 'arrowup' || key === 'w') {
+      this.stateManager.scrollUp();
+      return true;
+    }
+
+    if (key === 'arrowdown' || key === 's') {
+      this.stateManager.scrollDown();
+      return true;
+    }
+
     if (key === 'enter' || key === 'return' || key === 'escape' || key === 'esc' || key === ' ') {
+      this.stateManager.resetScroll();
       this.stateManager.setState('inspectMenu');
       this.stateManager.selectedOption = 0;
       return true;

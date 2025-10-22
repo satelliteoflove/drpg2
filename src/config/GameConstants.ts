@@ -102,7 +102,7 @@ export const GAME_CONFIG = {
       CURE_STONED: 1,
       RESURRECT_DEAD: 2,
       RESURRECT_ASHES: 5,
-      DISPEL_CURSE: 1,
+      DISPEL_CURSE: 500,
     },
     RESURRECTION: {
       MAX_SUCCESS_CHANCE: 0.95,
@@ -153,7 +153,7 @@ export const GAME_CONFIG = {
       NON_CASTER: 20,        // Fighter, Thief - multiclass penalty
     },
     TEST_MODE: {
-      DISABLE_FIZZLE: false, // Set to true in tests to disable spell fizzling
+      DISABLE_FIZZLE: true, // Set to true in tests to disable spell fizzling
     },
   },
 

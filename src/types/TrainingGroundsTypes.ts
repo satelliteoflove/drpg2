@@ -43,4 +43,5 @@ export interface TrainingGroundsStateContext {
   message: string | null;
   confirmationPrompt: string | null;
   rosterCount: number;
+  scrollOffset: number;
 }

@@ -1,7 +1,6 @@
 import { Character } from '../entities/Character';
 import { Equipment, Item, ItemRarity, Monster } from '../types/GameTypes';
 import {
-  ITEM_TEMPLATES,
   canAlignmentUseItem,
   canClassEquipItem,
   generateRandomItem,
@@ -9,6 +8,7 @@ import {
 import { GAME_CONFIG } from '../config/GameConstants';
 import { DataLoader } from '../utils/DataLoader';
 import { DebugLogger } from '../utils/DebugLogger';
+import { EquipmentModifierManager } from './EquipmentModifierManager';
 
 interface LootDebugData {
   dungeonLevel: number;
@@ -19,7 +19,7 @@ interface LootDebugData {
 }
 
 export class InventorySystem {
-  private static items: Map<string, Item> = new Map();
+  private static equipmentManager: EquipmentModifierManager = EquipmentModifierManager.getInstance();
   private static debugData: LootDebugData = {
     dungeonLevel: 1,
     dungeonMultiplier: 1.0,
@@ -28,45 +28,8 @@ export class InventorySystem {
     lastRarityRolls: [],
   };
 
-  static {
-    this.initializeItems();
-  }
-
-  private static initializeItems(): void {
-    // Convert templates to full items with default values
-    const items: Item[] = ITEM_TEMPLATES.map((template) => ({
-      id: template.id || 'unknown',
-      name: template.name || 'Unknown Item',
-      unidentifiedName: template.unidentifiedName,
-      type: template.type || 'special',
-      value: template.value || 10,
-      weight: template.weight || 1,
-      identified: template.identified !== undefined ? template.identified : false, // Preserve template setting
-      cursed: template.cursed || false,
-      blessed: template.blessed || false,
-      enchantment: template.enchantment || 0,
-      equipped: false,
-      quantity: 1,
-      effects: template.effects || [],
-      classRestrictions: template.classRestrictions,
-      alignmentRestrictions: template.alignmentRestrictions,
-      invokable: template.invokable,
-      spellId: template.spellId,
-      charges: template.charges,
-      maxCharges: template.maxCharges,
-      description: template.description,
-    }));
-
-    items.forEach((item) => {
-      this.items.set(item.id, item);
-    });
-  }
-
   public static getItem(itemId: string): Item | null {
-    const template = this.items.get(itemId);
-    if (!template) return null;
-
-    return { ...template };
+    return DataLoader.createItemInstance(itemId);
   }
 
   public static addItemToInventory(character: Character, itemOrId: string | Item): boolean {
@@ -150,8 +113,7 @@ export class InventorySystem {
       item.identified = true; // Curse reveals itself when equipped
     }
 
-    this.applyItemEffects(character, item, true);
-    this.recalculateStats(character);
+    this.equipmentManager.applyEquipmentModifiers(character, item, true);
 
     return true;
   }
@@ -169,8 +131,7 @@ export class InventorySystem {
     item.equipped = false;
     character.inventory.push(item);
 
-    this.applyItemEffects(character, item, false);
-    this.recalculateStats(character);
+    this.equipmentManager.applyEquipmentModifiers(character, item, false);
 
     return true;
   }
@@ -196,25 +157,6 @@ export class InventorySystem {
     }
   }
 
-  private static applyItemEffects(character: Character, item: Item, equipping: boolean): void {
-    if (!item.effects) return;
-
-    const multiplier = equipping ? 1 : -1;
-
-    item.effects.forEach((effect) => {
-      switch (effect.type) {
-        case 'stat':
-          if (effect.target && effect.target in character.stats) {
-            const statKey = effect.target;
-            character.stats[statKey] += effect.value * multiplier;
-          }
-          break;
-        case 'ac':
-          character.ac += effect.value * multiplier;
-          break;
-      }
-    });
-  }
 
   public static useItem(character: Character, itemId: string): string {
     const itemIndex = character.inventory.findIndex((i) => i.id === itemId);
@@ -270,16 +212,6 @@ export class InventorySystem {
     return result + '!';
   }
 
-  private static recalculateStats(character: Character): void {
-    character.stats = { ...character.baseStats };
-    character.ac = 10;
-
-    Object.values(character.equipment).forEach((item) => {
-      if (item && item.effects) {
-        this.applyItemEffects(character, item, true);
-      }
-    });
-  }
 
   public static getItemDescription(item: Item): string {
     // If not identified, show the unidentified name
@@ -669,10 +601,15 @@ export class InventorySystem {
 
     // Update effects based on enchantment
     if (item.effects && item.enchantment > 0) {
-      item.effects = item.effects.map((effect) => ({
-        ...effect,
-        value: effect.value + item.enchantment,
-      }));
+      item.effects = item.effects.map((effect) => {
+        if ('value' in effect && effect.value !== undefined) {
+          return {
+            ...effect,
+            value: effect.value + item.enchantment,
+          };
+        }
+        return effect;
+      });
     }
   }
 
@@ -719,5 +656,26 @@ export class InventorySystem {
   // Public method to get current loot debug data
   public static getLootDebugData(): LootDebugData {
     return { ...this.debugData };
+  }
+
+  public static removeCurse(
+    character: Character,
+    equipSlot: keyof Equipment
+  ): { success: boolean; message: string } {
+    const item = character.equipment[equipSlot];
+
+    if (!item) {
+      return { success: false, message: 'No item equipped in that slot' };
+    }
+
+    if (!item.cursed) {
+      return { success: false, message: 'This item is not cursed' };
+    }
+
+    item.cursed = false;
+    return {
+      success: true,
+      message: `Curse removed from ${item.name}! You can now unequip it.`,
+    };
   }
 }

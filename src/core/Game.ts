@@ -14,6 +14,8 @@ import { InnScene } from '../scenes/InnScene';
 import { TempleScene } from '../scenes/TempleScene';
 import { TavernScene } from '../scenes/TavernScene';
 import { TrainingGroundsScene } from '../scenes/TrainingGroundsScene';
+import { CampMenuScene } from '../scenes/CampMenuScene';
+import { CharacterSheetScene } from '../scenes/CharacterSheetScene';
 import { Party } from '../entities/Party';
 import { Character } from '../entities/Character';
 import { GameState } from '../types/GameTypes';
@@ -271,6 +273,8 @@ export class Game {
     this.sceneManager.addScene('temple', new TempleScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('tavern', new TavernScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('training_grounds', new TrainingGroundsScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('camp', new CampMenuScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('characterSheet', new CharacterSheetScene(this.gameState, this.sceneManager));
 
     // Set up scene change listener for performance monitoring
     this.sceneManager.onSceneChange = (sceneName: string) => {

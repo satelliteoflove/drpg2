@@ -77,6 +77,9 @@ export class TavernUIRenderer {
       case 'confirmDivvy':
         this.renderConfirmDivvy(ctx, mainX, mainY, mainWidth, mainHeight);
         break;
+      case 'inspectSelectCharacter':
+        this.renderInspectSelectCharacter(ctx, mainX, mainY, mainWidth, mainHeight, stateContext);
+        break;
     }
   }
 
@@ -309,6 +312,56 @@ export class TavernUIRenderer {
     });
   }
 
+  private renderInspectSelectCharacter(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, stateContext: TavernStateContext): void {
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SELECT CHARACTER TO INSPECT', x + width / 2, y + 45);
+
+    const party = this.gameState.party.characters;
+
+    if (party.length === 0) {
+      ctx.fillStyle = '#666';
+      ctx.font = '14px monospace';
+      ctx.fillText('No characters in party', x + width / 2, y + 150);
+      return;
+    }
+
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'left';
+    const charStartY = y + 100;
+    const lineHeight = 35;
+
+    party.forEach((character: Character, index: number) => {
+      const yPos = charStartY + index * lineHeight;
+      const isSelected = index === stateContext.selectedPartyIndex;
+
+      if (isSelected) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x + 20, yPos - 20, width - 40, 30);
+      }
+
+      ctx.fillStyle = isSelected ? '#ffa500' : '#fff';
+      ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
+
+      const prefix = isSelected ? '>' : ' ';
+      ctx.fillText(`${prefix} ${index + 1}. ${character.name}`, x + 30, yPos);
+
+      ctx.font = '12px monospace';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText(`(${character.class})`, x + 200, yPos);
+
+      const hpColor = character.hp > character.maxHp * 0.5 ? '#00ff00' : character.hp > character.maxHp * 0.25 ? '#ffaa00' : '#ff0000';
+      ctx.fillStyle = hpColor;
+      ctx.fillText(`HP: ${character.hp}/${character.maxHp}`, x + 330, yPos);
+    });
+
+    ctx.fillStyle = '#666';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Arrow Keys: Select | Enter: Confirm | ESC: Cancel', x + width / 2, y + 450);
+  }
+
   private renderActionMenu(ctx: CanvasRenderingContext2D, stateContext: TavernStateContext): void {
     const menuX = 770;
     const menuY = 80;
@@ -331,6 +384,7 @@ export class TavernUIRenderer {
         'Remove Character from Party',
         'Reorder Party',
         'Divvy Gold',
+        'Inspect Character',
         'Leave'
       ];
 
@@ -358,7 +412,7 @@ export class TavernUIRenderer {
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
 
-      if (stateContext.currentState === 'addCharacter' || stateContext.currentState === 'removeCharacter') {
+      if (stateContext.currentState === 'addCharacter' || stateContext.currentState === 'removeCharacter' || stateContext.currentState === 'inspectSelectCharacter') {
         ctx.fillText('1-9: Select | ENTER: Confirm', menuX + menuWidth / 2, menuY + menuHeight - 30);
         ctx.fillText('ESC: Back to Main', menuX + menuWidth / 2, menuY + menuHeight - 15);
       } else if (stateContext.currentState === 'reorderParty') {

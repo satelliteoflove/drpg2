@@ -128,8 +128,8 @@ export class DungeonInputHandler {
       return true;
     }
 
-    if (key === KEY_BINDINGS.dungeonActions.rest) {
-      this.handleRest();
+    if (key === KEY_BINDINGS.dungeonActions.camp) {
+      this.sceneManager.switchTo('camp');
       return true;
     }
 
@@ -246,16 +246,6 @@ export class DungeonInputHandler {
     }
 
     tile.properties = { ...tile.properties, opened: true };
-  }
-
-  private handleRest(): void {
-    this.gameState.party.rest();
-    this.messageLog?.addSystemMessage('Party rests and recovers some health and mana');
-
-    const result = this.movementHandler.handleMovement('forward');
-    if (result.triggered === 'combat') {
-      DebugLogger.debug('DungeonInputHandler', 'Encounter triggered while resting');
-    }
   }
 
   private toggleCombat(): void {
