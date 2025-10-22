@@ -18,6 +18,7 @@ export interface StarterCharacterTemplate {
     weapon?: string;
     armor?: string;
   };
+  inventoryItemIds?: string[];
 }
 
 export const STARTER_CHARACTER_TEMPLATES: StarterCharacterTemplate[] = [
@@ -36,9 +37,10 @@ export const STARTER_CHARACTER_TEMPLATES: StarterCharacterTemplate[] = [
       luck: 0
     },
     equipmentIds: {
-      weapon: 'short_sword',
+      weapon: 'poison_dagger',
       armor: 'leather_armor'
-    }
+    },
+    inventoryItemIds: ['cursed_blade']
   },
   {
     name: 'Gilda',
@@ -55,7 +57,7 @@ export const STARTER_CHARACTER_TEMPLATES: StarterCharacterTemplate[] = [
       luck: 0
     },
     equipmentIds: {
-      weapon: 'short_sword',
+      weapon: 'paralyzing_mace',
       armor: 'leather_armor'
     }
   },
@@ -136,3 +138,7 @@ export const STARTER_CHARACTER_TEMPLATES: StarterCharacterTemplate[] = [
     }
   }
 ];
+
+
+
+
