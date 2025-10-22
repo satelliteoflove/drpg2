@@ -274,6 +274,33 @@ export class DungeonMovementHandler {
       victim.hp = Math.max(0, victim.hp - damage);
       this.messageLog?.addSystemMessage(`${victim.name} takes ${damage} damage!`);
 
+      if (tile.properties.statusType && !victim.isDead) {
+        const statusChance = tile.properties.statusChance ?? 1.0;
+        const roll = Math.random();
+
+        if (roll < statusChance) {
+          const applied = this.statusEffectSystem.applyStatusEffect(
+            victim,
+            tile.properties.statusType,
+            {
+              duration: tile.properties.statusDuration,
+              source: `${trapType}_trap`,
+              ignoreResistance: false
+            }
+          );
+
+          if (applied) {
+            this.messageLog?.addSystemMessage(
+              `${victim.name} is afflicted by ${tile.properties.statusType}!`
+            );
+          } else {
+            this.messageLog?.addSystemMessage(
+              `${victim.name} resisted the ${tile.properties.statusType} effect!`
+            );
+          }
+        }
+      }
+
       if (victim.hp <= 0) {
         victim.isDead = true;
         this.messageLog?.addSystemMessage(`${victim.name} has died!`);

@@ -14,10 +14,10 @@ A full-featured dungeon role-playing game built with TypeScript and HTML5 Canvas
 
 ### Magic System
 - **4 Spell Schools**: Mage, Priest, Alchemist, and Psionic magic with distinct spell lists
-- **7 Spell Levels**: Each school has 7 levels of increasingly powerful spells
+- **7 Spell Levels**: Each school has 7 levels of increasingly powerful spells (28 spells per school)
 - **Automatic Spell Learning**: Characters learn spells automatically upon leveling up based on their class
 - **Class-Based Casting**: Different fizzle penalties for pure casters, hybrids, and warrior-casters
-- **Comprehensive Spell Database**: 50+ spells including damage, healing, buffs, debuffs, utility, and instant death effects
+- **Authentic Spell Database**: 112 authentic Wizardry Gaiden IV spells including damage, healing, buffs, debuffs, status effects, utility, teleportation, resurrection, and instant death effects
 
 ### Town Services
 - **Temple of Cant**: Resurrection (from death or ashes), healing, cure paralysis/petrification, and curse removal with authentic level-based pricing
@@ -108,6 +108,6 @@ When a character dies, they must be resurrected. Each death:
 ## Technical Details
 
 - Built with TypeScript and HTML5 Canvas for retro graphics
-- Comprehensive spell database with 50+ spells across 4 schools
+- Authentic Wizardry Gaiden IV spell database with 112 spells across 4 schools (28 per school, levels 1-7)
 - Save/load system with versioning and auto-save every 30 seconds
 - Modular, extensible codebase
