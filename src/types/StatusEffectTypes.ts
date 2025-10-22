@@ -20,7 +20,8 @@ export interface StatusApplicationOptions {
 
 export const EXCLUSIVE_STATUS_GROUPS: CharacterStatus[][] = [
   ['OK', 'Dead', 'Ashed', 'Lost'],
-  ['Sleeping', 'Paralyzed'],
+  ['Sleeping', 'Paralyzed', 'Stoned'],
+  ['Confused', 'Charmed', 'Berserk', 'Afraid']
 ];
 
 export const STACKABLE_STATUSES: CharacterStatus[] = ['Poisoned'];
