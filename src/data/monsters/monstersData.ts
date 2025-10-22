@@ -41,11 +41,13 @@ export const monstersData = {
     baseExperience: 15,
     baseGold: 8,
     itemDrops: [
+      { itemId: 'poison_dagger', chance: 0.12 },
       { itemId: 'leather_armor', chance: 0.03 },
       { itemId: 'potion', chance: 0.1 },
       { itemId: 'scroll_of_sleep', chance: 0.02 },
     ],
     lootDrops: [
+      { itemId: 'poison_dagger', chance: 0.15, minLevel: 1 },
       { itemId: 'leather_armor', chance: 0.05, minLevel: 1, maxLevel: 5 },
       { itemId: 'potion', chance: 0.12 },
       { itemId: 'scroll_of_sleep', chance: 0.03, minLevel: 2 },
@@ -75,12 +77,16 @@ export const monstersData = {
     baseExperience: 25,
     baseGold: 15,
     itemDrops: [
+      { itemId: 'cursed_blade', chance: 0.08 },
+      { itemId: 'paralyzing_mace', chance: 0.08 },
       { itemId: 'muramasa', chance: 0.001 },
       { itemId: 'shadow_cape', chance: 0.05 },
       { itemId: 'ring_of_healing', chance: 0.02 },
       { itemId: 'dios_stone', chance: 0.03 },
     ],
     lootDrops: [
+      { itemId: 'cursed_blade', chance: 0.10, minLevel: 2 },
+      { itemId: 'paralyzing_mace', chance: 0.10, minLevel: 2 },
       { itemId: 'muramasa', chance: 0.002, minLevel: 3 },
       { itemId: 'shadow_cape', chance: 0.08, minLevel: 2 },
       { itemId: 'ring_of_healing', chance: 0.04, minLevel: 1, maxLevel: 8 },
