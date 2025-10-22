@@ -27,7 +27,15 @@ export type CharacterStatus =
   | 'Paralyzed'
   | 'Stoned'
   | 'Poisoned'
-  | 'Sleeping';
+  | 'Sleeping'
+  | 'Silenced'
+  | 'Blinded'
+  | 'Confused'
+  | 'Afraid'
+  | 'Charmed'
+  | 'Berserk'
+  | 'Blessed'
+  | 'Cursed';
 
 export interface CharacterStats {
   strength: number;
@@ -108,13 +116,34 @@ export interface Item {
   charges?: number; // Number of uses remaining (for consumables/invokables)
   maxCharges?: number; // Maximum charges for reference
   rarity?: ItemRarity; // Item rarity (assigned at drop time)
+  resistances?: CharacterStatus[]; // Status effects this item grants resistance to
+  resistanceBonus?: number; // Resistance % bonus per status (default 30 if not specified)
+  onHitEffect?: {
+    statusType: CharacterStatus;
+    chance: number;
+    duration?: number;
+  };
 }
 
-export interface ItemEffect {
-  type: 'damage' | 'ac' | 'stat' | 'heal' | 'cure' | 'special';
-  value: number;
-  target?: keyof CharacterStats;
-}
+export type ItemEffect =
+  | {
+      type: 'damage' | 'ac' | 'heal' | 'cure' | 'special';
+      value: number;
+      target?: never;
+    }
+  | {
+      type: 'stat';
+      value: number;
+      target: keyof CharacterStats;
+    }
+  | {
+      type: 'statusEffect';
+      statusType: CharacterStatus;
+      chance: number;
+      duration: number;
+      value?: never;
+      target?: never;
+    };
 
 export type Spell = SpellData;
 
@@ -138,6 +167,8 @@ export interface Monster {
   level?: number;
   monsterType?: string;
   sprite?: string;
+  statuses?: ActiveStatusEffect[];
+  modifiers?: ActiveModifier[];
 }
 
 export interface Attack {
@@ -179,6 +210,9 @@ export interface DungeonTile {
     gold?: number;
     trapType?: string;
     damage?: number;
+    statusType?: CharacterStatus;
+    statusChance?: number;
+    statusDuration?: number;
     oneTime?: boolean;
     eventType?: string;
     message?: string;

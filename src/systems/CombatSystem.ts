@@ -204,11 +204,70 @@ export class CombatSystem {
 
     let result = `${attacker.name} attacks ${target.name} for ${damage} damage!`;
 
+    const weapon = attacker.equipment.weapon;
+    if (weapon?.onHitEffect && target.hp > 0) {
+      const roll = Math.random();
+      if (roll < weapon.onHitEffect.chance) {
+        const effectApplied = this.applyWeaponEffect(attacker, target, weapon);
+        if (effectApplied) {
+          result += ` ${effectApplied}`;
+        }
+      }
+    }
+
     if (target.hp === 0) {
       result += ` ${target.name} is defeated!`;
     }
 
     return result;
+  }
+
+  private applyWeaponEffect(attacker: Character, target: Monster, weapon: Item): string | null {
+    if (!weapon.onHitEffect) return null;
+
+    const statusType = weapon.onHitEffect.statusType;
+    const duration = weapon.onHitEffect.duration;
+
+    DebugLogger.info('CombatSystem', `${weapon.name} triggers on-hit effect`, {
+      attacker: attacker.name,
+      target: target.name,
+      effect: statusType,
+      duration
+    });
+
+    const applied = this.statusEffectSystem.applyStatusEffect(target, statusType, {
+      duration,
+      source: weapon.name,
+      ignoreResistance: false
+    });
+
+    if (applied) {
+      return `${target.name} is afflicted by ${this.getStatusEffectName(statusType)}!`;
+    } else {
+      return `${target.name} resisted ${this.getStatusEffectName(statusType)}!`;
+    }
+  }
+
+  private getStatusEffectName(status: CharacterStatus): string {
+    const names: Record<CharacterStatus, string> = {
+      'OK': 'OK',
+      'Dead': 'death',
+      'Ashed': 'ashes',
+      'Lost': 'lost',
+      'Paralyzed': 'paralysis',
+      'Stoned': 'petrification',
+      'Poisoned': 'poison',
+      'Sleeping': 'sleep',
+      'Silenced': 'silence',
+      'Blinded': 'blindness',
+      'Confused': 'confusion',
+      'Afraid': 'fear',
+      'Charmed': 'charm',
+      'Berserk': 'berserk',
+      'Blessed': 'blessing',
+      'Cursed': 'curse'
+    };
+    return names[status] || status.toLowerCase();
   }
 
   private executeCastSpell(caster: Character, spellId?: string, selectedTarget?: Character | Monster): string {
@@ -321,7 +380,8 @@ export class CombatSystem {
       'poison': 'Poisoned',
       'paralysis': 'Paralyzed',
       'sleep': 'Sleeping',
-      'petrify': 'Stoned'
+      'petrify': 'Stoned',
+      'afraid': 'Afraid'
     };
     return effectMap[effect.toLowerCase()] || null;
   }
@@ -331,7 +391,8 @@ export class CombatSystem {
       'poison': 'poisoned',
       'paralysis': 'paralyzed',
       'sleep': 'put to sleep',
-      'petrify': 'turned to stone'
+      'petrify': 'turned to stone',
+      'afraid': 'frightened'
     };
     return descriptions[effect.toLowerCase()] || effect;
   }
@@ -343,7 +404,7 @@ export class CombatSystem {
     const weapon = attacker.equipment.weapon;
     if (weapon && weapon.effects) {
       const damageEffect = weapon.effects.find((effect) => effect.type === 'damage');
-      if (damageEffect) {
+      if (damageEffect && damageEffect.type === 'damage') {
         baseDamage += damageEffect.value;
         DebugLogger.info(
           'CombatSystem',
@@ -432,6 +493,30 @@ export class CombatSystem {
     const isMonster = currentUnit && EntityUtils.isMonster(currentUnit as any);
 
     if (isMonster) {
+      const monster = currentUnit as Monster;
+      this.statusEffectSystem.tick(monster, 'combat');
+
+      if (monster.isDead || monster.hp <= 0) {
+        this.cleanupDeadUnits();
+        if (this.checkCombatEnd()) {
+          this.resetTurnState();
+          return;
+        }
+        this.nextTurn();
+        return;
+      }
+
+      if (this.statusEffectSystem.isDisabled(monster)) {
+        const status = this.statusEffectSystem.hasStatus(monster, 'Sleeping') ? 'asleep' :
+                       this.statusEffectSystem.hasStatus(monster, 'Paralyzed') ? 'paralyzed' :
+                       this.statusEffectSystem.hasStatus(monster, 'Stoned') ? 'petrified' : 'disabled';
+        if (this.onMessage) {
+          this.onMessage(`${monster.name} is ${status} and cannot act!`);
+        }
+        this.nextTurn();
+        return;
+      }
+
       // Execute monster turn immediately
       const result = this.executeMonsterTurn();
       if (result && this.onMessage) {
