@@ -94,6 +94,15 @@ export interface DispelEffectConfig {
   selective?: boolean;
 }
 
+export interface CureEffectConfig {
+  type: 'cure';
+  cureStatuses?: StatusEffectType[];
+  cureGroup?: 'poison' | 'paralysis' | 'petrification' | 'mental' | 'blindness' | 'silence' | 'curse' | 'death' | 'ashes' | 'all';
+  cureAll?: boolean;
+  removeBuffs?: boolean;
+  removeDebuffs?: boolean;
+}
+
 export interface SpecialEffectConfig {
   type: 'special';
   specialType: string;
@@ -107,6 +116,7 @@ export type SpellEffectConfig =
   | StatusEffectConfig
   | BuffEffectConfig
   | ModifierEffectConfig
+  | CureEffectConfig
   | InstantDeathEffectConfig
   | ResurrectionEffectConfig
   | TeleportEffectConfig
