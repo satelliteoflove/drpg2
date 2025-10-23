@@ -3,6 +3,8 @@ import { Character } from '../../entities/Character';
 import { StatusPanel } from '../../ui/StatusPanel';
 import { TrainingGroundsStateContext } from '../../types/TrainingGroundsTypes';
 import { TrainingGroundsStateManager } from './TrainingGroundsStateManager';
+import { SpellRegistry } from '../magic/SpellRegistry';
+import { SpellData, SpellId } from '../../types/SpellTypes';
 
 export class TrainingGroundsUIRenderer {
   private gameState: GameState;
@@ -10,11 +12,13 @@ export class TrainingGroundsUIRenderer {
   private stateManager: TrainingGroundsStateManager;
   private statusPanel: StatusPanel | null = null;
   private canvas: HTMLCanvasElement | null = null;
+  private registry: SpellRegistry;
 
   constructor(gameState: GameState, messageLog: any, stateManager: TrainingGroundsStateManager) {
     this.gameState = gameState;
     this.messageLog = messageLog;
     this.stateManager = stateManager;
+    this.registry = SpellRegistry.getInstance();
   }
 
   public render(ctx: CanvasRenderingContext2D, stateContext: TrainingGroundsStateContext): void {
@@ -492,45 +496,154 @@ export class TrainingGroundsUIRenderer {
     });
   }
 
-  private renderInspectView(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, stateContext: TrainingGroundsStateContext): void {
+  private renderInspectView(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, stateContext: TrainingGroundsStateContext): void {
     const character = this.stateManager.getRosterCharacters()[stateContext.selectedCharacterIndex];
     if (!character) return;
+
+    const panelHeight = height - 60;
+    const contentY = y + 60;
 
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('CHARACTER DETAILS', x + width / 2, y + 40);
 
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, contentY, width, panelHeight);
+    ctx.clip();
+
     ctx.font = '16px monospace';
     ctx.fillStyle = '#ffa500';
-    ctx.fillText(character.name, x + width / 2, y + 75);
+    let yPos = contentY + 20 - stateContext.scrollOffset;
+    const lineHeight = 18;
+    const padding = 20;
+
+    ctx.fillText(character.name, x + width / 2, yPos);
+    yPos += lineHeight + 10;
 
     ctx.font = '14px monospace';
     ctx.fillStyle = '#fff';
-    let yPos = y + 110;
     ctx.fillText(`${character.race} ${character.class} - ${character.alignment}`, x + width / 2, yPos);
-    yPos += 25;
+    yPos += lineHeight;
     ctx.fillText(`Level ${character.level} | Age ${character.age} | XP ${character.experience}`, x + width / 2, yPos);
-    yPos += 35;
+    yPos += lineHeight + 15;
 
     ctx.fillStyle = '#aaa';
     ctx.font = '12px monospace';
-    yPos += 10;
     ctx.fillText(`HP: ${character.hp}/${character.maxHp}  MP: ${character.mp}/${character.maxMp}  AC: ${character.ac}`, x + width / 2, yPos);
-    yPos += 25;
+    yPos += lineHeight;
     ctx.fillText(`ST: ${character.stats.strength}  IQ: ${character.stats.intelligence}  PI: ${character.stats.piety}`, x + width / 2, yPos);
-    yPos += 18;
+    yPos += 16;
     ctx.fillText(`VT: ${character.stats.vitality}  AG: ${character.stats.agility}  LK: ${character.stats.luck}`, x + width / 2, yPos);
-    yPos += 30;
+    yPos += lineHeight + 15;
 
-    if (character.knownSpells && character.knownSpells.length > 0) {
-      ctx.fillStyle = '#a4a';
-      ctx.fillText(`Known Spells: ${character.knownSpells.length}`, x + width / 2, yPos);
+    ctx.fillStyle = '#88ff88';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText('Known Spells:', x + width / 2, yPos);
+    yPos += lineHeight + 5;
+
+    const knownSpells = character.getKnownSpells();
+    const spellsByLevel = this.groupSpellsByLevel(knownSpells);
+
+    if (spellsByLevel.size === 0) {
+      ctx.fillStyle = '#666';
+      ctx.font = '14px monospace';
+      ctx.fillText('No spells known', x + width / 2, yPos);
+      yPos += lineHeight + 10;
+    } else {
+      const levels = Array.from(spellsByLevel.keys()).sort();
+      ctx.textAlign = 'left';
+
+      for (const level of levels) {
+        const spells = spellsByLevel.get(level)!;
+
+        ctx.fillStyle = '#ffaa00';
+        ctx.font = 'bold 14px monospace';
+        ctx.fillText(`Level ${level}:`, x + padding + 10, yPos);
+        yPos += lineHeight + 5;
+
+        spells.forEach(spell => {
+          ctx.fillStyle = '#fff';
+          ctx.font = '13px monospace';
+          ctx.fillText(`• ${spell.name} (${spell.mpCost} MP)`, x + padding + 20, yPos);
+          yPos += lineHeight;
+
+          ctx.fillStyle = '#aaa';
+          ctx.font = '11px monospace';
+          const effectDesc = this.getSpellEffectSummary(spell);
+          ctx.fillText(`  ${effectDesc}`, x + padding + 25, yPos);
+          yPos += lineHeight + 3;
+        });
+
+        yPos += 10;
+      }
     }
 
-    yPos += 40;
+    ctx.restore();
+
     ctx.fillStyle = '#666';
-    ctx.fillText('Press any key to return', x + width / 2, yPos);
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('↑/↓: Scroll | Press any key to return', x + width / 2, y + height - 10);
+  }
+
+  private groupSpellsByLevel(spellIds: string[]): Map<number, SpellData[]> {
+    const grouped = new Map<number, SpellData[]>();
+
+    for (const spellId of spellIds) {
+      const spell = this.registry.getSpellById(spellId as SpellId);
+      if (spell) {
+        if (!grouped.has(spell.level)) {
+          grouped.set(spell.level, []);
+        }
+        grouped.get(spell.level)!.push(spell);
+      }
+    }
+
+    return grouped;
+  }
+
+  private getSpellEffectSummary(spell: SpellData): string {
+    if (!spell.effects || spell.effects.length === 0) {
+      return 'No effects';
+    }
+
+    const effect = spell.effects[0];
+    const targetText = this.getTargetTypeText(spell.targetType);
+
+    switch (effect.type) {
+      case 'damage':
+        const dmg = effect.baseDamage || effect.value || '?';
+        return `${targetText}, Damage: ${dmg}`;
+      case 'heal':
+        const heal = effect.baseHealing || effect.value || '?';
+        return `${targetText}, Heal: ${heal}`;
+      case 'status':
+        const status = effect.statusType || 'status effect';
+        return `${targetText}, Inflict ${status}`;
+      case 'buff':
+        const buff = effect.buffType || 'buff';
+        return `${targetText}, ${buff}`;
+      case 'cure':
+        return `${targetText}, Cure status`;
+      default:
+        return targetText;
+    }
+  }
+
+  private getTargetTypeText(targetType: string): string {
+    const map: Record<string, string> = {
+      'group': 'Enemy Group',
+      'allAllies': 'All Allies',
+      'allEnemies': 'All Enemies',
+      'enemy': 'Single Enemy',
+      'ally': 'Single Ally',
+      'self': 'Self',
+      'row': 'Enemy Row',
+      'dead': 'Dead Ally'
+    };
+    return map[targetType] || targetType;
   }
 
   private renderDeleteConfirmation(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, _height: number, stateContext: TrainingGroundsStateContext): void {
@@ -730,7 +843,8 @@ export class TrainingGroundsUIRenderer {
 
       const statusColor = char.isDead ? '#a44' : '#4a4';
       ctx.fillStyle = statusColor;
-      ctx.fillText(char.status, x + 380, yPos);
+      const statusText = char.statuses.length > 0 ? char.statuses[0].type : 'OK';
+      ctx.fillText(statusText, x + 380, yPos);
 
       yPos += 30;
     });

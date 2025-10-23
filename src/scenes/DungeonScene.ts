@@ -342,7 +342,7 @@ export class DungeonScene extends Scene {
     ctx.font = '12px monospace';
     ctx.textAlign = 'center';
 
-    const controls = 'WASD/Arrows: Move | ENTER: Interact | TAB: Inventory | M: Map | ESC: Town';
+    const controls = 'WASD/Arrows: Move | ENTER: Interact | TAB: Inventory | M: Map';
     ctx.fillText(controls, ctx.canvas.width / 2, ctx.canvas.height - 20);
   }
 

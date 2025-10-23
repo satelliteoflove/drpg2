@@ -1,5 +1,5 @@
 import { Character } from '../entities/Character';
-import { Encounter, Item, Monster } from '../types/GameTypes';
+import { Encounter, Item, Monster, CharacterStatus } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { InventorySystem } from './InventorySystem';
 import { DebugLogger } from '../utils/DebugLogger';
@@ -7,6 +7,8 @@ import { SpellCaster } from './magic/SpellCaster';
 import { SpellCastingContext, SpellId } from '../types/SpellTypes';
 import { DiceRoller } from '../utils/DiceRoller';
 import { EntityUtils } from '../utils/EntityUtils';
+import { StatusEffectSystem } from './StatusEffectSystem';
+import { ModifierSystem } from './ModifierSystem';
 
 interface CombatDebugData {
   currentTurn: string;
@@ -20,6 +22,8 @@ export class CombatSystem {
   private dungeonLevel: number = 1;
   private party: Character[] = [];
   private spellCaster: SpellCaster;
+  private statusEffectSystem: StatusEffectSystem;
+  private modifierSystem: ModifierSystem;
   private onCombatEnd?: (
     victory: boolean,
     rewards?: { experience: number; gold: number; items: Item[] },
@@ -38,6 +42,8 @@ export class CombatSystem {
 
   constructor() {
     this.spellCaster = SpellCaster.getInstance();
+    this.statusEffectSystem = StatusEffectSystem.getInstance();
+    this.modifierSystem = ModifierSystem.getInstance();
   }
 
   public startCombat(
@@ -198,11 +204,70 @@ export class CombatSystem {
 
     let result = `${attacker.name} attacks ${target.name} for ${damage} damage!`;
 
+    const weapon = attacker.equipment.weapon;
+    if (weapon?.onHitEffect && target.hp > 0) {
+      const roll = Math.random();
+      if (roll < weapon.onHitEffect.chance) {
+        const effectApplied = this.applyWeaponEffect(attacker, target, weapon);
+        if (effectApplied) {
+          result += ` ${effectApplied}`;
+        }
+      }
+    }
+
     if (target.hp === 0) {
       result += ` ${target.name} is defeated!`;
     }
 
     return result;
+  }
+
+  private applyWeaponEffect(attacker: Character, target: Monster, weapon: Item): string | null {
+    if (!weapon.onHitEffect) return null;
+
+    const statusType = weapon.onHitEffect.statusType;
+    const duration = weapon.onHitEffect.duration;
+
+    DebugLogger.info('CombatSystem', `${weapon.name} triggers on-hit effect`, {
+      attacker: attacker.name,
+      target: target.name,
+      effect: statusType,
+      duration
+    });
+
+    const applied = this.statusEffectSystem.applyStatusEffect(target, statusType, {
+      duration,
+      source: weapon.name,
+      ignoreResistance: false
+    });
+
+    if (applied) {
+      return `${target.name} is afflicted by ${this.getStatusEffectName(statusType)}!`;
+    } else {
+      return `${target.name} resisted ${this.getStatusEffectName(statusType)}!`;
+    }
+  }
+
+  private getStatusEffectName(status: CharacterStatus): string {
+    const names: Record<CharacterStatus, string> = {
+      'OK': 'OK',
+      'Dead': 'death',
+      'Ashed': 'ashes',
+      'Lost': 'lost',
+      'Paralyzed': 'paralysis',
+      'Stoned': 'petrification',
+      'Poisoned': 'poison',
+      'Sleeping': 'sleep',
+      'Silenced': 'silence',
+      'Blinded': 'blindness',
+      'Confused': 'confusion',
+      'Afraid': 'fear',
+      'Charmed': 'charm',
+      'Berserk': 'berserk',
+      'Blessed': 'blessing',
+      'Cursed': 'curse'
+    };
+    return names[status] || status.toLowerCase();
   }
 
   private executeCastSpell(caster: Character, spellId?: string, selectedTarget?: Character | Monster): string {
@@ -289,12 +354,47 @@ export class CombatSystem {
       const damage = this.rollDamage(attack.damage);
       target.takeDamage(damage);
 
-      // Don't call nextTurn() here - let the timeout handler manage turn progression
-      return `${monster.name} uses ${attack.name} on ${target.name} for ${damage} damage!`;
+      let message = `${monster.name} uses ${attack.name} on ${target.name} for ${damage} damage!`;
+
+      if (attack.effect && !target.isDead) {
+        const effectType = this.mapMonsterEffectToStatus(attack.effect);
+        if (effectType) {
+          const applied = this.statusEffectSystem.applyStatusEffect(target, effectType, {
+            ignoreResistance: false
+          });
+
+          if (applied) {
+            message += ` ${target.name} is ${this.getEffectDescription(attack.effect)}!`;
+          }
+        }
+      }
+
+      return message;
     } else {
-      // Don't call nextTurn() here - let the timeout handler manage turn progression
       return `${monster.name} attacks ${target.name} but misses!`;
     }
+  }
+
+  private mapMonsterEffectToStatus(effect: string): CharacterStatus | null {
+    const effectMap: Record<string, CharacterStatus> = {
+      'poison': 'Poisoned',
+      'paralysis': 'Paralyzed',
+      'sleep': 'Sleeping',
+      'petrify': 'Stoned',
+      'afraid': 'Afraid'
+    };
+    return effectMap[effect.toLowerCase()] || null;
+  }
+
+  private getEffectDescription(effect: string): string {
+    const descriptions: Record<string, string> = {
+      'poison': 'poisoned',
+      'paralysis': 'paralyzed',
+      'sleep': 'put to sleep',
+      'petrify': 'turned to stone',
+      'afraid': 'frightened'
+    };
+    return descriptions[effect.toLowerCase()] || effect;
   }
 
   private calculateDamage(attacker: Character, target: Monster): number {
@@ -304,7 +404,7 @@ export class CombatSystem {
     const weapon = attacker.equipment.weapon;
     if (weapon && weapon.effects) {
       const damageEffect = weapon.effects.find((effect) => effect.type === 'damage');
-      if (damageEffect) {
+      if (damageEffect && damageEffect.type === 'damage') {
         baseDamage += damageEffect.value;
         DebugLogger.info(
           'CombatSystem',
@@ -312,6 +412,10 @@ export class CombatSystem {
         );
       }
     }
+
+    const attackBonus = attacker.effectiveAttack - Math.floor(attacker.level / 2);
+    const damageBonus = attacker.effectiveDamage;
+    baseDamage += attackBonus + damageBonus;
 
     const defense = Math.floor(target.ac / 2);
     return Math.max(1, baseDamage - defense);
@@ -369,9 +473,50 @@ export class CombatSystem {
     }
 
     const currentUnit = this.getCurrentUnit();
+
+    if (currentUnit && EntityUtils.isCharacter(currentUnit as any)) {
+      const char = currentUnit as Character;
+      this.statusEffectSystem.tick(char, 'combat');
+      this.modifierSystem.tick(char, 'combat');
+
+      if (char.isDead) {
+        this.cleanupDeadUnits();
+        if (this.checkCombatEnd()) {
+          this.resetTurnState();
+          return;
+        }
+        this.nextTurn();
+        return;
+      }
+    }
+
     const isMonster = currentUnit && EntityUtils.isMonster(currentUnit as any);
 
     if (isMonster) {
+      const monster = currentUnit as Monster;
+      this.statusEffectSystem.tick(monster, 'combat');
+
+      if (monster.isDead || monster.hp <= 0) {
+        this.cleanupDeadUnits();
+        if (this.checkCombatEnd()) {
+          this.resetTurnState();
+          return;
+        }
+        this.nextTurn();
+        return;
+      }
+
+      if (this.statusEffectSystem.isDisabled(monster)) {
+        const status = this.statusEffectSystem.hasStatus(monster, 'Sleeping') ? 'asleep' :
+                       this.statusEffectSystem.hasStatus(monster, 'Paralyzed') ? 'paralyzed' :
+                       this.statusEffectSystem.hasStatus(monster, 'Stoned') ? 'petrified' : 'disabled';
+        if (this.onMessage) {
+          this.onMessage(`${monster.name} is ${status} and cannot act!`);
+        }
+        this.nextTurn();
+        return;
+      }
+
       // Execute monster turn immediately
       const result = this.executeMonsterTurn();
       if (result && this.onMessage) {

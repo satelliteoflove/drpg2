@@ -34,6 +34,7 @@ export type SpellEffectType =
   | 'debuff'
   | 'cure'
   | 'status'
+  | 'modifier'
   | 'instant_death'
   | 'resurrection'
   | 'teleport'
@@ -89,6 +90,7 @@ export interface SpellEffect {
   subtype?: string;
   element?: ElementalType;
   power?: number | string;
+  value?: number | string;
   baseDamage?: string;
   baseHealing?: string;
   damagePerLevel?: number;
@@ -97,8 +99,18 @@ export interface SpellEffect {
   saveType?: 'physical' | 'mental' | 'magical' | 'death';
   saveModifier?: number;
   statusEffect?: StatusEffectType | 'all';
+  statusType?: StatusEffectType | 'all';
   buffType?: BuffType;
   special?: string;
+  fullHeal?: boolean;
+  cureStatuses?: StatusEffectType[];
+  percentHeal?: number;
+  canOverheal?: boolean;
+  resistanceCheck?: boolean;
+  stat?: 'ac' | 'attack' | 'damage' | 'speed' | 'resistance' | 'levitation';
+  affectsAllies?: boolean;
+  affectsEnemies?: boolean;
+  countsOnlyInCombat?: boolean;
 }
 
 export interface SpellRange {

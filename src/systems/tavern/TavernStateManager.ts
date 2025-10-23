@@ -47,6 +47,7 @@ export class TavernStateManager {
       'Remove Character from Party',
       'Reorder Party',
       'Divvy Gold',
+      'Inspect Character',
       'Leave'
     ];
   }
@@ -91,7 +92,7 @@ export class TavernStateManager {
 
     if (party.length === 0) return false;
 
-    const livingCharacters = party.filter((c: Character) => !c.isDead && c.status === 'OK');
+    const livingCharacters = party.filter((c: Character) => !c.isDead && c.statuses.length === 0);
 
     return livingCharacters.length > 0;
   }

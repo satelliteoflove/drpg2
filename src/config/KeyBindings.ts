@@ -19,7 +19,7 @@ interface KeyBindings {
   };
   dungeonActions: {
     inventory: string;
-    rest: string;
+    camp: string;
     map: string;
     toggleCombat: string;
     debugOverlay: string;

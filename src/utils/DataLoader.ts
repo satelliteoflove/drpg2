@@ -126,6 +126,8 @@ export class DataLoader {
         lootDrops: [],
         resistances: [],
         weaknesses: [],
+        statuses: [],
+        modifiers: [],
       };
 
       // Add attacks

@@ -3,6 +3,8 @@ import { GameUtilities } from '../../utils/GameUtilities';
 import { DebugLogger } from '../../utils/DebugLogger';
 import { SceneManager } from '../../core/Scene';
 import { GAME_CONFIG } from '../../config/GameConstants';
+import { StatusEffectSystem } from '../StatusEffectSystem';
+import { ModifierSystem } from '../ModifierSystem';
 
 export interface MovementResult {
   moved: boolean;
@@ -19,6 +21,8 @@ export class DungeonMovementHandler {
   private gameState: GameState;
   private messageLog: any;
   private sceneManager: SceneManager;
+  private statusEffectSystem: StatusEffectSystem;
+  private modifierSystem: ModifierSystem;
   private lastMoveTime: number = 0;
   private lastTileEventPosition: { x: number; y: number; floor: number } | null = null;
   private lastEncounterPosition: { x: number; y: number; floor: number } | null = null;
@@ -27,6 +31,8 @@ export class DungeonMovementHandler {
     this.gameState = gameState;
     this.messageLog = messageLog;
     this.sceneManager = sceneManager;
+    this.statusEffectSystem = StatusEffectSystem.getInstance();
+    this.modifierSystem = ModifierSystem.getInstance();
   }
 
   public handleMovement(direction: Direction): MovementResult {
@@ -72,6 +78,8 @@ export class DungeonMovementHandler {
     this.gameState.turnCount++;
     this.lastMoveTime = now;
 
+    this.tickAllPartyMembers();
+
     this.updateDiscoveredTiles();
 
     const tileResult = this.handleTileEffect(targetTile);
@@ -94,7 +102,21 @@ export class DungeonMovementHandler {
     this.gameState.turnCount++;
     this.lastMoveTime = Date.now();
 
+    this.tickAllPartyMembers();
+
     this.updateDiscoveredTiles();
+  }
+
+  private tickAllPartyMembers(): void {
+    const party = this.gameState.party;
+    if (!party || !party.characters) return;
+
+    party.characters.forEach((char: any) => {
+      if (!char.isDead) {
+        this.statusEffectSystem.tick(char, 'exploration');
+        this.modifierSystem.tick(char, 'exploration');
+      }
+    });
   }
 
   private canMoveTo(tile: DungeonTile | null): boolean {
@@ -251,6 +273,33 @@ export class DungeonMovementHandler {
     if (victim) {
       victim.hp = Math.max(0, victim.hp - damage);
       this.messageLog?.addSystemMessage(`${victim.name} takes ${damage} damage!`);
+
+      if (tile.properties.statusType && !victim.isDead) {
+        const statusChance = tile.properties.statusChance ?? 1.0;
+        const roll = Math.random();
+
+        if (roll < statusChance) {
+          const applied = this.statusEffectSystem.applyStatusEffect(
+            victim,
+            tile.properties.statusType,
+            {
+              duration: tile.properties.statusDuration,
+              source: `${trapType}_trap`,
+              ignoreResistance: false
+            }
+          );
+
+          if (applied) {
+            this.messageLog?.addSystemMessage(
+              `${victim.name} is afflicted by ${tile.properties.statusType}!`
+            );
+          } else {
+            this.messageLog?.addSystemMessage(
+              `${victim.name} resisted the ${tile.properties.statusType} effect!`
+            );
+          }
+        }
+      }
 
       if (victim.hp <= 0) {
         victim.isDead = true;

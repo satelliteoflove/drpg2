@@ -28,6 +28,7 @@ export class AIInterface {
       hp: { current: number; max: number };
       mp: { current: number; max: number };
       status: string;
+      statuses: any[];
       isDead: boolean;
       knownSpells?: string[];
     }>;
@@ -47,7 +48,8 @@ export class AIInterface {
         experience: char.experience,
         hp: { current: char.hp, max: char.maxHp },
         mp: { current: char.mp, max: char.maxMp },
-        status: char.status,
+        status: char.statuses.length > 0 ? char.statuses[0].type : 'OK',
+        statuses: char.statuses,
         isDead: char.isDead,
         knownSpells: char.knownSpells || [],
       })),
@@ -491,6 +493,7 @@ export class AIInterface {
     class: string;
     level: number;
     status: string;
+    statuses: any[];
     isDead: boolean;
   }> {
     const state = this.getGameState();
@@ -500,7 +503,8 @@ export class AIInterface {
       race: char.race,
       class: char.class,
       level: char.level,
-      status: char.status,
+      status: char.statuses.length > 0 ? char.statuses[0].type : 'OK',
+      statuses: char.statuses,
       isDead: char.isDead,
     }));
   }

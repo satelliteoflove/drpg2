@@ -1,6 +1,6 @@
 # Documentation Index for DRPG2
 # This file provides a searchable index for Claude Code to efficiently navigate project documentation
-# Last updated: 2025-09-17
+# Last updated: 2025-10-15
 
 architecture:
   file: ARCHITECTURE.md
@@ -81,6 +81,10 @@ wizardry_gaiden_4_systems:
     topics: [spells, magic system, mage, priest, alchemist, psionic, wizardry gaiden]
     summary: Complete spell system including all four magic schools in Wizardry Gaiden IV
 
+  - file: sources/wizardry_gaiden_4_spells_japanese.html
+    topics: [spells, japanese source, authentic data, reference, wizardry gaiden]
+    summary: Original Japanese source page for all Wizardry Gaiden IV spells (definitive reference)
+
   - file: temple-requirements.md
     topics: [temple, services, resurrection, healing, status effects, cure, dispel curse, wizardry gaiden]
     summary: Temple of Cant service requirements with resurrection mechanics, costs, and formulas for WGIV
@@ -96,6 +100,10 @@ wizardry_gaiden_4_systems:
   - file: tavern-mechanics.md
     topics: [tavern, party formation, party management, add character, remove character, divvy gold, gilgamesh, dungeon entry, wizardry gaiden]
     summary: Gilgamesh's Tavern party management system for assembling active party, divvying gold, and dungeon entry requirements
+
+  - file: status-effects.md
+    topics: [status effects, conditions, ailments, poison, paralysis, sleep, stone, death, ashes, lost, silence, blind, confusion, fear, charm, curse, disease, level drain, spells, cure, inflict, wizardry gaiden]
+    summary: Comprehensive status effects reference including all conditions, infliction methods, cure methods, racial resistances, and spell cross-reference for WGIV
 
 wgiv_implementation:
   - folder: src/config/races/
@@ -438,3 +446,6 @@ search_hints:
   temple: [temple-mechanics.md, temple-requirements.md, src/systems/temple/, src/scenes/TempleScene.ts]
   tavern: [tavern-mechanics.md, src/scenes/TavernScene.ts]
   party_management: [tavern-mechanics.md, api/classes/Party.md]
+  status_effects: [status-effects.md, temple-requirements.md, api/type-aliases/CharacterStatus.md]
+  conditions: [status-effects.md, temple-mechanics.md]
+  cure: [status-effects.md, wizardry_gaiden_4_spells.md, temple-requirements.md]

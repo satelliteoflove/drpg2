@@ -99,6 +99,7 @@ export class SpellMenu {
       },
       onNavigate: (newIndex) => {
         this.state.selectedSpellIndex = newIndex;
+        this.state.menuState.selectedIndex = newIndex;
       }
     });
 
@@ -147,6 +148,10 @@ export class SpellMenu {
     const levels = Array.from(this.state.spellsByLevel.keys()).sort();
     const spellsAtLevel = this.state.spellsByLevel.get(this.state.selectedLevel) || [];
 
+    const listWidth = width * 0.55;
+    const detailsX = x + listWidth + 10;
+    const detailsWidth = width - listWidth - 20;
+
     ctx.fillStyle = '#fff';
     ctx.font = '16px monospace';
     ctx.textAlign = 'left';
@@ -159,7 +164,7 @@ export class SpellMenu {
     if (levels.length > 1) {
       ctx.fillStyle = '#888';
       ctx.font = '12px monospace';
-      ctx.fillText('← →: Change Level', x + width - 150, y + 25);
+      ctx.fillText('← →: Change Level', x + listWidth - 150, y + 25);
     }
 
     const levelTabs = levels.map(level => `L${level}`).join(' | ');
@@ -177,7 +182,7 @@ export class SpellMenu {
 
       if (index === this.state.selectedSpellIndex) {
         ctx.fillStyle = '#333';
-        ctx.fillRect(x + 5, listY - 15, width - 10, 22);
+        ctx.fillRect(x + 5, listY - 15, listWidth - 10, 22);
       }
 
       ctx.fillStyle = index === this.state.selectedSpellIndex ? '#ffff00' : canCast ? '#fff' : '#666';
@@ -185,21 +190,7 @@ export class SpellMenu {
       ctx.fillText(`${index + 1}. ${spell.name}`, x + 20, listY);
 
       ctx.fillStyle = canCast ? '#aaa' : '#666';
-      ctx.fillText(`${spell.mpCost} MP`, x + 250, listY);
-
-      if (spell.targetType) {
-        ctx.fillStyle = '#888';
-        ctx.font = '12px monospace';
-        const targetText = spell.targetType === 'group' ? 'Group' :
-                          spell.targetType === 'allAllies' ? 'All Allies' :
-                          spell.targetType === 'allEnemies' ? 'All Enemies' :
-                          spell.targetType === 'enemy' ? 'Enemy' :
-                          spell.targetType === 'ally' ? 'Ally' :
-                          spell.targetType === 'self' ? 'Self' :
-                          spell.targetType === 'row' ? 'Row' :
-                          spell.targetType === 'dead' ? 'Dead' : '';
-        ctx.fillText(targetText, x + 320, listY);
-      }
+      ctx.fillText(`${spell.mpCost} MP`, x + listWidth - 80, listY);
 
       listY += 25;
     });
@@ -210,9 +201,167 @@ export class SpellMenu {
       ctx.fillText('No spells known at this level', x + 20, listY);
     }
 
+    const selectedSpell = spellsAtLevel[this.state.selectedSpellIndex];
+    if (selectedSpell) {
+      this.renderSpellDetails(ctx, detailsX, y + 70, detailsWidth, height - 90, selectedSpell);
+    }
+
     ctx.fillStyle = '#888';
     ctx.font = '12px monospace';
     ctx.fillText('Enter: Cast | Escape: Cancel', x + 10, y + height - 10);
+  }
+
+  private renderSpellDetails(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    spell: SpellData
+  ): void {
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(x, y, width, height);
+
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, width, height);
+
+    let detailY = y + 20;
+    const lineHeight = 16;
+    const padding = 10;
+
+    ctx.fillStyle = '#ffff00';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText(spell.name, x + padding, detailY);
+    detailY += lineHeight;
+
+    ctx.fillStyle = '#888';
+    ctx.font = '12px monospace';
+    ctx.fillText(`[${spell.school.toUpperCase()}]`, x + padding, detailY);
+    detailY += lineHeight + 5;
+
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px monospace';
+
+    const targetText = this.getTargetTypeText(spell.targetType);
+    ctx.fillText(`Target: ${targetText}`, x + padding, detailY);
+    detailY += lineHeight;
+
+    ctx.fillText(`MP Cost: ${spell.mpCost}`, x + padding, detailY);
+    detailY += lineHeight + 5;
+
+    ctx.fillStyle = '#ccc';
+    ctx.font = '10px monospace';
+    const descLines = this.wrapText(ctx, spell.description, width - padding * 2);
+    descLines.forEach(line => {
+      ctx.fillText(line, x + padding, detailY);
+      detailY += lineHeight - 2;
+    });
+    detailY += 5;
+
+    if (spell.effects && spell.effects.length > 0) {
+      ctx.fillStyle = '#88ff88';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText('Effects:', x + padding, detailY);
+      detailY += lineHeight;
+
+      ctx.fillStyle = '#aaa';
+      ctx.font = '10px monospace';
+      spell.effects.forEach(effect => {
+        const effectDesc = this.formatEffectDescription(effect);
+        const effectLines = this.wrapText(ctx, effectDesc, width - padding * 2 - 10);
+        effectLines.forEach(line => {
+          if (detailY < y + height - 10) {
+            ctx.fillText(`• ${line}`, x + padding + 5, detailY);
+            detailY += lineHeight - 2;
+          }
+        });
+      });
+    }
+  }
+
+  private formatEffectDescription(effect: any): string {
+    switch (effect.type) {
+      case 'damage':
+        const dmgRange = effect.baseDamage || effect.value || effect.power || '?';
+        return `Damage: ${dmgRange}${effect.element ? ` (${effect.element})` : ''}`;
+
+      case 'heal':
+        const healRange = effect.baseHealing || effect.value || effect.power || '?';
+        return `Heal: ${healRange}`;
+
+      case 'status':
+        const status = effect.statusType || effect.statusEffect || 'Unknown';
+        const duration = effect.duration ? ` (${effect.duration}t)` : '';
+        return `Inflict ${status}${duration}`;
+
+      case 'buff':
+        const buff = effect.buffType || 'stat boost';
+        const buffDur = effect.duration ? ` (${effect.duration}t)` : '';
+        return `${buff}${buffDur}`;
+
+      case 'cure':
+        const cured = effect.cureStatuses?.join(', ') || 'status effects';
+        return `Cure ${cured}`;
+
+      case 'modifier':
+        const stat = effect.stat || 'stats';
+        const modValue = effect.value || effect.power || '?';
+        return `Modify ${stat}: ${modValue}`;
+
+      case 'instantDeath':
+        return 'Instant death (save negates)';
+
+      case 'resurrection':
+        return 'Resurrect the dead';
+
+      case 'dispel':
+        return 'Remove magical effects';
+
+      case 'teleport':
+        return 'Teleport party';
+
+      default:
+        return effect.special || effect.subtype || `${effect.type}`;
+    }
+  }
+
+  private getTargetTypeText(targetType: string): string {
+    const map: Record<string, string> = {
+      'group': 'Enemy Group',
+      'allAllies': 'All Allies',
+      'allEnemies': 'All Enemies',
+      'enemy': 'Single Enemy',
+      'ally': 'Single Ally',
+      'self': 'Self',
+      'row': 'Enemy Row',
+      'dead': 'Dead Ally'
+    };
+    return map[targetType] || targetType;
+  }
+
+  private wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    words.forEach(word => {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const metrics = ctx.measureText(testLine);
+
+      if (metrics.width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    });
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    return lines;
   }
 
   getState(): SpellMenuState {

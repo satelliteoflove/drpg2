@@ -41,6 +41,17 @@ export interface BuffEffectConfig {
   percentBonus?: boolean;
 }
 
+export interface ModifierEffectConfig {
+  type: 'modifier';
+  stat: 'ac' | 'attack' | 'damage' | 'speed';
+  value: number;
+  duration?: string;
+  countsOnlyInCombat?: boolean;
+  affectsEnemies?: boolean;
+  affectsAllies?: boolean;
+  partyWide?: boolean;
+}
+
 export interface InstantDeathEffectConfig {
   type: 'instant_death';
   saveType: 'death';
@@ -83,6 +94,15 @@ export interface DispelEffectConfig {
   selective?: boolean;
 }
 
+export interface CureEffectConfig {
+  type: 'cure';
+  cureStatuses?: StatusEffectType[];
+  cureGroup?: 'poison' | 'paralysis' | 'petrification' | 'mental' | 'blindness' | 'silence' | 'curse' | 'death' | 'ashes' | 'all';
+  cureAll?: boolean;
+  removeBuffs?: boolean;
+  removeDebuffs?: boolean;
+}
+
 export interface SpecialEffectConfig {
   type: 'special';
   specialType: string;
@@ -95,6 +115,8 @@ export type SpellEffectConfig =
   | HealingEffectConfig
   | StatusEffectConfig
   | BuffEffectConfig
+  | ModifierEffectConfig
+  | CureEffectConfig
   | InstantDeathEffectConfig
   | ResurrectionEffectConfig
   | TeleportEffectConfig

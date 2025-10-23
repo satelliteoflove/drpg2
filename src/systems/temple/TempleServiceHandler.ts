@@ -120,7 +120,7 @@ export class TempleServiceHandler {
   }
 
   private cureParalyzed(character: Character, cost: number): ServiceExecutionResult {
-    if (character.status !== 'Paralyzed') {
+    if (!character.hasStatus('Paralyzed')) {
       return {
         success: false,
         message: `${character.name} is not paralyzed.`,
@@ -128,7 +128,7 @@ export class TempleServiceHandler {
       };
     }
 
-    character.status = 'OK';
+    character.statuses = [];
 
     return {
       success: true,
@@ -138,7 +138,7 @@ export class TempleServiceHandler {
   }
 
   private cureStoned(character: Character, cost: number): ServiceExecutionResult {
-    if (character.status !== 'Stoned') {
+    if (!character.hasStatus('Stoned')) {
       return {
         success: false,
         message: `${character.name} is not petrified.`,
@@ -146,7 +146,7 @@ export class TempleServiceHandler {
       };
     }
 
-    character.status = 'OK';
+    character.statuses = [];
 
     return {
       success: true,
@@ -156,10 +156,10 @@ export class TempleServiceHandler {
   }
 
   private resurrectFromDead(character: Character, cost: number): ServiceExecutionResult {
-    if (character.status !== 'Dead') {
+    if (!character.hasStatus('Dead')) {
       DebugLogger.warn('TempleService', 'Invalid resurrection attempt - character not dead', {
         character: character.name,
-        status: character.status
+        status: character.statuses.length > 0 ? character.statuses[0].type : 'OK'
       });
       return {
         success: false,
@@ -196,7 +196,7 @@ export class TempleServiceHandler {
     let outcome: ResurrectionOutcome;
 
     if (success) {
-      character.status = 'OK';
+      character.statuses = [];
       character.isDead = false;
       character.hp = GAME_CONFIG.TEMPLE.RESURRECTION.HP_RESTORED_ON_SUCCESS;
 
@@ -222,7 +222,7 @@ export class TempleServiceHandler {
         resurrectionResult
       };
     } else {
-      character.status = 'Ashed';
+      character.statuses = [{ type: 'Ashed' }];
       const vitalityLoss = GAME_CONFIG.DEATH_SYSTEM.VITALITY_LOSS_ON_ASH;
       character.stats.vitality = Math.max(
         GAME_CONFIG.CHARACTER.STAT_MIN,
@@ -248,10 +248,10 @@ export class TempleServiceHandler {
   }
 
   private resurrectFromAshes(character: Character, cost: number): ServiceExecutionResult {
-    if (character.status !== 'Ashed') {
+    if (!character.hasStatus('Ashed')) {
       DebugLogger.warn('TempleService', 'Invalid resurrection attempt - character not ashed', {
         character: character.name,
-        status: character.status
+        status: character.statuses.length > 0 ? character.statuses[0].type : 'OK'
       });
       return {
         success: false,
@@ -286,7 +286,7 @@ export class TempleServiceHandler {
     let outcome: ResurrectionOutcome;
 
     if (success) {
-      character.status = 'OK';
+      character.statuses = [];
       character.isDead = false;
       character.hp = GAME_CONFIG.TEMPLE.RESURRECTION.HP_RESTORED_ON_SUCCESS;
 
@@ -312,7 +312,7 @@ export class TempleServiceHandler {
         resurrectionResult
       };
     } else {
-      character.status = 'Lost';
+      character.statuses = [{ type: 'Lost' }];
       character.isDead = true;
 
       outcome = 'lost';

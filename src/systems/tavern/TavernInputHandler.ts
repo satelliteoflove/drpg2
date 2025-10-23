@@ -43,6 +43,8 @@ export class TavernInputHandler {
         return this.handleDivvyGoldInput(key);
       case 'confirmDivvy':
         return this.handleConfirmDivvyInput(key);
+      case 'inspectSelectCharacter':
+        return this.handleInspectSelectCharacterInput(key);
       default:
         return false;
     }
@@ -138,7 +140,21 @@ export class TavernInputHandler {
         this.stateManager.setState('divvyGold');
         DebugLogger.info('TavernInputHandler', 'Entering divvyGold state');
         break;
-      case 4:
+      case 4: {
+        const party = this.gameState.party.characters;
+        if (party.length === 0) {
+          if (this.messageLog?.add) {
+            this.messageLog.add('No characters in party to inspect.');
+          }
+          DebugLogger.info('TavernInputHandler', 'Cannot inspect character - party is empty');
+          return;
+        }
+        this.stateManager.setState('inspectSelectCharacter');
+        this.stateManager.selectedPartyIndex = 0;
+        DebugLogger.info('TavernInputHandler', 'Entering inspectSelectCharacter state');
+        break;
+      }
+      case 5:
         DebugLogger.info('TavernInputHandler', 'Leaving tavern, returning to town');
         this.sceneManager.switchTo('town');
         break;
@@ -314,5 +330,50 @@ export class TavernInputHandler {
     }
 
     return false;
+  }
+
+  private handleInspectSelectCharacterInput(key: string): boolean {
+    const party = this.gameState.party.characters;
+
+    if (party.length === 0) {
+      if (key === 'escape' || key === 'esc') {
+        this.stateManager.setState('main');
+        DebugLogger.info('TavernInputHandler', 'Cancelled inspectSelectCharacter, returning to main');
+        return true;
+      }
+      return false;
+    }
+
+    const action = MenuInputHandler.handleMenuInput(
+      key,
+      {
+        selectedIndex: this.stateManager.selectedPartyIndex,
+        maxIndex: party.length - 1,
+      },
+      {
+        onNavigate: (newIndex: number) => {
+          this.stateManager.selectedPartyIndex = newIndex;
+        },
+        onConfirm: () => {
+          const characterSheetScene = this.sceneManager.getScene('characterSheet') as any;
+          if (characterSheetScene) {
+            if (characterSheetScene.setCharacterIndex) {
+              characterSheetScene.setCharacterIndex(this.stateManager.selectedPartyIndex);
+            }
+            if (characterSheetScene.setReturnScene) {
+              characterSheetScene.setReturnScene('tavern');
+            }
+          }
+          this.sceneManager.switchTo('characterSheet');
+          DebugLogger.info('TavernInputHandler', `Inspecting character ${party[this.stateManager.selectedPartyIndex].name}`);
+        },
+        onCancel: () => {
+          this.stateManager.setState('main');
+          DebugLogger.info('TavernInputHandler', 'Cancelled inspectSelectCharacter, returning to main');
+        },
+      }
+    );
+
+    return action.type !== 'none';
   }
 }

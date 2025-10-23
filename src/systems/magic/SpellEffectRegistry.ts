@@ -4,12 +4,18 @@ import { SpellData, SpellCastingContext, SpellEffect } from '../../types/SpellTy
 import { SpellEffectConfig } from '../../data/spells/SpellEffectTypes';
 import { DamageEffect } from './effects/DamageEffect';
 import { HealingEffect } from './effects/HealingEffect';
+import { StatusEffect } from './effects/StatusEffect';
+import { ModifierEffect } from './effects/ModifierEffect';
+import { CureEffect } from './effects/CureEffect';
+import { BuffEffect } from './effects/BuffEffect';
+import { DebuffEffect } from './effects/DebuffEffect';
 import { DebugLogger } from '../../utils/DebugLogger';
 
 export type SpellEffectType =
   | 'damage'
   | 'heal'
   | 'status'
+  | 'modifier'
   | 'debuff'
   | 'buff'
   | 'cure'
@@ -40,6 +46,11 @@ export class SpellEffectRegistry {
   private initializeProcessors(): void {
     this.registerProcessor('damage', new DamageEffect());
     this.registerProcessor('heal', new HealingEffect());
+    this.registerProcessor('status', new StatusEffect());
+    this.registerProcessor('modifier', new ModifierEffect());
+    this.registerProcessor('cure', new CureEffect());
+    this.registerProcessor('buff', new BuffEffect());
+    this.registerProcessor('debuff', new DebuffEffect());
 
     DebugLogger.info('SpellEffectRegistry', `Initialized with ${this.processors.size} effect processors`);
   }

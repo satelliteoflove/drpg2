@@ -83,25 +83,27 @@ export class HealingEffect extends SpellEffectProcessor {
   private removeStatus(character: Character, statusType: string): boolean {
     const statusGroups = STATUS_CURE_GROUPS[statusType];
 
+    const capitalizeFirst = (str: string): string => {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    };
+
     if (!statusGroups) {
-      if (Array.isArray(character.status)) {
-        const index = character.status.indexOf(statusType);
-        if (index >= 0) {
-          character.status.splice(index, 1);
-          return true;
-        }
+      const capitalizedStatus = capitalizeFirst(statusType);
+      const index = character.statuses.findIndex(s => s.type === capitalizedStatus);
+      if (index !== -1) {
+        character.statuses.splice(index, 1);
+        return true;
       }
       return false;
     }
 
     let removed = false;
-    if (Array.isArray(character.status)) {
-      for (const status of statusGroups) {
-        const index = character.status.indexOf(status);
-        if (index >= 0) {
-          character.status.splice(index, 1);
-          removed = true;
-        }
+    for (const status of statusGroups) {
+      const capitalizedStatus = capitalizeFirst(status);
+      const index = character.statuses.findIndex(s => s.type === capitalizedStatus);
+      if (index !== -1) {
+        character.statuses.splice(index, 1);
+        removed = true;
       }
     }
 

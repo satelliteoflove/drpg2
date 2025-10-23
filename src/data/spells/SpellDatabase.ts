@@ -1,17 +1,38 @@
 import { SpellData, SpellId } from '../../types/SpellTypes';
+import { getMPCostForLevel } from '../../config/SpellConstants';
 
 export const SPELLS: Record<SpellId, SpellData> = {
   // ============= MAGE SPELLS =============
   // Level 1 Mage Spells
+  m1_sleep: {
+    id: 'm1_sleep' as SpellId,
+    name: 'Sleep',
+    originalName: 'KATINO',
+    school: 'mage',
+    level: 1,
+    mpCost: getMPCostForLevel(1),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Puts enemy group to sleep; sleeping enemies take double melee damage',
+    effects: [{
+      type: 'status',
+      statusType: 'sleep',
+      duration: '3+1d3',
+      saveType: 'mental',
+      saveModifier: 0
+    }],
+    tags: ['control', 'mental']
+  },
+
   m1_flame_dart: {
     id: 'm1_flame_dart' as SpellId,
     name: 'Flame Dart',
     originalName: 'HALITO',
     school: 'mage',
     level: 1,
-    mpCost: 2,
+    mpCost: getMPCostForLevel(1),
     targetType: 'enemy',
-    range: { max: 3 },
     inCombat: true,
     outOfCombat: false,
     description: 'Hurls a small dart of magical flame at a single enemy',
@@ -23,268 +44,483 @@ export const SPELLS: Record<SpellId, SpellData> = {
     tags: ['offensive', 'elemental']
   },
 
-  m1_armor_boost: {
-    id: 'm1_armor_boost' as SpellId,
-    name: 'Armor Boost',
-    originalName: 'MOGREF',
-    school: 'mage',
-    level: 1,
-    mpCost: 1,
-    targetType: 'allAllies',
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Creates a magical shield that improves party armor class',
-    effects: [{
-      type: 'buff',
-      buffType: 'ac_bonus',
-      power: 2,
-      duration: 'combat'
-    }],
-    tags: ['defensive', 'party']
-  },
-
-  m1_sleep: {
-    id: 'm1_sleep' as SpellId,
-    name: 'Sleep',
-    originalName: 'KATINO',
-    school: 'mage',
-    level: 1,
-    mpCost: 2,
-    targetType: 'group',
-    range: { max: 3 },
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Causes 1-3 enemies in a group to fall asleep',
-    effects: [{
-      type: 'status',
-      statusEffect: 'sleep',
-      saveType: 'mental',
-      saveModifier: 0
-    }],
-    tags: ['control', 'mental']
-  },
-
   m1_locate: {
     id: 'm1_locate' as SpellId,
     name: 'Locate',
     originalName: 'DUMAPIC',
     school: 'mage',
     level: 1,
-    mpCost: 1,
+    mpCost: getMPCostForLevel(1),
     targetType: 'self',
     inCombat: false,
     outOfCombat: true,
-    description: 'Reveals party coordinates and facing direction in the dungeon',
+    description: 'Displays automap showing party coordinates and facing direction',
     effects: [{
       type: 'utility',
       subtype: 'locate',
-      special: 'show_coordinates'
+      special: 'show_automap'
     }],
     tags: ['utility', 'exploration']
   },
 
+  m1_caster_shield: {
+    id: 'm1_caster_shield' as SpellId,
+    name: 'Caster Shield',
+    originalName: 'MOGREF',
+    school: 'mage',
+    level: 1,
+    mpCost: getMPCostForLevel(1),
+    targetType: 'self',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Lowers caster AC by 2 for the duration of combat',
+    effects: [{
+      type: 'modifier',
+      stat: 'ac',
+      value: -2,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }],
+    tags: ['defensive', 'buff']
+  },
+
   // Level 2 Mage Spells
-  m2_darkness: {
-    id: 'm2_darkness' as SpellId,
-    name: 'Darkness',
-    originalName: 'DILTO',
+  m2_group_flame: {
+    id: 'm2_group_flame' as SpellId,
+    name: 'Group Flame',
+    originalName: 'MELITO',
     school: 'mage',
     level: 2,
-    mpCost: 3,
+    mpCost: getMPCostForLevel(2),
     targetType: 'group',
-    range: { max: 3 },
     inCombat: true,
     outOfCombat: false,
-    description: 'Blinds a group of enemies with magical darkness',
-    effects: [{
-      type: 'status',
-      statusEffect: 'blinded',
-      duration: '2d4',
-      saveType: 'mental',
-      saveModifier: 0
-    }],
-    tags: ['control', 'debuff']
-  },
-
-  m2_dispel_magic: {
-    id: 'm2_dispel_magic' as SpellId,
-    name: 'Dispel Magic',
-    originalName: 'MORLIS',
-    school: 'mage',
-    level: 2,
-    mpCost: 3,
-    targetType: 'any',
-    range: { max: 4 },
-    inCombat: true,
-    outOfCombat: true,
-    description: 'Removes magical effects from target',
-    effects: [{
-      type: 'dispel',
-      subtype: 'magic',
-      power: 50
-    }],
-    tags: ['utility', 'dispel']
-  },
-
-  // Level 3 Mage Spells
-  m3_ice_storm: {
-    id: 'm3_ice_storm' as SpellId,
-    name: 'Ice Storm',
-    originalName: 'DALTO',
-    school: 'mage',
-    level: 3,
-    mpCost: 4,
-    targetType: 'group',
-    range: { max: 5 },
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Pelts a group of enemies with shards of ice',
+    description: 'Engulfs enemy group in flames',
     effects: [{
       type: 'damage',
-      element: 'ice',
-      baseDamage: '6d6'
+      element: 'fire',
+      baseDamage: '1d8'
     }],
     tags: ['offensive', 'elemental', 'area']
   },
 
-  m3_flame_storm: {
-    id: 'm3_flame_storm' as SpellId,
-    name: 'Flame Storm',
-    originalName: 'LAHALITO',
+  m2_ally_shield: {
+    id: 'm2_ally_shield' as SpellId,
+    name: 'Ally Shield',
+    originalName: 'SOGREF',
     school: 'mage',
-    level: 3,
-    mpCost: 4,
-    targetType: 'group',
-    range: { max: 5 },
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'ally',
     inCombat: true,
     outOfCombat: false,
-    description: 'Engulfs a group of enemies in magical flames',
+    description: 'Lowers one ally AC by 2 for the duration of combat',
+    effects: [{
+      type: 'modifier',
+      stat: 'ac',
+      value: -2,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }],
+    tags: ['defensive', 'buff']
+  },
+
+  m2_weaken_armor: {
+    id: 'm2_weaken_armor' as SpellId,
+    name: 'Weaken Armor',
+    originalName: 'DILTO',
+    school: 'mage',
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Raises enemy group AC by 2 for the duration of combat',
+    effects: [{
+      type: 'modifier',
+      stat: 'ac',
+      value: 2,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }],
+    tags: ['offensive', 'debuff']
+  },
+
+  m2_petrify: {
+    id: 'm2_petrify' as SpellId,
+    name: 'Petrify',
+    originalName: 'BOLATU',
+    school: 'mage',
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'enemy',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Turns enemy to stone, stopping all actions',
+    effects: [{
+      type: 'status',
+      statusType: 'stoned',
+      duration: -1,
+      saveType: 'physical',
+      saveModifier: 0
+    }],
+    tags: ['control', 'petrification']
+  },
+
+  // Level 3 Mage Spells
+  m3_fear_and_weaken: {
+    id: 'm3_fear_and_weaken' as SpellId,
+    name: 'Fear and Weaken',
+    originalName: 'MORLIS',
+    school: 'mage',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Raises enemy group AC by 4 and inflicts fear',
+    effects: [{
+      type: 'modifier',
+      stat: 'ac',
+      value: 4,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }, {
+      type: 'status',
+      statusType: 'afraid',
+      duration: '3+1d3',
+      saveType: 'mental',
+      saveModifier: 0
+    }],
+    tags: ['offensive', 'debuff', 'control']
+  },
+
+  m3_anti_magic: {
+    id: 'm3_anti_magic' as SpellId,
+    name: 'Anti-Magic',
+    originalName: 'CORTU',
+    school: 'mage',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'allAllies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Creates barrier that resists enemy spells and breath attacks',
+    effects: [{
+      type: 'modifier',
+      stat: 'resistance',
+      value: 50,
+      duration: 'combat',
+      affectsAllies: true,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }],
+    tags: ['defensive', 'buff', 'party']
+  },
+
+  m3_confuse: {
+    id: 'm3_confuse' as SpellId,
+    name: 'Confuse',
+    originalName: 'KANTIOS',
+    school: 'mage',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Confuses enemy group, suppressing spell/breath/summon actions',
+    effects: [{
+      type: 'status',
+      statusType: 'confused',
+      duration: '3+1d3',
+      saveType: 'mental',
+      saveModifier: 0
+    }],
+    tags: ['control', 'mental']
+  },
+
+  m3_greater_flame: {
+    id: 'm3_greater_flame' as SpellId,
+    name: 'Greater Flame',
+    originalName: 'MAHALITO',
+    school: 'mage',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'More powerful flame attack against enemy group',
     effects: [{
       type: 'damage',
       element: 'fire',
-      baseDamage: '6d6'
+      baseDamage: '4d6'
     }],
     tags: ['offensive', 'elemental', 'area']
   },
 
   // Level 4 Mage Spells
-  m4_greater_flame: {
-    id: 'm4_greater_flame' as SpellId,
-    name: 'Greater Flame',
-    originalName: 'MAHALITO',
+  m4_energy_blast: {
+    id: 'm4_energy_blast' as SpellId,
+    name: 'Energy Blast',
+    originalName: 'TZALIK',
     school: 'mage',
     level: 4,
-    mpCost: 5,
-    targetType: 'group',
-    range: { max: 6 },
+    mpCost: getMPCostForLevel(4),
+    targetType: 'enemy',
     inCombat: true,
     outOfCombat: false,
-    description: 'A more powerful flame attack against a group',
+    description: 'Blasts single enemy with raw magical energy',
+    effects: [{
+      type: 'damage',
+      element: 'neutral',
+      baseDamage: '24+1d25'
+    }],
+    tags: ['offensive', 'neutral']
+  },
+
+  m4_flame_storm: {
+    id: 'm4_flame_storm' as SpellId,
+    name: 'Flame Storm',
+    originalName: 'LAHALITO',
+    school: 'mage',
+    level: 4,
+    mpCost: getMPCostForLevel(4),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Devastating firestorm engulfs enemy group',
     effects: [{
       type: 'damage',
       element: 'fire',
+      baseDamage: '6d6'
+    }],
+    tags: ['offensive', 'elemental', 'area']
+  },
+
+  m4_levitate: {
+    id: 'm4_levitate' as SpellId,
+    name: 'Levitate',
+    originalName: 'LITOFEIT',
+    school: 'mage',
+    level: 4,
+    mpCost: getMPCostForLevel(4),
+    targetType: 'allAllies',
+    inCombat: false,
+    outOfCombat: true,
+    description: 'Party floats above ground, avoiding traps and making surprise less likely',
+    effects: [{
+      type: 'modifier',
+      stat: 'levitation',
+      value: 1,
+      duration: '20+1d11',
+      affectsAllies: true,
+      affectsEnemies: false,
+      countsOnlyInCombat: false
+    }],
+    tags: ['utility', 'exploration', 'protection']
+  },
+
+  m4_group_petrify: {
+    id: 'm4_group_petrify' as SpellId,
+    name: 'Group Petrify',
+    originalName: 'ROKDO',
+    school: 'mage',
+    level: 4,
+    mpCost: getMPCostForLevel(4),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Turns enemy group to stone',
+    effects: [{
+      type: 'status',
+      statusType: 'stoned',
+      duration: -1,
+      saveType: 'physical',
+      saveModifier: 0
+    }],
+    tags: ['control', 'petrification', 'area']
+  },
+
+  // Level 5 Mage Spells
+  m5_summon: {
+    id: 'm5_summon' as SpellId,
+    name: 'Summon',
+    originalName: 'SOCORDI',
+    school: 'mage',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'self',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Summons a random monster to fight for the party',
+    effects: [{
+      type: 'special',
+      special: 'summon_monster'
+    }],
+    tags: ['summon', 'utility']
+  },
+
+  m5_ice_storm: {
+    id: 'm5_ice_storm' as SpellId,
+    name: 'Ice Storm',
+    originalName: 'MADALTO',
+    school: 'mage',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Freezing ice storm assaults enemy group',
+    effects: [{
+      type: 'damage',
+      element: 'ice',
       baseDamage: '8d8'
     }],
     tags: ['offensive', 'elemental', 'area']
   },
 
-  // Level 5 Mage Spells
-  m5_mass_sleep: {
-    id: 'm5_mass_sleep' as SpellId,
-    name: 'Mass Sleep',
-    originalName: 'MAKATINO',
+  m5_dispel: {
+    id: 'm5_dispel' as SpellId,
+    name: 'Dispel',
+    originalName: 'PALIOS',
     school: 'mage',
     level: 5,
-    mpCost: 6,
-    targetType: 'allEnemies',
+    mpCost: getMPCostForLevel(5),
+    targetType: 'any',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Removes all magical effects from target or party',
+    effects: [{
+      type: 'dispel',
+      subtype: 'all',
+      power: 75
+    }],
+    tags: ['utility', 'dispel']
+  },
+
+  m5_anti_magic_field: {
+    id: 'm5_anti_magic_field' as SpellId,
+    name: 'Anti-Magic Field',
+    originalName: 'BACORTU',
+    school: 'mage',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'group',
     inCombat: true,
     outOfCombat: false,
-    description: 'Attempts to put all enemies to sleep',
+    description: 'Creates spell-sealing barrier around enemy group',
     effects: [{
       type: 'status',
-      statusEffect: 'sleep',
-      saveType: 'mental',
-      saveModifier: -5
+      statusType: 'silenced',
+      duration: 'combat',
+      saveType: 'magical',
+      saveModifier: 0
     }],
-    tags: ['control', 'mental', 'mass']
+    tags: ['offensive', 'debuff', 'control']
   },
 
   // Level 6 Mage Spells
-  m6_lightning_bolt: {
-    id: 'm6_lightning_bolt' as SpellId,
-    name: 'Lightning Bolt',
-    originalName: 'LAKANITO',
+  m6_destroy_undead: {
+    id: 'm6_destroy_undead' as SpellId,
+    name: 'Destroy Undead',
+    originalName: 'ZILWAN',
     school: 'mage',
     level: 6,
-    mpCost: 7,
-    targetType: 'group',
-    range: { max: 8 },
+    mpCost: getMPCostForLevel(6),
+    targetType: 'enemy',
     inCombat: true,
     outOfCombat: false,
-    description: 'Strikes enemies with powerful lightning',
+    description: 'Massive damage to undead creatures',
     effects: [{
       type: 'damage',
-      element: 'lightning',
-      baseDamage: '10d8'
+      element: 'holy',
+      baseDamage: '1000+9d1001',
+      special: 'undead_only'
+    }],
+    tags: ['offensive', 'anti-undead', 'holy']
+  },
+
+  m6_greater_ice_storm: {
+    id: 'm6_greater_ice_storm' as SpellId,
+    name: 'Greater Ice Storm',
+    originalName: 'LADALTO',
+    school: 'mage',
+    level: 6,
+    mpCost: getMPCostForLevel(6),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Devastating blizzard freezes enemy group',
+    effects: [{
+      type: 'damage',
+      element: 'ice',
+      baseDamage: '10d10'
     }],
     tags: ['offensive', 'elemental', 'area']
   },
 
-  m6_disintegrate: {
-    id: 'm6_disintegrate' as SpellId,
-    name: 'Disintegrate',
-    originalName: 'ZILWAN',
+  m6_death: {
+    id: 'm6_death' as SpellId,
+    name: 'Death',
+    originalName: 'LOKARA',
     school: 'mage',
     level: 6,
-    mpCost: 8,
-    targetType: 'enemy',
-    range: { max: 5 },
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Attempts to instantly destroy target',
-    effects: [{
-      type: 'instant_death',
-      saveType: 'death',
-      saveModifier: -10
-    }],
-    tags: ['offensive', 'death']
-  },
-
-  // Level 7 Mage Spells
-  m7_nuclear_blast: {
-    id: 'm7_nuclear_blast' as SpellId,
-    name: 'Nuclear Blast',
-    originalName: 'TILTOWAIT',
-    school: 'mage',
-    level: 7,
-    mpCost: 10,
+    mpCost: getMPCostForLevel(6),
     targetType: 'allEnemies',
     inCombat: true,
     outOfCombat: false,
-    description: 'The ultimate damage spell - devastates all enemies',
+    description: 'Attempts to instantly kill all enemies',
     effects: [{
-      type: 'damage',
-      element: 'fire',
-      baseDamage: '10d10'
+      type: 'instant_death',
+      saveType: 'death',
+      saveModifier: 0
     }],
-    tags: ['offensive', 'elemental', 'ultimate', 'mass']
+    tags: ['offensive', 'death', 'mass']
   },
 
+  m6_power_blast: {
+    id: 'm6_power_blast' as SpellId,
+    name: 'Power Blast',
+    originalName: 'LAZALIK',
+    school: 'mage',
+    level: 6,
+    mpCost: getMPCostForLevel(6),
+    targetType: 'enemy',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Overwhelming magical force strikes single enemy',
+    effects: [{
+      type: 'damage',
+      element: 'neutral',
+      baseDamage: '40+1d41'
+    }],
+    tags: ['offensive', 'neutral']
+  },
+
+  // Level 7 Mage Spells
   m7_teleport: {
     id: 'm7_teleport' as SpellId,
     name: 'Teleport',
     originalName: 'MALOR',
     school: 'mage',
     level: 7,
-    mpCost: 8,
-    targetType: 'location',
+    mpCost: getMPCostForLevel(7),
+    targetType: 'self',
     inCombat: true,
     outOfCombat: true,
-    description: 'Instantly transport party to another location',
+    description: 'Instantly transports party to specified coordinates (camp) or random location (combat)',
     effects: [{
       type: 'teleport',
-      subtype: 'relative',
-      special: 'requires_coordinates'
+      subtype: 'coordinates',
+      special: 'requires_input'
     }],
     tags: ['utility', 'teleport', 'dangerous']
   },
@@ -295,16 +531,57 @@ export const SPELLS: Record<SpellId, SpellData> = {
     originalName: 'MAHAMAN',
     school: 'mage',
     level: 7,
-    mpCost: 10,
+    mpCost: getMPCostForLevel(7),
     targetType: 'any',
     inCombat: true,
-    outOfCombat: true,
-    description: 'Alter reality itself - unpredictable effects',
+    outOfCombat: false,
+    description: 'Alter reality itself (requires level 13+, costs 1 level) - PLACEHOLDER',
     effects: [{
       type: 'special',
-      special: 'reality_alteration'
+      special: 'wish_placeholder'
     }],
-    tags: ['special', 'dangerous', 'ultimate']
+    tags: ['special', 'dangerous', 'ultimate', 'placeholder']
+  },
+
+  m7_nuclear_blast: {
+    id: 'm7_nuclear_blast' as SpellId,
+    name: 'Nuclear Blast',
+    originalName: 'TILTOWAIT',
+    school: 'mage',
+    level: 7,
+    mpCost: getMPCostForLevel(7),
+    targetType: 'allEnemies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Ultimate destructive force devastates all enemies',
+    effects: [{
+      type: 'damage',
+      element: 'fire',
+      baseDamage: '10d15'
+    }],
+    tags: ['offensive', 'elemental', 'ultimate', 'mass']
+  },
+
+  m7_astral: {
+    id: 'm7_astral' as SpellId,
+    name: 'Astral',
+    originalName: 'MAWXIWTZ',
+    school: 'mage',
+    level: 7,
+    mpCost: getMPCostForLevel(7),
+    targetType: 'allEnemies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Astral energies strike all enemies with damage plus random status effect',
+    effects: [{
+      type: 'damage',
+      element: 'neutral',
+      baseDamage: '30'
+    }, {
+      type: 'special',
+      special: 'random_status_effect'
+    }],
+    tags: ['offensive', 'neutral', 'ultimate', 'mass', 'status']
   },
 
   // ============= PRIEST SPELLS =============
@@ -315,12 +592,11 @@ export const SPELLS: Record<SpellId, SpellData> = {
     originalName: 'DIOS',
     school: 'priest',
     level: 1,
-    mpCost: 2,
+    mpCost: getMPCostForLevel(1),
     targetType: 'ally',
-    range: { special: 'touch' },
     inCombat: true,
     outOfCombat: true,
-    description: 'Restores health to a single ally',
+    description: 'Restores 1-8 HP to single ally',
     effects: [{
       type: 'heal',
       baseHealing: '1d8'
@@ -334,12 +610,11 @@ export const SPELLS: Record<SpellId, SpellData> = {
     originalName: 'BADIOS',
     school: 'priest',
     level: 1,
-    mpCost: 2,
+    mpCost: getMPCostForLevel(1),
     targetType: 'enemy',
-    range: { max: 3 },
     inCombat: true,
     outOfCombat: false,
-    description: 'Inflicts divine damage on a single enemy',
+    description: 'Inflicts 1-8 divine damage on single enemy',
     effects: [{
       type: 'damage',
       element: 'holy',
@@ -348,98 +623,226 @@ export const SPELLS: Record<SpellId, SpellData> = {
     tags: ['offensive', 'divine']
   },
 
-  p1_bless: {
-    id: 'p1_bless' as SpellId,
-    name: 'Bless',
-    originalName: 'KALKI',
-    school: 'priest',
-    level: 1,
-    mpCost: 1,
-    targetType: 'allAllies',
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Blesses party with divine protection',
-    effects: [{
-      type: 'buff',
-      buffType: 'ac_bonus',
-      power: 1,
-      duration: 'combat'
-    }],
-    tags: ['defensive', 'blessing', 'party']
-  },
-
   p1_light: {
     id: 'p1_light' as SpellId,
     name: 'Light',
     originalName: 'MILWA',
     school: 'priest',
     level: 1,
-    mpCost: 1,
+    mpCost: getMPCostForLevel(1),
     targetType: 'self',
-    inCombat: false,
+    inCombat: true,
     outOfCombat: true,
-    description: 'Creates magical light for dungeon exploration',
+    description: 'Illuminates 3 blocks ahead for approximately 40 steps',
     effects: [{
       type: 'utility',
       subtype: 'light',
-      duration: '30+1d11'
+      duration: '40',
+      special: 'range_3_blocks'
     }],
     tags: ['utility', 'exploration']
   },
 
+  p1_caster_protection: {
+    id: 'p1_caster_protection' as SpellId,
+    name: 'Caster Protection',
+    originalName: 'PORFIC',
+    school: 'priest',
+    level: 1,
+    mpCost: getMPCostForLevel(1),
+    targetType: 'self',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Lowers caster AC by 4 for duration of combat',
+    effects: [{
+      type: 'modifier',
+      stat: 'ac',
+      value: -4,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }],
+    tags: ['defensive', 'buff']
+  },
+
   // Level 2 Priest Spells
-  p2_paralysis_cure: {
-    id: 'p2_paralysis_cure' as SpellId,
-    name: 'Paralysis Cure',
-    originalName: 'DIALKO',
+  p2_party_shield: {
+    id: 'p2_party_shield' as SpellId,
+    name: 'Party Shield',
+    originalName: 'MATU',
     school: 'priest',
     level: 2,
-    mpCost: 3,
-    targetType: 'ally',
-    range: { special: 'touch' },
+    mpCost: getMPCostForLevel(2),
+    targetType: 'allAllies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Lowers party AC by 2 for duration of combat',
+    effects: [{
+      type: 'modifier',
+      stat: 'ac',
+      value: -2,
+      duration: 'combat',
+      affectsAllies: true,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }],
+    tags: ['defensive', 'buff', 'party']
+  },
+
+  p2_trap_detection: {
+    id: 'p2_trap_detection' as SpellId,
+    name: 'Trap Detection',
+    originalName: 'CALFO',
+    school: 'priest',
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'self',
+    inCombat: false,
+    outOfCombat: true,
+    description: 'Detects trap type on chest with 95% accuracy',
+    effects: [{
+      type: 'utility',
+      subtype: 'detect',
+      special: 'trap_identification_95'
+    }],
+    tags: ['utility', 'detection']
+  },
+
+  p2_silence: {
+    id: 'p2_silence' as SpellId,
+    name: 'Silence',
+    originalName: 'MONTINO',
+    school: 'priest',
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Silences enemy group, preventing spell casting',
+    effects: [{
+      type: 'status',
+      statusType: 'silenced',
+      duration: 'combat',
+      saveType: 'mental',
+      saveModifier: 0
+    }],
+    tags: ['control', 'debuff']
+  },
+
+  p2_locate_person: {
+    id: 'p2_locate_person' as SpellId,
+    name: 'Locate Person',
+    originalName: 'KANDI',
+    school: 'priest',
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'self',
+    inCombat: false,
+    outOfCombat: true,
+    description: 'Roughly indicates location of lost party member in dungeon',
+    effects: [{
+      type: 'utility',
+      subtype: 'locate',
+      special: 'find_lost_member'
+    }],
+    tags: ['utility', 'exploration']
+  },
+
+  // Level 3 Priest Spells
+  p3_identify_foe: {
+    id: 'p3_identify_foe' as SpellId,
+    name: 'Identify Foe',
+    originalName: 'LATUMAPIC',
+    school: 'priest',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'self',
     inCombat: true,
     outOfCombat: true,
-    description: 'Removes paralysis from target',
+    description: 'Reveals true identity of enemies during adventure',
     effects: [{
-      type: 'cure',
-      statusEffect: 'paralyzed'
+      type: 'utility',
+      subtype: 'identify',
+      special: 'reveal_enemy_identity',
+      duration: 'adventure'
+    }],
+    tags: ['utility', 'knowledge']
+  },
+
+  p3_cure_paralysis: {
+    id: 'p3_cure_paralysis' as SpellId,
+    name: 'Cure Paralysis',
+    originalName: 'DIALKO',
+    school: 'priest',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'ally',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Removes paralysis from one ally',
+    effects: [{
+      type: 'heal',
+      cureStatuses: ['paralyzed']
     }],
     tags: ['healing', 'cure']
   },
 
-  p2_protection: {
-    id: 'p2_protection' as SpellId,
-    name: 'Protection',
-    originalName: 'MAPORFIC',
+  p3_greater_party_shield: {
+    id: 'p3_greater_party_shield' as SpellId,
+    name: 'Greater Party Shield',
+    originalName: 'BAMATU',
     school: 'priest',
-    level: 2,
-    mpCost: 3,
+    level: 3,
+    mpCost: getMPCostForLevel(3),
     targetType: 'allAllies',
     inCombat: true,
     outOfCombat: false,
-    description: 'Shields party from physical attacks',
+    description: 'Lowers party AC by 3 for duration of combat',
     effects: [{
-      type: 'buff',
-      buffType: 'defense_bonus',
-      power: 2,
-      duration: 'combat'
+      type: 'modifier',
+      stat: 'ac',
+      value: -3,
+      duration: 'combat',
+      affectsAllies: true,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
     }],
-    tags: ['defensive', 'protection', 'party']
+    tags: ['defensive', 'buff', 'party']
   },
 
-  // Level 3 Priest Spells
-  p3_greater_heal: {
-    id: 'p3_greater_heal' as SpellId,
+  p3_continuous_light: {
+    id: 'p3_continuous_light' as SpellId,
+    name: 'Continuous Light',
+    originalName: 'LOMILWA',
+    school: 'priest',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'self',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Illuminates 3 blocks ahead continuously during adventure',
+    effects: [{
+      type: 'utility',
+      subtype: 'light',
+      duration: 'adventure',
+      special: 'range_3_blocks'
+    }],
+    tags: ['utility', 'exploration']
+  },
+
+  // Level 4 Priest Spells
+  p4_greater_heal: {
+    id: 'p4_greater_heal' as SpellId,
     name: 'Greater Heal',
     originalName: 'DIAL',
     school: 'priest',
-    level: 3,
-    mpCost: 4,
+    level: 4,
+    mpCost: getMPCostForLevel(4),
     targetType: 'ally',
-    range: { special: 'touch' },
     inCombat: true,
     outOfCombat: true,
-    description: 'More powerful healing spell',
+    description: 'Restores 2-16 HP to single ally',
     effects: [{
       type: 'heal',
       baseHealing: '2d8'
@@ -447,85 +850,103 @@ export const SPELLS: Record<SpellId, SpellData> = {
     tags: ['healing', 'restoration']
   },
 
-  p3_greater_harm: {
-    id: 'p3_greater_harm' as SpellId,
-    name: 'Greater Harm',
-    originalName: 'BADIAL',
-    school: 'priest',
-    level: 3,
-    mpCost: 4,
-    targetType: 'enemy',
-    range: { max: 4 },
-    inCombat: true,
-    outOfCombat: false,
-    description: 'More powerful divine damage',
-    effects: [{
-      type: 'damage',
-      element: 'holy',
-      baseDamage: '2d8'
-    }],
-    tags: ['offensive', 'divine']
-  },
-
-  // Level 4 Priest Spells
-  p4_dispel_undead: {
-    id: 'p4_dispel_undead' as SpellId,
-    name: 'Dispel Undead',
-    originalName: 'LATUMAPIC',
+  p4_cure_poison: {
+    id: 'p4_cure_poison' as SpellId,
+    name: 'Cure Poison',
+    originalName: 'LATUMOFIS',
     school: 'priest',
     level: 4,
-    mpCost: 5,
-    targetType: 'group',
-    range: { max: 5 },
+    mpCost: getMPCostForLevel(4),
+    targetType: 'ally',
     inCombat: true,
-    outOfCombat: false,
-    description: 'Destroys undead creatures',
+    outOfCombat: true,
+    description: 'Removes poison from one ally',
     effects: [{
-      type: 'dispel',
-      subtype: 'undead',
-      power: 75
+      type: 'heal',
+      cureStatuses: ['poisoned']
     }],
-    tags: ['offensive', 'holy', 'anti-undead']
+    tags: ['healing', 'cure']
   },
 
-  p4_mass_heal: {
-    id: 'p4_mass_heal' as SpellId,
-    name: 'Mass Heal',
-    originalName: 'DIALMA',
+  p4_protection_from_evil: {
+    id: 'p4_protection_from_evil' as SpellId,
+    name: 'Protection from Evil',
+    originalName: 'MAPORFIC',
     school: 'priest',
     level: 4,
-    mpCost: 5,
+    mpCost: getMPCostForLevel(4),
     targetType: 'allAllies',
     inCombat: true,
     outOfCombat: true,
-    description: 'Heals entire party',
+    description: 'Lowers party AC by 2 continuously during adventure',
     effects: [{
-      type: 'heal',
-      baseHealing: '2d8'
+      type: 'modifier',
+      stat: 'ac',
+      value: -2,
+      duration: 'adventure',
+      affectsAllies: true,
+      affectsEnemies: false,
+      countsOnlyInCombat: false
     }],
-    tags: ['healing', 'mass', 'party']
+    tags: ['defensive', 'buff', 'party']
+  },
+
+  p4_holy_strike: {
+    id: 'p4_holy_strike' as SpellId,
+    name: 'Holy Strike',
+    originalName: 'BARIKO',
+    school: 'priest',
+    level: 4,
+    mpCost: getMPCostForLevel(4),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Inflicts 6-15 divine damage on enemy group',
+    effects: [{
+      type: 'damage',
+      element: 'holy',
+      baseDamage: '6+1d10'
+    }],
+    tags: ['offensive', 'divine', 'area']
   },
 
   // Level 5 Priest Spells
-  p5_life_drain: {
-    id: 'p5_life_drain' as SpellId,
-    name: 'Life Drain',
+  p5_superior_heal: {
+    id: 'p5_superior_heal' as SpellId,
+    name: 'Superior Heal',
+    originalName: 'DIALMA',
+    school: 'priest',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'ally',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Restores 3-24 HP to single ally',
+    effects: [{
+      type: 'heal',
+      baseHealing: '3d8'
+    }],
+    tags: ['healing', 'restoration']
+  },
+
+  p5_death: {
+    id: 'p5_death' as SpellId,
+    name: 'Death',
     originalName: 'BADI',
     school: 'priest',
     level: 5,
-    mpCost: 6,
+    mpCost: getMPCostForLevel(5),
     targetType: 'enemy',
-    range: { max: 3 },
     inCombat: true,
     outOfCombat: false,
-    description: 'Drains life force from enemy',
+    description: 'Instantly kills single enemy (ineffective against undead and certain foes)',
     effects: [{
-      type: 'damage',
-      element: 'dark',
-      baseDamage: '4d8',
-      special: 'level_drain'
+      type: 'instant_death',
+      saveType: 'death',
+      saveModifier: 0,
+      special: 'not_undead'
     }],
-    tags: ['offensive', 'dark', 'drain']
+    tags: ['offensive', 'death']
   },
 
   p5_resurrection: {
@@ -534,18 +955,34 @@ export const SPELLS: Record<SpellId, SpellData> = {
     originalName: 'DI',
     school: 'priest',
     level: 5,
-    mpCost: 8,
+    mpCost: getMPCostForLevel(5),
     targetType: 'dead',
-    range: { special: 'touch' },
     inCombat: false,
     outOfCombat: true,
-    description: 'Attempts to resurrect dead character',
+    description: 'Resurrects dead ally with 1 HP',
     effects: [{
-      type: 'resurrection',
-      subtype: 'dead',
-      special: 'chance_based'
+      type: 'special',
+      special: 'resurrect_with_1hp'
     }],
     tags: ['resurrection', 'restoration']
+  },
+
+  p5_summon_undead: {
+    id: 'p5_summon_undead' as SpellId,
+    name: 'Summon Undead',
+    originalName: 'BAMORDI',
+    school: 'priest',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'self',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Summons a random undead monster to fight for the party',
+    effects: [{
+      type: 'special',
+      special: 'summon_undead_monster'
+    }],
+    tags: ['summon', 'utility']
   },
 
   // Level 6 Priest Spells
@@ -555,12 +992,643 @@ export const SPELLS: Record<SpellId, SpellData> = {
     originalName: 'MADI',
     school: 'priest',
     level: 6,
-    mpCost: 8,
+    mpCost: getMPCostForLevel(6),
     targetType: 'ally',
-    range: { special: 'touch' },
     inCombat: true,
     outOfCombat: true,
-    description: 'Completely restores target health',
+    description: 'Fully restores HP and cures all conditions except death, ashed, and lost',
+    effects: [{
+      type: 'heal',
+      special: 'full_heal',
+      cureStatuses: ['poisoned', 'paralyzed', 'stoned', 'sleep', 'confused', 'afraid', 'charmed', 'berserk', 'blinded', 'silenced', 'cursed']
+    }],
+    tags: ['healing', 'restoration', 'ultimate', 'cure']
+  },
+
+  p6_life_steal: {
+    id: 'p6_life_steal' as SpellId,
+    name: 'Life Steal',
+    originalName: 'LABADI',
+    school: 'priest',
+    level: 6,
+    mpCost: getMPCostForLevel(6),
+    targetType: 'enemy',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Drains enemy HP leaving 1-8 remaining, transfers HP to caster',
+    effects: [{
+      type: 'special',
+      special: 'drain_hp_leave_1d8'
+    }],
+    tags: ['offensive', 'drain', 'healing']
+  },
+
+  p6_return_to_castle: {
+    id: 'p6_return_to_castle' as SpellId,
+    name: 'Return to Castle',
+    originalName: 'LOKTOFEIT',
+    school: 'priest',
+    level: 6,
+    mpCost: getMPCostForLevel(6),
+    targetType: 'self',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Instantly returns party to castle; spell is forgotten after use',
+    effects: [{
+      type: 'teleport',
+      subtype: 'castle',
+      special: 'forget_spell_after_use'
+    }],
+    tags: ['utility', 'teleport', 'escape']
+  },
+
+  p6_destroy_demon: {
+    id: 'p6_destroy_demon' as SpellId,
+    name: 'Destroy Demon',
+    originalName: 'MOGATO',
+    school: 'priest',
+    level: 6,
+    mpCost: getMPCostForLevel(6),
+    targetType: 'enemy',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Instantly kills single demon-type enemy',
+    effects: [{
+      type: 'instant_death',
+      saveType: 'death',
+      saveModifier: 0,
+      special: 'demon_only'
+    }],
+    tags: ['offensive', 'death', 'anti-demon']
+  },
+
+  // Level 7 Priest Spells
+  p7_holy_blast: {
+    id: 'p7_holy_blast' as SpellId,
+    name: 'Holy Blast',
+    originalName: 'MABARIKO',
+    school: 'priest',
+    level: 7,
+    mpCost: getMPCostForLevel(7),
+    targetType: 'allEnemies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Inflicts 18-60 divine damage on all enemies',
+    effects: [{
+      type: 'damage',
+      element: 'holy',
+      baseDamage: '18+1d43'
+    }],
+    tags: ['offensive', 'divine', 'ultimate', 'mass']
+  },
+
+  p7_true_resurrection: {
+    id: 'p7_true_resurrection' as SpellId,
+    name: 'True Resurrection',
+    originalName: 'KADOLTO',
+    school: 'priest',
+    level: 7,
+    mpCost: getMPCostForLevel(7),
+    targetType: 'dead',
+    inCombat: false,
+    outOfCombat: true,
+    description: 'Resurrects dead or ashed ally with full HP',
+    effects: [{
+      type: 'special',
+      special: 'resurrect_full_hp'
+    }],
+    tags: ['resurrection', 'restoration', 'ultimate']
+  },
+
+  p7_mass_death: {
+    id: 'p7_mass_death' as SpellId,
+    name: 'Mass Death',
+    originalName: 'BAKADI',
+    school: 'priest',
+    level: 7,
+    mpCost: getMPCostForLevel(7),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Instantly kills enemy group (ineffective against undead and certain foes)',
+    effects: [{
+      type: 'instant_death',
+      saveType: 'death',
+      saveModifier: 0,
+      special: 'not_undead'
+    }],
+    tags: ['offensive', 'death', 'area']
+  },
+
+  p7_mass_heal: {
+    id: 'p7_mass_heal' as SpellId,
+    name: 'Mass Heal',
+    originalName: 'MADIAL',
+    school: 'priest',
+    level: 7,
+    mpCost: getMPCostForLevel(7),
+    targetType: 'allAllies',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Restores 10-50 HP to all party members',
+    effects: [{
+      type: 'heal',
+      baseHealing: '10+1d41'
+    }],
+    tags: ['healing', 'restoration', 'party', 'mass']
+  },
+
+  // ============= ALCHEMIST SPELLS =============
+  // Level 1 Alchemist Spells
+  a1_attack_boost: {
+    id: 'a1_attack_boost' as SpellId,
+    name: 'Attack Boost',
+    originalName: 'OSLO',
+    school: 'alchemist',
+    level: 1,
+    mpCost: getMPCostForLevel(1),
+    targetType: 'allAllies',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Boosts party attack power for several turns',
+    effects: [{
+      type: 'modifier',
+      stat: 'attack',
+      value: 2,
+      duration: '3+1d3',
+      affectsAllies: true,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }],
+    tags: ['buff', 'party', 'offensive']
+  },
+
+  a1_flee_boost: {
+    id: 'a1_flee_boost' as SpellId,
+    name: 'Flee Boost',
+    originalName: 'NOLIS',
+    school: 'alchemist',
+    level: 1,
+    mpCost: getMPCostForLevel(1),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Makes enemy group easier to flee from',
+    effects: [{
+      type: 'special',
+      special: 'increase_flee_chance'
+    }],
+    tags: ['utility', 'escape']
+  },
+
+  a1_breath_effect: {
+    id: 'a1_breath_effect' as SpellId,
+    name: 'Breath Effect',
+    originalName: 'NAGRA',
+    school: 'alchemist',
+    level: 1,
+    mpCost: getMPCostForLevel(1),
+    targetType: 'enemy',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Breath-like effect on single enemy',
+    effects: [{
+      type: 'damage',
+      element: 'fire',
+      baseDamage: '1d6',
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'breath']
+  },
+
+  a1_haste: {
+    id: 'a1_haste' as SpellId,
+    name: 'Haste',
+    originalName: 'PONTI',
+    school: 'alchemist',
+    level: 1,
+    mpCost: getMPCostForLevel(1),
+    targetType: 'ally',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Increases attack count and lowers AC by 1 for one ally',
+    effects: [{
+      type: 'modifier',
+      stat: 'attack',
+      value: 1,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: false,
+      countsOnlyInCombat: true,
+      special: 'extra_attack'
+    }, {
+      type: 'modifier',
+      stat: 'ac',
+      value: -1,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }],
+    tags: ['buff', 'offensive', 'defensive']
+  },
+
+  // Level 2 Alchemist Spells
+  a2_cloud_damage_fire: {
+    id: 'a2_cloud_damage_fire' as SpellId,
+    name: 'Cloud Damage Fire',
+    originalName: 'LIQUREA',
+    school: 'alchemist',
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Creates fire cloud that damages enemy group 1-4 per turn for several turns',
+    effects: [{
+      type: 'special',
+      special: 'cloud_damage_over_time',
+      element: 'fire',
+      baseDamage: '1d4',
+      duration: '3+1d3',
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'cloud', 'fire', 'area']
+  },
+
+  a2_weaken_resistance: {
+    id: 'a2_weaken_resistance' as SpellId,
+    name: 'Weaken Resistance',
+    originalName: 'NOFIS',
+    school: 'alchemist',
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'allEnemies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Lowers all enemies spell resistance',
+    effects: [{
+      type: 'modifier',
+      stat: 'resistance',
+      value: -25,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: true,
+      countsOnlyInCombat: true
+    }],
+    tags: ['debuff', 'offensive', 'mass']
+  },
+
+  a2_dispel_cloud: {
+    id: 'a2_dispel_cloud' as SpellId,
+    name: 'Dispel Cloud',
+    originalName: 'FISQUREA',
+    school: 'alchemist',
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'allAllies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Removes cloud-type spells affecting allies',
+    effects: [{
+      type: 'dispel',
+      subtype: 'cloud',
+      power: 100
+    }],
+    tags: ['utility', 'dispel', 'party']
+  },
+
+  a2_paralyze: {
+    id: 'a2_paralyze' as SpellId,
+    name: 'Paralyze',
+    originalName: 'NAGUS',
+    school: 'alchemist',
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'enemy',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Stops enemy actions (paralysis)',
+    effects: [{
+      type: 'status',
+      statusType: 'paralyzed',
+      duration: 'combat',
+      saveType: 'physical',
+      saveModifier: 0,
+      resistanceCheck: true
+    }],
+    tags: ['control', 'status']
+  },
+
+  // Level 3 Alchemist Spells
+  a3_cloud_damage_ice: {
+    id: 'a3_cloud_damage_ice' as SpellId,
+    name: 'Cloud Damage Ice',
+    originalName: 'DALQUREA',
+    school: 'alchemist',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Creates ice cloud that damages enemy group 2-8 per turn for several turns',
+    effects: [{
+      type: 'special',
+      special: 'cloud_damage_over_time',
+      element: 'ice',
+      baseDamage: '2d4',
+      duration: '3+1d3',
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'cloud', 'ice', 'area']
+  },
+
+  a3_mass_sleep: {
+    id: 'a3_mass_sleep' as SpellId,
+    name: 'Mass Sleep',
+    originalName: 'KATIQUREA',
+    school: 'alchemist',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'allEnemies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Puts all enemies to sleep; sleeping enemies take double melee damage',
+    effects: [{
+      type: 'status',
+      statusType: 'sleep',
+      duration: '3+1d3',
+      saveType: 'mental',
+      saveModifier: 0,
+      resistanceCheck: true,
+      special: 'double_melee_damage'
+    }],
+    tags: ['control', 'mass', 'status']
+  },
+
+  a3_attack_boost_long: {
+    id: 'a3_attack_boost_long' as SpellId,
+    name: 'Attack Boost Long',
+    originalName: 'MAOSLO',
+    school: 'alchemist',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'allAllies',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Boosts party attack power for long duration',
+    effects: [{
+      type: 'modifier',
+      stat: 'attack',
+      value: 2,
+      duration: '10+1d11',
+      affectsAllies: true,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }],
+    tags: ['buff', 'party', 'offensive']
+  },
+
+  a3_cure_sleep: {
+    id: 'a3_cure_sleep' as SpellId,
+    name: 'Cure Sleep',
+    originalName: 'ZIOFIC',
+    school: 'alchemist',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'allAllies',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Cures unconscious and sleep for party',
+    effects: [{
+      type: 'heal',
+      cureStatuses: ['sleep']
+    }],
+    tags: ['healing', 'cure', 'party']
+  },
+
+  // Level 4 Alchemist Spells
+  a4_cloud_damage: {
+    id: 'a4_cloud_damage' as SpellId,
+    name: 'Cloud Damage',
+    originalName: 'KANIQUA',
+    school: 'alchemist',
+    level: 4,
+    mpCost: getMPCostForLevel(4),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Creates cloud that damages enemy group 3-12 per turn for several turns',
+    effects: [{
+      type: 'special',
+      special: 'cloud_damage_over_time',
+      element: 'neutral',
+      baseDamage: '3d4',
+      duration: '3+1d3',
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'cloud', 'area']
+  },
+
+  a4_resistance_boost: {
+    id: 'a4_resistance_boost' as SpellId,
+    name: 'Resistance Boost',
+    originalName: 'FOFISC',
+    school: 'alchemist',
+    level: 4,
+    mpCost: getMPCostForLevel(4),
+    targetType: 'allAllies',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Boosts party spell resistance for long duration',
+    effects: [{
+      type: 'modifier',
+      stat: 'resistance',
+      value: 50,
+      duration: '10+1d11',
+      affectsAllies: true,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }],
+    tags: ['buff', 'party', 'defensive']
+  },
+
+  a4_weaken_combat: {
+    id: 'a4_weaken_combat' as SpellId,
+    name: 'Weaken Combat',
+    originalName: 'DARLIS',
+    school: 'alchemist',
+    level: 4,
+    mpCost: getMPCostForLevel(4),
+    targetType: 'allEnemies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Lowers all enemies combat ability',
+    effects: [{
+      type: 'modifier',
+      stat: 'attack',
+      value: -3,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: true,
+      countsOnlyInCombat: true
+    }, {
+      type: 'modifier',
+      stat: 'damage',
+      value: -2,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: true,
+      countsOnlyInCombat: true
+    }],
+    tags: ['debuff', 'offensive', 'mass']
+  },
+
+  a4_spell_reflect: {
+    id: 'a4_spell_reflect' as SpellId,
+    name: 'Spell Reflect',
+    originalName: 'BANOKA',
+    school: 'alchemist',
+    level: 4,
+    mpCost: getMPCostForLevel(4),
+    targetType: 'allAllies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Reflects enemy spells with some probability for 3 turns',
+    effects: [{
+      type: 'special',
+      special: 'spell_reflect',
+      duration: '3',
+      power: 50,
+      resistanceCheck: true
+    }],
+    tags: ['defensive', 'buff', 'party']
+  },
+
+  // Level 5 Alchemist Spells
+  a5_cloud_damage_fire_strong: {
+    id: 'a5_cloud_damage_fire_strong' as SpellId,
+    name: 'Cloud Damage Fire Strong',
+    originalName: 'MALIQUA',
+    school: 'alchemist',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Creates strong fire cloud that damages enemy group 4-20 per turn for several turns',
+    effects: [{
+      type: 'special',
+      special: 'cloud_damage_over_time',
+      element: 'fire',
+      baseDamage: '4d5',
+      duration: '3+1d3',
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'cloud', 'fire', 'area']
+  },
+
+  a5_summon: {
+    id: 'a5_summon' as SpellId,
+    name: 'Summon',
+    originalName: 'GALDI',
+    school: 'alchemist',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'self',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Summons random monster (Vorpal Bunny, Garm, Staff, Golem, Stone Golem, Dragon, Dragon Zombie)',
+    effects: [{
+      type: 'special',
+      special: 'summon_random_alchemist',
+      resistanceCheck: true
+    }],
+    tags: ['summon', 'utility']
+  },
+
+  a5_cure_all: {
+    id: 'a5_cure_all' as SpellId,
+    name: 'Cure All',
+    originalName: 'MORFIS',
+    school: 'alchemist',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'allAllies',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Cures fear, sleep, confusion, paralysis, and poison for party',
+    effects: [{
+      type: 'heal',
+      cureStatuses: ['afraid', 'sleep', 'confused', 'paralyzed', 'poisoned'],
+      resistanceCheck: true
+    }],
+    tags: ['healing', 'cure', 'party']
+  },
+
+  a5_cloud_poison: {
+    id: 'a5_cloud_poison' as SpellId,
+    name: 'Cloud Poison',
+    originalName: 'LANIQUA',
+    school: 'alchemist',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Creates poison cloud that damages enemy group 5-15 per turn and inflicts poison',
+    effects: [{
+      type: 'special',
+      special: 'cloud_damage_over_time',
+      element: 'acid',
+      baseDamage: '5+1d11',
+      duration: '3+1d3',
+      resistanceCheck: true
+    }, {
+      type: 'status',
+      statusType: 'poisoned',
+      duration: -1,
+      saveType: 'physical',
+      saveModifier: 0,
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'cloud', 'poison', 'area']
+  },
+
+  // Level 6 Alchemist Spells
+  a6_cloud_damage_strong: {
+    id: 'a6_cloud_damage_strong' as SpellId,
+    name: 'Cloud Damage Strong',
+    originalName: 'BAMOQUA',
+    school: 'alchemist',
+    level: 6,
+    mpCost: getMPCostForLevel(6),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Creates strong cloud that damages enemy group 5-40 per turn for several turns',
+    effects: [{
+      type: 'special',
+      special: 'cloud_damage_over_time',
+      element: 'neutral',
+      baseDamage: '5+1d36',
+      duration: '3+1d3',
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'cloud', 'area']
+  },
+
+  a6_full_heal: {
+    id: 'a6_full_heal' as SpellId,
+    name: 'Full Heal',
+    originalName: 'KADIOS',
+    school: 'alchemist',
+    level: 6,
+    mpCost: getMPCostForLevel(6),
+    targetType: 'ally',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Fully restores HP of one ally',
     effects: [{
       type: 'heal',
       special: 'full_heal'
@@ -568,562 +1636,764 @@ export const SPELLS: Record<SpellId, SpellData> = {
     tags: ['healing', 'restoration', 'ultimate']
   },
 
-  p6_greater_dispel: {
-    id: 'p6_greater_dispel' as SpellId,
-    name: 'Greater Dispel',
-    originalName: 'LABADI',
-    school: 'priest',
+  a6_mass_death: {
+    id: 'a6_mass_death' as SpellId,
+    name: 'Mass Death',
+    originalName: 'MATOKANI',
+    school: 'alchemist',
     level: 6,
-    mpCost: 7,
-    targetType: 'any',
-    range: { max: 6 },
-    inCombat: true,
-    outOfCombat: true,
-    description: 'Removes all magical effects',
-    effects: [{
-      type: 'dispel',
-      subtype: 'all',
-      power: 100
-    }],
-    tags: ['dispel', 'utility']
-  },
-
-  // Level 7 Priest Spells
-  p7_greater_resurrection: {
-    id: 'p7_greater_resurrection' as SpellId,
-    name: 'Greater Resurrection',
-    originalName: 'KADORTO',
-    school: 'priest',
-    level: 7,
-    mpCost: 10,
-    targetType: 'dead',
-    range: { special: 'touch' },
-    inCombat: false,
-    outOfCombat: true,
-    description: 'More reliable resurrection spell',
-    effects: [{
-      type: 'resurrection',
-      subtype: 'ashes',
-      special: 'improved_chance'
-    }],
-    tags: ['resurrection', 'restoration', 'ultimate']
-  },
-
-  p7_miracle: {
-    id: 'p7_miracle' as SpellId,
-    name: 'Miracle',
-    originalName: 'MABARIKO',
-    school: 'priest',
-    level: 7,
-    mpCost: 10,
-    targetType: 'allAllies',
-    inCombat: true,
-    outOfCombat: true,
-    description: 'Divine intervention restores and protects party',
-    effects: [{
-      type: 'heal',
-      special: 'full_heal'
-    }, {
-      type: 'cure',
-      statusEffect: 'all'
-    }, {
-      type: 'buff',
-      buffType: 'protection',
-      power: 5,
-      duration: 'combat'
-    }],
-    tags: ['healing', 'protection', 'ultimate', 'divine']
-  },
-
-  // ============= ALCHEMIST SPELLS =============
-  // Level 1 Alchemist Spells
-  a1_shield: {
-    id: 'a1_shield' as SpellId,
-    name: 'Shield',
-    originalName: 'OSLO',
-    school: 'alchemist',
-    level: 1,
-    mpCost: 1,
-    targetType: 'allAllies',
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Creates magical shield around party',
-    effects: [{
-      type: 'buff',
-      buffType: 'ac_bonus',
-      power: 2,
-      duration: 'combat'
-    }],
-    tags: ['defensive', 'shield', 'party']
-  },
-
-  a1_poison_dart: {
-    id: 'a1_poison_dart' as SpellId,
-    name: 'Poison Dart',
-    originalName: 'VENAT',
-    school: 'alchemist',
-    level: 1,
-    mpCost: 2,
-    targetType: 'enemy',
-    range: { max: 3 },
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Poisoned projectile damages and poisons enemy',
-    effects: [{
-      type: 'damage',
-      element: 'acid',
-      baseDamage: '1d6'
-    }, {
-      type: 'status',
-      statusEffect: 'poisoned',
-      saveType: 'physical',
-      saveModifier: 0
-    }],
-    tags: ['offensive', 'poison']
-  },
-
-  a1_antidote: {
-    id: 'a1_antidote' as SpellId,
-    name: 'Antidote',
-    originalName: 'ANTLE',
-    school: 'alchemist',
-    level: 1,
-    mpCost: 2,
-    targetType: 'ally',
-    range: { special: 'touch' },
-    inCombat: true,
-    outOfCombat: true,
-    description: 'Cures poison',
-    effects: [{
-      type: 'cure',
-      statusEffect: 'poisoned'
-    }],
-    tags: ['healing', 'cure']
-  },
-
-  a1_identify: {
-    id: 'a1_identify' as SpellId,
-    name: 'Identify',
-    originalName: 'MELIM',
-    school: 'alchemist',
-    level: 1,
-    mpCost: 1,
-    targetType: 'any',
-    inCombat: false,
-    outOfCombat: true,
-    description: 'Reveals true nature of items',
-    effects: [{
-      type: 'utility',
-      subtype: 'identify'
-    }],
-    tags: ['utility', 'knowledge']
-  },
-
-  // Level 2 Alchemist Spells
-  a2_levitation: {
-    id: 'a2_levitation' as SpellId,
-    name: 'Levitation',
-    originalName: 'MEROLK',
-    school: 'alchemist',
-    level: 2,
-    mpCost: 3,
-    targetType: 'allAllies',
-    inCombat: false,
-    outOfCombat: true,
-    description: 'Party floats above ground, avoiding traps',
-    effects: [{
-      type: 'buff',
-      buffType: 'levitation',
-      duration: '20+1d10'
-    }],
-    tags: ['utility', 'exploration', 'protection']
-  },
-
-  // Level 3 Alchemist Spells
-  a3_acid_splash: {
-    id: 'a3_acid_splash' as SpellId,
-    name: 'Acid Splash',
-    originalName: 'DALQUAR',
-    school: 'alchemist',
-    level: 3,
-    mpCost: 4,
-    targetType: 'group',
-    range: { max: 4 },
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Splashes corrosive acid on enemy group',
-    effects: [{
-      type: 'damage',
-      element: 'acid',
-      baseDamage: '4d6'
-    }],
-    tags: ['offensive', 'acid', 'area']
-  },
-
-  a3_group_antidote: {
-    id: 'a3_group_antidote' as SpellId,
-    name: 'Group Antidote',
-    originalName: 'PALNTE',
-    school: 'alchemist',
-    level: 3,
-    mpCost: 4,
-    targetType: 'allAllies',
-    inCombat: true,
-    outOfCombat: true,
-    description: 'Cures poison for entire party',
-    effects: [{
-      type: 'cure',
-      statusEffect: 'poisoned'
-    }],
-    tags: ['healing', 'cure', 'party']
-  },
-
-  // Level 4 Alchemist Spells
-  a4_stone_to_flesh: {
-    id: 'a4_stone_to_flesh' as SpellId,
-    name: 'Stone to Flesh',
-    originalName: 'DESTO',
-    school: 'alchemist',
-    level: 4,
-    mpCost: 5,
-    targetType: 'ally',
-    range: { special: 'touch' },
-    inCombat: false,
-    outOfCombat: true,
-    description: 'Reverses petrification',
-    effects: [{
-      type: 'cure',
-      statusEffect: 'stoned'
-    }],
-    tags: ['healing', 'cure', 'restoration']
-  },
-
-  // Level 5 Alchemist Spells
-  a5_poison_cloud: {
-    id: 'a5_poison_cloud' as SpellId,
-    name: 'Poison Cloud',
-    originalName: 'MAVENAT',
-    school: 'alchemist',
-    level: 5,
-    mpCost: 6,
+    mpCost: getMPCostForLevel(6),
     targetType: 'allEnemies',
     inCombat: true,
     outOfCombat: false,
-    description: 'Creates toxic cloud affecting all enemies',
-    effects: [{
-      type: 'damage',
-      element: 'acid',
-      baseDamage: '3d6'
-    }, {
-      type: 'status',
-      statusEffect: 'poisoned',
-      saveType: 'physical',
-      saveModifier: -5
-    }],
-    tags: ['offensive', 'poison', 'mass']
-  },
-
-  // Level 6 Alchemist Spells
-  a6_transmutation: {
-    id: 'a6_transmutation' as SpellId,
-    name: 'Transmutation',
-    originalName: 'MALNYM',
-    school: 'alchemist',
-    level: 6,
-    mpCost: 8,
-    targetType: 'enemy',
-    range: { max: 3 },
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Transforms enemy matter',
-    effects: [{
-      type: 'status',
-      statusEffect: 'stoned',
-      saveType: 'magical',
-      saveModifier: -10
-    }],
-    tags: ['offensive', 'transmutation']
-  },
-
-  a6_dispel_undead: {
-    id: 'a6_dispel_undead' as SpellId,
-    name: 'Banish Undead',
-    originalName: 'ZILWAN',
-    school: 'alchemist',
-    level: 6,
-    mpCost: 7,
-    targetType: 'group',
-    range: { max: 6 },
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Destroys undead with alchemical energy',
+    description: 'Instantly kills all enemies level 8 or below (ineffective against undead)',
     effects: [{
       type: 'instant_death',
-      subtype: 'undead_only',
       saveType: 'death',
-      saveModifier: -5
+      saveModifier: 0,
+      special: 'level_8_or_below_not_undead',
+      resistanceCheck: true
     }],
-    tags: ['offensive', 'anti-undead']
+    tags: ['offensive', 'death', 'mass']
+  },
+
+  a6_remove_curse: {
+    id: 'a6_remove_curse' as SpellId,
+    name: 'Remove Curse',
+    originalName: 'ZILFE',
+    school: 'alchemist',
+    level: 6,
+    mpCost: getMPCostForLevel(6),
+    targetType: 'any',
+    inCombat: false,
+    outOfCombat: true,
+    description: 'Removes curse from item and destroys it (WARNING: Has critical bug in original game)',
+    effects: [{
+      type: 'special',
+      special: 'remove_curse_destroy_item'
+    }],
+    tags: ['utility', 'curse', 'buggy']
   },
 
   // Level 7 Alchemist Spells
-  a7_disintegration: {
-    id: 'a7_disintegration' as SpellId,
-    name: 'Disintegration',
-    originalName: 'ABRIDAL',
+  a7_mega_damage: {
+    id: 'a7_mega_damage' as SpellId,
+    name: 'Mega Damage',
+    originalName: 'ALIKUS',
     school: 'alchemist',
     level: 7,
-    mpCost: 10,
-    targetType: 'group',
-    range: { max: 5 },
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Attempts to disintegrate enemy group',
-    effects: [{
-      type: 'instant_death',
-      saveType: 'death',
-      saveModifier: -15
-    }],
-    tags: ['offensive', 'death', 'ultimate']
-  },
-
-  // ============= PSIONIC SPELLS =============
-  // Level 1 Psionic Spells
-  s1_mind_shield: {
-    id: 's1_mind_shield' as SpellId,
-    name: 'Mind Shield',
-    originalName: 'POBA',
-    school: 'psionic',
-    level: 1,
-    mpCost: 2,
-    targetType: 'allAllies',
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Protects party from mental attacks',
-    effects: [{
-      type: 'buff',
-      buffType: 'resistance',
-      subtype: 'mental',
-      power: 3,
-      duration: 'combat'
-    }],
-    tags: ['defensive', 'mental', 'party']
-  },
-
-  s1_confusion: {
-    id: 's1_confusion' as SpellId,
-    name: 'Confusion',
-    originalName: 'MENTAL',
-    school: 'psionic',
-    level: 1,
-    mpCost: 2,
+    mpCost: getMPCostForLevel(7),
     targetType: 'enemy',
-    range: { max: 3 },
     inCombat: true,
     outOfCombat: false,
-    description: 'Confuses single enemy',
+    description: 'Inflicts 65-130 damage on single enemy',
     effects: [{
-      type: 'status',
-      statusEffect: 'confused',
-      duration: '1d4',
-      saveType: 'mental',
-      saveModifier: 0
+      type: 'damage',
+      element: 'neutral',
+      baseDamage: '65+1d66'
     }],
-    tags: ['control', 'mental']
+    tags: ['offensive', 'ultimate']
   },
 
-  s1_detect: {
-    id: 's1_detect' as SpellId,
-    name: 'Detect',
-    originalName: 'DETECT',
-    school: 'psionic',
-    level: 1,
-    mpCost: 1,
-    targetType: 'self',
+  a7_unlock: {
+    id: 'a7_unlock' as SpellId,
+    name: 'Unlock',
+    originalName: 'CALNOVA',
+    school: 'alchemist',
+    level: 7,
+    mpCost: getMPCostForLevel(7),
+    targetType: 'any',
     inCombat: false,
     outOfCombat: true,
-    description: 'Reveals hidden doors and traps',
+    description: 'Safely opens chest or unlocks door/gate',
     effects: [{
-      type: 'utility',
-      subtype: 'detect',
-      duration: '10'
+      type: 'special',
+      special: 'safe_unlock'
     }],
     tags: ['utility', 'exploration']
   },
 
-  s1_telekinesis: {
-    id: 's1_telekinesis' as SpellId,
-    name: 'Telekinesis',
-    originalName: 'TILT',
-    school: 'psionic',
-    level: 1,
-    mpCost: 2,
-    targetType: 'enemy',
-    range: { max: 4 },
+  a7_cloud_poison_strong: {
+    id: 'a7_cloud_poison_strong' as SpellId,
+    name: 'Cloud Poison Strong',
+    originalName: 'GURENIQUA',
+    school: 'alchemist',
+    level: 7,
+    mpCost: getMPCostForLevel(7),
+    targetType: 'group',
     inCombat: true,
     outOfCombat: false,
-    description: 'Damages enemy with psychic force',
+    description: 'Creates strong poison cloud that damages enemy group 10-40 per turn and inflicts poison',
+    effects: [{
+      type: 'special',
+      special: 'cloud_damage_over_time',
+      element: 'acid',
+      baseDamage: '10+1d31',
+      duration: '3+1d3',
+      resistanceCheck: true
+    }, {
+      type: 'status',
+      statusType: 'poisoned',
+      duration: -1,
+      saveType: 'physical',
+      saveModifier: 0,
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'cloud', 'poison', 'area', 'ultimate']
+  },
+
+  a7_cloud_damage_ice_strong: {
+    id: 'a7_cloud_damage_ice_strong' as SpellId,
+    name: 'Cloud Damage Ice Strong',
+    originalName: 'MADALQUA',
+    school: 'alchemist',
+    level: 7,
+    mpCost: getMPCostForLevel(7),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Creates strong ice cloud that damages enemy group 4-60 per turn for several turns',
+    effects: [{
+      type: 'special',
+      special: 'cloud_damage_over_time',
+      element: 'ice',
+      baseDamage: '4+1d57',
+      duration: '3+1d3',
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'cloud', 'ice', 'area', 'ultimate']
+  },
+
+  // ============= PSIONIC SPELLS =============
+  // Level 1 Psionic Spells
+  s1_psi_damage_confuse: {
+    id: 's1_psi_damage_confuse' as SpellId,
+    name: 'Psi Damage Confuse',
+    originalName: 'SIOS',
+    school: 'psionic',
+    level: 1,
+    mpCost: getMPCostForLevel(1),
+    targetType: 'enemy',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Inflicts 1-10 psychic damage and confuses single enemy',
     effects: [{
       type: 'damage',
       element: 'psychic',
-      baseDamage: '1d6'
+      baseDamage: '1+1d10',
+      resistanceCheck: true
+    }, {
+      type: 'status',
+      statusType: 'confused',
+      duration: '3+1d3',
+      saveType: 'mental',
+      saveModifier: 0,
+      resistanceCheck: true
     }],
-    tags: ['offensive', 'psychic']
+    tags: ['offensive', 'psychic', 'control']
+  },
+
+  s1_psi_heal: {
+    id: 's1_psi_heal' as SpellId,
+    name: 'Psi Heal',
+    originalName: 'DIOMAS',
+    school: 'psionic',
+    level: 1,
+    mpCost: getMPCostForLevel(1),
+    targetType: 'ally',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Restores 2-6 HP to single ally',
+    effects: [{
+      type: 'heal',
+      baseHealing: '2+1d5',
+      resistanceCheck: true
+    }],
+    tags: ['healing', 'restoration']
+  },
+
+  s1_ac_swap: {
+    id: 's1_ac_swap' as SpellId,
+    name: 'AC Swap',
+    originalName: 'POBA',
+    school: 'psionic',
+    level: 1,
+    mpCost: getMPCostForLevel(1),
+    targetType: 'allEnemies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Raises all enemies AC by 1, lowers party AC by 1',
+    effects: [{
+      type: 'modifier',
+      stat: 'ac',
+      value: 1,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: true,
+      countsOnlyInCombat: true,
+      resistanceCheck: true
+    }, {
+      type: 'modifier',
+      stat: 'ac',
+      value: -1,
+      duration: 'combat',
+      affectsAllies: true,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }],
+    tags: ['buff', 'debuff', 'party']
+  },
+
+  s1_charm_paralyze: {
+    id: 's1_charm_paralyze' as SpellId,
+    name: 'Charm Paralyze',
+    originalName: 'GENES',
+    school: 'psionic',
+    level: 1,
+    mpCost: getMPCostForLevel(1),
+    targetType: 'enemy',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Charms NPC or paralyzes enemy in combat',
+    effects: [{
+      type: 'status',
+      statusType: 'paralyzed',
+      duration: 'combat',
+      saveType: 'mental',
+      saveModifier: 0,
+      special: 'charm_npc_outofcombat'
+    }],
+    tags: ['control', 'charm', 'utility']
   },
 
   // Level 2 Psionic Spells
-  s2_fear: {
-    id: 's2_fear' as SpellId,
-    name: 'Fear',
-    originalName: 'MORLIS',
+  s2_group_psi_damage_confuse: {
+    id: 's2_group_psi_damage_confuse' as SpellId,
+    name: 'Group Psi Damage Confuse',
+    originalName: 'RIOS',
     school: 'psionic',
     level: 2,
-    mpCost: 3,
+    mpCost: getMPCostForLevel(2),
     targetType: 'group',
-    range: { max: 4 },
     inCombat: true,
     outOfCombat: false,
-    description: 'Terrifies enemy group',
-    effects: [{
-      type: 'status',
-      statusEffect: 'afraid',
-      duration: '2d4',
-      saveType: 'mental',
-      saveModifier: 0
-    }],
-    tags: ['control', 'mental', 'area']
-  },
-
-  // Level 3 Psionic Spells
-  s3_mind_blast: {
-    id: 's3_mind_blast' as SpellId,
-    name: 'Mind Blast',
-    originalName: 'BOLATU',
-    school: 'psionic',
-    level: 3,
-    mpCost: 4,
-    targetType: 'group',
-    range: { max: 5 },
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Psychic attack on enemy group',
+    description: 'Inflicts 2-10 psychic damage and confuses enemy group',
     effects: [{
       type: 'damage',
       element: 'psychic',
-      baseDamage: '3d8'
+      baseDamage: '2+1d9',
+      resistanceCheck: true
+    }, {
+      type: 'status',
+      statusType: 'confused',
+      duration: '3+1d3',
+      saveType: 'mental',
+      saveModifier: 0,
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'psychic', 'control', 'area']
+  },
+
+  s2_detect_doors: {
+    id: 's2_detect_doors' as SpellId,
+    name: 'Detect Doors',
+    originalName: 'DIAFIC',
+    school: 'psionic',
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'self',
+    inCombat: false,
+    outOfCombat: true,
+    description: 'Detects hidden doors for long duration',
+    effects: [{
+      type: 'utility',
+      subtype: 'detect',
+      special: 'detect_hidden_doors',
+      duration: '40'
+    }],
+    tags: ['utility', 'exploration']
+  },
+
+  s2_see_through_walls: {
+    id: 's2_see_through_walls' as SpellId,
+    name: 'See Through Walls',
+    originalName: 'CALKO',
+    school: 'psionic',
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'self',
+    inCombat: false,
+    outOfCombat: true,
+    description: 'See through walls or check if block is rock',
+    effects: [{
+      type: 'utility',
+      subtype: 'detect',
+      special: 'see_through_walls_check_rock'
+    }],
+    tags: ['utility', 'exploration']
+  },
+
+  s2_cure_mental: {
+    id: 's2_cure_mental' as SpellId,
+    name: 'Cure Mental',
+    originalName: 'KALRAS',
+    school: 'psionic',
+    level: 2,
+    mpCost: getMPCostForLevel(2),
+    targetType: 'ally',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Cures fear, sleep, and confusion for one ally',
+    effects: [{
+      type: 'heal',
+      cureStatuses: ['afraid', 'sleep', 'confused']
+    }],
+    tags: ['healing', 'cure']
+  },
+
+  // Level 3 Psionic Spells
+  s3_group_paralyze: {
+    id: 's3_group_paralyze' as SpellId,
+    name: 'Group Paralyze',
+    originalName: 'LORKS',
+    school: 'psionic',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Paralyzes enemy group',
+    effects: [{
+      type: 'status',
+      statusType: 'paralyzed',
+      duration: 'combat',
+      saveType: 'mental',
+      saveModifier: 0,
+      resistanceCheck: true
+    }],
+    tags: ['control', 'area']
+  },
+
+  s3_read_mind: {
+    id: 's3_read_mind' as SpellId,
+    name: 'Read Mind',
+    originalName: 'NOBAIS',
+    school: 'psionic',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'any',
+    inCombat: false,
+    outOfCombat: true,
+    description: 'Reads NPC mind',
+    effects: [{
+      type: 'special',
+      special: 'read_npc_mind'
+    }],
+    tags: ['utility', 'psychic']
+  },
+
+  s3_greater_ac_swap: {
+    id: 's3_greater_ac_swap' as SpellId,
+    name: 'Greater AC Swap',
+    originalName: 'MAPOBA',
+    school: 'psionic',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'allEnemies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Raises all enemies AC by 2, lowers party AC by 2',
+    effects: [{
+      type: 'modifier',
+      stat: 'ac',
+      value: 2,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: true,
+      countsOnlyInCombat: true,
+      resistanceCheck: true
+    }, {
+      type: 'modifier',
+      stat: 'ac',
+      value: -2,
+      duration: 'combat',
+      affectsAllies: true,
+      affectsEnemies: false,
+      countsOnlyInCombat: true
+    }],
+    tags: ['buff', 'debuff', 'party']
+  },
+
+  s3_hide: {
+    id: 's3_hide' as SpellId,
+    name: 'Hide',
+    originalName: 'REIMAR',
+    school: 'psionic',
+    level: 3,
+    mpCost: getMPCostForLevel(3),
+    targetType: 'self',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Hides caster from enemies',
+    effects: [{
+      type: 'special',
+      special: 'hide_caster',
+      duration: 'combat',
+      resistanceCheck: true
+    }],
+    tags: ['utility', 'stealth']
+  },
+
+  // Level 4 Psionic Spells
+  s4_greater_group_psi_damage_confuse: {
+    id: 's4_greater_group_psi_damage_confuse' as SpellId,
+    name: 'Greater Group Psi Damage Confuse',
+    originalName: 'MASIOS',
+    school: 'psionic',
+    level: 4,
+    mpCost: getMPCostForLevel(4),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Inflicts 2-16 psychic damage and confuses enemy group',
+    effects: [{
+      type: 'damage',
+      element: 'psychic',
+      baseDamage: '2d8',
+      resistanceCheck: true
+    }, {
+      type: 'status',
+      statusType: 'confused',
+      duration: '3+1d3',
+      saveType: 'mental',
+      saveModifier: 0,
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'psychic', 'control', 'area']
+  },
+
+  s4_suppress_magic: {
+    id: 's4_suppress_magic' as SpellId,
+    name: 'Suppress Magic',
+    originalName: 'BUREDEIM',
+    school: 'psionic',
+    level: 4,
+    mpCost: getMPCostForLevel(4),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Confuses enemy group, suppressing spell/breath/summon actions',
+    effects: [{
+      type: 'status',
+      statusType: 'confused',
+      duration: '3+1d3',
+      saveType: 'mental',
+      saveModifier: 0,
+      resistanceCheck: true,
+      special: 'suppress_spell_breath_summon'
+    }],
+    tags: ['control', 'debuff', 'area']
+  },
+
+  s4_spell_power_boost: {
+    id: 's4_spell_power_boost' as SpellId,
+    name: 'Spell Power Boost',
+    originalName: 'KUREMAR',
+    school: 'psionic',
+    level: 4,
+    mpCost: getMPCostForLevel(4),
+    targetType: 'allAllies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Boosts party offensive spell power',
+    effects: [{
+      type: 'special',
+      special: 'boost_spell_power',
+      value: 25,
+      duration: 'combat',
+      resistanceCheck: true
+    }],
+    tags: ['buff', 'party', 'offensive']
+  },
+
+  s4_weaken_attack: {
+    id: 's4_weaken_attack' as SpellId,
+    name: 'Weaken Attack',
+    originalName: 'BADUMAS',
+    school: 'psionic',
+    level: 4,
+    mpCost: getMPCostForLevel(4),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Lowers enemy group attack power',
+    effects: [{
+      type: 'modifier',
+      stat: 'attack',
+      value: -3,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: true,
+      countsOnlyInCombat: true
+    }],
+    tags: ['debuff', 'offensive']
+  },
+
+  // Level 5 Psionic Spells
+  s5_summon: {
+    id: 's5_summon' as SpellId,
+    name: 'Summon',
+    originalName: 'ZAKALDI',
+    school: 'psionic',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'self',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Summons random psionic monster (Ninja, Roofmaster, Musashi, High Priestess, Reaper Lord, Samantha, Master Killer)',
+    effects: [{
+      type: 'special',
+      special: 'summon_random_psionic',
+      resistanceCheck: true
+    }],
+    tags: ['summon', 'utility']
+  },
+
+  s5_extended_map: {
+    id: 's5_extended_map' as SpellId,
+    name: 'Extended Map',
+    originalName: 'MAKALMA',
+    school: 'psionic',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'self',
+    inCombat: false,
+    outOfCombat: true,
+    description: 'Displays 5x5 map including unexplored areas',
+    effects: [{
+      type: 'utility',
+      subtype: 'locate',
+      special: 'show_5x5_map_including_unexplored'
+    }],
+    tags: ['utility', 'exploration']
+  },
+
+  s5_drain_mp: {
+    id: 's5_drain_mp' as SpellId,
+    name: 'Drain MP',
+    originalName: 'HAKANIDO',
+    school: 'psionic',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Lowers enemy group MP',
+    effects: [{
+      type: 'special',
+      special: 'drain_mp',
+      power: 10,
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'drain']
+  },
+
+  s5_ice_blast: {
+    id: 's5_ice_blast' as SpellId,
+    name: 'Ice Blast',
+    originalName: 'DALOSTO',
+    school: 'psionic',
+    level: 5,
+    mpCost: getMPCostForLevel(5),
+    targetType: 'enemy',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Inflicts 12-60 ice damage on single enemy',
+    effects: [{
+      type: 'damage',
+      element: 'ice',
+      baseDamage: '12+1d49',
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'ice']
+  },
+
+  // Level 6 Psionic Spells
+  s6_identify: {
+    id: 's6_identify' as SpellId,
+    name: 'Identify',
+    originalName: 'CALDU',
+    school: 'psionic',
+    level: 6,
+    mpCost: getMPCostForLevel(6),
+    targetType: 'any',
+    inCombat: false,
+    outOfCombat: true,
+    description: 'Identifies item properties',
+    effects: [{
+      type: 'utility',
+      subtype: 'identify',
+      special: 'identify_item'
+    }],
+    tags: ['utility', 'knowledge']
+  },
+
+  s6_fear_and_weaken: {
+    id: 's6_fear_and_weaken' as SpellId,
+    name: 'Fear and Weaken',
+    originalName: 'MAMORLIS',
+    school: 'psionic',
+    level: 6,
+    mpCost: getMPCostForLevel(6),
+    targetType: 'allEnemies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Raises all enemies AC by 4 and inflicts fear',
+    effects: [{
+      type: 'modifier',
+      stat: 'ac',
+      value: 4,
+      duration: 'combat',
+      affectsAllies: false,
+      affectsEnemies: true,
+      countsOnlyInCombat: true
+    }, {
+      type: 'status',
+      statusType: 'afraid',
+      duration: '3+1d3',
+      saveType: 'mental',
+      saveModifier: 0
+    }],
+    tags: ['debuff', 'control', 'mass']
+  },
+
+  s6_party_heal: {
+    id: 's6_party_heal' as SpellId,
+    name: 'Party Heal',
+    originalName: 'MADIOS',
+    school: 'psionic',
+    level: 6,
+    mpCost: getMPCostForLevel(6),
+    targetType: 'allAllies',
+    inCombat: true,
+    outOfCombat: true,
+    description: 'Restores 6-18 HP to all party members',
+    effects: [{
+      type: 'heal',
+      baseHealing: '6+1d13',
+      resistanceCheck: true
+    }],
+    tags: ['healing', 'restoration', 'party']
+  },
+
+  s6_psi_blast: {
+    id: 's6_psi_blast' as SpellId,
+    name: 'Psi Blast',
+    originalName: 'BURENES',
+    school: 'psionic',
+    level: 6,
+    mpCost: getMPCostForLevel(6),
+    targetType: 'group',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Inflicts 8-64 psychic damage on enemy group',
+    effects: [{
+      type: 'damage',
+      element: 'psychic',
+      baseDamage: '8d8',
+      resistanceCheck: true
     }],
     tags: ['offensive', 'psychic', 'area']
   },
 
-  // Level 4 Psionic Spells
-  s4_charm: {
-    id: 's4_charm' as SpellId,
-    name: 'Charm',
-    originalName: 'VASKYRE',
+  // Level 7 Psionic Spells
+  s7_ultimate_psi_damage: {
+    id: 's7_ultimate_psi_damage' as SpellId,
+    name: 'Ultimate Psi Damage',
+    originalName: 'GULTOMAS',
     school: 'psionic',
-    level: 4,
-    mpCost: 5,
-    targetType: 'enemy',
-    range: { max: 3 },
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Takes control of enemy mind',
-    effects: [{
-      type: 'status',
-      statusEffect: 'charmed',
-      duration: '3d4',
-      saveType: 'mental',
-      saveModifier: -5
-    }],
-    tags: ['control', 'mental']
-  },
-
-  // Level 5 Psionic Spells
-  s5_psychic_scream: {
-    id: 's5_psychic_scream' as SpellId,
-    name: 'Psychic Scream',
-    originalName: 'BAMORDI',
-    school: 'psionic',
-    level: 5,
-    mpCost: 6,
+    level: 7,
+    mpCost: getMPCostForLevel(7),
     targetType: 'allEnemies',
     inCombat: true,
     outOfCombat: false,
-    description: 'Mental assault on all enemies',
+    description: 'Inflicts 12-48 psychic damage on all enemies plus sleep/paralysis/confusion/stone',
     effects: [{
       type: 'damage',
       element: 'psychic',
-      baseDamage: '4d8'
+      baseDamage: '12+1d37',
+      resistanceCheck: true
     }, {
-      type: 'status',
-      statusEffect: 'confused',
-      duration: '1d4',
-      saveType: 'mental',
-      saveModifier: -3
+      type: 'special',
+      special: 'random_multi_status',
+      statusType: 'all',
+      resistanceCheck: true
     }],
-    tags: ['offensive', 'psychic', 'mass']
+    tags: ['offensive', 'psychic', 'mass', 'ultimate', 'status']
   },
 
-  // Level 6 Psionic Spells
-  s6_mass_hypnosis: {
-    id: 's6_mass_hypnosis' as SpellId,
-    name: 'Mass Hypnosis',
-    originalName: 'PACCSI',
-    school: 'psionic',
-    level: 6,
-    mpCost: 7,
-    targetType: 'allEnemies',
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Attempts to hypnotize all enemies',
-    effects: [{
-      type: 'status',
-      statusEffect: 'sleep',
-      saveType: 'mental',
-      saveModifier: -10
-    }],
-    tags: ['control', 'mental', 'mass']
-  },
-
-  // Level 7 Psionic Spells
-  s7_mind_kill: {
-    id: 's7_mind_kill' as SpellId,
-    name: 'Mind Kill',
-    originalName: 'MINDKILL',
+  s7_npc_list: {
+    id: 's7_npc_list' as SpellId,
+    name: 'NPC List',
+    originalName: 'NOSBADI',
     school: 'psionic',
     level: 7,
-    mpCost: 9,
-    targetType: 'enemy',
-    range: { max: 3 },
-    inCombat: true,
-    outOfCombat: false,
-    description: 'Destroys enemy mind instantly',
-    effects: [{
-      type: 'instant_death',
-      saveType: 'mental',
-      saveModifier: -15
-    }],
-    tags: ['offensive', 'death', 'mental']
-  },
-
-  s7_astral_projection: {
-    id: 's7_astral_projection' as SpellId,
-    name: 'Astral Projection',
-    originalName: 'ASTRAL',
-    school: 'psionic',
-    level: 7,
-    mpCost: 8,
+    mpCost: getMPCostForLevel(7),
     targetType: 'self',
     inCombat: false,
     outOfCombat: true,
-    description: 'Project consciousness to scout ahead',
+    description: 'Displays list of previously met NPCs',
     effects: [{
-      type: 'utility',
-      subtype: 'astral',
-      duration: '10',
-      special: 'safe_scouting'
+      type: 'special',
+      special: 'show_npc_list'
     }],
-    tags: ['utility', 'exploration', 'ultimate']
+    tags: ['utility', 'knowledge']
+  },
+
+  s7_mass_psi_damage_confuse: {
+    id: 's7_mass_psi_damage_confuse' as SpellId,
+    name: 'Mass Psi Damage Confuse',
+    originalName: 'LASIOS',
+    school: 'psionic',
+    level: 7,
+    mpCost: getMPCostForLevel(7),
+    targetType: 'allEnemies',
+    inCombat: true,
+    outOfCombat: false,
+    description: 'Inflicts 9-72 psychic damage and confuses all enemies',
+    effects: [{
+      type: 'damage',
+      element: 'psychic',
+      baseDamage: '9d8',
+      resistanceCheck: true
+    }, {
+      type: 'status',
+      statusType: 'confused',
+      duration: '3+1d3',
+      saveType: 'mental',
+      saveModifier: 0,
+      resistanceCheck: true
+    }],
+    tags: ['offensive', 'psychic', 'mass', 'ultimate', 'control']
+  },
+
+  s7_stat_boost: {
+    id: 's7_stat_boost' as SpellId,
+    name: 'Stat Boost',
+    originalName: 'IHALON',
+    school: 'psionic',
+    level: 7,
+    mpCost: getMPCostForLevel(7),
+    targetType: 'ally',
+    inCombat: false,
+    outOfCombat: true,
+    description: 'Choose one: rejuvenate age, or boost ST/IQ/PI/VT/AG/LK, or change personality (if age ≤19 and stat maxed); spell is forgotten after use',
+    effects: [{
+      type: 'special',
+      special: 'boost_stat_or_personality',
+      subtype: 'forget_after_use'
+    }],
+    tags: ['utility', 'ultimate', 'stat']
   }
 };
 

@@ -1,14 +1,20 @@
 import { GameState } from '../../types/GameTypes';
 import { Character } from '../../entities/Character';
 import { LevelUpResult, RoomType } from './InnStateManager';
+import { StatusEffectSystem } from '../StatusEffectSystem';
+import { ModifierSystem } from '../ModifierSystem';
 
 export class InnTransactionHandler {
   private gameState: GameState;
   private messageLog: any;
+  private statusEffectSystem: StatusEffectSystem;
+  private modifierSystem: ModifierSystem;
 
   constructor(gameState: GameState, messageLog: any) {
     this.gameState = gameState;
     this.messageLog = messageLog;
+    this.statusEffectSystem = StatusEffectSystem.getInstance();
+    this.modifierSystem = ModifierSystem.getInstance();
   }
 
   public canAffordService(cost: number, characterIndex?: number): boolean {
@@ -76,6 +82,19 @@ export class InnTransactionHandler {
       if (character.age !== undefined) {
         character.age += 1; // Age 1 day
       }
+
+      // Tick status effects and modifiers for 1 day
+      this.statusEffectSystem.tick(character, 'town');
+      this.modifierSystem.tick(character, 'town');
+
+      // Check if character died from status effects
+      if (character.isDead) {
+        if (this.messageLog?.add) {
+          this.messageLog.add(`${character.name} succumbed to their condition while resting!`);
+        }
+        return null;
+      }
+
       if (this.messageLog?.add) {
         this.messageLog.add(`${character.name} rests in the Stables for 1 day.`);
         this.messageLog.add(`${character.name} restored all MP.`);
@@ -92,6 +111,22 @@ export class InnTransactionHandler {
       // Age the character
       if (character.age !== undefined) {
         character.age += weeksStayed * 7; // Age in days
+      }
+
+      // Tick status effects and modifiers for each day of rest
+      const daysStayed = weeksStayed * 7;
+      for (let day = 0; day < daysStayed; day++) {
+        this.statusEffectSystem.tick(character, 'town');
+        this.modifierSystem.tick(character, 'town');
+
+        // Check if character died from status effects during rest
+        if (character.isDead) {
+          if (this.messageLog?.add) {
+            this.messageLog.add(`${character.name} succumbed to their condition while resting!`);
+            this.messageLog.add(`Cost: ${roomInfo.cost * Math.ceil((day + 1) / 7)} gold.`);
+          }
+          return null;
+        }
       }
 
       totalCost = roomInfo.cost * weeksStayed;

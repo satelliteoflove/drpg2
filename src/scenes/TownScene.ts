@@ -213,9 +213,9 @@ export class TownScene extends Scene {
         this.sceneManager.switchTo('training_grounds');
         break;
 
-      case 5:
+      case 5: // Explore the Dungeon
         const livingCharacters = this.gameState.party.characters.filter(
-          (c: Character) => !c.isDead && c.status === 'OK'
+          (c: Character) => !c.isDead && c.statuses.length === 0
         );
 
         if (livingCharacters.length === 0) {

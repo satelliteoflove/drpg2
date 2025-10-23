@@ -143,8 +143,8 @@ export class EntityUtils {
     if (isDead) {
       if (this.isCharacter(entity)) {
         entity.isDead = true;
-        if (Array.isArray(entity.status) && !entity.status.includes('dead')) {
-          entity.status.push('dead');
+        if (!entity.statuses.some(s => s.type === 'Dead')) {
+          entity.statuses = [{ type: 'Dead' }];
         }
       } else {
         entity.isDead = true;
