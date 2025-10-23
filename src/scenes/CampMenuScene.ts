@@ -270,8 +270,13 @@ export class CampMenuScene extends Scene {
 
   private confirmCharacterSelection(): void {
     const characterSheetScene = this.sceneManager.getScene('characterSheet') as any;
-    if (characterSheetScene && characterSheetScene.setCharacterIndex) {
-      characterSheetScene.setCharacterIndex(this.selectedCharacterIndex);
+    if (characterSheetScene) {
+      if (characterSheetScene.setCharacterIndex) {
+        characterSheetScene.setCharacterIndex(this.selectedCharacterIndex);
+      }
+      if (characterSheetScene.setReturnScene) {
+        characterSheetScene.setReturnScene('camp');
+      }
     }
     this.sceneManager.switchTo('characterSheet');
   }

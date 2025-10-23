@@ -356,8 +356,13 @@ export class TavernInputHandler {
         },
         onConfirm: () => {
           const characterSheetScene = this.sceneManager.getScene('characterSheet') as any;
-          if (characterSheetScene && characterSheetScene.setCharacterIndex) {
-            characterSheetScene.setCharacterIndex(this.stateManager.selectedPartyIndex);
+          if (characterSheetScene) {
+            if (characterSheetScene.setCharacterIndex) {
+              characterSheetScene.setCharacterIndex(this.stateManager.selectedPartyIndex);
+            }
+            if (characterSheetScene.setReturnScene) {
+              characterSheetScene.setReturnScene('tavern');
+            }
           }
           this.sceneManager.switchTo('characterSheet');
           DebugLogger.info('TavernInputHandler', `Inspecting character ${party[this.stateManager.selectedPartyIndex].name}`);

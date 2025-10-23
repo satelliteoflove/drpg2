@@ -20,6 +20,7 @@ export class CharacterSheetScene extends Scene {
   private spellsPage: number = 0;
   private itemsPerPage: number = 12;
   private spellsPerPage: number = 12;
+  private returnToScene: string = 'town';
 
   constructor(gameState: GameState, sceneManager: SceneManager) {
     super('CharacterSheet');
@@ -603,7 +604,7 @@ export class CharacterSheetScene extends Scene {
 
   private handleViewInput(key: string): boolean {
     if (key === 'escape') {
-      this.sceneManager.switchTo('town');
+      this.sceneManager.switchTo(this.returnToScene);
       return true;
     }
 
@@ -784,5 +785,9 @@ export class CharacterSheetScene extends Scene {
   public setCharacterIndex(index: number): void {
     this.characterIndex = index;
     this.resetView();
+  }
+
+  public setReturnScene(sceneName: string): void {
+    this.returnToScene = sceneName;
   }
 }

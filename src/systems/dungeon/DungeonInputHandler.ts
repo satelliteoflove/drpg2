@@ -158,11 +158,6 @@ export class DungeonInputHandler {
       return true;
     }
 
-    if (key === 'escape') {
-      this.sceneManager.switchTo('town');
-      return true;
-    }
-
     return false;
   }
 
