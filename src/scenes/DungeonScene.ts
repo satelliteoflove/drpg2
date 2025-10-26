@@ -1,6 +1,7 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState } from '../types/GameTypes';
 import { DungeonView } from '../ui/DungeonView';
+import { DungeonViewAtlas } from '../ui/DungeonViewAtlas';
 import { StatusPanel } from '../ui/StatusPanel';
 import { DungeonMapView } from '../ui/DungeonMapView';
 import { DebugOverlay } from '../ui/DebugOverlay';
@@ -8,11 +9,12 @@ import { DebugLogger } from '../utils/DebugLogger';
 import { DungeonMovementHandler } from '../systems/dungeon/DungeonMovementHandler';
 import { DungeonItemPickupUI } from '../systems/dungeon/DungeonItemPickupUI';
 import { DungeonInputHandler } from '../systems/dungeon/DungeonInputHandler';
+import { isFeatureEnabled, FeatureFlagKey } from '../config/FeatureFlags';
 
 export class DungeonScene extends Scene {
   protected gameState: GameState;
   protected sceneManager: SceneManager;
-  private dungeonView!: DungeonView;
+  private dungeonView!: DungeonView | DungeonViewAtlas;
   private statusPanel!: StatusPanel;
   private messageLog: any;
   private dungeonMapView!: DungeonMapView;
@@ -322,7 +324,13 @@ export class DungeonScene extends Scene {
   }
 
   private initializeUI(canvas: HTMLCanvasElement): void {
-    this.dungeonView = new DungeonView(canvas);
+    if (isFeatureEnabled(FeatureFlagKey.ATLAS_RENDERER)) {
+      DebugLogger.info('DungeonScene', 'Using atlas-based dungeon renderer');
+      this.dungeonView = new DungeonViewAtlas(canvas);
+    } else {
+      DebugLogger.info('DungeonScene', 'Using procedural dungeon renderer');
+      this.dungeonView = new DungeonView(canvas);
+    }
     this.statusPanel = new StatusPanel(canvas, 10, 80, 240, 480);  // Left side panel
     this.dungeonMapView = new DungeonMapView(canvas);
     this.debugOverlay = new DebugOverlay(canvas);
@@ -375,7 +383,7 @@ export class DungeonScene extends Scene {
     if (!currentDungeon) return;
   }
 
-  public getDungeonView(): DungeonView | null {
+  public getDungeonView(): DungeonView | DungeonViewAtlas | null {
     return this.dungeonView || null;
   }
 

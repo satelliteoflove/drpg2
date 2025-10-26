@@ -14,6 +14,7 @@ export interface FeatureFlag {
 // Feature flag keys
 export enum FeatureFlagKey {
   PERFORMANCE_MONITORING = 'performance_monitoring',
+  ATLAS_RENDERER = 'atlas_renderer',
 }
 
 // Feature flags configuration
@@ -43,8 +44,15 @@ class FeatureFlagsManager {
     this.registerFlag({
       name: FeatureFlagKey.PERFORMANCE_MONITORING,
       description: 'Enable performance monitoring',
-      enabled: true, // Already implemented and active
+      enabled: true,
       experimental: false,
+    });
+
+    this.registerFlag({
+      name: FeatureFlagKey.ATLAS_RENDERER,
+      description: 'Use pre-rendered cell atlas for dungeon rendering',
+      enabled: false,
+      experimental: true,
     });
 
     DebugLogger.info('FeatureFlags', `Initialized ${this.flags.size} feature flags`);
