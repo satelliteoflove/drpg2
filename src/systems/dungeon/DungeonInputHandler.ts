@@ -115,9 +115,6 @@ export class DungeonInputHandler {
         case 'combat':
           DebugLogger.debug('DungeonInputHandler', 'Combat triggered from movement');
           break;
-        case 'stairs':
-          this.checkForCastleReturn();
-          break;
       }
     }
   }
@@ -171,19 +168,10 @@ export class DungeonInputHandler {
     switch (currentTile.type) {
       case 'stairs_up':
         if (this.gameState.currentFloor === 1) {
-          // Special case for returning to town from floor 1
           this.messageLog?.addSystemMessage('You are at the castle entrance. Do you want to return to town? (Y/N)');
           this.context.isAwaitingCastleStairsResponse = true;
         } else if (this.gameState.currentFloor > 1) {
-          // Go up one floor
-          this.gameState.currentFloor--;
-          const newFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
-          if (newFloor && newFloor.stairsDown) {
-            this.gameState.party.x = newFloor.stairsDown.x;
-            this.gameState.party.y = newFloor.stairsDown.y;
-          }
-          this.movementHandler.updateDiscoveredTiles();
-          this.messageLog?.addSystemMessage(`Ascended to floor ${this.gameState.currentFloor}`);
+          this.movementHandler.handleStairsUp();
         } else {
           this.messageLog?.addSystemMessage("You're already on the top floor!");
         }
@@ -191,15 +179,7 @@ export class DungeonInputHandler {
 
       case 'stairs_down':
         if (this.gameState.currentFloor < this.gameState.dungeon.length) {
-          // Go down one floor
-          this.gameState.currentFloor++;
-          const newFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
-          if (newFloor && newFloor.stairsUp) {
-            this.gameState.party.x = newFloor.stairsUp.x;
-            this.gameState.party.y = newFloor.stairsUp.y;
-          }
-          this.movementHandler.updateDiscoveredTiles();
-          this.messageLog?.addSystemMessage(`Descended to floor ${this.gameState.currentFloor}`);
+          this.movementHandler.handleStairsDown();
         } else {
           this.messageLog?.addSystemMessage("You're already on the bottom floor!");
         }
@@ -307,24 +287,4 @@ export class DungeonInputHandler {
     return false;
   }
 
-  private checkForCastleReturn(): void {
-    // Check if we're on floor 1 and just used stairs up
-    if (this.gameState.currentFloor === 1) {
-      const currentTile = this.gameState.dungeon[0]?.tiles[this.gameState.party.y][this.gameState.party.x];
-      if (currentTile?.type === 'stairs_up') {
-        this.context.isAwaitingCastleStairsResponse = true;
-        // Message already shown by movement handler
-        return;
-      }
-    }
-
-    const castleStairsPos = this.movementHandler.getCastleStairsPosition();
-    if (castleStairsPos &&
-        this.gameState.party.x === castleStairsPos.x &&
-        this.gameState.party.y === castleStairsPos.y &&
-        this.gameState.currentFloor === 0) {
-      this.context.isAwaitingCastleStairsResponse = true;
-      this.messageLog?.addSystemMessage('Return to town? (Y/N)');
-    }
-  }
 }

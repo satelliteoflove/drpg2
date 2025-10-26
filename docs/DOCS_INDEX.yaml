@@ -423,9 +423,18 @@ api_variables:
     topics: [service identifiers, DI tokens, service keys]
     summary: Service identifier constants
 
+first_person_rendering:
+  file: first-person-dungeon-rendering.yaml
+  topics: [first-person view, dungeon rendering, depth layers, segment rendering, perspective transform, classic dungeon crawler, wizardry style, eye of the beholder, blobber, tiles, cells, layers, brick patterns, gradient shading, GIMP tutorial]
+  summary: Comprehensive tutorial on creating graphics for classic first-person dungeon crawlers with segment-based rendering, perspective transforms, and depth shading
+  images_folder: docs/sources/first-person-dungeons-images/
+  source_html: docs/sources/first-person-dungeons-tutorial.html
+
 # Search hints for common queries
 search_hints:
-  rendering: [api/classes/RenderManager.md, api/classes/DungeonView.md, api/classes/StatusPanel.md]
+  rendering: [api/classes/RenderManager.md, api/classes/DungeonView.md, api/classes/StatusPanel.md, first-person-dungeon-rendering.yaml]
+  first_person_dungeons: [first-person-dungeon-rendering.yaml]
+  dungeon_rendering: [first-person-dungeon-rendering.yaml, api/classes/DungeonView.md]
   performance: [PERFORMANCE.md, performance-metrics-guide.md, api/classes/RenderingOptimizer.md]
   items: [wizardry-item-system.md, wizardry_gaiden_4_items_*.md, api/interfaces/Item.md, api/classes/InventorySystem.md]
   architecture: [ARCHITECTURE.md, API_REFERENCE.md, api/classes/Game.md]

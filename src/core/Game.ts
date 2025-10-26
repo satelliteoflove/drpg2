@@ -29,6 +29,7 @@ import { DebugLogger } from '../utils/DebugLogger';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
 import { StarterCharacterFactory } from '../utils/StarterCharacterFactory';
 import { STARTER_CHARACTER_TEMPLATES } from '../config/StarterCharacters';
+import { DungeonGenerator } from '../utils/DungeonGenerator';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -144,8 +145,9 @@ export class Game {
   }
 
   private generateNewDungeon(): void {
-    const generator = this.services.getDungeonGenerator();
+    const generator = new DungeonGenerator(20, 20, this.gameState.dungeonSeed);
     this.gameState.dungeon = [];
+    this.gameState.dungeonSeed = generator.getSeed();
 
     for (let i = 1; i <= 10; i++) {
       this.gameState.dungeon.push(generator.generateLevel(i));

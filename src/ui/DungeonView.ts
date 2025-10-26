@@ -1,4 +1,7 @@
 import { Direction, DungeonLevel, DungeonTile } from '../types/GameTypes';
+import { SegmentImageGenerator } from './SegmentImageGenerator';
+import { SegmentBasedDungeonRenderer } from './SegmentBasedDungeonRenderer';
+import { GAME_CONFIG } from '../config/GameConstants';
 
 export class DungeonView {
   private ctx: CanvasRenderingContext2D;
@@ -7,6 +10,7 @@ export class DungeonView {
   private playerX: number = 0;
   private playerY: number = 0;
   private playerFacing: Direction = 'north';
+  private dungeonRenderer: SegmentBasedDungeonRenderer;
 
   private readonly VIEW_WIDTH = 500;
   private readonly VIEW_HEIGHT = 400;
@@ -16,6 +20,10 @@ export class DungeonView {
   constructor(canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
     this.currentRenderCtx = this.ctx;
+
+    const segmentGenerator = new SegmentImageGenerator(460, 310, 4);
+    const segments = segmentGenerator.generateAllSegments();
+    this.dungeonRenderer = new SegmentBasedDungeonRenderer(segments);
   }
 
   public setDungeon(dungeon: DungeonLevel): void {
@@ -31,10 +39,8 @@ export class DungeonView {
   public render(ctx?: CanvasRenderingContext2D): void {
     if (!this.dungeon) return;
 
-    // Set the current rendering context
     this.currentRenderCtx = ctx || this.ctx;
 
-    // Draw panel frame around the dungeon view
     this.currentRenderCtx.fillStyle = '#2a2a2a';
     this.currentRenderCtx.fillRect(this.VIEW_X - 5, this.VIEW_Y - 5, this.VIEW_WIDTH + 10, this.VIEW_HEIGHT + 10);
 
@@ -42,92 +48,95 @@ export class DungeonView {
     this.currentRenderCtx.lineWidth = 2;
     this.currentRenderCtx.strokeRect(this.VIEW_X - 5, this.VIEW_Y - 5, this.VIEW_WIDTH + 10, this.VIEW_HEIGHT + 10);
 
-    // Save context state and translate to view position
     this.currentRenderCtx.save();
     this.currentRenderCtx.translate(this.VIEW_X, this.VIEW_Y);
 
     this.currentRenderCtx.fillStyle = '#000';
     this.currentRenderCtx.fillRect(0, 0, this.VIEW_WIDTH, this.VIEW_HEIGHT);
 
-    this.renderDepth3();
-    this.renderDepth2();
-    this.renderDepth1();
-    this.renderCurrentPosition();
+    this.renderCorridor();
     this.renderUI();
 
-    // Restore context state
     this.currentRenderCtx.restore();
   }
 
-  private renderDepth3(): void {
-    const positions = this.getPositionsAtDepth(3);
+  private renderCorridor(): void {
+    const segments: Array<{
+      depth: number;
+      hasLeftWall: boolean;
+      hasRightWall: boolean;
+      hasFrontWall: boolean;
+      hasLeftCorridorFarWall: boolean;
+      hasRightCorridorFarWall: boolean;
+      tile?: any;
+    }> = [];
 
-    positions.forEach((pos) => {
-      const tile = this.getTileAt(pos.x, pos.y);
-      if (!tile) return;
+    const viewDistance = GAME_CONFIG.DUNGEON.VIEW_DISTANCE;
 
-      const screenX = this.VIEW_WIDTH / 2 + pos.screenX;
-      const screenY = this.VIEW_HEIGHT / 2 + pos.screenY;
+    let lastSegmentHadFrontWall = false;
 
-      if (this.canSeeWall(pos.x, pos.y, pos.side)) {
-        this.drawWall(screenX, screenY, 20, 15, '#333');
-      } else if (tile.type === 'floor') {
-        this.drawFloor(screenX, screenY, 8, 6, '#444');
+    for (let depth = 0; depth <= viewDistance; depth++) {
+      const positions = this.getPositionsAtDepth(depth);
+      const frontPos = positions.find(p => p.side === 'front');
+
+      if (!frontPos) continue;
+
+      const frontTile = this.getTileAt(frontPos.x, frontPos.y);
+      const hasLeftWall = this.canSeeWall(frontPos.x, frontPos.y, 'left');
+      const hasRightWall = this.canSeeWall(frontPos.x, frontPos.y, 'right');
+      const hasFrontWall = this.canSeeWall(frontPos.x, frontPos.y, 'front');
+
+      let hasLeftCorridorFarWall = false;
+      let hasRightCorridorFarWall = false;
+
+      if (!hasLeftWall) {
+        const leftPos = positions.find(p => p.side === 'left');
+        if (leftPos) {
+          hasLeftCorridorFarWall = this.canSeeWall(leftPos.x, leftPos.y, 'front');
+        }
       }
-    });
-  }
 
-  private renderDepth2(): void {
-    const positions = this.getPositionsAtDepth(2);
-
-    positions.forEach((pos) => {
-      const tile = this.getTileAt(pos.x, pos.y);
-      if (!tile) return;
-
-      const screenX = this.VIEW_WIDTH / 2 + pos.screenX;
-      const screenY = this.VIEW_HEIGHT / 2 + pos.screenY;
-
-      if (this.canSeeWall(pos.x, pos.y, pos.side)) {
-        this.drawWall(screenX, screenY, 40, 30, '#555');
-      } else if (tile.type === 'floor') {
-        this.drawFloor(screenX, screenY, 16, 12, '#666');
-        this.drawSpecialTile(tile, screenX, screenY, 12);
+      if (!hasRightWall) {
+        const rightPos = positions.find(p => p.side === 'right');
+        if (rightPos) {
+          hasRightCorridorFarWall = this.canSeeWall(rightPos.x, rightPos.y, 'front');
+        }
       }
-    });
-  }
 
-  private renderDepth1(): void {
-    const positions = this.getPositionsAtDepth(1);
+      segments.push({
+        depth,
+        hasLeftWall,
+        hasRightWall,
+        hasFrontWall,
+        hasLeftCorridorFarWall,
+        hasRightCorridorFarWall,
+        tile: frontTile
+      });
 
-    positions.forEach((pos) => {
-      const tile = this.getTileAt(pos.x, pos.y);
-      if (!tile) return;
-
-      const screenX = this.VIEW_WIDTH / 2 + pos.screenX;
-      const screenY = this.VIEW_HEIGHT / 2 + pos.screenY;
-
-      if (this.canSeeWall(pos.x, pos.y, pos.side)) {
-        this.drawWall(screenX, screenY, 80, 60, '#777');
-      } else if (tile.type === 'floor') {
-        this.drawFloor(screenX, screenY, 32, 24, '#888');
-        this.drawSpecialTile(tile, screenX, screenY, 24);
+      if (hasFrontWall) {
+        lastSegmentHadFrontWall = true;
+        break;
       }
-    });
-  }
-
-  private renderCurrentPosition(): void {
-    const centerX = this.VIEW_WIDTH / 2;
-    const centerY = this.VIEW_HEIGHT / 2;
-
-    const currentTile = this.getTileAt(this.playerX, this.playerY);
-    if (currentTile) {
-      this.drawFloor(centerX, centerY, 60, 40, '#aaa');
-      this.drawSpecialTile(currentTile, centerX, centerY, 40);
     }
 
-    const frontTile = this.getTileInFront();
-    if (frontTile && this.canSeeWall(frontTile.x, frontTile.y, 'front')) {
-      this.drawWall(centerX, centerY - 50, 160, 120, '#999');
+    if (!lastSegmentHadFrontWall) {
+      segments.push({
+        depth: viewDistance,
+        hasLeftWall: false,
+        hasRightWall: false,
+        hasFrontWall: true,
+        hasLeftCorridorFarWall: false,
+        hasRightCorridorFarWall: false,
+        tile: null
+      });
+    }
+
+    this.dungeonRenderer.drawCorridor(this.currentRenderCtx, segments, viewDistance);
+
+    for (const segment of segments) {
+      if (segment.tile && segment.tile.type !== 'floor' && segment.tile.type !== 'wall' && !segment.hasFrontWall) {
+        this.drawSpecialTile(segment.tile, segment.depth);
+      }
     }
   }
 
@@ -184,11 +193,6 @@ export class DungeonView {
     return this.dungeon.tiles[y][x];
   }
 
-  private getTileInFront(): DungeonTile | null {
-    const [dx, dy] = this.getDirectionVector();
-    return this.getTileAt(this.playerX + dx, this.playerY + dy);
-  }
-
   private canSeeWall(x: number, y: number, side: string): boolean {
     const tile = this.getTileAt(x, y);
     if (!tile) return true;
@@ -237,63 +241,40 @@ export class DungeonView {
     return false;
   }
 
-  private drawWall(x: number, y: number, width: number, height: number, color: string): void {
-    this.currentRenderCtx.fillStyle = color;
-    this.currentRenderCtx.fillRect(x - width / 2, y - height / 2, width, height);
-
-    this.currentRenderCtx.strokeStyle = '#222';
-    this.currentRenderCtx.lineWidth = 1;
-    this.currentRenderCtx.strokeRect(x - width / 2, y - height / 2, width, height);
-
-    this.currentRenderCtx.fillStyle = '#000';
-    this.currentRenderCtx.fillRect(x - width / 4, y - height / 4, width / 8, height / 8);
-  }
-
-  private drawFloor(x: number, y: number, width: number, height: number, color: string): void {
-    this.currentRenderCtx.fillStyle = color;
-    this.currentRenderCtx.fillRect(x - width / 2, y + height / 4, width, height / 2);
-
-    this.currentRenderCtx.strokeStyle = '#444';
-    this.currentRenderCtx.lineWidth = 1;
-    this.currentRenderCtx.strokeRect(x - width / 2, y + height / 4, width, height / 2);
-  }
-
-  private drawSpecialTile(tile: DungeonTile, x: number, y: number, size: number): void {
+  private drawSpecialTile(tile: DungeonTile, depth: number): void {
     if (!tile) return;
+
+    const centerX = this.VIEW_WIDTH / 2;
+    const centerY = this.VIEW_HEIGHT / 2;
+    const size = 100 / (depth + 1);
 
     switch (tile.type) {
       case 'door':
-        this.currentRenderCtx.fillStyle = '#8B4513';
-        this.currentRenderCtx.fillRect(x - size / 4, y - size / 2, size / 2, size);
-        this.currentRenderCtx.fillStyle = '#FFD700';
-        this.currentRenderCtx.fillRect(x - size / 8, y - size / 8, size / 16, size / 16);
+        this.dungeonRenderer.drawDoor(this.currentRenderCtx, depth);
         break;
 
       case 'chest':
-        this.currentRenderCtx.fillStyle = '#8B4513';
-        this.currentRenderCtx.fillRect(x - size / 3, y - size / 6, (size * 2) / 3, size / 3);
-        this.currentRenderCtx.fillStyle = '#FFD700';
-        this.currentRenderCtx.fillRect(x - size / 6, y - size / 12, size / 8, size / 6);
+        this.dungeonRenderer.drawChest(this.currentRenderCtx, depth);
         break;
 
       case 'stairs_up':
-        this.currentRenderCtx.strokeStyle = '#999';
+        this.currentRenderCtx.strokeStyle = '#00FF00';
         this.currentRenderCtx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
           this.currentRenderCtx.beginPath();
-          this.currentRenderCtx.moveTo(x - size / 3 + (i * size) / 6, y + size / 6);
-          this.currentRenderCtx.lineTo(x + size / 3, y + size / 6 - (i * size) / 6);
+          this.currentRenderCtx.moveTo(centerX - size / 3 + (i * size) / 6, centerY + size / 6);
+          this.currentRenderCtx.lineTo(centerX + size / 3, centerY + size / 6 - (i * size) / 6);
           this.currentRenderCtx.stroke();
         }
         break;
 
       case 'stairs_down':
-        this.currentRenderCtx.strokeStyle = '#666';
+        this.currentRenderCtx.strokeStyle = '#888888';
         this.currentRenderCtx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
           this.currentRenderCtx.beginPath();
-          this.currentRenderCtx.moveTo(x - size / 3, y - size / 6 + (i * size) / 6);
-          this.currentRenderCtx.lineTo(x + size / 3 - (i * size) / 6, y + size / 6);
+          this.currentRenderCtx.moveTo(centerX - size / 3, centerY - size / 6 + (i * size) / 6);
+          this.currentRenderCtx.lineTo(centerX + size / 3 - (i * size) / 6, centerY + size / 6);
           this.currentRenderCtx.stroke();
         }
         break;
@@ -301,14 +282,14 @@ export class DungeonView {
       case 'trap':
         this.currentRenderCtx.fillStyle = '#FF0000';
         this.currentRenderCtx.beginPath();
-        this.currentRenderCtx.arc(x, y, size / 6, 0, Math.PI * 2);
+        this.currentRenderCtx.arc(centerX, centerY, size / 6, 0, Math.PI * 2);
         this.currentRenderCtx.fill();
         break;
 
       case 'event':
         this.currentRenderCtx.fillStyle = '#800080';
         this.currentRenderCtx.beginPath();
-        this.currentRenderCtx.arc(x, y, size / 4, 0, Math.PI * 2);
+        this.currentRenderCtx.arc(centerX, centerY, size / 4, 0, Math.PI * 2);
         this.currentRenderCtx.fill();
         this.currentRenderCtx.strokeStyle = '#FF00FF';
         this.currentRenderCtx.lineWidth = 2;

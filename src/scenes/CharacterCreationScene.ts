@@ -618,8 +618,9 @@ export class CharacterCreationScene extends Scene {
   }
 
   private generateNewDungeon(): void {
-    const generator = new DungeonGenerator(20, 20);
+    const generator = new DungeonGenerator(20, 20, this.gameState.dungeonSeed);
     this.gameState.dungeon = [];
+    this.gameState.dungeonSeed = generator.getSeed();
 
     for (let i = 1; i <= 10; i++) {
       this.gameState.dungeon.push(generator.generateLevel(i));

@@ -158,6 +158,7 @@ export const GAME_CONFIG = {
   },
 
   DUNGEON: {
+    DEFAULT_SEED: 'cannibal-king',
     DEFAULT_WIDTH: 20,
     DEFAULT_HEIGHT: 20,
     MIN_ROOMS: 5,
@@ -177,8 +178,31 @@ export const GAME_CONFIG = {
     MAX_EXTRA_ENCOUNTER_ZONES: 3,
     MIN_ZONE_SIZE: 3,
     MAX_ZONE_EXTRA_SIZE: 5,
-    // Fog of War / Discovery settings
-    VIEW_DISTANCE: 1, // How many tiles in each direction the player can see/discover (3 = 7x7 area)
+    VIEW_DISTANCE: 3,
+  },
+
+  DUNGEON_VISUAL: {
+    COLOR_SCHEME: 'warm' as 'warm' | 'stone' | 'dark',
+    SCHEMES: {
+      warm: {
+        wall: '#C87533',
+        mortar: '#8B5A2B',
+        floor: '#A0522D',
+        ceiling: '#654321',
+      },
+      stone: {
+        wall: '#708090',
+        mortar: '#4A5568',
+        floor: '#556B2F',
+        ceiling: '#2F4F4F',
+      },
+      dark: {
+        wall: '#3A3A3A',
+        mortar: '#1A1A1A',
+        floor: '#2A2A2A',
+        ceiling: '#0A0A0A',
+      },
+    },
   },
 
   EVENTS: {

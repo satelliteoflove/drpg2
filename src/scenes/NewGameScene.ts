@@ -1,25 +1,24 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
-import { CharacterAlignment, CharacterClass, CharacterRace, GameState } from '../types/GameTypes';
-import { Character } from '../entities/Character';
-import { DungeonGenerator } from '../utils/DungeonGenerator';
-import { MenuInputHandler } from '../ui/components/MenuInputHandler';
-import { StarterCharacterFactory } from '../utils/StarterCharacterFactory';
-import { STARTER_CHARACTER_TEMPLATES } from '../config/StarterCharacters';
+import { GameState } from '../types/GameTypes';
+import { GAME_CONFIG } from '../config/GameConstants';
 
 export class NewGameScene extends Scene {
   private gameState: GameState;
   private sceneManager: SceneManager;
-  private selectedOption: number = 0;
-  private menuOptions: string[] = ['Manual Character Creation', 'Auto-Generate Party'];
+  private seedInput: string;
+  private cursorPosition: number;
 
   constructor(gameState: GameState, sceneManager: SceneManager) {
     super('New Game');
     this.gameState = gameState;
     this.sceneManager = sceneManager;
+    this.seedInput = GAME_CONFIG.DUNGEON.DEFAULT_SEED;
+    this.cursorPosition = this.seedInput.length;
   }
 
   public enter(): void {
-    this.selectedOption = 0;
+    this.seedInput = GAME_CONFIG.DUNGEON.DEFAULT_SEED;
+    this.cursorPosition = this.seedInput.length;
   }
 
   public exit(): void {}
@@ -33,45 +32,39 @@ export class NewGameScene extends Scene {
     ctx.fillStyle = '#fff';
     ctx.font = '24px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('NEW GAME', ctx.canvas.width / 2, 100);
+    ctx.fillText('ENTER DUNGEON SEED', ctx.canvas.width / 2, 150);
 
     ctx.font = '16px monospace';
-    ctx.fillText('Choose how you want to create your party:', ctx.canvas.width / 2, 180);
-
-    const startY = 250;
-    const lineHeight = 50;
-
-    this.menuOptions.forEach((option, index) => {
-      const y = startY + index * lineHeight;
-
-      if (index === this.selectedOption) {
-        ctx.fillStyle = '#ffaa00';
-        ctx.fillText('> ' + option + ' <', ctx.canvas.width / 2, y);
-      } else {
-        ctx.fillStyle = '#fff';
-        ctx.fillText(option, ctx.canvas.width / 2, y);
-      }
-    });
-
     ctx.fillStyle = '#aaa';
-    ctx.font = '14px monospace';
-    ctx.textAlign = 'left';
+    ctx.fillText('The seed determines the dungeon layout', ctx.canvas.width / 2, 200);
+    ctx.fillText('Same seed = same dungeon', ctx.canvas.width / 2, 225);
 
-    if (this.selectedOption === 0) {
-      ctx.fillText('Create characters one by one with full customization', 50, 400);
-    } else {
-      ctx.fillText('Automatically generate a balanced party of 5 characters', 50, 400);
-      ctx.fillText('Classes: Fighter, Mage, Priest, Thief, Bishop', 50, 420);
-    }
+    const inputBoxX = ctx.canvas.width / 2 - 200;
+    const inputBoxY = 280;
+    const inputBoxWidth = 400;
+    const inputBoxHeight = 50;
+
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(inputBoxX, inputBoxY, inputBoxWidth, inputBoxHeight);
+    ctx.strokeStyle = '#ffaa00';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(inputBoxX, inputBoxY, inputBoxWidth, inputBoxHeight);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '20px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(this.seedInput, inputBoxX + 10, inputBoxY + 33);
+
+    const textWidth = ctx.measureText(this.seedInput.substring(0, this.cursorPosition)).width;
+    ctx.fillStyle = '#ffaa00';
+    ctx.fillRect(inputBoxX + 10 + textWidth, inputBoxY + 10, 2, 30);
 
     ctx.fillStyle = '#666';
-    ctx.font = '12px monospace';
+    ctx.font = '14px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(
-      'UP/DOWN to select, ENTER to choose, ESC to go back',
-      ctx.canvas.width / 2,
-      ctx.canvas.height - 20
-    );
+    ctx.fillText('Type to edit seed', ctx.canvas.width / 2, 400);
+    ctx.fillText('ENTER to start game | ESC to go back', ctx.canvas.width / 2, 425);
+    ctx.fillText('Use LEFT/RIGHT arrows to move cursor | BACKSPACE to delete', ctx.canvas.width / 2, 450);
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
@@ -83,169 +76,121 @@ export class NewGameScene extends Scene {
     });
 
     renderManager.renderUI((ctx) => {
-      ctx.fillStyle = '#fff';
-      ctx.font = '24px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('NEW GAME', ctx.canvas.width / 2, 100);
-
-      ctx.font = '16px monospace';
-      ctx.fillText('Choose how you want to create your party:', ctx.canvas.width / 2, 180);
-
-      const startY = 250;
-      const lineHeight = 50;
-
-      this.menuOptions.forEach((option, index) => {
-        const y = startY + index * lineHeight;
-
-        if (index === this.selectedOption) {
-          ctx.fillStyle = '#ffaa00';
-          ctx.fillText('> ' + option + ' <', ctx.canvas.width / 2, y);
-        } else {
-          ctx.fillStyle = '#fff';
-          ctx.fillText(option, ctx.canvas.width / 2, y);
-        }
-      });
-
-      ctx.fillStyle = '#aaa';
-      ctx.font = '14px monospace';
-      ctx.textAlign = 'left';
-
-      if (this.selectedOption === 0) {
-        ctx.fillText('Create characters one by one with full customization', 50, 400);
-      } else {
-        ctx.fillText('Automatically generate a balanced party of 5 characters', 50, 400);
-        ctx.fillText('Classes: Fighter, Mage, Priest, Thief, Bishop', 50, 420);
-      }
-
-      ctx.fillStyle = '#666';
-      ctx.font = '12px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(
-        'UP/DOWN to select, ENTER to choose, ESC to go back',
-        ctx.canvas.width / 2,
-        ctx.canvas.height - 20
-      );
+      ctx.save();
+      this.renderContent(ctx);
+      ctx.restore();
     });
+  }
+
+  private renderContent(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#fff';
+    ctx.font = '24px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('ENTER DUNGEON SEED', ctx.canvas.width / 2, 150);
+
+    ctx.font = '16px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('The seed determines the dungeon layout', ctx.canvas.width / 2, 200);
+    ctx.fillText('Same seed = same dungeon', ctx.canvas.width / 2, 225);
+
+    const inputBoxX = ctx.canvas.width / 2 - 200;
+    const inputBoxY = 280;
+    const inputBoxWidth = 400;
+    const inputBoxHeight = 50;
+
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(inputBoxX, inputBoxY, inputBoxWidth, inputBoxHeight);
+    ctx.strokeStyle = '#ffaa00';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(inputBoxX, inputBoxY, inputBoxWidth, inputBoxHeight);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '20px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(this.seedInput, inputBoxX + 10, inputBoxY + 33);
+
+    const textWidth = ctx.measureText(this.seedInput.substring(0, this.cursorPosition)).width;
+    ctx.fillStyle = '#ffaa00';
+    ctx.fillRect(inputBoxX + 10 + textWidth, inputBoxY + 10, 2, 30);
+
+    ctx.fillStyle = '#666';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Type to edit seed', ctx.canvas.width / 2, 400);
+    ctx.fillText('ENTER to start game | ESC to go back', ctx.canvas.width / 2, 425);
+    ctx.fillText('Use LEFT/RIGHT arrows to move cursor | BACKSPACE to delete', ctx.canvas.width / 2, 450);
   }
 
   public handleInput(key: string): boolean {
-    // Normalize key to lowercase
     const normalizedKey = key.toLowerCase();
 
-    // Use MenuInputHandler for navigation
-    const action = MenuInputHandler.handleMenuInput(
-      normalizedKey,
-      {
-        selectedIndex: this.selectedOption,
-        maxIndex: this.menuOptions.length - 1,
-      },
-      {
-        onNavigate: (newIndex: number) => {
-          this.selectedOption = newIndex;
-        },
-        onConfirm: () => {
-          this.selectCurrentOption();
-        },
-        onCancel: () => {
-          this.sceneManager.switchTo('main_menu');
-        },
+    if (normalizedKey === 'enter') {
+      this.confirmSeed();
+      return true;
+    }
+
+    if (normalizedKey === 'escape') {
+      this.sceneManager.switchTo('main_menu');
+      return true;
+    }
+
+    if (normalizedKey === 'backspace') {
+      if (this.cursorPosition > 0) {
+        this.seedInput =
+          this.seedInput.substring(0, this.cursorPosition - 1) +
+          this.seedInput.substring(this.cursorPosition);
+        this.cursorPosition--;
       }
-    );
-
-    return action.type !== 'none';
-  }
-
-  private selectCurrentOption(): void {
-    if (this.selectedOption === 0) {
-      this.clearGameStateForNewGame();
-      this.sceneManager.switchTo('town');
-    } else {
-      this.autoGenerateParty();
-    }
-  }
-
-  private autoGenerateParty(): void {
-    this.clearGameStateForNewGame();
-    this.gameState.party.characters = [];
-
-    const partyTemplates = [
-      { race: 'Human', class: 'Fighter', alignment: 'Good' },
-      { race: 'Elf', class: 'Mage', alignment: 'Neutral' },
-      { race: 'Human', class: 'Priest', alignment: 'Good' },
-      { race: 'Hobbit', class: 'Thief', alignment: 'Neutral' },
-      { race: 'Dwarf', class: 'Bishop', alignment: 'Good' },
-    ];
-
-    const names = [
-      'GALAHAD',
-      'MERLIN',
-      'BENEDICT',
-      'ROBIN',
-      'ARTHUR',
-      'GANDALF',
-      'FRIAR',
-      'SHADOW',
-      'ROLAND',
-      'PROSPERO',
-      'AUGUSTIN',
-      'SWIFT',
-    ];
-
-    const usedNames = new Set<string>();
-
-    partyTemplates.forEach((template) => {
-      let characterName: string;
-      do {
-        characterName = names[Math.floor(Math.random() * names.length)];
-      } while (usedNames.has(characterName));
-      usedNames.add(characterName);
-
-      const character = new Character(
-        characterName,
-        template.race as CharacterRace,
-        template.class as CharacterClass,
-        template.alignment as CharacterAlignment,
-        'male'  // Gender parameter - ensures spells are assigned
-      );
-
-      this.gameState.party.addCharacter(character);
-    });
-
-    this.generateNewDungeon();
-    this.sceneManager.switchTo('dungeon');
-  }
-
-  private clearGameStateForNewGame(): void {
-    this.gameState.currentFloor = 1;
-    this.gameState.inCombat = false;
-    this.gameState.gameTime = 0;
-    this.gameState.turnCount = 0;
-    this.gameState.combatEnabled = true;
-    this.gameState.currentEncounter = undefined;
-    this.gameState.hasEnteredDungeon = false;
-
-    this.gameState.party.x = 0;
-    this.gameState.party.y = 0;
-    this.gameState.party.floor = 1;
-    this.gameState.party.facing = 'north';
-
-    this.gameState.characterRoster = [];
-    STARTER_CHARACTER_TEMPLATES.forEach((template) => {
-      const character = StarterCharacterFactory.createFromTemplate(template);
-      this.gameState.characterRoster.push(character);
-    });
-  }
-
-  private generateNewDungeon(): void {
-    const generator = new DungeonGenerator(20, 20);
-    this.gameState.dungeon = [];
-
-    for (let i = 1; i <= 10; i++) {
-      this.gameState.dungeon.push(generator.generateLevel(i));
+      return true;
     }
 
-    const firstLevel = this.gameState.dungeon[0];
-    this.gameState.party.x = firstLevel.startX;
-    this.gameState.party.y = firstLevel.startY;
+    if (normalizedKey === 'arrowleft' || normalizedKey === 'left') {
+      if (this.cursorPosition > 0) {
+        this.cursorPosition--;
+      }
+      return true;
+    }
+
+    if (normalizedKey === 'arrowright' || normalizedKey === 'right') {
+      if (this.cursorPosition < this.seedInput.length) {
+        this.cursorPosition++;
+      }
+      return true;
+    }
+
+    if (normalizedKey === 'home') {
+      this.cursorPosition = 0;
+      return true;
+    }
+
+    if (normalizedKey === 'end') {
+      this.cursorPosition = this.seedInput.length;
+      return true;
+    }
+
+    if (key.length === 1 && this.isValidSeedCharacter(key)) {
+      this.seedInput =
+        this.seedInput.substring(0, this.cursorPosition) +
+        key +
+        this.seedInput.substring(this.cursorPosition);
+      this.cursorPosition++;
+      return true;
+    }
+
+    return false;
+  }
+
+  private isValidSeedCharacter(char: string): boolean {
+    return /^[a-zA-Z0-9\-_]$/.test(char);
+  }
+
+  private confirmSeed(): void {
+    this.gameState.dungeonSeed = this.seedInput;
+
+    if ((window as any).game?.instance?.resetGame) {
+      (window as any).game.instance.resetGame();
+    }
+
+    this.sceneManager.switchTo('town');
   }
 }

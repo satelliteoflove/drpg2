@@ -313,6 +313,7 @@ export interface GameState {
     surprised: boolean;
   };
   characterRoster: ICharacter[];
+  dungeonSeed?: string;
 }
 
 export interface Encounter {

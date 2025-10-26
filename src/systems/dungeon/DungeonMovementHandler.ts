@@ -61,6 +61,13 @@ export class DungeonMovementHandler {
     const newX = party.x + delta.dx;
     const newY = party.y + delta.dy;
 
+    const currentTile = currentFloor.tiles[party.y][party.x];
+
+    if (!this.canMoveTo(null, currentTile, absoluteDirection)) {
+      this.messageLog?.addSystemMessage('The way is blocked.');
+      return { moved: false, blocked: true, triggered: null };
+    }
+
     if (newX < 0 || newX >= currentFloor.width || newY < 0 || newY >= currentFloor.height) {
       this.messageLog?.addSystemMessage('You cannot move in that direction.');
       return { moved: false, blocked: true, triggered: null };
@@ -68,13 +75,21 @@ export class DungeonMovementHandler {
 
     const targetTile = currentFloor.tiles[newY][newX];
 
-    if (!this.canMoveTo(targetTile)) {
+    if (targetTile.type === 'wall' || targetTile.type === 'solid') {
       this.messageLog?.addSystemMessage('The way is blocked.');
       return { moved: false, blocked: true, triggered: null };
     }
 
     party.x = newX;
     party.y = newY;
+
+    if (party.x < 0 || party.x >= currentFloor.width || party.y < 0 || party.y >= currentFloor.height) {
+      DebugLogger.warn('DungeonMovementHandler', `Party moved out of bounds to (${party.x}, ${party.y})! Reverting.`);
+      party.x = party.x - delta.dx;
+      party.y = party.y - delta.dy;
+      this.messageLog?.addSystemMessage('You cannot move in that direction.');
+      return { moved: false, blocked: true, triggered: null };
+    }
     this.gameState.turnCount++;
     this.lastMoveTime = now;
 
@@ -119,9 +134,29 @@ export class DungeonMovementHandler {
     });
   }
 
-  private canMoveTo(tile: DungeonTile | null): boolean {
-    if (!tile) return false;
-    return tile.type !== 'wall' && tile.type !== 'solid';
+  private canMoveTo(targetTile: DungeonTile | null, currentTile: DungeonTile | null, direction: Direction): boolean {
+    if (!currentTile) return targetTile !== null && targetTile.type !== 'wall' && targetTile.type !== 'solid';
+
+    switch (direction) {
+      case 'north':
+        if (currentTile.northWall) return false;
+        break;
+      case 'south':
+        if (currentTile.southWall) return false;
+        break;
+      case 'east':
+        if (currentTile.eastWall) return false;
+        break;
+      case 'west':
+        if (currentTile.westWall) return false;
+        break;
+    }
+
+    if (targetTile) {
+      return targetTile.type !== 'wall' && targetTile.type !== 'solid';
+    }
+
+    return true;
   }
 
   private getAbsoluteDirection(relativeDir: 'forward' | 'backward', facing: Direction): Direction {
@@ -153,26 +188,16 @@ export class DungeonMovementHandler {
 
     switch (tile.type) {
       case 'stairs_up':
-        if (this.gameState.currentFloor === 1) {
-          // Special case for returning to town from floor 1
-          // Only show message if we haven't shown it for this position
-          if (!isSamePosition) {
-            this.messageLog?.addSystemMessage('You are at the castle entrance. Do you want to return to town? (Y/N)');
-            this.lastTileEventPosition = currentPosition;
-          }
-          return 'stairs';
-        } else if (this.gameState.currentFloor > 1) {
-          this.handleStairsUp();
-          this.lastTileEventPosition = null;
-          return 'stairs';
+        if (!isSamePosition) {
+          this.messageLog?.addSystemMessage('You found stairs going up. Press ENTER to use them.');
+          this.lastTileEventPosition = currentPosition;
         }
         break;
 
       case 'stairs_down':
-        if (this.gameState.currentFloor < this.gameState.dungeon.length) {
-          this.handleStairsDown();
-          this.lastTileEventPosition = null;
-          return 'stairs';
+        if (!isSamePosition) {
+          this.messageLog?.addSystemMessage('You found stairs going down. Press ENTER to use them.');
+          this.lastTileEventPosition = currentPosition;
         }
         break;
 
@@ -213,28 +238,71 @@ export class DungeonMovementHandler {
     return null;
   }
 
-  private handleStairsUp(): void {
+  public handleStairsUp(): void {
     this.gameState.currentFloor--;
     const newFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
 
     if (newFloor && newFloor.stairsDown) {
-      this.gameState.party.x = newFloor.stairsDown.x;
-      this.gameState.party.y = newFloor.stairsDown.y;
+      const stairsX = newFloor.stairsDown.x;
+      const stairsY = newFloor.stairsDown.y;
+
+      if (this.isValidPosition(stairsX, stairsY, newFloor)) {
+        this.gameState.party.x = stairsX;
+        this.gameState.party.y = stairsY;
+      } else {
+        DebugLogger.error('DungeonMovementHandler', `Invalid stairs position (${stairsX}, ${stairsY}) on floor ${this.gameState.currentFloor}. Using fallback.`);
+        const fallback = this.findValidFloorTile(newFloor);
+        this.gameState.party.x = fallback.x;
+        this.gameState.party.y = fallback.y;
+      }
     }
 
+    this.updateDiscoveredTiles();
     this.messageLog?.addSystemMessage(`Ascended to floor ${this.gameState.currentFloor}`);
   }
 
-  private handleStairsDown(): void {
+  public handleStairsDown(): void {
     this.gameState.currentFloor++;
     const newFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
 
     if (newFloor.stairsUp) {
-      this.gameState.party.x = newFloor.stairsUp.x;
-      this.gameState.party.y = newFloor.stairsUp.y;
+      const stairsX = newFloor.stairsUp.x;
+      const stairsY = newFloor.stairsUp.y;
+
+      if (this.isValidPosition(stairsX, stairsY, newFloor)) {
+        this.gameState.party.x = stairsX;
+        this.gameState.party.y = stairsY;
+      } else {
+        DebugLogger.error('DungeonMovementHandler', `Invalid stairs position (${stairsX}, ${stairsY}) on floor ${this.gameState.currentFloor}. Using fallback.`);
+        const fallback = this.findValidFloorTile(newFloor);
+        this.gameState.party.x = fallback.x;
+        this.gameState.party.y = fallback.y;
+      }
     }
 
+    this.updateDiscoveredTiles();
     this.messageLog?.addSystemMessage(`Descended to floor ${this.gameState.currentFloor}`);
+  }
+
+  private isValidPosition(x: number, y: number, floor: any): boolean {
+    if (x < 0 || x >= floor.width || y < 0 || y >= floor.height) {
+      return false;
+    }
+    const tile = floor.tiles[y][x];
+    return tile && tile.type !== 'wall' && tile.type !== 'solid';
+  }
+
+  private findValidFloorTile(floor: any): { x: number; y: number } {
+    for (let y = 0; y < floor.height; y++) {
+      for (let x = 0; x < floor.width; x++) {
+        const tile = floor.tiles[y][x];
+        if (tile && tile.type === 'floor') {
+          return { x, y };
+        }
+      }
+    }
+    DebugLogger.warn('DungeonMovementHandler', 'No valid floor tile found, defaulting to (1,1)');
+    return { x: 1, y: 1 };
   }
 
   private handleChest(tile: DungeonTile): void {

@@ -1,16 +1,25 @@
 import { DungeonEvent, DungeonLevel, DungeonTile, OverrideZone } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
+import { SeededRandom } from './SeededRandom';
 
 export class DungeonGenerator {
   private width: number;
   private height: number;
   private level: number;
   private rooms: { x: number; y: number; width: number; height: number }[] = [];
+  private rng: SeededRandom;
+  private seedString: string;
 
-  constructor(width: number = 20, height: number = 20) {
+  constructor(width: number = 20, height: number = 20, seed?: string) {
     this.width = width;
     this.height = height;
     this.level = 1;
+    this.seedString = seed || SeededRandom.generateSeedString();
+    this.rng = new SeededRandom(this.seedString);
+  }
+
+  public getSeed(): string {
+    return this.seedString;
   }
 
   public generateLevel(level: number): DungeonLevel {
@@ -25,6 +34,7 @@ export class DungeonGenerator {
     const overrideZones = this.generateOverrideZones(tiles);
     const events = this.generateEvents(tiles);
     const startPosition = this.findValidStartPosition(tiles);
+    const stairsPositions = this.recordStairsPositions(tiles);
 
     return {
       level,
@@ -35,6 +45,8 @@ export class DungeonGenerator {
       events,
       startX: startPosition.x,
       startY: startPosition.y,
+      stairsUp: stairsPositions.stairsUp,
+      stairsDown: stairsPositions.stairsDown,
     };
   }
 
@@ -63,14 +75,14 @@ export class DungeonGenerator {
   }
 
   private generateRooms(tiles: DungeonTile[][]): void {
-    const numRooms = 5 + Math.floor(Math.random() * 5);
+    const numRooms = 5 + Math.floor(this.rng.random() * 5);
     const rooms: { x: number; y: number; width: number; height: number }[] = [];
 
     for (let i = 0; i < numRooms; i++) {
-      const roomWidth = 3 + Math.floor(Math.random() * 5);
-      const roomHeight = 3 + Math.floor(Math.random() * 5);
-      const x = 1 + Math.floor(Math.random() * (this.width - roomWidth - 2));
-      const y = 1 + Math.floor(Math.random() * (this.height - roomHeight - 2));
+      const roomWidth = 3 + Math.floor(this.rng.random() * 5);
+      const roomHeight = 3 + Math.floor(this.rng.random() * 5);
+      const x = 1 + Math.floor(this.rng.random() * (this.width - roomWidth - 2));
+      const y = 1 + Math.floor(this.rng.random() * (this.height - roomHeight - 2));
 
       let overlaps = false;
       for (const room of rooms) {
@@ -115,8 +127,8 @@ export class DungeonGenerator {
     for (let i = 0; i < 10; i++) {
       if (floorTiles.length < 2) break;
 
-      const start = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-      const end = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+      const start = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
+      const end = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
 
       this.createCorridor(tiles, start.x, start.y, end.x, end.y);
     }
@@ -137,7 +149,7 @@ export class DungeonGenerator {
         tiles[y][x].type = 'floor';
       }
 
-      if (Math.random() < 0.5) {
+      if (this.rng.random() < 0.5) {
         if (x < x2) x++;
         else if (x > x2) x--;
         else if (y < y2) y++;
@@ -163,23 +175,23 @@ export class DungeonGenerator {
       // Floor 1: Place castle stairs (up to town) at a valid floor location
       if (floorTiles.length >= 2) {
         // Place stairs up (to castle/town) at a random floor tile
-        const upStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+        const upStairs = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
         upStairs.type = 'stairs_up';
 
         // Place stairs down at a different floor tile
         const remainingTiles = floorTiles.filter((t) => t !== upStairs);
         if (remainingTiles.length > 0) {
-          const downStairs = remainingTiles[Math.floor(Math.random() * remainingTiles.length)];
+          const downStairs = remainingTiles[Math.floor(this.rng.random() * remainingTiles.length)];
           downStairs.type = 'stairs_down';
         }
       }
     } else {
       // Other floors: Use existing random placement
       if (floorTiles.length >= 2) {
-        const upStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+        const upStairs = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
         upStairs.type = 'stairs_up';
 
-        const downStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+        const downStairs = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
         if (downStairs !== upStairs) {
           downStairs.type = 'stairs_down';
         }
@@ -187,17 +199,38 @@ export class DungeonGenerator {
     }
   }
 
+  private recordStairsPositions(tiles: DungeonTile[][]): {
+    stairsUp?: { x: number; y: number };
+    stairsDown?: { x: number; y: number };
+  } {
+    let stairsUp: { x: number; y: number } | undefined;
+    let stairsDown: { x: number; y: number } | undefined;
+
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (tiles[y][x].type === 'stairs_up') {
+          stairsUp = { x, y };
+        }
+        if (tiles[y][x].type === 'stairs_down') {
+          stairsDown = { x, y };
+        }
+      }
+    }
+
+    return { stairsUp, stairsDown };
+  }
+
   private placeSpecialTiles(tiles: DungeonTile[][]): void {
     const floorTiles = this.getFloorTiles(tiles);
     const numSpecial = Math.min(
       GAME_CONFIG.DUNGEON.MIN_SPECIAL_TILES +
-        Math.floor(Math.random() * GAME_CONFIG.DUNGEON.MAX_EXTRA_SPECIAL_TILES),
+        Math.floor(this.rng.random() * GAME_CONFIG.DUNGEON.MAX_EXTRA_SPECIAL_TILES),
       floorTiles.length
     );
 
     for (let i = 0; i < numSpecial; i++) {
-      const tile = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-      const rand = Math.random();
+      const tile = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
+      const rand = this.rng.random();
 
       // Build probability ranges based on enabled features
       let chestThreshold = 0;
@@ -294,9 +327,9 @@ export class DungeonGenerator {
 
     // Generate special mob zones based on level theme (if enabled)
     if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_SPECIAL_MOB_ZONES) {
-      const numSpecialZones = 1 + Math.floor(Math.random() * 2);
+      const numSpecialZones = 1 + Math.floor(this.rng.random() * 2);
       for (let i = 0; i < numSpecialZones; i++) {
-        const room = this.rooms[Math.floor(Math.random() * this.rooms.length)];
+        const room = this.rooms[Math.floor(this.rng.random() * this.rooms.length)];
         if (room) {
           zones.push({
             x1: room.x,
@@ -316,12 +349,12 @@ export class DungeonGenerator {
 
     // Generate high frequency zones in corridors (if enabled)
     if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_HIGH_FREQUENCY_ZONES) {
-      const numHighFreq = 2 + Math.floor(Math.random() * 2);
+      const numHighFreq = 2 + Math.floor(this.rng.random() * 2);
       for (let i = 0; i < numHighFreq; i++) {
-        const x1 = Math.floor(Math.random() * (this.width - 4));
-        const y1 = Math.floor(Math.random() * (this.height - 4));
-        const x2 = x1 + 2 + Math.floor(Math.random() * 3);
-        const y2 = y1 + 2 + Math.floor(Math.random() * 3);
+        const x1 = Math.floor(this.rng.random() * (this.width - 4));
+        const y1 = Math.floor(this.rng.random() * (this.height - 4));
+        const x2 = x1 + 2 + Math.floor(this.rng.random() * 3);
+        const y2 = y1 + 2 + Math.floor(this.rng.random() * 3);
 
         zones.push({
           x1,
@@ -394,7 +427,7 @@ export class DungeonGenerator {
       'spinner',
       'darkness',
     ];
-    return types[Math.floor(Math.random() * types.length)];
+    return types[Math.floor(this.rng.random() * types.length)];
   }
 
   private getEventData(type: string): any {
@@ -407,11 +440,11 @@ export class DungeonGenerator {
         return { gold: 50 + this.level * 20 };
       case 'teleport':
         return {
-          x: Math.floor(Math.random() * this.width),
-          y: Math.floor(Math.random() * this.height),
+          x: Math.floor(this.rng.random() * this.width),
+          y: Math.floor(this.rng.random() * this.height),
         };
       case 'spinner':
-        return { rotations: 1 + Math.floor(Math.random() * 3) };
+        return { rotations: 1 + Math.floor(this.rng.random() * 3) };
       case 'darkness':
         return { duration: 10 };
       default:
@@ -444,7 +477,7 @@ export class DungeonGenerator {
 
     const floorTiles = this.getFloorTiles(tiles);
     if (floorTiles.length > 0) {
-      const randomFloor = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+      const randomFloor = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
       return { x: randomFloor.x, y: randomFloor.y };
     }
 

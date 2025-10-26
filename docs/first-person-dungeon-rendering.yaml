@@ -1,0 +1,253 @@
+title: First Person Dungeon Rendering Tutorial
+source: https://screamingbrainstudios.com/first-person-dungeons/
+author: ScreamingBrain (Screaming Brain Studios)
+date_published: 2022-01-29
+date_modified: 2023-01-13
+description: Learn all about how you can make graphics for classic first-person dungeon crawlers with this simple tutorial from Screaming Brain Studios!
+
+sections:
+  - id: introduction
+    title: Introduction
+    content: |
+      In this tutorial, we will be going over some ways to create tiles for a faux 3D dungeon in the first-person perspective. This style is most recognizable from games like Eye of the Beholder, Wizardry, or Might and Magic.
+
+      These types of games utilized a simulated first-person perspective by having textures that were drawn to specific angles. This could be done using pre-rendered 3D graphics, pixel art, or even ray casting. This type of game is also referred to as a "blobber", due to the way both the player and enemy parties move around the game world on a grid as singular units, or blobs. This is different from being able to control or move each character around the map individually.
+    images:
+      - path: docs/sources/first-person-dungeons-images/Example.jpg
+        caption: Eye of the Beholder
+
+  - id: dungeon_layers
+    title: Dungeon Layers
+    content: |
+      Before we begin, we need to break things down just a little bit. I would like to clarify some terminology I will be using throughout the tutorial.
+
+      When talking about blobbers or first-person dungeon crawlers, it is important to understand how the entire dungeon is laid out on a grid. Each individual grid square is referred to as a CELL. The main dungeon view area is separated into multiple rows of CELLS called LAYERS, which display the dungeon TILES at varying sizes to create the illusion of perspective. A CELL is made up of several TILES, such as the ceiling, floor, or walls.
+
+      The main difference between LAYERS and CELLS is that each LAYER is made up of a certain number of CELLS used to display the dungeon to the player. Whereas CELLS only represent a single room, or a single space on the grid, and are made up of individual TILES.
+    terminology:
+      - term: Tile
+        definition: An individual wall, floor, or ceiling tile, used to compose Cells
+      - term: Cell
+        definition: Made up of Tiles to form a single room or hall and takes up one grid square
+      - term: Layer
+        definition: Made up of Cells to form a single depth-layer of the dungeon view area
+    key_concepts:
+      - concept: Layer sizing
+        description: Each layer of the dungeon view is 1/2 the size of the layer above it
+      - concept: Layer brightness
+        description: Each layer is 1/2 the brightness of the layer above it
+      - concept: Depth illusion
+        description: This particular resizing and shading gives a really nice illusion of depth
+      - concept: Cell division
+        description: Layer 1 contains 3 cells (1,2,3), Layer 2 contains 5 cells (4,5,6,7,8), Layer 3 contains 9 cells
+    images:
+      - path: docs/sources/first-person-dungeons-images/Hallways-Example-1.png
+        caption: "Left: Layer 1 / Middle: Layer 2 / Right: Layer 3"
+      - path: docs/sources/first-person-dungeons-images/Hallanim.gif
+        caption: Hallway made with 3 layers
+      - path: docs/sources/first-person-dungeons-images/Hallways-Grid-Floor.png
+        caption: Numbered Cells Starting from Bottom Left
+      - path: docs/sources/first-person-dungeons-images/Cellanim.gif
+        caption: Each layer displaying one cell
+      - path: docs/sources/first-person-dungeons-images/Wallanim.gif
+        caption: "Back Walls - Cells Indicated by Blue Lines"
+      - path: docs/sources/first-person-dungeons-images/Dunganim.gif
+        caption: "Example Side Hallways / Cells Indicated by Blue Outlines"
+
+  - id: perspective_transform
+    title: Perspective Transform
+    content: |
+      First, we should start with something basic, like how to assemble some tiles together to form a room, or CELL. We only need five tiles to simulate the appearance of a hallway or a room!
+
+      The basic construction of a pseudo-3D room uses several skewed textures with varying degrees of shading to simulate depth.
+    tile_types:
+      - name: Top Wall
+        color: Green (in index mask)
+      - name: Back Wall
+        color: Blue (in index mask)
+      - name: Left Wall
+        color: Dark Grey (in index mask)
+      - name: Right Wall
+        color: Light Grey (in index mask)
+      - name: Floor
+        color: Red (in index mask)
+    process:
+      - step: 1
+        action: Start with seamless texture
+        details: Use a 512x512 texture (texture size becomes dungeon view size)
+      - step: 2
+        action: Create Back Wall
+        details: Scale layer to 1/2 original size (512x512 → 256x256 centered)
+      - step: 3
+        action: Create Left Wall
+        details: |
+          - Paste full texture to new layer
+          - Use Perspective tool
+          - Shift upper right and lower right knobs 16 squares from left edge (aligns with Back Wall left edge)
+          - Move bottom right knob up to Back Wall bottom edge
+          - Move top right knob down to Back Wall top edge
+      - step: 4
+        action: Create Right Wall
+        details: |
+          - Paste full texture to new layer
+          - Use Perspective tool
+          - Shift upper left and lower left knobs 16 squares from right edge (aligns with Back Wall right edge)
+          - Move bottom left knob up to Back Wall bottom edge
+          - Move top left knob down to Back Wall top edge
+      - step: 5
+        action: Create Floor
+        details: |
+          - Paste full texture to new layer
+          - Drag upper left and upper right knobs down to Back Wall bottom edge
+          - Drag upper left and upper right knobs 16 squares from edges (align with Back Wall sides)
+      - step: 6
+        action: Create Top Wall
+        details: Same as Floor but drag knobs up to Back Wall top edge instead
+    images:
+      - path: docs/sources/first-person-dungeons-images/Tile-Breakdown.png
+        caption: "Left: Basic Outline / Center: Index Mask / Right: Textured Hallway"
+      - path: docs/sources/first-person-dungeons-images/Brick_08-512x512-1.png
+        caption: 512x512 Brick Texture
+      - path: docs/sources/first-person-dungeons-images/Layer-Scale.png
+        caption: Scale Layer by 1/2 its Original Size
+      - path: docs/sources/first-person-dungeons-images/Scaled-Texture.png
+        caption: Layer Scaled by 1/2
+      - path: docs/sources/first-person-dungeons-images/Grid-Settings.png
+        caption: Grid Spacing Settings (8x8)
+      - path: docs/sources/first-person-dungeons-images/Perspective-Knobs.png
+        caption: Perspective Tool Active
+      - path: docs/sources/first-person-dungeons-images/Left-Wall-1.png
+        caption: Texture Shifted to Left Side
+      - path: docs/sources/first-person-dungeons-images/Left-Wall-2.png
+        caption: Skewed Left Wall
+      - path: docs/sources/first-person-dungeons-images/asdf.png
+        caption: Texture Shifted to Right Side
+      - path: docs/sources/first-person-dungeons-images/Right-Wall-2.png
+        caption: Skewed Right Wall
+      - path: docs/sources/first-person-dungeons-images/Floor-1.png
+        caption: Floor Texture Stretched Towards the Bottom Edge
+      - path: docs/sources/first-person-dungeons-images/Floor-2.png
+        caption: Skewed Floor Texture
+      - path: docs/sources/first-person-dungeons-images/Top-Wall.png
+        caption: Skewed Top Wall
+
+  - id: simple_shading
+    title: Simple Shading
+    content: |
+      One thing we can do to give our scene a little bit more depth is to apply some brightness adjustments to our wall tiles. Since each tile is currently on its own unique layer, we can tweak each one separately.
+    shading_values:
+      - tile: Left Wall
+        brightness_adjustment: -50
+      - tile: Right Wall
+        brightness_adjustment: -50
+      - tile: Top Wall
+        brightness_adjustment: -75
+      - tile: Floor
+        brightness_adjustment: "+25 to +50 (optional)"
+        note: Can be left untouched
+      - tile: Back Wall
+        brightness_adjustment: Addressed in gradient shading section
+    images:
+      - path: docs/sources/first-person-dungeons-images/Brightness-Settings.png
+        caption: Brightness Set to -50
+      - path: docs/sources/first-person-dungeons-images/Shaded-Walls.png
+        caption: Shaded Left and Right Walls
+      - path: docs/sources/first-person-dungeons-images/Shaded-Final.png
+        caption: Final Shaded Walls
+
+  - id: gradient_shading
+    title: Gradient Shading
+    content: |
+      A more advanced shading technique uses gradients with the Grain Merge blend mode to create the appearance of light fading towards the back of the room.
+    process:
+      - step: 1
+        action: Set foreground and background colors
+        details: |
+          Foreground Color (light gray):
+            - R, G, B sliders: 25
+            - Hue and Saturation: 0
+            - Value: 25
+
+          Background Color (lighter gray):
+            - Divide foreground values by 2
+      - step: 2
+        action: Create gradient for Left Wall
+        details: |
+          - Create new layer above Left Wall layer
+          - Set layer boundary size to 1/4 canvas width (512px → 128px)
+          - Draw linear gradient from a few ticks from left edge to right side of Left Wall
+          - Start about 16-32 pixels from edge
+          - Change blend mode to Grain Merge
+          - Merge down into Left Wall layer
+      - step: 3
+        action: Repeat for other walls
+        details: |
+          - Right Wall: gradient from right edge inward
+          - Top Wall: gradient from top edge down
+          - Floor: gradient from bottom edge up
+          - Back Wall: gradient from any edge or bucket fill with foreground color
+    key_technique:
+      blend_mode: Grain Merge
+      description: This blend mode gives the best results for this type of effect, allowing original texture brightness to show through while creating depth through shading
+    images:
+      - path: docs/sources/first-person-dungeons-images/FG1.png
+        caption: Foreground Color Settings
+      - path: docs/sources/first-person-dungeons-images/BG1.png
+        caption: Background Color Settings
+      - path: docs/sources/first-person-dungeons-images/Layer-Boundary-Left.png
+        caption: Layer Boundary Settings
+      - path: docs/sources/first-person-dungeons-images/Shading-Left-Wall.png
+        caption: Left Wall Gradient
+      - path: docs/sources/first-person-dungeons-images/Grain-Merge.png
+        caption: Blend Mode Set to Grain Merge
+      - path: docs/sources/first-person-dungeons-images/Shaded-Room.png
+        caption: Shaded Wall, Floor, and Ceiling Tiles
+      - path: docs/sources/first-person-dungeons-images/Back-Wall-Sahding.png
+        caption: Shading the Back Wall
+      - path: docs/sources/first-person-dungeons-images/Completed-Dungeon.png
+        caption: Completed Dungeon Tiles
+
+technical_notes:
+  - note: Grid snapping
+    details: Use 8x8 grid spacing for precise alignment
+  - note: Texture size
+    details: If you start with 512x512 texture, dungeon view size is also 512x512
+  - note: Seamless textures
+    details: Not required but recommended for best results
+  - note: Alternative approach
+    details: Can apply gradients before Perspective Transform
+  - note: Layer system
+    details: Each tile on separate layer allows individual tweaking
+  - note: Vanishing point perspective
+    details: Creates illusion with certain cells extending beyond viewable area
+
+implementation_concepts:
+  - concept: Segment-based rendering
+    description: Each tile (wall, floor, ceiling) is a separate renderable segment
+  - concept: Layer composition
+    description: Segments are composited back-to-front to create final view
+  - concept: Depth-based scaling
+    description: Each layer is 50% smaller than the previous
+  - concept: Depth-based shading
+    description: Each layer is 50% darker than the previous
+  - concept: Grid-based movement
+    description: Player moves on grid, each cell displays one segment per layer
+  - concept: Tile visibility
+    description: Individual walls can be shown/hidden for corridors and passages
+
+tools_software:
+  primary: GIMP (free image editing software)
+  alternative: Photoshop (Free Transform feature)
+  key_features:
+    - Perspective Transform tool
+    - Layer system
+    - Grid snapping (8x8 spacing)
+    - Brightness/Contrast adjustments
+    - Gradient tool with Grain Merge blend mode
+
+status: Tutorial in progress of being expanded
+
+related_resources:
+  - name: Old School Dungeon Crawler Pack
+    url: https://screamingbrainstudios.itch.io/dungeon-crawler-pack
+    description: Ready-made tiles from Screaming Brain Studios

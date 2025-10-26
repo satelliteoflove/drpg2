@@ -130,7 +130,8 @@ export class DungeonScene extends Scene {
       // Render info panel
       this.renderDungeonInfo(ctx);
 
-      if (this.dungeonMapView) {
+      if (this.dungeonMapView && currentDungeon) {
+        this.dungeonMapView.setDungeon(currentDungeon);
         this.dungeonMapView.setPlayerPosition(
           this.gameState.party.x,
           this.gameState.party.y,
@@ -186,7 +187,8 @@ export class DungeonScene extends Scene {
     // Render info panel
     this.renderDungeonInfo(ctx);
 
-    if (this.dungeonMapView) {
+    if (this.dungeonMapView && currentDungeon) {
+      this.dungeonMapView.setDungeon(currentDungeon);
       this.dungeonMapView.setPlayerPosition(
         this.gameState.party.x,
         this.gameState.party.y,
@@ -295,6 +297,28 @@ export class DungeonScene extends Scene {
 
     ctx.fillText(`Turn Count: ${this.gameState.turnCount || 0}`, infoX + 10, infoY + 190);
     ctx.fillText(`Combat: ${this.gameState.combatEnabled ? 'Enabled' : 'Disabled'}`, infoX + 10, infoY + 210);
+
+    if (this.gameState.dungeonSeed) {
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('SEED', infoX + 10, infoY + 240);
+
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#aaa';
+      const seed = this.gameState.dungeonSeed;
+      const maxWidth = infoWidth - 20;
+      const charWidth = 6;
+      const charsPerLine = Math.floor(maxWidth / charWidth);
+
+      if (seed.length <= charsPerLine) {
+        ctx.fillText(seed, infoX + 10, infoY + 260);
+      } else {
+        const line1 = seed.substring(0, charsPerLine);
+        const line2 = seed.substring(charsPerLine);
+        ctx.fillText(line1, infoX + 10, infoY + 260);
+        ctx.fillText(line2, infoX + 10, infoY + 275);
+      }
+    }
   }
 
   private initializeUI(canvas: HTMLCanvasElement): void {
