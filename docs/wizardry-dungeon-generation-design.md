@@ -349,6 +349,30 @@ Note: Ensure wall symmetry:
    if cell[x,y].eastWall.exists, then cell[x+1,y].westWall.exists
 ```
 
+**Implementation Notes:**
+
+1. **This is a recalculation phase:**
+   - Phase 2 (carveRoom) sets walls to {exists: false} temporarily
+   - Phase 3 (carveCorridorBetweenRooms) sets walls to {exists: false} temporarily
+   - Phase 4 (calculateWalls) is the authoritative calculation based on neighbors
+   - Phase 2/3 wall setting is not strictly necessary but doesn't break anything
+
+2. **Implicit vs Explicit Symmetry:**
+   - Design doc Appendix A.6 shows explicit symmetry (updating both sides)
+   - Current implementation uses implicit symmetry (each tile calculates independently)
+   - Both approaches work correctly
+   - Implicit is simpler, explicit is more defensive
+
+3. **Floor Tiles Only:**
+   - Only processes tiles where type === 'floor'
+   - Solid tiles keep initial state (all walls exist = true)
+   - This is correct: solid rock should be impenetrable from all sides
+
+4. **Optimization Opportunity:**
+   - Phase 2/3 could skip wall setting entirely (will be recalculated anyway)
+   - Current approach works but does redundant operations
+   - Not a bug, just inefficient
+
 ### Phase 5: Place Doors
 
 ```
@@ -661,10 +685,33 @@ Advantages:
 - src/types/GameTypes.ts (Edge, Corridor interfaces added)
 - src/utils/DungeonGenerator.ts (Phase 2 + 3 implementation)
 
-### Phase 4: Calculate Wall Properties
-- Recalculate walls based on neighbor tiles
-- Ensure wall symmetry
+### Lessons Learned from Phase 2 & 3 Implementation
+
+**Wall Property Management:**
+- Originally set walls to `{exists: false}` during room/corridor carving
+- This is recalculated in Phase 4 anyway (wasteful but not broken)
+- Better approach: Don't touch walls in Phase 2/3, let Phase 4 handle it
+- Current implementation works correctly despite inefficiency
+
+**Design Decisions:**
+- Implicit symmetry chosen over explicit (simpler, works correctly)
+- Only floor tiles processed in Phase 4 (solid tiles irrelevant)
+- MST + 25% extra connections provides good connectivity without overconnecting
+
+### Phase 4: Calculate Wall Properties ✅ COMPLETE
+- ✅ Wall calculation already implemented in calculateWalls()
+- ✅ Runs after Phase 2 (rooms) and Phase 3 (corridors)
+- ✅ Recalculates all walls based on tile adjacency
+- Uses implicit symmetry (each tile checks neighbors independently)
+- Only processes floor tiles (solid tiles keep initial all-walls-exist state)
 - See detailed algorithm in Phase 4 section
+
+**Status:** Already implemented. Works correctly but uses implicit symmetry approach rather than explicit symmetry shown in Appendix A.6.
+
+**Optimization Opportunities (deferred):**
+- Phase 2/3 could skip wall setting entirely (will be recalculated anyway)
+- Could implement explicit symmetry for more defensive programming
+- Not critical - current implementation is correct
 
 ### Phase 5: Place Doors
 - Find room-corridor boundaries
