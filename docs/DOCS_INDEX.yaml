@@ -423,6 +423,15 @@ api_variables:
     topics: [service identifiers, DI tokens, service keys]
     summary: Service identifier constants
 
+dungeon_architecture:
+  - file: wizardry-dungeon-architecture.md
+    topics: [dungeon architecture, walls-on-edges, door system, raycasting, wizardry model, dungeon generation, level design, WGIV analysis]
+    summary: Analysis of Wizardry dungeon architecture with walls-on-edges model, door mechanics, WGIV F1 map analysis, and comparison with current DRPG2 implementation
+
+  - file: wizardry-dungeon-generation-design.md
+    topics: [dungeon generation, procedural generation, algorithm design, room placement, corridor carving, door placement, puzzle design, WGIV analysis, A* pathfinding, MST, edge cases, integration guide]
+    summary: Complete standalone dungeon generation system design with WGIV F1 analysis, 8-phase algorithm, detailed pseudocode (A*, MST, wall calculation, door placement), JSON examples, codebase integration guide, and comprehensive edge case handling
+
 first_person_rendering:
   file: first-person-dungeon-rendering.yaml
   topics: [first-person view, dungeon rendering, depth layers, segment rendering, perspective transform, classic dungeon crawler, wizardry style, eye of the beholder, blobber, tiles, cells, layers, brick patterns, gradient shading, GIMP tutorial]
@@ -442,7 +451,7 @@ search_hints:
   setup: [README.md, USAGE.md]
   api: [API_REFERENCE.md, api/README.md, api/globals.md]
   combat: [api/classes/CombatScene.md, api/classes/CombatSystem.md, api/interfaces/Attack.md]
-  dungeon: [api/classes/DungeonGenerator.md, api/classes/DungeonScene.md, api/interfaces/DungeonLevel.md]
+  dungeon: [api/classes/DungeonGenerator.md, api/classes/DungeonScene.md, api/interfaces/DungeonLevel.md, wizardry-dungeon-architecture.md]
   services: [api/classes/GameServices.md, api/classes/ServiceContainer.md, api/classes/ServiceRegistry.md]
   scenes: [api/classes/Scene.md, api/classes/SceneManager.md, api/interfaces/SceneRenderContext.md]
   character: [api/classes/Character.md, api/interfaces/CharacterStats.md, api/classes/CharacterCreationScene.md, wizardry_gaiden_4_character_parameters.md]
@@ -458,3 +467,9 @@ search_hints:
   status_effects: [status-effects.md, temple-requirements.md, api/type-aliases/CharacterStatus.md]
   conditions: [status-effects.md, temple-mechanics.md]
   cure: [status-effects.md, wizardry_gaiden_4_spells.md, temple-requirements.md]
+  doors: [wizardry-dungeon-architecture.md, wizardry-dungeon-generation-design.md]
+  walls: [wizardry-dungeon-architecture.md, wizardry-dungeon-generation-design.md]
+  raycasting: [wizardry-dungeon-architecture.md, first-person-dungeon-rendering.yaml]
+  dungeon_design: [wizardry-dungeon-architecture.md, wizardry-dungeon-generation-design.md, api/classes/DungeonGenerator.md]
+  dungeon_generation: [wizardry-dungeon-generation-design.md, api/classes/DungeonGenerator.md]
+  procedural_generation: [wizardry-dungeon-generation-design.md]
