@@ -1,0 +1,162 @@
+import { DungeonLevel, Direction } from '../types/GameTypes';
+
+export interface RayHit {
+  hit: boolean;
+  distance: number;
+  wallX: number;
+  wallY: number;
+  side: 'north' | 'south' | 'east' | 'west';
+  textureX: number;
+}
+
+export class RaycastEngine {
+  private dungeon: DungeonLevel | null = null;
+
+  public setDungeon(dungeon: DungeonLevel): void {
+    this.dungeon = dungeon;
+  }
+
+  public castRay(
+    playerX: number,
+    playerY: number,
+    rayAngle: number,
+    maxDistance: number = 20
+  ): RayHit {
+    if (!this.dungeon) {
+      return this.createMissHit();
+    }
+
+    const rayDirX = Math.cos(rayAngle);
+    const rayDirY = Math.sin(rayAngle);
+
+    let mapX = Math.floor(playerX);
+    let mapY = Math.floor(playerY);
+
+    const deltaDistX = Math.abs(1 / rayDirX);
+    const deltaDistY = Math.abs(1 / rayDirY);
+
+    let stepX: number;
+    let stepY: number;
+    let sideDistX: number;
+    let sideDistY: number;
+
+    if (rayDirX < 0) {
+      stepX = -1;
+      sideDistX = (playerX - mapX) * deltaDistX;
+    } else {
+      stepX = 1;
+      sideDistX = (mapX + 1.0 - playerX) * deltaDistX;
+    }
+
+    if (rayDirY < 0) {
+      stepY = -1;
+      sideDistY = (playerY - mapY) * deltaDistY;
+    } else {
+      stepY = 1;
+      sideDistY = (mapY + 1.0 - playerY) * deltaDistY;
+    }
+
+    let hit = false;
+    let side: 0 | 1 = 0;
+    let steps = 0;
+
+    while (!hit && steps < maxDistance * 2) {
+      if (sideDistX < sideDistY) {
+        sideDistX += deltaDistX;
+        mapX += stepX;
+        side = 0;
+      } else {
+        sideDistY += deltaDistY;
+        mapY += stepY;
+        side = 1;
+      }
+
+      steps++;
+
+      if (this.isWall(mapX, mapY)) {
+        hit = true;
+      }
+
+      if (mapX < 0 || mapX >= this.dungeon.width || mapY < 0 || mapY >= this.dungeon.height) {
+        hit = true;
+      }
+    }
+
+    if (!hit) {
+      return this.createMissHit();
+    }
+
+    let perpWallDist: number;
+    if (side === 0) {
+      perpWallDist = Math.abs((mapX - playerX + (1 - stepX) / 2) / rayDirX);
+    } else {
+      perpWallDist = Math.abs((mapY - playerY + (1 - stepY) / 2) / rayDirY);
+    }
+
+    let wallSide: 'north' | 'south' | 'east' | 'west';
+    let textureX: number;
+
+    if (side === 0) {
+      wallSide = stepX > 0 ? 'west' : 'east';
+      const wallHitY = playerY + perpWallDist * rayDirY;
+      textureX = wallHitY - Math.floor(wallHitY);
+    } else {
+      wallSide = stepY > 0 ? 'north' : 'south';
+      const wallHitX = playerX + perpWallDist * rayDirX;
+      textureX = wallHitX - Math.floor(wallHitX);
+    }
+
+    return {
+      hit: true,
+      distance: perpWallDist,
+      wallX: mapX,
+      wallY: mapY,
+      side: wallSide,
+      textureX: textureX,
+    };
+  }
+
+  public getAngleForDirection(direction: Direction): number {
+    switch (direction) {
+      case 'north':
+        return -Math.PI / 2;
+      case 'south':
+        return Math.PI / 2;
+      case 'east':
+        return 0;
+      case 'west':
+        return Math.PI;
+      default:
+        return 0;
+    }
+  }
+
+  public getAngleFromDegrees(degrees: number): number {
+    return (degrees * Math.PI) / 180;
+  }
+
+  private isWall(x: number, y: number): boolean {
+    if (!this.dungeon) return true;
+    if (x < 0 || x >= this.dungeon.width || y < 0 || y >= this.dungeon.height) {
+      return true;
+    }
+    const tile = this.dungeon.tiles[y][x];
+    return tile.type === 'wall';
+  }
+
+  private createMissHit(): RayHit {
+    return {
+      hit: false,
+      distance: 999,
+      wallX: 0,
+      wallY: 0,
+      side: 'north',
+      textureX: 0,
+    };
+  }
+
+  public calculateWallHeight(distance: number, viewHeight: number): number {
+    if (distance <= 0.1) distance = 0.1;
+    return Math.floor(viewHeight / distance);
+  }
+}
