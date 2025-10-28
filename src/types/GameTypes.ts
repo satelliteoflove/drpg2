@@ -207,17 +207,8 @@ export interface Wall {
   properties: WallProperties | null;
 }
 
-export interface DungeonTile {
-  x: number;
-  y: number;
-  type: 'wall' | 'floor' | 'door' | 'stairs_up' | 'stairs_down' | 'chest' | 'trap' | 'event' | 'solid' | 'corridor';
-  discovered: boolean;
-  hasMonster: boolean;
-  hasItem: boolean;
-  northWall: Wall;
-  southWall: Wall;
-  eastWall: Wall;
-  westWall: Wall;
+export interface SpecialTile {
+  type: 'stairs_up' | 'stairs_down' | 'teleporter' | 'trap' | 'switch' | 'treasure' | 'chest' | 'event';
   properties?: {
     locked?: boolean;
     opened?: boolean;
@@ -235,6 +226,79 @@ export interface DungeonTile {
     targetY?: number;
     monsters?: any[];
   };
+}
+
+export interface DoorPlacement {
+  x: number;
+  y: number;
+  wall: 'north' | 'south' | 'east' | 'west';
+  locked: boolean;
+  keyId?: string;
+}
+
+export interface Room {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  type: 'large' | 'medium' | 'small' | 'junction';
+  doors: DoorPlacement[];
+  specialTiles: { x: number; y: number; type: string }[];
+}
+
+export interface Edge {
+  from: Room;
+  to: Room;
+  distance: number;
+}
+
+export interface Corridor {
+  id: string;
+  path: { x: number; y: number }[];
+  connectsRooms: [string, string];
+}
+
+export interface DungeonGenerationConfig {
+  width: number;
+  height: number;
+  seed?: string;
+  rooms: {
+    large: { count: [number, number]; size: [number, number] };
+    medium: { count: [number, number]; size: [number, number] };
+    small: { count: [number, number]; size: [number, number] };
+  };
+  corridors: {
+    width: number;
+    extraConnections: number;
+  };
+  doors: {
+    perLargeRoom: [number, number];
+    perMediumRoom: [number, number];
+    perSmallRoom: [number, number];
+    lockedPercentage: number;
+  };
+  specialTiles: {
+    teleporterPairs: number;
+    trapsPerZone: [number, number];
+    switches: number;
+    treasureRooms: number;
+  };
+}
+
+export interface DungeonTile {
+  x: number;
+  y: number;
+  type: 'floor' | 'solid';
+  discovered: boolean;
+  hasMonster: boolean;
+  hasItem: boolean;
+  northWall: Wall;
+  southWall: Wall;
+  eastWall: Wall;
+  westWall: Wall;
+  special?: SpecialTile;
+  encounterZoneId?: string;
 }
 
 export interface DungeonLevel {

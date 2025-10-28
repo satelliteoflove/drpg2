@@ -1,12 +1,15 @@
-import { DungeonEvent, DungeonLevel, DungeonTile, OverrideZone, Wall } from '../types/GameTypes';
+import { DungeonEvent, DungeonLevel, DungeonTile, OverrideZone, Wall, Room, Edge, Corridor } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { SeededRandom } from './SeededRandom';
+import { PriorityQueue } from './PriorityQueue';
+import { Pathfinding, Point } from './Pathfinding';
 
 export class DungeonGenerator {
   private width: number;
   private height: number;
   private level: number;
-  private rooms: { x: number; y: number; width: number; height: number }[] = [];
+  private rooms: Room[] = [];
+  private corridors: Corridor[] = [];
   private rng: SeededRandom;
   private seedString: string;
 
@@ -67,7 +70,7 @@ export class DungeonGenerator {
         tiles[y][x] = {
           x,
           y,
-          type: 'wall',
+          type: 'solid',
           discovered: false,
           hasMonster: false,
           hasItem: false,
@@ -83,96 +86,272 @@ export class DungeonGenerator {
   }
 
   private generateRooms(tiles: DungeonTile[][]): void {
-    const numRooms = 5 + Math.floor(this.rng.random() * 5);
-    const rooms: { x: number; y: number; width: number; height: number }[] = [];
+    this.rooms = [];
 
-    for (let i = 0; i < numRooms; i++) {
-      const roomWidth = 3 + Math.floor(this.rng.random() * 5);
-      const roomHeight = 3 + Math.floor(this.rng.random() * 5);
-      const x = 1 + Math.floor(this.rng.random() * (this.width - roomWidth - 2));
-      const y = 1 + Math.floor(this.rng.random() * (this.height - roomHeight - 2));
+    const largeCount = 3 + Math.floor(this.rng.random() * 3);
+    const mediumCount = 5 + Math.floor(this.rng.random() * 4);
+    const smallCount = 8 + Math.floor(this.rng.random() * 5);
 
-      let overlaps = false;
-      for (const room of rooms) {
-        if (
-          x < room.x + room.width + 1 &&
-          x + roomWidth + 1 > room.x &&
-          y < room.y + room.height + 1 &&
-          y + roomHeight + 1 > room.y
-        ) {
-          overlaps = true;
-          break;
-        }
+    for (let i = 0; i < largeCount; i++) {
+      const room = this.placeRoomStrategically('large');
+      if (room) {
+        this.rooms.push(room);
+        this.carveRoom(room, tiles);
       }
+    }
 
-      if (!overlaps) {
-        rooms.push({ x, y, width: roomWidth, height: roomHeight });
+    for (let i = 0; i < mediumCount; i++) {
+      const room = this.placeRoomStrategically('medium');
+      if (room) {
+        this.rooms.push(room);
+        this.carveRoom(room, tiles);
+      }
+    }
 
-        for (let ry = y; ry < y + roomHeight; ry++) {
-          for (let rx = x; rx < x + roomWidth; rx++) {
-            if (tiles[ry] && tiles[ry][rx]) {
-              tiles[ry][rx].type = 'floor';
-            }
-          }
+    for (let i = 0; i < smallCount; i++) {
+      const room = this.placeRoomStrategically('small');
+      if (room) {
+        this.rooms.push(room);
+        this.carveRoom(room, tiles);
+      }
+    }
+  }
+
+  private placeRoomStrategically(roomType: 'large' | 'medium' | 'small'): Room | null {
+    const sizeRange = roomType === 'large' ? [6, 8] : roomType === 'medium' ? [4, 6] : [3, 4];
+    const width = sizeRange[0] + Math.floor(this.rng.random() * (sizeRange[1] - sizeRange[0] + 1));
+    const height = sizeRange[0] + Math.floor(this.rng.random() * (sizeRange[1] - sizeRange[0] + 1));
+
+    const strategicPositions = this.getStrategicPositions(roomType, width, height);
+
+    for (const pos of strategicPositions) {
+      const room: Room = {
+        id: `${roomType}_${this.rooms.length}`,
+        x: pos.x,
+        y: pos.y,
+        width,
+        height,
+        type: roomType,
+        doors: [],
+        specialTiles: []
+      };
+
+      if (!this.checkRoomOverlap(room)) {
+        return room;
+      }
+    }
+
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const x = 1 + Math.floor(this.rng.random() * (this.width - width - 2));
+      const y = 1 + Math.floor(this.rng.random() * (this.height - height - 2));
+
+      const room: Room = {
+        id: `${roomType}_${this.rooms.length}`,
+        x,
+        y,
+        width,
+        height,
+        type: roomType,
+        doors: [],
+        specialTiles: []
+      };
+
+      if (!this.checkRoomOverlap(room)) {
+        return room;
+      }
+    }
+
+    return null;
+  }
+
+  private getStrategicPositions(roomType: 'large' | 'medium' | 'small', width: number, height: number): Point[] {
+    const positions: Point[] = [];
+
+    if (roomType === 'large') {
+      positions.push({ x: 1, y: 1 });
+      positions.push({ x: this.width - width - 1, y: 1 });
+      positions.push({ x: 1, y: this.height - height - 1 });
+      positions.push({ x: this.width - width - 1, y: this.height - height - 1 });
+      positions.push({ x: Math.floor((this.width - width) / 2), y: Math.floor((this.height - height) / 2) });
+    } else if (roomType === 'medium') {
+      positions.push({ x: Math.floor((this.width - width) / 2), y: 1 });
+      positions.push({ x: Math.floor((this.width - width) / 2), y: this.height - height - 1 });
+      positions.push({ x: 1, y: Math.floor((this.height - height) / 2) });
+      positions.push({ x: this.width - width - 1, y: Math.floor((this.height - height) / 2) });
+      positions.push({ x: Math.floor((this.width - width) / 4), y: Math.floor((this.height - height) / 4) });
+      positions.push({ x: Math.floor(3 * (this.width - width) / 4), y: Math.floor((this.height - height) / 4) });
+      positions.push({ x: Math.floor((this.width - width) / 4), y: Math.floor(3 * (this.height - height) / 4) });
+      positions.push({ x: Math.floor(3 * (this.width - width) / 4), y: Math.floor(3 * (this.height - height) / 4) });
+    } else {
+      for (let y = 2; y < this.height - height - 2; y += 4) {
+        for (let x = 2; x < this.width - width - 2; x += 4) {
+          positions.push({ x, y });
         }
       }
     }
 
-    this.rooms = rooms;
+    return positions;
+  }
+
+  private checkRoomOverlap(newRoom: Room): boolean {
+    const minSpacing = 2;
+
+    if (newRoom.x < 1 || newRoom.x + newRoom.width >= this.width - 1) return true;
+    if (newRoom.y < 1 || newRoom.y + newRoom.height >= this.height - 1) return true;
+
+    for (const room of this.rooms) {
+      if (
+        newRoom.x < room.x + room.width + minSpacing &&
+        newRoom.x + newRoom.width + minSpacing > room.x &&
+        newRoom.y < room.y + room.height + minSpacing &&
+        newRoom.y + newRoom.height + minSpacing > room.y
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private carveRoom(room: Room, tiles: DungeonTile[][]): void {
+    for (let y = room.y; y < room.y + room.height; y++) {
+      for (let x = room.x; x < room.x + room.width; x++) {
+        if (tiles[y] && tiles[y][x]) {
+          tiles[y][x].type = 'floor';
+          tiles[y][x].northWall = this.createWall(false);
+          tiles[y][x].southWall = this.createWall(false);
+          tiles[y][x].eastWall = this.createWall(false);
+          tiles[y][x].westWall = this.createWall(false);
+        }
+      }
+    }
   }
 
   private generateCorridors(tiles: DungeonTile[][]): void {
-    const floorTiles: DungeonTile[] = [];
+    if (this.rooms.length < 2) return;
 
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        if (tiles[y][x].type === 'floor') {
-          floorTiles.push(tiles[y][x]);
+    this.corridors = [];
+
+    const mstEdges = this.buildMinimumSpanningTree();
+    const extraEdges = this.addExtraConnections(mstEdges, 0.25);
+    const allEdges = [...mstEdges, ...extraEdges];
+
+    for (let i = 0; i < allEdges.length; i++) {
+      const edge = allEdges[i];
+      this.carveCorridorBetweenRooms(edge.from, edge.to, tiles, i);
+    }
+  }
+
+  private buildMinimumSpanningTree(): Edge[] {
+    if (this.rooms.length === 0) return [];
+
+    const pq = new PriorityQueue<Edge>();
+    const visited = new Set<string>();
+    const edges: Edge[] = [];
+
+    visited.add(this.rooms[0].id);
+
+    for (let i = 1; i < this.rooms.length; i++) {
+      const distance = this.calculateDistance(this.rooms[0], this.rooms[i]);
+      pq.insert({ from: this.rooms[0], to: this.rooms[i], distance }, distance);
+    }
+
+    while (!pq.isEmpty() && visited.size < this.rooms.length) {
+      const edge = pq.extractMin();
+      if (!edge) break;
+
+      if (visited.has(edge.to.id)) continue;
+
+      edges.push(edge);
+      visited.add(edge.to.id);
+
+      for (const room of this.rooms) {
+        if (!visited.has(room.id)) {
+          const distance = this.calculateDistance(edge.to, room);
+          pq.insert({ from: edge.to, to: room, distance }, distance);
         }
       }
     }
 
-    for (let i = 0; i < 10; i++) {
-      if (floorTiles.length < 2) break;
+    return edges;
+  }
 
-      const start = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
-      const end = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
+  private calculateDistance(roomA: Room, roomB: Room): number {
+    const centerAx = roomA.x + Math.floor(roomA.width / 2);
+    const centerAy = roomA.y + Math.floor(roomA.height / 2);
+    const centerBx = roomB.x + Math.floor(roomB.width / 2);
+    const centerBy = roomB.y + Math.floor(roomB.height / 2);
 
-      this.createCorridor(tiles, start.x, start.y, end.x, end.y);
+    return Math.abs(centerAx - centerBx) + Math.abs(centerAy - centerBy);
+  }
+
+  private addExtraConnections(mstEdges: Edge[], percentage: number): Edge[] {
+    const extraEdges: Edge[] = [];
+    const existingConnections = new Set<string>();
+
+    for (const edge of mstEdges) {
+      existingConnections.add(this.roomPairKey(edge.from, edge.to));
+    }
+
+    const allPossibleEdges: Edge[] = [];
+    for (let i = 0; i < this.rooms.length; i++) {
+      for (let j = i + 1; j < this.rooms.length; j++) {
+        const key = this.roomPairKey(this.rooms[i], this.rooms[j]);
+        if (!existingConnections.has(key)) {
+          const distance = this.calculateDistance(this.rooms[i], this.rooms[j]);
+          allPossibleEdges.push({ from: this.rooms[i], to: this.rooms[j], distance });
+        }
+      }
+    }
+
+    allPossibleEdges.sort((a, b) => a.distance - b.distance);
+
+    const numExtra = Math.floor(mstEdges.length * percentage);
+    for (let i = 0; i < Math.min(numExtra, allPossibleEdges.length); i++) {
+      extraEdges.push(allPossibleEdges[i]);
+    }
+
+    return extraEdges;
+  }
+
+  private roomPairKey(roomA: Room, roomB: Room): string {
+    if (roomA.id < roomB.id) {
+      return `${roomA.id}-${roomB.id}`;
+    } else {
+      return `${roomB.id}-${roomA.id}`;
     }
   }
 
-  private createCorridor(
-    tiles: DungeonTile[][],
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number
-  ): void {
-    let x = x1;
-    let y = y1;
+  private carveCorridorBetweenRooms(from: Room, to: Room, tiles: DungeonTile[][], corridorIndex: number): void {
+    const startX = from.x + Math.floor(from.width / 2);
+    const startY = from.y + Math.floor(from.height / 2);
+    const endX = to.x + Math.floor(to.width / 2);
+    const endY = to.y + Math.floor(to.height / 2);
 
-    while (x !== x2 || y !== y2) {
-      if (tiles[y] && tiles[y][x]) {
-        tiles[y][x].type = 'floor';
+    const path = Pathfinding.findPath(startX, startY, endX, endY, tiles, {
+      preferStraightLines: true,
+      preferExistingCorridors: true,
+      avoidRooms: false
+    });
+
+    if (path) {
+      const corridor: Corridor = {
+        id: `corridor_${corridorIndex}`,
+        path: path,
+        connectsRooms: [from.id, to.id]
+      };
+
+      this.corridors.push(corridor);
+
+      for (const point of path) {
+        if (tiles[point.y] && tiles[point.y][point.x]) {
+          tiles[point.y][point.x].type = 'floor';
+          tiles[point.y][point.x].northWall = this.createWall(false);
+          tiles[point.y][point.x].southWall = this.createWall(false);
+          tiles[point.y][point.x].eastWall = this.createWall(false);
+          tiles[point.y][point.x].westWall = this.createWall(false);
+        }
       }
-
-      if (this.rng.random() < 0.5) {
-        if (x < x2) x++;
-        else if (x > x2) x--;
-        else if (y < y2) y++;
-        else if (y > y2) y--;
-      } else {
-        if (y < y2) y++;
-        else if (y > y2) y--;
-        else if (x < x2) x++;
-        else if (x > x2) x--;
-      }
-
-      if (x < 1) x = 1;
-      if (x >= this.width - 1) x = this.width - 2;
-      if (y < 1) y = 1;
-      if (y >= this.height - 1) y = this.height - 2;
     }
   }
 
@@ -180,28 +359,24 @@ export class DungeonGenerator {
     const floorTiles = this.getFloorTiles(tiles);
 
     if (this.level === 1) {
-      // Floor 1: Place castle stairs (up to town) at a valid floor location
       if (floorTiles.length >= 2) {
-        // Place stairs up (to castle/town) at a random floor tile
         const upStairs = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
-        upStairs.type = 'stairs_up';
+        upStairs.special = { type: 'stairs_up' };
 
-        // Place stairs down at a different floor tile
         const remainingTiles = floorTiles.filter((t) => t !== upStairs);
         if (remainingTiles.length > 0) {
           const downStairs = remainingTiles[Math.floor(this.rng.random() * remainingTiles.length)];
-          downStairs.type = 'stairs_down';
+          downStairs.special = { type: 'stairs_down' };
         }
       }
     } else {
-      // Other floors: Use existing random placement
       if (floorTiles.length >= 2) {
         const upStairs = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
-        upStairs.type = 'stairs_up';
+        upStairs.special = { type: 'stairs_up' };
 
         const downStairs = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
         if (downStairs !== upStairs) {
-          downStairs.type = 'stairs_down';
+          downStairs.special = { type: 'stairs_down' };
         }
       }
     }
@@ -216,10 +391,10 @@ export class DungeonGenerator {
 
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
-        if (tiles[y][x].type === 'stairs_up') {
+        if (tiles[y][x].special?.type === 'stairs_up') {
           stairsUp = { x, y };
         }
-        if (tiles[y][x].type === 'stairs_down') {
+        if (tiles[y][x].special?.type === 'stairs_down') {
           stairsDown = { x, y };
         }
       }
@@ -257,13 +432,13 @@ export class DungeonGenerator {
       }
 
       if (GAME_CONFIG.DUNGEON.ENABLE_TREASURE_CHESTS && rand < chestThreshold) {
-        tile.type = 'chest';
+        tile.special = { type: 'chest' };
       } else if (rand < trapThreshold) {
-        tile.type = 'trap';
+        tile.special = { type: 'trap' };
       } else if (GAME_CONFIG.DUNGEON.ENABLE_DOORS && rand < doorThreshold) {
-        tile.type = 'door';
+        tile.special = { type: 'event' };
       } else {
-        tile.type = 'event';
+        tile.special = { type: 'event' };
       }
     }
   }
@@ -273,11 +448,11 @@ export class DungeonGenerator {
       for (let x = 0; x < this.width; x++) {
         const tile = tiles[y][x];
 
-        if (tile.type !== 'wall') {
-          const hasNorthWall = y === 0 || tiles[y - 1][x].type === 'wall';
-          const hasSouthWall = y === this.height - 1 || tiles[y + 1][x].type === 'wall';
-          const hasWestWall = x === 0 || tiles[y][x - 1].type === 'wall';
-          const hasEastWall = x === this.width - 1 || tiles[y][x + 1].type === 'wall';
+        if (tile.type === 'floor') {
+          const hasNorthWall = y === 0 || tiles[y - 1][x].type === 'solid';
+          const hasSouthWall = y === this.height - 1 || tiles[y + 1][x].type === 'solid';
+          const hasWestWall = x === 0 || tiles[y][x - 1].type === 'solid';
+          const hasEastWall = x === this.width - 1 || tiles[y][x + 1].type === 'solid';
 
           tile.northWall = this.createWall(hasNorthWall);
           tile.southWall = this.createWall(hasSouthWall);
@@ -405,7 +580,7 @@ export class DungeonGenerator {
 
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
-        if (tiles[y][x].type === 'event') {
+        if (tiles[y][x].special?.type === 'event') {
           eventTiles.push({ x, y });
         }
       }
@@ -466,11 +641,10 @@ export class DungeonGenerator {
   }
 
   private findValidStartPosition(tiles: DungeonTile[][]): { x: number; y: number } {
-    // Floor 1: Start at the stairs up position
     if (this.level === 1) {
       for (let y = 0; y < this.height; y++) {
         for (let x = 0; x < this.width; x++) {
-          if (tiles[y][x].type === 'stairs_up') {
+          if (tiles[y][x].special?.type === 'stairs_up') {
             return { x, y };
           }
         }
