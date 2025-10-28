@@ -171,13 +171,31 @@ Based on WGIV patterns, here's a generation system that could create similar dun
 
 ### Phase 2: Place Major Rooms
 
+**Preparatory Steps (must be completed first):**
+
+1. **Simplify DungeonTile.type structure:**
+   - Change tile.type from 10 types to 2: `'floor' | 'solid'`
+   - Remove: 'door', 'stairs_up', 'stairs_down', 'chest', 'trap', 'event', 'corridor', 'wall'
+   - Move special tiles to new `special` property on DungeonTile
+   - Update all code that checks tile.type for special tiles (DungeonMovementHandler, DungeonScene, etc.)
+
+2. **Add required interfaces to GameTypes.ts:**
+   - Room interface (see Appendix B.3 for structure)
+   - DungeonGenerationConfig interface (see Configuration section)
+
+3. **Important:** Replace existing DungeonGenerator completely (not V2)
+   - No need to preserve old generator
+   - Breaking changes acceptable during development
+   - Keep same public API: `generateLevel(level: number): DungeonLevel`
+
 ```
 Algorithm: Strategic Room Placement
+(Uses DungeonGenerationConfig interface - see Configuration section)
 
 Input: Room size categories (large, medium, small)
 Output: List of placed rooms with positions
 
-1. Define room templates:
+1. Define room templates (see Data Structures section for Room interface):
    - Large: 6x6 to 8x8
    - Medium: 4x5 to 6x6
    - Small: 3x3 to 4x4
@@ -186,7 +204,8 @@ Output: List of placed rooms with positions
    - Try corners first (NW, NE, SW, SE)
    - Try edge midpoints (N, E, S, W)
    - Try center area
-   - Ensure minimum 2-cell spacing between rooms
+   - Ensure minimum 2-cell spacing between rooms (see Appendix A.1 for overlap detection)
+   - Use strategic placement algorithm (see Appendix A.2)
    - Place 3-5 large rooms
 
 3. Place medium rooms:
@@ -206,6 +225,58 @@ For each room placement:
    - Set all wall properties to {exists: false} (will be recalculated)
    - Store room bounds for later reference
 ```
+
+**Implementation Details:**
+
+- **Seeded Randomness:** Use `this.rng.random()` everywhere (not `Math.random()`) for reproducible dungeons
+- **Strategic Positions:** See Appendix A.2 for complete strategic placement algorithm
+- **Overlap Detection:** See Appendix A.1 for overlap checking with spacing buffer
+- **Room ID Generation:** Assign unique IDs (e.g., "large_1", "medium_3", "small_7")
+- **Fallback Behavior:** If strategic placement fails after trying all positions, attempt random placement (max 100 attempts per room)
+
+**Room Carving Process:**
+
+For each placed room:
+1. Iterate through all tiles in room bounds (x to x+width, y to y+height)
+2. Set tile.type = 'floor'
+3. Set all four walls to `{exists: false, type: 'solid', properties: null}`
+   (Walls will be recalculated in Phase 4 based on neighbors)
+4. Store Room object in `this.rooms` array for use in later phases
+
+**Post-Phase 2 State:**
+
+After Phase 2 completes:
+- Dungeon consists of disconnected room islands (floor tiles)
+- Solid rock fills all space between rooms
+- No corridors exist (rooms are not connected)
+- **Game is unplayable at this stage** (expected - Phase 3 adds connectivity)
+- Border cells remain SOLID throughout
+- Rooms are stored but not yet linked
+
+**Verification Strategy:**
+
+Phase 2 produces unplayable dungeons (no connectivity). Verify correctness via:
+
+1. **AI Interface Inspection:**
+   ```javascript
+   const dungeon = AI.getDungeon();
+   // Check room count, positions, verify no overlaps
+   // Inspect tile types (should be 'floor' in rooms, 'solid' elsewhere)
+   ```
+
+2. **Unit Tests:**
+   - Room count matches config ranges (3-5 large, 5-8 medium, 8-12 small)
+   - No room overlaps exist
+   - All rooms have minimum 2-cell spacing maintained
+   - All rooms within grid bounds (not touching borders)
+   - Room size distribution matches configuration
+   - All room tiles are 'floor' type
+   - All non-room tiles remain 'solid' type
+
+3. **Visual Debugging (optional):**
+   - Add temporary debug render mode showing room rectangles
+   - Color-code by room type (large=red, medium=yellow, small=green)
+   - Display room IDs and boundaries
 
 ### Phase 3: Carve Corridor Network
 
@@ -533,23 +604,50 @@ Advantages:
 - Update serialization/deserialization
 - Maintain backward compatibility with old saves
 
-### Phase 2: New Generator Implementation
-- Implement room placement algorithm
-- Implement corridor carving with A*
-- Implement wall calculation
-- Implement door placement
-- Implement special tile placement
+### Phase 2: Place Major Rooms (and prep work)
+- Simplify DungeonTile.type to 'floor' | 'solid'
+- Move special tiles to tile.special property
+- Add Room and DungeonGenerationConfig interfaces
+- Replace DungeonGenerator with new implementation (no V2, direct replacement)
+- Implement strategic room placement algorithm
+- Result: Disconnected room islands (unplayable, no corridors yet)
+- See detailed algorithm and verification strategy in Phase 2 section
 
-### Phase 3: Integration
-- Create DungeonGeneratorV2 class
-- Add feature flag to switch generators
-- Test new generator thoroughly
-- Update raycaster to use wall properties
+### Phase 3: Carve Corridor Network
+- Implement Priority Queue utility (for MST)
+- Implement A* pathfinding utility
+- Build room connectivity graph
+- Create minimum spanning tree (Prim's algorithm)
+- Add extra connections for loops
+- Carve corridors between rooms
+- Result: Connected, navigable dungeon (playable!)
+- See detailed algorithm in Phase 3 section
 
-### Phase 4: Deprecation
-- Once V2 stable, make it default
-- Deprecate old generator
-- Remove old generator code
+### Phase 4: Calculate Wall Properties
+- Recalculate walls based on neighbor tiles
+- Ensure wall symmetry
+- See detailed algorithm in Phase 4 section
+
+### Phase 5: Place Doors
+- Find room-corridor boundaries
+- Strategic door placement on walls
+- Mark some doors as locked
+- See detailed algorithm in Phase 5 section
+
+### Phase 6: Place Special Tiles
+- Stairs, teleporters, traps, switches, treasure
+- See detailed algorithm in Phase 6 section
+
+### Phase 7: Create Encounter Zones
+- Divide dungeon into difficulty regions
+- Assign monster groups
+- See detailed algorithm in Phase 7 section
+
+### Phase 8: Validation and Polish
+- Connectivity verification
+- Door/key validation
+- Dead end rewards
+- See detailed algorithm in Phase 8 section
 
 ## Testing Strategy
 
