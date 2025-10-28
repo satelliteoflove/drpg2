@@ -311,10 +311,7 @@ Output: Connected corridor network
      c. Carve 1-wide corridor
      d. Ensure corridor has walls on both sides
 
-5. Create junction rooms:
-   - Where corridors cross, expand to 2x2 or 3x3
-   - Makes navigation clearer
-   - Provides tactical combat spaces
+Note: Junction room creation and connectivity validation are handled in Phase 8
 ```
 
 ### Phase 4: Calculate Wall Properties
@@ -462,27 +459,33 @@ Algorithm: Encounter Zone Designation
 ```
 Algorithm: Ensure Playability
 
-1. Connectivity check:
-   - Verify all rooms reachable from start
+1. Create junction rooms (deferred from Phase 3):
+   - Where corridors cross, expand to 2x2 or 3x3
+   - Makes navigation clearer
+   - Provides tactical combat spaces
+
+2. Connectivity validation (deferred from Phase 3):
+   - Verify all rooms reachable from start via flood fill
    - Verify stairs reachable
    - Fix any unreachable areas by adding corridors
+   - Ensure MST + extra connections created fully connected graph
 
-2. Door validation:
+3. Door validation:
    - Ensure locked doors have keys/switches
    - Verify door placement doesn't block progress
    - Add additional doors if rooms too isolated
 
-3. Dead end check:
+4. Dead end check:
    - Identify all dead ends
    - Place rewards in dead ends
    - Ensure dead ends serve purpose
 
-4. Difficulty validation:
+5. Difficulty validation:
    - Verify progression gate placement
    - Ensure early areas accessible
    - Validate puzzle solvability
 
-5. Visual polish:
+6. Visual polish:
    - Remove awkward single-cell irregularities
    - Straighten walls where appropriate
    - Ensure aesthetic appeal
@@ -598,30 +601,65 @@ Advantages:
 
 ## Implementation Strategy
 
-### Phase 1: Data Structure Migration
-- Implement Wall interface
-- Update DungeonTile to use Wall objects
-- Update serialization/deserialization
-- Maintain backward compatibility with old saves
+### Phase 1: Data Structure Migration ✅ COMPLETE
+- ✅ Implement Wall interface
+- ✅ Update DungeonTile to use Wall objects
+- ✅ Update serialization/deserialization
+- ✅ Maintain backward compatibility with old saves
 
-### Phase 2: Place Major Rooms (and prep work)
-- Simplify DungeonTile.type to 'floor' | 'solid'
-- Move special tiles to tile.special property
-- Add Room and DungeonGenerationConfig interfaces
-- Replace DungeonGenerator with new implementation (no V2, direct replacement)
-- Implement strategic room placement algorithm
+**Status:** Completed. Wall objects fully implemented and integrated throughout codebase.
+
+### Phase 2 Preparation: Type Simplification ✅ COMPLETE
+- ✅ Simplify DungeonTile.type to 'floor' | 'solid'
+- ✅ Move special tiles to tile.special property
+- ✅ Add Room and DungeonGenerationConfig interfaces
+- ✅ Update all code to use new tile structure (7 files updated)
+- ✅ Add save migration logic (version 1.1.0)
+- ✅ Verify all TypeScript checks pass
+
+**Status:** Completed 2025-10-28. All preparatory work done. Ready for Phase 2 implementation.
+
+**Files Updated:**
+- src/types/GameTypes.ts (interfaces)
+- src/utils/DungeonGenerator.ts (tile creation)
+- src/utils/SaveManager.ts (migration logic)
+- src/systems/dungeon/DungeonMovementHandler.ts (tile checks)
+- src/systems/dungeon/DungeonInputHandler.ts (interactions)
+- src/ui/RaycastEngine.ts (wall detection)
+- src/ui/DungeonViewRaycast.ts (rendering)
+- src/ui/DungeonMapView.ts (map rendering)
+- src/scenes/DungeonScene.ts (debug display)
+
+### Phase 2: Place Major Rooms ✅ COMPLETE
+- ✅ Implement strategic room placement algorithm
+- ✅ Large rooms (6x6-8x8) at corners and center
+- ✅ Medium rooms (4x4-6x6) at edge midpoints and quarter positions
+- ✅ Small rooms (3x3-4x4) fill gaps in grid
+- ✅ 2-cell minimum spacing between all rooms
+- ✅ Fallback to random placement if strategic positions occupied
 - Result: Disconnected room islands (unplayable, no corridors yet)
 - See detailed algorithm and verification strategy in Phase 2 section
 
-### Phase 3: Carve Corridor Network
-- Implement Priority Queue utility (for MST)
-- Implement A* pathfinding utility
-- Build room connectivity graph
-- Create minimum spanning tree (Prim's algorithm)
-- Add extra connections for loops
-- Carve corridors between rooms
+**Status:** Completed 2025-10-28. Strategic placement follows Wizardry design patterns.
+
+### Phase 3: Carve Corridor Network ✅ COMPLETE
+- ✅ Implement Priority Queue utility (for MST)
+- ✅ Implement A* pathfinding utility
+- ✅ Build room connectivity graph
+- ✅ Create minimum spanning tree (Prim's algorithm)
+- ✅ Add extra connections for loops (25% beyond MST)
+- ✅ Carve corridors between rooms using A* pathfinding
 - Result: Connected, navigable dungeon (playable!)
+- Note: Junction rooms and connectivity validation deferred to Phase 8
 - See detailed algorithm in Phase 3 section
+
+**Status:** Completed 2025-10-28. All rooms connected via MST + extra edges.
+
+**Files Created/Modified:**
+- src/utils/PriorityQueue.ts (new - min-heap for Prim's algorithm)
+- src/utils/Pathfinding.ts (new - A* with cost modifiers)
+- src/types/GameTypes.ts (Edge, Corridor interfaces added)
+- src/utils/DungeonGenerator.ts (Phase 2 + 3 implementation)
 
 ### Phase 4: Calculate Wall Properties
 - Recalculate walls based on neighbor tiles
