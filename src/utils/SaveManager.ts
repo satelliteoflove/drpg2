@@ -10,7 +10,7 @@ export interface SaveData {
 
 export class SaveManager {
   private static readonly SAVE_KEY = 'drpg2_save';
-  private static readonly VERSION = '0.0.4';
+  private static readonly VERSION = '1.0.0';
   private static readonly MAX_SAVES = 5;
 
   public static saveGame(gameState: GameState, playtimeSeconds: number): boolean {
