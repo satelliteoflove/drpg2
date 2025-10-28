@@ -5,6 +5,7 @@ import { SceneManager } from '../../core/Scene';
 import { GAME_CONFIG } from '../../config/GameConstants';
 import { StatusEffectSystem } from '../StatusEffectSystem';
 import { ModifierSystem } from '../ModifierSystem';
+import { TurnAnimationController, CardinalDirection } from './TurnAnimationController';
 
 export interface MovementResult {
   moved: boolean;
@@ -26,6 +27,7 @@ export class DungeonMovementHandler {
   private lastMoveTime: number = 0;
   private lastTileEventPosition: { x: number; y: number; floor: number } | null = null;
   private lastEncounterPosition: { x: number; y: number; floor: number } | null = null;
+  private turnAnimationController: TurnAnimationController;
 
   constructor(gameState: GameState, messageLog: any, sceneManager: SceneManager) {
     this.gameState = gameState;
@@ -33,9 +35,18 @@ export class DungeonMovementHandler {
     this.sceneManager = sceneManager;
     this.statusEffectSystem = StatusEffectSystem.getInstance();
     this.modifierSystem = ModifierSystem.getInstance();
+    this.turnAnimationController = new TurnAnimationController();
+  }
+
+  public getTurnAnimationController(): TurnAnimationController {
+    return this.turnAnimationController;
   }
 
   public handleMovement(direction: Direction): MovementResult {
+    if (this.turnAnimationController.isActive()) {
+      return { moved: false, blocked: true, triggered: null };
+    }
+
     const now = Date.now();
     if (now - this.lastMoveTime < DungeonMovementHandler.MOVE_DELAY) {
       return { moved: false, blocked: true, triggered: null };
@@ -49,7 +60,6 @@ export class DungeonMovementHandler {
       return { moved: false, blocked: true, triggered: null };
     }
 
-    // Convert relative direction to absolute direction based on facing
     let absoluteDirection: Direction;
     if (direction === 'forward' || direction === 'backward') {
       absoluteDirection = this.getAbsoluteDirection(direction, party.facing);
@@ -80,46 +90,68 @@ export class DungeonMovementHandler {
       return { moved: false, blocked: true, triggered: null };
     }
 
-    party.x = newX;
-    party.y = newY;
+    const fromPos = { x: party.x, y: party.y };
+    const toPos = { x: newX, y: newY };
 
-    if (party.x < 0 || party.x >= currentFloor.width || party.y < 0 || party.y >= currentFloor.height) {
-      DebugLogger.warn('DungeonMovementHandler', `Party moved out of bounds to (${party.x}, ${party.y})! Reverting.`);
-      party.x = party.x - delta.dx;
-      party.y = party.y - delta.dy;
-      this.messageLog?.addSystemMessage('You cannot move in that direction.');
-      return { moved: false, blocked: true, triggered: null };
-    }
-    this.gameState.turnCount++;
-    this.lastMoveTime = now;
+    this.turnAnimationController.startMove(fromPos, toPos, () => {
+      party.x = newX;
+      party.y = newY;
 
-    this.tickAllPartyMembers();
-
-    this.updateDiscoveredTiles();
-
-    const tileResult = this.handleTileEffect(targetTile);
-
-    if (this.shouldCheckRandomEncounter(targetTile)) {
-      const encountered = this.checkRandomEncounter();
-      if (encountered) {
-        return { moved: true, blocked: false, triggered: 'combat' };
+      if (party.x < 0 || party.x >= currentFloor.width || party.y < 0 || party.y >= currentFloor.height) {
+        DebugLogger.warn('DungeonMovementHandler', `Party moved out of bounds to (${party.x}, ${party.y})! Reverting.`);
+        party.x = fromPos.x;
+        party.y = fromPos.y;
+        this.messageLog?.addSystemMessage('You cannot move in that direction.');
+        return;
       }
-    }
 
-    return { moved: true, blocked: false, triggered: tileResult };
+      this.gameState.turnCount++;
+      this.lastMoveTime = Date.now();
+      this.tickAllPartyMembers();
+      this.updateDiscoveredTiles();
+
+      this.handleTileEffect(targetTile);
+
+      if (this.shouldCheckRandomEncounter(targetTile)) {
+        const encountered = this.checkRandomEncounter();
+        if (encountered) {
+          DebugLogger.debug('DungeonMovementHandler', 'Random encounter triggered after movement');
+        }
+      }
+    });
+
+    return { moved: true, blocked: false, triggered: null };
   }
 
   public handleTurn(direction: 'left' | 'right'): void {
     const party = this.gameState.party;
     if (!party) return;
 
-    party.move(direction);
-    this.gameState.turnCount++;
-    this.lastMoveTime = Date.now();
+    if (this.turnAnimationController.isActive()) {
+      return;
+    }
 
-    this.tickAllPartyMembers();
+    const currentFacing = party.facing;
+    const newFacing = this.getNewFacing(currentFacing, direction);
 
-    this.updateDiscoveredTiles();
+    this.turnAnimationController.startTurn(currentFacing, newFacing, () => {
+      party.move(direction);
+      this.gameState.turnCount++;
+      this.lastMoveTime = Date.now();
+      this.tickAllPartyMembers();
+      this.updateDiscoveredTiles();
+      DebugLogger.debug('DungeonMovementHandler', `Turn complete: ${currentFacing} → ${newFacing}`);
+    });
+
+    DebugLogger.debug('DungeonMovementHandler', `Starting turn animation: ${currentFacing} → ${newFacing}`);
+  }
+
+  private getNewFacing(current: CardinalDirection, turn: 'left' | 'right'): CardinalDirection {
+    const directions: CardinalDirection[] = turn === 'left'
+      ? ['north', 'west', 'south', 'east']
+      : ['north', 'east', 'south', 'west'];
+    const currentIndex = directions.indexOf(current);
+    return directions[(currentIndex + 1) % 4];
   }
 
   private tickAllPartyMembers(): void {
@@ -139,16 +171,16 @@ export class DungeonMovementHandler {
 
     switch (direction) {
       case 'north':
-        if (currentTile.northWall) return false;
+        if (currentTile.northWall.exists) return false;
         break;
       case 'south':
-        if (currentTile.southWall) return false;
+        if (currentTile.southWall.exists) return false;
         break;
       case 'east':
-        if (currentTile.eastWall) return false;
+        if (currentTile.eastWall.exists) return false;
         break;
       case 'west':
-        if (currentTile.westWall) return false;
+        if (currentTile.westWall.exists) return false;
         break;
     }
 

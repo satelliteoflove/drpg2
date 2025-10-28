@@ -34,7 +34,7 @@ export { DungeonScene } from './scenes/DungeonScene';
 export { CombatScene } from './scenes/CombatScene';
 
 // UI Components
-export { DungeonView } from './ui/DungeonView';
+export { DungeonViewRaycast } from './ui/DungeonViewRaycast';
 export { StatusPanel } from './ui/StatusPanel';
 export { MessageLog } from './ui/MessageLog';
 

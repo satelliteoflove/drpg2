@@ -170,7 +170,7 @@ export const GAME_CONFIG = {
     MIN_SPECIAL_TILES: 3,
     MAX_EXTRA_SPECIAL_TILES: 3,
     ENABLE_TREASURE_CHESTS: false, // Generate treasure chests in dungeon
-    ENABLE_DOORS: false, // Generate doors in dungeon
+    ENABLE_DOORS: true,
     CHEST_CHANCE: 0.3,
     TRAP_CHANCE: 0.5,
     DOOR_CHANCE: 0.7,
@@ -179,9 +179,21 @@ export const GAME_CONFIG = {
     MIN_ZONE_SIZE: 3,
     MAX_ZONE_EXTRA_SIZE: 5,
     VIEW_DISTANCE: 3,
+    TURN_ANIMATION_FRAMES: 4,
+    TURN_FRAME_DURATION_MS: 50,
+    MOVE_ANIMATION_FRAMES: 4,
+    MOVE_FRAME_DURATION_MS: 50,
   },
 
   DUNGEON_VISUAL: {
+    FOV_DEGREES: 70,
+    RAY_ORIGIN_OFFSET: 0.5,
+    VIEW_WIDTH: 500,
+    VIEW_HEIGHT: 400,
+    VIEW_X: 260,
+    VIEW_Y: 80,
+    INNER_VIEW_WIDTH: 460,
+    INNER_VIEW_HEIGHT: 310,
     COLOR_SCHEME: 'warm' as 'warm' | 'stone' | 'dark',
     SCHEMES: {
       warm: {

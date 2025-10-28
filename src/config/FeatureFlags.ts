@@ -14,7 +14,7 @@ export interface FeatureFlag {
 // Feature flag keys
 export enum FeatureFlagKey {
   PERFORMANCE_MONITORING = 'performance_monitoring',
-  ATLAS_RENDERER = 'atlas_renderer',
+  RAYCAST_RENDERER = 'raycast_renderer',
 }
 
 // Feature flags configuration
@@ -49,9 +49,9 @@ class FeatureFlagsManager {
     });
 
     this.registerFlag({
-      name: FeatureFlagKey.ATLAS_RENDERER,
-      description: 'Use pre-rendered cell atlas for dungeon rendering',
-      enabled: false,
+      name: FeatureFlagKey.RAYCAST_RENDERER,
+      description: 'Use raycasting (Wolfenstein-style) for dungeon rendering',
+      enabled: true,
       experimental: true,
     });
 

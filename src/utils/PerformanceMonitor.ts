@@ -62,6 +62,7 @@ export class PerformanceMonitor {
   private lastFrameTime: number = 0;
   private sessionStartTime: number = 0;
   private memoryInterval: number | null = null;
+  private lastLoggedMaxFrameTime: number = 0;
 
   // Timing markers for different phases
   private renderStartTime: number = 0;
@@ -196,12 +197,17 @@ export class PerformanceMonitor {
 
     this.lastFrameTime = currentTime;
 
-    // Log warnings for performance issues
-    // Commented out - too verbose
-    // if (fps < MIN_ACCEPTABLE_FPS) {
-    //     DebugLogger.warn('PerformanceMonitor',
-    //         `Low FPS detected in ${this.currentScene}: ${fps.toFixed(1)} FPS`);
-    // }
+    if (deltaTime > 100) {
+      const devToolsOpen = /./;
+      devToolsOpen.toString = function() { (this as any).opened = true; return ''; };
+      console.log('%c', devToolsOpen);
+      const devToolsStatus = (devToolsOpen as any).opened ? ' [DEV TOOLS OPEN]' : '';
+
+      DebugLogger.warn(
+        'PerformanceMonitor',
+        `Frame spike: ${deltaTime.toFixed(2)}ms (${fps.toFixed(1)} FPS)${devToolsStatus}`
+      );
+    }
   }
 
   public getCurrentFPS(): number {
@@ -500,6 +506,58 @@ export class PerformanceMonitor {
     this.sceneMetrics.clear();
     this.frameBuffer = [];
     this.sessionStartTime = 0;
+    this.lastLoggedMaxFrameTime = 0;
     DebugLogger.info('PerformanceMonitor', 'Reset all metrics');
+  }
+
+  public getMetrics(): {
+    fps: number;
+    frameTime: number;
+    updateTime: number;
+    renderTime: number;
+    raycastTime: number;
+    avgFrameTime: number;
+    maxFrameTime: number;
+    spikeCount: number;
+  } {
+    const currentFps = this.getCurrentFPS();
+
+    const currentFrameMetrics = this.frameBuffer.length > 0
+      ? this.frameBuffer[this.frameBuffer.length - 1]
+      : { deltaTime: 0, updateTime: 0, renderTime: 0 };
+
+    const avgFrameTime = this.frameBuffer.length > 0
+      ? this.frameBuffer.reduce((sum, f) => sum + f.deltaTime, 0) / this.frameBuffer.length
+      : 0;
+
+    const maxFrameTime = this.frameBuffer.length > 0
+      ? Math.max(...this.frameBuffer.map(f => f.deltaTime))
+      : 0;
+
+    if (maxFrameTime > 100 && maxFrameTime !== this.lastLoggedMaxFrameTime) {
+      this.lastLoggedMaxFrameTime = maxFrameTime;
+      const spikeFrame = this.frameBuffer.find(f => f.deltaTime === maxFrameTime);
+      DebugLogger.warn(
+        'PerformanceMonitor',
+        `Frame spike detected: ${maxFrameTime.toFixed(2)}ms`,
+        {
+          updateTime: spikeFrame?.updateTime.toFixed(2) || 0,
+          renderTime: spikeFrame?.renderTime.toFixed(2) || 0,
+          frameBufferSize: this.frameBuffer.length,
+          timestamp: new Date(spikeFrame?.timestamp || Date.now()).toISOString()
+        }
+      );
+    }
+
+    return {
+      fps: currentFps,
+      frameTime: currentFrameMetrics.deltaTime,
+      updateTime: currentFrameMetrics.updateTime,
+      renderTime: currentFrameMetrics.renderTime,
+      raycastTime: (this as any).raycastTime || 0,
+      avgFrameTime,
+      maxFrameTime,
+      spikeCount: 0,
+    };
   }
 }
