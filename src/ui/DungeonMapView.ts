@@ -183,25 +183,25 @@ export class DungeonMapView {
       this.currentRenderCtx.strokeStyle = this.COLORS.wallLine;
       this.currentRenderCtx.lineWidth = 2;
 
-      if (tile.northWall) {
+      if (tile.northWall.exists) {
         this.currentRenderCtx.beginPath();
         this.currentRenderCtx.moveTo(x, y);
         this.currentRenderCtx.lineTo(x + this.TILE_SIZE, y);
         this.currentRenderCtx.stroke();
       }
-      if (tile.southWall) {
+      if (tile.southWall.exists) {
         this.currentRenderCtx.beginPath();
         this.currentRenderCtx.moveTo(x, y + this.TILE_SIZE);
         this.currentRenderCtx.lineTo(x + this.TILE_SIZE, y + this.TILE_SIZE);
         this.currentRenderCtx.stroke();
       }
-      if (tile.westWall) {
+      if (tile.westWall.exists) {
         this.currentRenderCtx.beginPath();
         this.currentRenderCtx.moveTo(x, y);
         this.currentRenderCtx.lineTo(x, y + this.TILE_SIZE);
         this.currentRenderCtx.stroke();
       }
-      if (tile.eastWall) {
+      if (tile.eastWall.exists) {
         this.currentRenderCtx.beginPath();
         this.currentRenderCtx.moveTo(x + this.TILE_SIZE, y);
         this.currentRenderCtx.lineTo(x + this.TILE_SIZE, y + this.TILE_SIZE);
