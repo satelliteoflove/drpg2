@@ -192,6 +192,21 @@ export interface LootDrop {
   maxLevel?: number;
 }
 
+export interface WallProperties {
+  locked: boolean;
+  open: boolean;
+  keyId?: string;
+  oneWay?: Direction;
+  hidden: boolean;
+  discovered: boolean;
+}
+
+export interface Wall {
+  exists: boolean;
+  type: 'solid' | 'door' | 'secret' | 'illusory';
+  properties: WallProperties | null;
+}
+
 export interface DungeonTile {
   x: number;
   y: number;
@@ -199,10 +214,10 @@ export interface DungeonTile {
   discovered: boolean;
   hasMonster: boolean;
   hasItem: boolean;
-  northWall: boolean;
-  southWall: boolean;
-  eastWall: boolean;
-  westWall: boolean;
+  northWall: Wall;
+  southWall: Wall;
+  eastWall: Wall;
+  westWall: Wall;
   properties?: {
     locked?: boolean;
     opened?: boolean;
