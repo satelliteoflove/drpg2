@@ -1,4 +1,4 @@
-import { DungeonEvent, DungeonLevel, DungeonTile, OverrideZone } from '../types/GameTypes';
+import { DungeonEvent, DungeonLevel, DungeonTile, OverrideZone, Wall } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { SeededRandom } from './SeededRandom';
 
@@ -50,6 +50,14 @@ export class DungeonGenerator {
     };
   }
 
+  private createWall(exists: boolean): Wall {
+    return {
+      exists,
+      type: 'solid',
+      properties: null
+    };
+  }
+
   private initializeTiles(): DungeonTile[][] {
     const tiles: DungeonTile[][] = [];
 
@@ -63,10 +71,10 @@ export class DungeonGenerator {
           discovered: false,
           hasMonster: false,
           hasItem: false,
-          northWall: true,
-          southWall: true,
-          eastWall: true,
-          westWall: true,
+          northWall: this.createWall(true),
+          southWall: this.createWall(true),
+          eastWall: this.createWall(true),
+          westWall: this.createWall(true),
         };
       }
     }
@@ -266,10 +274,15 @@ export class DungeonGenerator {
         const tile = tiles[y][x];
 
         if (tile.type !== 'wall') {
-          tile.northWall = y === 0 || tiles[y - 1][x].type === 'wall';
-          tile.southWall = y === this.height - 1 || tiles[y + 1][x].type === 'wall';
-          tile.westWall = x === 0 || tiles[y][x - 1].type === 'wall';
-          tile.eastWall = x === this.width - 1 || tiles[y][x + 1].type === 'wall';
+          const hasNorthWall = y === 0 || tiles[y - 1][x].type === 'wall';
+          const hasSouthWall = y === this.height - 1 || tiles[y + 1][x].type === 'wall';
+          const hasWestWall = x === 0 || tiles[y][x - 1].type === 'wall';
+          const hasEastWall = x === this.width - 1 || tiles[y][x + 1].type === 'wall';
+
+          tile.northWall = this.createWall(hasNorthWall);
+          tile.southWall = this.createWall(hasSouthWall);
+          tile.westWall = this.createWall(hasWestWall);
+          tile.eastWall = this.createWall(hasEastWall);
         }
       }
     }
