@@ -224,4 +224,60 @@ export class RaycastEngine {
     if (distance <= 0.1) distance = 0.1;
     return Math.floor(viewHeight / distance);
   }
+
+  public getVisibleSpecialTiles(
+    playerX: number,
+    playerY: number,
+    playerAngle: number,
+    fov: number,
+    maxDistance: number = 5
+  ): Array<{ x: number; y: number; distance: number; angle: number; type: string; opened?: boolean }> {
+    if (!this.dungeon) return [];
+
+    const visibleTiles: Array<{ x: number; y: number; distance: number; angle: number; type: string; opened?: boolean }> = [];
+
+    const startX = Math.max(0, Math.floor(playerX - maxDistance));
+    const endX = Math.min(this.dungeon.width - 1, Math.floor(playerX + maxDistance));
+    const startY = Math.max(0, Math.floor(playerY - maxDistance));
+    const endY = Math.min(this.dungeon.height - 1, Math.floor(playerY + maxDistance));
+
+    for (let y = startY; y <= endY; y++) {
+      for (let x = startX; x <= endX; x++) {
+        const tile = this.dungeon.tiles[y][x];
+
+        if (tile.special && (tile.special.type === 'stairs_up' || tile.special.type === 'stairs_down' || tile.special.type === 'chest')) {
+          const tileCenterX = x + 0.5;
+          const tileCenterY = y + 0.5;
+
+          const dx = tileCenterX - playerX;
+          const dy = tileCenterY - playerY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance > maxDistance) continue;
+
+          const angleToTile = Math.atan2(dy, dx);
+          let angleDiff = angleToTile - playerAngle;
+
+          while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+          while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+          const halfFov = fov / 2;
+          if (Math.abs(angleDiff) <= halfFov) {
+            visibleTiles.push({
+              x: tileCenterX,
+              y: tileCenterY,
+              distance,
+              angle: angleDiff,
+              type: tile.special.type,
+              opened: tile.special.properties?.opened
+            });
+          }
+        }
+      }
+    }
+
+    visibleTiles.sort((a, b) => b.distance - a.distance);
+
+    return visibleTiles;
+  }
 }

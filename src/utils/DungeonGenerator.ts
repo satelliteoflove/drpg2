@@ -31,6 +31,7 @@ export class DungeonGenerator {
     this.generateRooms(tiles);
     this.generateCorridors(tiles);
     this.placeStairs(tiles);
+    this.placeChests(tiles);
     this.placeSpecialTiles(tiles);
     this.calculateWalls(tiles);
     this.placeDoors(tiles);
@@ -357,30 +358,152 @@ export class DungeonGenerator {
   }
 
   private placeStairs(tiles: DungeonTile[][]): void {
-    const floorTiles = this.getFloorTiles(tiles);
+    if (this.rooms.length === 0) {
+      return;
+    }
 
     if (this.level === 1) {
-      if (floorTiles.length >= 2) {
-        const upStairs = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
-        upStairs.special = { type: 'stairs_up' };
+      const centerNorthRooms = this.findCenterNorthRooms();
+      const targetRooms = centerNorthRooms.length > 0 ? centerNorthRooms : this.rooms.filter(r => r.type !== 'small');
 
-        const remainingTiles = floorTiles.filter((t) => t !== upStairs);
-        if (remainingTiles.length > 0) {
-          const downStairs = remainingTiles[Math.floor(this.rng.random() * remainingTiles.length)];
-          downStairs.special = { type: 'stairs_down' };
+      if (targetRooms.length > 0) {
+        const downRoom = targetRooms[Math.floor(this.rng.random() * targetRooms.length)];
+        const downTile = this.getTileInRoom(downRoom, tiles);
+        if (downTile) {
+          downTile.special = { type: 'stairs_down' };
+        }
+
+        const upRooms = this.rooms.filter(r => r !== downRoom && r.type !== 'small');
+        if (upRooms.length > 0) {
+          const upRoom = upRooms[Math.floor(this.rng.random() * upRooms.length)];
+          const upTile = this.getTileInRoom(upRoom, tiles);
+          if (upTile) {
+            upTile.special = { type: 'stairs_up' };
+          }
         }
       }
     } else {
-      if (floorTiles.length >= 2) {
-        const upStairs = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
-        upStairs.special = { type: 'stairs_up' };
+      const nonSmallRooms = this.rooms.filter(r => r.type !== 'small');
+      const targetRooms = nonSmallRooms.length > 0 ? nonSmallRooms : this.rooms;
 
-        const downStairs = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
-        if (downStairs !== upStairs) {
-          downStairs.special = { type: 'stairs_down' };
+      if (targetRooms.length >= 2) {
+        const upRoom = targetRooms[Math.floor(this.rng.random() * targetRooms.length)];
+        const upTile = this.getTileInRoom(upRoom, tiles);
+        if (upTile) {
+          upTile.special = { type: 'stairs_up' };
+        }
+
+        const downRooms = targetRooms.filter(r => r !== upRoom);
+        const sortedByDistance = downRooms.sort((a, b) => {
+          const distA = this.getDistanceFromPoint(a, upRoom.x, upRoom.y);
+          const distB = this.getDistanceFromPoint(b, upRoom.x, upRoom.y);
+          return distB - distA;
+        });
+
+        if (sortedByDistance.length > 0) {
+          const candidateRooms = sortedByDistance.slice(0, Math.max(1, Math.floor(sortedByDistance.length / 3)));
+          const downRoom = candidateRooms[Math.floor(this.rng.random() * candidateRooms.length)];
+          const downTile = this.getTileInRoom(downRoom, tiles);
+          if (downTile) {
+            downTile.special = { type: 'stairs_down' };
+          }
         }
       }
     }
+  }
+
+  private placeChests(tiles: DungeonTile[][]): void {
+    if (this.rooms.length === 0) {
+      return;
+    }
+
+    const stairsPosition = this.findStairsPosition(tiles);
+    const deadEndRooms = this.findDeadEndRooms();
+    const distantRooms = this.rooms
+      .filter(r => !this.hasTileWithSpecial(r, tiles))
+      .sort((a, b) => {
+        if (!stairsPosition) return 0;
+        const distA = this.getDistanceFromPoint(a, stairsPosition.x, stairsPosition.y);
+        const distB = this.getDistanceFromPoint(b, stairsPosition.x, stairsPosition.y);
+        return distB - distA;
+      });
+
+    const minChests = 3;
+    const maxChests = 6;
+    const chestCount = minChests + Math.floor(this.rng.random() * (maxChests - minChests + 1));
+
+    let placed = 0;
+
+    for (const room of deadEndRooms) {
+      if (placed >= chestCount) break;
+      if (this.hasTileWithSpecial(room, tiles)) continue;
+
+      const tile = this.getTileInRoom(room, tiles);
+      if (tile) {
+        tile.special = {
+          type: 'chest',
+          properties: {
+            opened: false,
+            gold: this.calculateChestGold(),
+            items: this.calculateChestItems(),
+          }
+        };
+        placed++;
+      }
+    }
+
+    for (const room of distantRooms) {
+      if (placed >= chestCount) break;
+      if (this.hasTileWithSpecial(room, tiles)) continue;
+
+      const tile = this.getTileInRoom(room, tiles);
+      if (tile) {
+        tile.special = {
+          type: 'chest',
+          properties: {
+            opened: false,
+            gold: this.calculateChestGold(),
+            items: this.calculateChestItems(),
+          }
+        };
+        placed++;
+      }
+    }
+  }
+
+  private findStairsPosition(tiles: DungeonTile[][]): { x: number; y: number } | null {
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (tiles[y][x].special?.type === 'stairs_down' || tiles[y][x].special?.type === 'stairs_up') {
+          return { x, y };
+        }
+      }
+    }
+    return null;
+  }
+
+  private hasTileWithSpecial(room: Room, tiles: DungeonTile[][]): boolean {
+    for (let dy = 0; dy < room.height; dy++) {
+      for (let dx = 0; dx < room.width; dx++) {
+        const x = room.x + dx;
+        const y = room.y + dy;
+        if (tiles[y] && tiles[y][x] && tiles[y][x].special) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private calculateChestGold(): number {
+    const baseGold = 50;
+    const levelMultiplier = this.level * 30;
+    const variance = Math.floor(this.rng.random() * 100);
+    return baseGold + levelMultiplier + variance;
+  }
+
+  private calculateChestItems(): any[] {
+    return [];
   }
 
   private recordStairsPositions(tiles: DungeonTile[][]): {
@@ -894,6 +1017,52 @@ export class DungeonGenerator {
       default:
         return {};
     }
+  }
+
+  private findCenterNorthRooms(): Room[] {
+    const centerX = this.width / 2;
+    const northThreshold = this.height / 3;
+
+    return this.rooms.filter(room => {
+      const roomCenterX = room.x + room.width / 2;
+      const roomCenterY = room.y + room.height / 2;
+
+      const isInCenterHorizontally = Math.abs(roomCenterX - centerX) < this.width / 4;
+      const isInNorthArea = roomCenterY < northThreshold;
+
+      return isInCenterHorizontally && isInNorthArea;
+    });
+  }
+
+  private findDeadEndRooms(): Room[] {
+    return this.rooms.filter(room => room.doors.length === 1);
+  }
+
+  private getDistanceFromPoint(room: Room, x: number, y: number): number {
+    const roomCenterX = room.x + room.width / 2;
+    const roomCenterY = room.y + room.height / 2;
+    return Math.abs(roomCenterX - x) + Math.abs(roomCenterY - y);
+  }
+
+  private getTileInRoom(room: Room, tiles: DungeonTile[][]): DungeonTile | null {
+    const roomCenterX = room.x + Math.floor(room.width / 2);
+    const roomCenterY = room.y + Math.floor(room.height / 2);
+
+    if (tiles[roomCenterY] && tiles[roomCenterX] && tiles[roomCenterY][roomCenterX].type === 'floor') {
+      return tiles[roomCenterY][roomCenterX];
+    }
+
+    for (let dy = 0; dy < room.height; dy++) {
+      for (let dx = 0; dx < room.width; dx++) {
+        const x = room.x + dx;
+        const y = room.y + dy;
+        if (tiles[y] && tiles[y][x] && tiles[y][x].type === 'floor') {
+          return tiles[y][x];
+        }
+      }
+    }
+
+    return null;
   }
 
   private findValidStartPosition(tiles: DungeonTile[][]): { x: number; y: number } {

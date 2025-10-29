@@ -1,6 +1,7 @@
 import { Direction, DungeonLevel } from '../types/GameTypes';
 import { RaycastEngine, RayHit } from './RaycastEngine';
 import { WallTextureManager, WallTextureType } from './WallTextureManager';
+import { SpriteManager, SpriteType } from './SpriteManager';
 import { DebugLogger } from '../utils/DebugLogger';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
 import { GAME_CONFIG } from '../config/GameConstants';
@@ -16,7 +17,9 @@ export class DungeonViewRaycast {
 
   private raycastEngine: RaycastEngine;
   private textureManager: WallTextureManager;
+  private spriteManager: SpriteManager;
   private performanceMonitor: PerformanceMonitor;
+  private depthBuffer: number[] = [];
 
   private readonly VIEW_WIDTH = GAME_CONFIG.DUNGEON_VISUAL.VIEW_WIDTH;
   private readonly VIEW_HEIGHT = GAME_CONFIG.DUNGEON_VISUAL.VIEW_HEIGHT;
@@ -40,6 +43,7 @@ export class DungeonViewRaycast {
 
     this.raycastEngine = new RaycastEngine();
     this.textureManager = new WallTextureManager();
+    this.spriteManager = new SpriteManager();
     this.dungeonScene = dungeonScene;
     this.performanceMonitor = PerformanceMonitor.getInstance();
 
@@ -49,7 +53,9 @@ export class DungeonViewRaycast {
     this.tempCtx = this.tempCanvas.getContext('2d')!;
     this.tempCtx.imageSmoothingEnabled = false;
 
-    DebugLogger.info('DungeonViewRaycast', 'Initialized raycasting renderer with canvas pool');
+    this.depthBuffer = new Array(this.INNER_VIEW_WIDTH).fill(Infinity);
+
+    DebugLogger.info('DungeonViewRaycast', 'Initialized raycasting renderer with sprite support');
   }
 
   public setDungeon(dungeon: DungeonLevel): void {
@@ -132,7 +138,12 @@ export class DungeonViewRaycast {
 
       const hit = this.raycastEngine.castRay(playerPosX, playerPosY, rayAngle, 20);
 
-      if (!hit.hit) continue;
+      if (!hit.hit) {
+        this.depthBuffer[x] = Infinity;
+        continue;
+      }
+
+      this.depthBuffer[x] = hit.distance;
 
       const lineHeight = this.raycastEngine.calculateWallHeight(hit.distance, this.INNER_VIEW_HEIGHT);
 
@@ -150,6 +161,8 @@ export class DungeonViewRaycast {
 
       this.renderWallSlice(x, drawStart, drawEnd, hit);
     }
+
+    this.renderSprites(playerPosX, playerPosY, baseAngle);
 
     const raycastTime = performance.now() - raycastStartTime;
     (this.performanceMonitor as any).raycastTime = raycastTime;
@@ -238,6 +251,87 @@ export class DungeonViewRaycast {
       0, 0, 1, wallHeight,
       x, drawStart, 1, wallHeight
     );
+  }
+
+  private renderSprites(playerX: number, playerY: number, playerAngle: number): void {
+    const visibleTiles = this.raycastEngine.getVisibleSpecialTiles(
+      playerX,
+      playerY,
+      playerAngle,
+      this.FOV,
+      5
+    );
+
+    for (const tile of visibleTiles) {
+      const dx = tile.x - playerX;
+      const dy = tile.y - playerY;
+      const angleToSprite = Math.atan2(dy, dx);
+
+      let relativeAngle = angleToSprite - playerAngle;
+      while (relativeAngle > Math.PI) relativeAngle -= Math.PI * 2;
+      while (relativeAngle < -Math.PI) relativeAngle += Math.PI * 2;
+
+      const spriteScreenX = Math.tan(relativeAngle) / Math.tan(this.FOV / 2);
+      const spriteX = ((spriteScreenX + 1) / 2) * this.INNER_VIEW_WIDTH;
+
+      if (spriteX < 0 || spriteX >= this.INNER_VIEW_WIDTH) continue;
+
+      const spriteHeight = this.raycastEngine.calculateWallHeight(tile.distance, this.INNER_VIEW_HEIGHT) * 0.8;
+      const spriteWidth = spriteHeight;
+
+      const drawStartY = (this.INNER_VIEW_HEIGHT - spriteHeight) / 2;
+      const drawStartX = spriteX - spriteWidth / 2;
+      const drawEndX = spriteX + spriteWidth / 2;
+
+      const startCol = Math.max(0, Math.floor(drawStartX));
+      const endCol = Math.min(this.INNER_VIEW_WIDTH - 1, Math.floor(drawEndX));
+
+      let shouldDraw = true;
+      for (let x = startCol; x <= endCol; x++) {
+        if (this.depthBuffer[x] < tile.distance) {
+          shouldDraw = false;
+          break;
+        }
+      }
+
+      if (!shouldDraw) continue;
+
+      let spriteType: SpriteType;
+      if (tile.type === 'stairs_up') {
+        spriteType = 'stairs_up';
+      } else if (tile.type === 'stairs_down') {
+        spriteType = 'stairs_down';
+      } else if (tile.type === 'chest') {
+        spriteType = tile.opened ? 'chest_open' : 'chest';
+      } else {
+        continue;
+      }
+
+      const sprite = this.spriteManager.getSprite(spriteType);
+      if (!sprite) continue;
+
+      let brightness = 1.0;
+      if (tile.distance > 1) {
+        brightness = Math.max(0.3, 1.0 - (tile.distance - 1) / 10);
+      }
+
+      this.currentRenderCtx.save();
+      this.currentRenderCtx.globalAlpha = 1.0;
+
+      if (brightness < 1.0) {
+        this.currentRenderCtx.filter = `brightness(${brightness})`;
+      }
+
+      this.currentRenderCtx.drawImage(
+        sprite,
+        drawStartX,
+        drawStartY,
+        spriteWidth,
+        spriteHeight
+      );
+
+      this.currentRenderCtx.restore();
+    }
   }
 
   private renderUI(): void {

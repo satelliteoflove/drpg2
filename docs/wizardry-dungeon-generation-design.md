@@ -506,6 +506,63 @@ Algorithm: Strategic Special Tile Placement
    - Beyond teleporter puzzles
 ```
 
+**Implementation Status:**
+
+✅ **Phase 6.1: Strategic Stairs Placement - COMPLETE**
+
+Strategic stairs placement replaces random placement with intelligent positioning:
+
+1. **Floor 1 Stairs:**
+   - `stairs_down` placed in center-north area when possible
+   - Falls back to medium/large rooms if no center-north rooms available
+   - `stairs_up` placed in different room from stairs_down
+   - Both stairs avoid small rooms for better navigation
+
+2. **Other Floors:**
+   - Both stairs placed in medium/large rooms (never small rooms)
+   - `stairs_down` placed far from `stairs_up` to encourage exploration
+   - Uses Manhattan distance calculation
+   - Selects from top third of most distant rooms for variety
+
+3. **Helper Methods:**
+   - `findCenterNorthRooms()`: Identifies rooms in center-north quadrant
+   - `getTileInRoom()`: Finds valid floor tile within room bounds
+   - `getDistanceFromPoint()`: Calculates Manhattan distance for placement
+
+✅ **Phase 6.5: Strategic Treasure Placement - COMPLETE**
+
+Treasure chests placed strategically to reward exploration:
+
+1. **Placement Strategy:**
+   - Prioritize dead-end rooms (rooms with only 1 door)
+   - Then place in rooms distant from stairs
+   - 3-6 chests per dungeon level
+   - Never place in rooms that already have special tiles
+
+2. **Treasure Scaling:**
+   - Base gold: 50
+   - Level multiplier: dungeon_level × 30
+   - Random variance: 0-100 gold
+   - Example: Floor 3 chest = 50 + 90 + variance = 140-240 gold
+
+3. **Helper Methods:**
+   - `findDeadEndRooms()`: Identifies rooms with single door
+   - `findStairsPosition()`: Locates stairs for distance calculation
+   - `hasTileWithSpecial()`: Prevents overwriting existing special tiles
+   - `calculateChestGold()`: Scales gold by dungeon level
+   - `calculateChestItems()`: Placeholder for future item generation
+
+4. **Integration:**
+   - Called after `placeStairs()` in generation pipeline
+   - Before `placeSpecialTiles()` to avoid conflicts
+   - Uses room metadata from Phase 2
+
+**Pending Implementation:**
+
+- Phase 6.2: Teleporter Network (color pairing, bidirectional links)
+- Phase 6.3: Trap Clusters (strategic placement near treasures)
+- Phase 6.4: Switch System (controls for doors/teleporters/gates)
+
 ### Phase 7: Create Encounter Zones
 
 ```
