@@ -407,6 +407,59 @@ Output: Doors placed on walls
    - Place keys or switches to unlock
 ```
 
+**Implementation Notes:**
+
+1. **Wizardry Door Mechanics:**
+   - Doors are thresholds, not toggleable barriers
+   - Interact key causes instant passage through door
+   - Doors auto-close behind player immediately
+   - 3x encounter multiplier when passing through doors
+   - Normal movement (arrow keys) always blocked by doors
+   - Only interact key opens and passes through doors
+
+2. **Door Opening Mechanisms (openMechanism field):**
+   - `'player'` (default): Auto-close doors opened by player interaction
+     - Always render as closed (snap back after passage)
+     - Always block raycasting (appear solid in 3D view)
+     - Require interact key to pass through
+   - `'key'`: Locked doors requiring key items
+     - Block passage with "The door is locked." message
+     - Future work: Implement key system and unlock mechanism
+   - `'lever'`: Doors controlled by switches/levers
+     - Remain open when activated by lever
+     - Render as open and allow ray passage when open
+     - Future work: Implement lever system
+   - `'event'`: Doors controlled by game events
+     - Remain open when triggered by game event
+     - Render as open and allow ray passage when open
+     - Future work: Implement event trigger system
+
+3. **Door Passage Animation:**
+   - Uses existing TurnAnimationController for smooth movement
+   - Door passage state tracked in DungeonScene during animation
+   - Door renders as open only during passage animation frame
+   - Movement completes, then door snaps back to closed appearance
+
+4. **Encounter System Integration:**
+   - `handleDoorPassage()` method in DungeonMovementHandler
+   - Calls `checkForEncounterWithMultiplier(3.0)` after movement
+   - Base encounter rate multiplied by 3.0 for door passage
+   - Makes door exploration riskier than normal hallway movement
+
+5. **Rendering Integration:**
+   - RaycastEngine detects wall type and opening mechanism
+   - Player-openable doors always block rays (appear closed)
+   - Lever/event doors allow ray passage when open
+   - DungeonViewRaycast checks door passage state for texture selection
+   - Doors render as 'door' texture normally, 'brick' texture when passing through
+
+6. **Future Work:**
+   - Key system: Inventory items that unlock specific doors
+   - Lever system: Switches that permanently open/close doors
+   - Event system: Game triggers that control door states
+   - One-way doors: Allow passage in only one direction
+   - Hidden/secret doors: Require discovery before interaction
+
 ### Phase 6: Place Special Tiles
 
 ```

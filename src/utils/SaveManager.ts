@@ -10,7 +10,7 @@ export interface SaveData {
 
 export class SaveManager {
   private static readonly SAVE_KEY = 'drpg2_save';
-  private static readonly VERSION = '1.0.0';
+  private static readonly VERSION = '1.1.0';
   private static readonly MAX_SAVES = 5;
 
   public static saveGame(gameState: GameState, playtimeSeconds: number): boolean {
@@ -38,12 +38,14 @@ export class SaveManager {
       const saved = localStorage.getItem(this.SAVE_KEY);
       if (!saved) return null;
 
-      const saveData: SaveData = JSON.parse(saved);
+      let saveData: SaveData = JSON.parse(saved);
 
       if (!this.isValidSave(saveData)) {
         DebugLogger.warn('SaveManager', 'Invalid save data detected');
         return null;
       }
+
+      saveData = this.migrateSaveData(saveData);
 
       return saveData;
     } catch (error) {
@@ -64,6 +66,61 @@ export class SaveManager {
 
   public static hasSave(): boolean {
     return localStorage.getItem(this.SAVE_KEY) !== null;
+  }
+
+  private static migrateSaveData(saveData: SaveData): SaveData {
+    const version = saveData.version || '0.0.0';
+
+    if (this.compareVersions(version, '1.1.0') < 0) {
+      DebugLogger.info('SaveManager', `Migrating save from ${version} to 1.1.0`);
+      saveData = this.migrateTo_1_1_0(saveData);
+      saveData.version = '1.1.0';
+    }
+
+    return saveData;
+  }
+
+  private static migrateTo_1_1_0(saveData: SaveData): SaveData {
+    const migrated = JSON.parse(JSON.stringify(saveData));
+
+    if (migrated.gameState.dungeon) {
+      migrated.gameState.dungeon.forEach((level: any) => {
+        if (level.tiles) {
+          level.tiles.forEach((row: any[]) => {
+            row.forEach((tile: any) => {
+              const oldType = tile.type;
+
+              if (oldType === 'stairs_up' || oldType === 'stairs_down' ||
+                  oldType === 'chest' || oldType === 'trap' || oldType === 'event') {
+                tile.type = 'floor';
+                tile.special = { type: oldType };
+                if (tile.properties) {
+                  tile.special.properties = tile.properties;
+                  delete tile.properties;
+                }
+              } else if (oldType === 'wall') {
+                tile.type = 'solid';
+              } else if (oldType === 'corridor') {
+                tile.type = 'floor';
+              }
+            });
+          });
+        }
+      });
+    }
+
+    return migrated;
+  }
+
+  private static compareVersions(v1: string, v2: string): number {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+
+    for (let i = 0; i < 3; i++) {
+      if (parts1[i] > parts2[i]) return 1;
+      if (parts1[i] < parts2[i]) return -1;
+    }
+    return 0;
   }
 
   private static sanitizeGameState(gameState: GameState): GameState {

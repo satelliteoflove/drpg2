@@ -29,6 +29,7 @@ export class DungeonScene extends Scene {
   private isAwaitingCastleStairsResponse: boolean = false;
   private turnAnimationTimer: number = 0;
   private performanceMonitor: PerformanceMonitor;
+  private doorPassageState: { x: number; y: number; direction: 'north' | 'south' | 'east' | 'west' } | null = null;
 
   constructor(gameState: GameState, sceneManager: SceneManager, _inputManager: any) {
     super('Dungeon');
@@ -353,11 +354,13 @@ export class DungeonScene extends Scene {
 
     // Current tile
     if (currentTile) {
-      const tileColor = currentTile.type === 'stairs_up' ? '#ffa500' :
-                       currentTile.type === 'stairs_down' ? '#ffa500' :
-                       currentTile.type === 'chest' ? '#ffff00' : '#aaa';
+      const specialType = currentTile.special?.type;
+      const tileColor = specialType === 'stairs_up' ? '#ffa500' :
+                       specialType === 'stairs_down' ? '#ffa500' :
+                       specialType === 'chest' ? '#ffff00' : '#aaa';
       ctx.fillStyle = tileColor;
-      ctx.fillText(`On: ${currentTile.type.replace('_', ' ')}`, infoX + 10, infoY + 110);
+      const displayType = specialType || currentTile.type;
+      ctx.fillText(`On: ${displayType.replace('_', ' ')}`, infoX + 10, infoY + 110);
     }
 
     // Statistics
@@ -399,7 +402,7 @@ export class DungeonScene extends Scene {
 
   private initializeUI(canvas: HTMLCanvasElement): void {
     DebugLogger.info('DungeonScene', 'Initializing raycasting dungeon renderer');
-    this.dungeonView = new DungeonViewRaycast(canvas);
+    this.dungeonView = new DungeonViewRaycast(canvas, this);
     this.statusPanel = new StatusPanel(canvas, 10, 80, 240, 480);  // Left side panel
     this.dungeonMapView = new DungeonMapView(canvas);
     this.debugOverlay = new DebugOverlay(canvas);
@@ -471,5 +474,13 @@ export class DungeonScene extends Scene {
 
   public getStatusPanel(): StatusPanel | null {
     return this.statusPanel || null;
+  }
+
+  public setDoorPassageState(state: { x: number; y: number; direction: 'north' | 'south' | 'east' | 'west' } | null): void {
+    this.doorPassageState = state;
+  }
+
+  public getDoorPassageState(): { x: number; y: number; direction: 'north' | 'south' | 'east' | 'west' } | null {
+    return this.doorPassageState;
   }
 }

@@ -165,7 +165,18 @@ export class DungeonInputHandler {
     const currentTile = currentFloor.tiles[this.gameState.party.y][this.gameState.party.x];
     if (!currentTile) return;
 
-    switch (currentTile.type) {
+    const doorWall = this.getDoorInFront(currentTile);
+    if (doorWall) {
+      this.passThroughDoor(currentTile, doorWall);
+      return;
+    }
+
+    if (!currentTile.special) {
+      this.messageLog?.addSystemMessage('Nothing to interact with here.');
+      return;
+    }
+
+    switch (currentTile.special.type) {
       case 'stairs_up':
         if (this.gameState.currentFloor === 1) {
           this.messageLog?.addSystemMessage('You are at the castle entrance. Do you want to return to town? (Y/N)');
@@ -186,19 +197,10 @@ export class DungeonInputHandler {
         break;
 
       case 'chest':
-        if (!currentTile.properties?.opened) {
+        if (!currentTile.special.properties?.opened) {
           this.openChest(currentTile);
         } else {
           this.messageLog?.addSystemMessage('The chest has already been opened.');
-        }
-        break;
-
-      case 'door':
-        if (currentTile.properties?.locked) {
-          this.messageLog?.addSystemMessage('The door is locked. You need a key.');
-        } else {
-          currentTile.type = 'floor';
-          this.messageLog?.addSystemMessage('You open the door.');
         }
         break;
 
@@ -208,8 +210,8 @@ export class DungeonInputHandler {
   }
 
   private openChest(tile: any): void {
-    const items = tile.properties?.items || [];
-    const gold = tile.properties?.gold || 0;
+    const items = tile.special?.properties?.items || [];
+    const gold = tile.special?.properties?.gold || 0;
 
     if (gold > 0) {
       this.gameState.party.pooledGold += gold;
@@ -220,7 +222,67 @@ export class DungeonInputHandler {
       this.itemPickupUI.startItemPickup(items);
     }
 
-    tile.properties = { ...tile.properties, opened: true };
+    if (tile.special) {
+      tile.special.properties = { ...tile.special.properties, opened: true };
+    }
+  }
+
+  private getDoorInFront(currentTile: any): 'north' | 'south' | 'east' | 'west' | null {
+    const facing = this.gameState.party.facing;
+
+    switch (facing) {
+      case 'north':
+        if (currentTile.northWall?.type === 'door') return 'north';
+        break;
+      case 'south':
+        if (currentTile.southWall?.type === 'door') return 'south';
+        break;
+      case 'east':
+        if (currentTile.eastWall?.type === 'door') return 'east';
+        break;
+      case 'west':
+        if (currentTile.westWall?.type === 'door') return 'west';
+        break;
+    }
+
+    return null;
+  }
+
+  private passThroughDoor(currentTile: any, direction: 'north' | 'south' | 'east' | 'west'): void {
+    let wall;
+    switch (direction) {
+      case 'north':
+        wall = currentTile.northWall;
+        break;
+      case 'south':
+        wall = currentTile.southWall;
+        break;
+      case 'east':
+        wall = currentTile.eastWall;
+        break;
+      case 'west':
+        wall = currentTile.westWall;
+        break;
+    }
+
+    if (!wall || wall.type !== 'door' || !wall.properties) return;
+
+    if (wall.properties.locked) {
+      this.messageLog?.addSystemMessage('The door is locked.');
+      return;
+    }
+
+    const openMechanism = wall.properties.openMechanism || 'player';
+
+    if (openMechanism === 'lever' || openMechanism === 'event') {
+      if (!wall.properties.open) {
+        this.messageLog?.addSystemMessage('The door won\'t budge.');
+        return;
+      }
+    }
+
+    const absoluteDirection = direction;
+    this.movementHandler.handleDoorPassage(absoluteDirection);
   }
 
   private toggleCombat(): void {

@@ -7,6 +7,8 @@ export interface RayHit {
   wallY: number;
   side: 'north' | 'south' | 'east' | 'west';
   textureX: number;
+  wallType?: 'solid' | 'door' | 'secret' | 'illusory';
+  doorOpen?: boolean;
 }
 
 export class RaycastEngine {
@@ -59,8 +61,13 @@ export class RaycastEngine {
     let hit = false;
     let side: 0 | 1 = 0;
     let steps = 0;
+    let prevMapX = mapX;
+    let prevMapY = mapY;
 
     while (!hit && steps < maxDistance * 2) {
+      prevMapX = mapX;
+      prevMapY = mapY;
+
       if (sideDistX < sideDistY) {
         sideDistX += deltaDistX;
         mapX += stepX;
@@ -73,7 +80,7 @@ export class RaycastEngine {
 
       steps++;
 
-      if (this.isWall(mapX, mapY)) {
+      if (this.isWall(mapX, mapY, prevMapX, prevMapY, side, stepX, stepY)) {
         hit = true;
       }
 
@@ -106,6 +113,29 @@ export class RaycastEngine {
       textureX = wallHitX - Math.floor(wallHitX);
     }
 
+    let wallType: 'solid' | 'door' | 'secret' | 'illusory' = 'solid';
+    let doorOpen = false;
+
+    if (mapX >= 0 && mapX < this.dungeon.width && mapY >= 0 && mapY < this.dungeon.height) {
+      const hitTile = this.dungeon.tiles[mapY][mapX];
+
+      if (hitTile.type !== 'solid' && prevMapX >= 0 && prevMapX < this.dungeon.width && prevMapY >= 0 && prevMapY < this.dungeon.height) {
+        const fromTile = this.dungeon.tiles[prevMapY][prevMapX];
+        let wall;
+
+        if (side === 0) {
+          wall = stepX > 0 ? fromTile.eastWall : fromTile.westWall;
+        } else {
+          wall = stepY > 0 ? fromTile.southWall : fromTile.northWall;
+        }
+
+        if (wall) {
+          wallType = wall.type;
+          doorOpen = wall.properties?.open || false;
+        }
+      }
+    }
+
     return {
       hit: true,
       distance: perpWallDist,
@@ -113,6 +143,8 @@ export class RaycastEngine {
       wallY: mapY,
       side: wallSide,
       textureX: textureX,
+      wallType: wallType,
+      doorOpen: doorOpen,
     };
   }
 
@@ -135,13 +167,46 @@ export class RaycastEngine {
     return (degrees * Math.PI) / 180;
   }
 
-  private isWall(x: number, y: number): boolean {
+  private isWall(x: number, y: number, fromX?: number, fromY?: number, side?: 0 | 1, stepX?: number, stepY?: number): boolean {
     if (!this.dungeon) return true;
     if (x < 0 || x >= this.dungeon.width || y < 0 || y >= this.dungeon.height) {
       return true;
     }
     const tile = this.dungeon.tiles[y][x];
-    return tile.type === 'wall';
+
+    if (tile.type === 'solid') {
+      return true;
+    }
+
+    if (fromX !== undefined && fromY !== undefined && side !== undefined && stepX !== undefined && stepY !== undefined) {
+      if (fromX >= 0 && fromX < this.dungeon.width && fromY >= 0 && fromY < this.dungeon.height) {
+        const fromTile = this.dungeon.tiles[fromY][fromX];
+
+        if (side === 0) {
+          const wall = stepX > 0 ? fromTile.eastWall : fromTile.westWall;
+          if (wall.exists) {
+            const openMechanism = wall.properties?.openMechanism || 'player';
+            if (openMechanism === 'lever' || openMechanism === 'event') {
+              if (!wall.properties?.open) return true;
+            } else {
+              return true;
+            }
+          }
+        } else {
+          const wall = stepY > 0 ? fromTile.southWall : fromTile.northWall;
+          if (wall.exists) {
+            const openMechanism = wall.properties?.openMechanism || 'player';
+            if (openMechanism === 'lever' || openMechanism === 'event') {
+              if (!wall.properties?.open) return true;
+            } else {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
   private createMissHit(): RayHit {

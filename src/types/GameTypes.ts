@@ -195,6 +195,7 @@ export interface LootDrop {
 export interface WallProperties {
   locked: boolean;
   open: boolean;
+  openMechanism?: 'player' | 'key' | 'lever' | 'event';
   keyId?: string;
   oneWay?: Direction;
   hidden: boolean;

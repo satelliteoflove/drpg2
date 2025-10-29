@@ -1,5 +1,5 @@
 import { Direction, DungeonLevel } from '../types/GameTypes';
-import { RaycastEngine } from './RaycastEngine';
+import { RaycastEngine, RayHit } from './RaycastEngine';
 import { WallTextureManager, WallTextureType } from './WallTextureManager';
 import { DebugLogger } from '../utils/DebugLogger';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
@@ -32,13 +32,15 @@ export class DungeonViewRaycast {
   private tempCtx: CanvasRenderingContext2D;
   private tempImageData: ImageData | null = null;
   private maxWallHeight: number = 0;
+  private dungeonScene: any = null;
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, dungeonScene?: any) {
     this.ctx = canvas.getContext('2d')!;
     this.currentRenderCtx = this.ctx;
 
     this.raycastEngine = new RaycastEngine();
     this.textureManager = new WallTextureManager();
+    this.dungeonScene = dungeonScene;
     this.performanceMonitor = PerformanceMonitor.getInstance();
 
     this.tempCanvas = document.createElement('canvas');
@@ -146,7 +148,7 @@ export class DungeonViewRaycast {
 
       this.renderFloorAndCeiling(x, drawStart, drawEnd);
 
-      this.renderWallSlice(x, drawStart, drawEnd, hit.textureX, hit.distance, hit.wallX, hit.wallY);
+      this.renderWallSlice(x, drawStart, drawEnd, hit);
     }
 
     const raycastTime = performance.now() - raycastStartTime;
@@ -165,16 +167,23 @@ export class DungeonViewRaycast {
     x: number,
     drawStart: number,
     drawEnd: number,
-    textureX: number,
-    distance: number,
-    wallX: number,
-    wallY: number
+    hit: RayHit
   ): void {
-    const tile = this.getTileAt(wallX, wallY);
     let textureType: WallTextureType = 'brick';
 
-    if (tile && tile.type === 'door') {
-      textureType = 'door';
+    if (hit.wallType === 'door') {
+      let renderAsOpen = hit.doorOpen || false;
+
+      if (this.dungeonScene && typeof this.dungeonScene.getDoorPassageState === 'function') {
+        const doorPassage = this.dungeonScene.getDoorPassageState();
+        if (doorPassage && doorPassage.x === hit.wallX && doorPassage.y === hit.wallY) {
+          renderAsOpen = true;
+        }
+      }
+
+      textureType = renderAsOpen ? 'brick' : 'door';
+    } else if (hit.wallType === 'secret' || hit.wallType === 'illusory') {
+      textureType = 'brick';
     }
 
     const texture = this.textureManager.getTexture(textureType);
@@ -188,7 +197,7 @@ export class DungeonViewRaycast {
     const textureWidth = this.textureManager.getTextureWidth();
     const textureHeight = this.textureManager.getTextureHeight();
 
-    const texX = Math.floor(textureX * textureWidth) % textureWidth;
+    const texX = Math.floor(hit.textureX * textureWidth) % textureWidth;
 
     const wallHeight = drawEnd - drawStart;
 
@@ -212,8 +221,8 @@ export class DungeonViewRaycast {
       const dstIndex = y * 4;
 
       let brightness = 1.0;
-      if (distance > 1) {
-        brightness = Math.max(0.3, 1.0 - (distance - 1) / 10);
+      if (hit.distance > 1) {
+        brightness = Math.max(0.3, 1.0 - (hit.distance - 1) / 10);
       }
 
       this.tempImageData.data[dstIndex] = imageData.data[srcIndex] * brightness;

@@ -85,7 +85,7 @@ export class DungeonMovementHandler {
 
     const targetTile = currentFloor.tiles[newY][newX];
 
-    if (targetTile.type === 'wall' || targetTile.type === 'solid') {
+    if (targetTile.type === 'solid') {
       this.messageLog?.addSystemMessage('The way is blocked.');
       return { moved: false, blocked: true, triggered: null };
     }
@@ -167,25 +167,25 @@ export class DungeonMovementHandler {
   }
 
   private canMoveTo(targetTile: DungeonTile | null, currentTile: DungeonTile | null, direction: Direction): boolean {
-    if (!currentTile) return targetTile !== null && targetTile.type !== 'wall' && targetTile.type !== 'solid';
+    if (!currentTile) return targetTile !== null && targetTile.type !== 'solid';
 
     switch (direction) {
       case 'north':
-        if (currentTile.northWall.exists) return false;
+        if (currentTile.northWall.exists && !currentTile.northWall.properties?.open) return false;
         break;
       case 'south':
-        if (currentTile.southWall.exists) return false;
+        if (currentTile.southWall.exists && !currentTile.southWall.properties?.open) return false;
         break;
       case 'east':
-        if (currentTile.eastWall.exists) return false;
+        if (currentTile.eastWall.exists && !currentTile.eastWall.properties?.open) return false;
         break;
       case 'west':
-        if (currentTile.westWall.exists) return false;
+        if (currentTile.westWall.exists && !currentTile.westWall.properties?.open) return false;
         break;
     }
 
     if (targetTile) {
-      return targetTile.type !== 'wall' && targetTile.type !== 'solid';
+      return targetTile.type !== 'solid';
     }
 
     return true;
@@ -218,7 +218,9 @@ export class DungeonMovementHandler {
       this.lastTileEventPosition.y === currentPosition.y &&
       this.lastTileEventPosition.floor === currentPosition.floor;
 
-    switch (tile.type) {
+    if (!tile.special) return null;
+
+    switch (tile.special.type) {
       case 'stairs_up':
         if (!isSamePosition) {
           this.messageLog?.addSystemMessage('You found stairs going up. Press ENTER to use them.');
@@ -233,16 +235,8 @@ export class DungeonMovementHandler {
         }
         break;
 
-      case 'door':
-        if (tile.properties?.locked) {
-          this.messageLog?.addSystemMessage('The door is locked.');
-        } else {
-          this.messageLog?.addSystemMessage('You pass through the doorway.');
-        }
-        return 'door';
-
       case 'chest':
-        if (tile.properties?.opened) {
+        if (tile.special.properties?.opened) {
           this.messageLog?.addSystemMessage('The chest has already been opened.');
         } else {
           this.handleChest(tile);
@@ -259,7 +253,7 @@ export class DungeonMovementHandler {
         break;
 
       case 'event':
-        if (!isSamePosition && tile.properties?.eventType) {
+        if (!isSamePosition && tile.special.properties?.eventType) {
           this.handleEvent(tile);
           this.lastTileEventPosition = currentPosition;
           return 'event';
@@ -316,12 +310,67 @@ export class DungeonMovementHandler {
     this.messageLog?.addSystemMessage(`Descended to floor ${this.gameState.currentFloor}`);
   }
 
+  public handleDoorPassage(direction: Direction): void {
+    const party = this.gameState.party;
+    const currentFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
+
+    if (!currentFloor) {
+      DebugLogger.warn('DungeonMovementHandler', 'No current floor available');
+      return;
+    }
+
+    const delta = GameUtilities.getMovementDelta(direction);
+    const newX = party.x + delta.dx;
+    const newY = party.y + delta.dy;
+
+    if (newX < 0 || newX >= currentFloor.width || newY < 0 || newY >= currentFloor.height) {
+      this.messageLog?.addSystemMessage('You cannot move in that direction.');
+      return;
+    }
+
+    const targetTile = currentFloor.tiles[newY][newX];
+
+    if (targetTile.type === 'solid') {
+      this.messageLog?.addSystemMessage('The way is blocked.');
+      return;
+    }
+
+    const dungeonScene = this.sceneManager.getCurrentScene();
+    if (dungeonScene && typeof (dungeonScene as any).setDoorPassageState === 'function') {
+      (dungeonScene as any).setDoorPassageState({
+        x: party.x,
+        y: party.y,
+        direction: direction
+      });
+    }
+
+    const fromPos = { x: party.x, y: party.y };
+    const toPos = { x: newX, y: newY };
+
+    this.turnAnimationController.startMove(fromPos, toPos, () => {
+      party.x = newX;
+      party.y = newY;
+
+      if (dungeonScene && typeof (dungeonScene as any).setDoorPassageState === 'function') {
+        (dungeonScene as any).setDoorPassageState(null);
+      }
+
+      this.updateDiscoveredTiles();
+      this.tickAllPartyMembers();
+      this.lastMoveTime = Date.now();
+
+      this.checkForEncounterWithMultiplier(3.0);
+
+      this.handleTileEffect(targetTile);
+    });
+  }
+
   private isValidPosition(x: number, y: number, floor: any): boolean {
     if (x < 0 || x >= floor.width || y < 0 || y >= floor.height) {
       return false;
     }
     const tile = floor.tiles[y][x];
-    return tile && tile.type !== 'wall' && tile.type !== 'solid';
+    return tile && tile.type !== 'solid';
   }
 
   private findValidFloorTile(floor: any): { x: number; y: number } {
@@ -338,10 +387,10 @@ export class DungeonMovementHandler {
   }
 
   private handleChest(tile: DungeonTile): void {
-    if (!tile.properties) return;
+    if (!tile.special?.properties) return;
 
-    const items = tile.properties.items || [];
-    const gold = tile.properties.gold || 0;
+    const items = tile.special.properties.items || [];
+    const gold = tile.special.properties.gold || 0;
 
     if (gold > 0) {
       this.gameState.party.pooledGold += gold;
@@ -356,14 +405,14 @@ export class DungeonMovementHandler {
       this.messageLog?.addSystemMessage(`Found ${items.length} item(s) in the chest!`);
     }
 
-    tile.properties.opened = true;
+    tile.special.properties.opened = true;
   }
 
   private handleTrap(tile: DungeonTile): void {
-    if (!tile.properties) return;
+    if (!tile.special?.properties) return;
 
-    const trapType = tile.properties.trapType || 'spike';
-    const damage = tile.properties.damage || 5;
+    const trapType = tile.special.properties.trapType || 'spike';
+    const damage = tile.special.properties.damage || 5;
 
     this.messageLog?.addSystemMessage(`A ${trapType} trap springs!`);
 
@@ -374,16 +423,16 @@ export class DungeonMovementHandler {
       victim.hp = Math.max(0, victim.hp - damage);
       this.messageLog?.addSystemMessage(`${victim.name} takes ${damage} damage!`);
 
-      if (tile.properties.statusType && !victim.isDead) {
-        const statusChance = tile.properties.statusChance ?? 1.0;
+      if (tile.special.properties.statusType && !victim.isDead) {
+        const statusChance = tile.special.properties.statusChance ?? 1.0;
         const roll = Math.random();
 
         if (roll < statusChance) {
           const applied = this.statusEffectSystem.applyStatusEffect(
             victim,
-            tile.properties.statusType,
+            tile.special.properties.statusType,
             {
-              duration: tile.properties.statusDuration,
+              duration: tile.special.properties.statusDuration,
               source: `${trapType}_trap`,
               ignoreResistance: false
             }
@@ -391,11 +440,11 @@ export class DungeonMovementHandler {
 
           if (applied) {
             this.messageLog?.addSystemMessage(
-              `${victim.name} is afflicted by ${tile.properties.statusType}!`
+              `${victim.name} is afflicted by ${tile.special.properties.statusType}!`
             );
           } else {
             this.messageLog?.addSystemMessage(
-              `${victim.name} resisted the ${tile.properties.statusType} effect!`
+              `${victim.name} resisted the ${tile.special.properties.statusType} effect!`
             );
           }
         }
@@ -407,24 +456,23 @@ export class DungeonMovementHandler {
       }
     }
 
-    if (tile.properties.oneTime) {
-      tile.type = 'floor';
-      tile.properties = undefined;
+    if (tile.special.properties.oneTime) {
+      tile.special = undefined;
     }
   }
 
   private handleEvent(tile: DungeonTile): void {
-    if (!tile.properties) return;
+    if (!tile.special?.properties) return;
 
-    const eventType = tile.properties.eventType;
+    const eventType = tile.special.properties.eventType;
 
     switch (eventType) {
       case 'message':
-        this.messageLog?.addSystemMessage(tile.properties.message || 'Something happens...');
+        this.messageLog?.addSystemMessage(tile.special.properties.message || 'Something happens...');
         break;
 
       case 'encounter':
-        this.triggerCombat(tile.properties.monsters);
+        this.triggerCombat(tile.special.properties.monsters);
         break;
 
       case 'heal':
@@ -439,23 +487,22 @@ export class DungeonMovementHandler {
         break;
 
       case 'teleport':
-        const targetX = tile.properties.targetX || 0;
-        const targetY = tile.properties.targetY || 0;
+        const targetX = tile.special.properties.targetX || 0;
+        const targetY = tile.special.properties.targetY || 0;
         this.gameState.party.x = targetX;
         this.gameState.party.y = targetY;
         this.messageLog?.addSystemMessage('You are teleported to a new location!');
         break;
     }
 
-    if (tile.properties.oneTime) {
-      tile.type = 'floor';
-      tile.properties = undefined;
+    if (tile.special.properties.oneTime) {
+      tile.special = undefined;
     }
   }
 
   private shouldCheckRandomEncounter(tile: DungeonTile): boolean {
     if (!this.gameState.combatEnabled) return false;
-    if (tile.type !== 'floor' && tile.type !== 'corridor') return false;
+    if (tile.type !== 'floor') return false;
 
     const currentPosition = {
       x: this.gameState.party.x,
@@ -476,6 +523,25 @@ export class DungeonMovementHandler {
   private checkRandomEncounter(): boolean {
     const chance = DungeonMovementHandler.ENCOUNTER_CHANCE_BASE +
                   (this.gameState.currentFloor - 1) * DungeonMovementHandler.ENCOUNTER_CHANCE_SCALING;
+
+    if (Math.random() < chance) {
+      this.triggerCombat();
+      this.lastEncounterPosition = {
+        x: this.gameState.party.x,
+        y: this.gameState.party.y,
+        floor: this.gameState.currentFloor,
+      };
+      return true;
+    }
+
+    return false;
+  }
+
+  private checkForEncounterWithMultiplier(multiplier: number): boolean {
+    if (!this.gameState.combatEnabled) return false;
+
+    const chance = (DungeonMovementHandler.ENCOUNTER_CHANCE_BASE +
+                   (this.gameState.currentFloor - 1) * DungeonMovementHandler.ENCOUNTER_CHANCE_SCALING) * multiplier;
 
     if (Math.random() < chance) {
       this.triggerCombat();

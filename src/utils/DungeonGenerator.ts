@@ -33,6 +33,7 @@ export class DungeonGenerator {
     this.placeStairs(tiles);
     this.placeSpecialTiles(tiles);
     this.calculateWalls(tiles);
+    this.placeDoors(tiles);
 
     const overrideZones = this.generateOverrideZones(tiles);
     const events = this.generateEvents(tiles);
@@ -460,6 +461,261 @@ export class DungeonGenerator {
           tile.eastWall = this.createWall(hasEastWall);
         }
       }
+    }
+  }
+
+  private placeDoors(tiles: DungeonTile[][]): void {
+    for (const room of this.rooms) {
+      const boundaries = this.findRoomCorridorBoundaries(room, tiles);
+
+      if (boundaries.length === 0) {
+        continue;
+      }
+
+      let doorCount: number;
+      if (room.type === 'large') {
+        doorCount = 2 + Math.floor(this.rng.random() * 3);
+      } else if (room.type === 'medium') {
+        doorCount = 1 + Math.floor(this.rng.random() * 3);
+      } else {
+        doorCount = 1 + Math.floor(this.rng.random() * 2);
+      }
+
+      const selectedDoors = this.selectDoorPositions(boundaries, doorCount, room);
+
+      for (const doorPos of selectedDoors) {
+        this.placeDoorAtPosition(doorPos, tiles);
+      }
+    }
+
+    this.assignLockedDoors(tiles);
+  }
+
+  private findRoomCorridorBoundaries(room: Room, tiles: DungeonTile[][]): Array<{x: number, y: number, wall: 'north' | 'south' | 'east' | 'west'}> {
+    const boundaries: Array<{x: number, y: number, wall: 'north' | 'south' | 'east' | 'west'}> = [];
+
+    for (let x = room.x; x < room.x + room.width; x++) {
+      if (room.y > 0) {
+        const outsideTile = tiles[room.y - 1][x];
+        if (outsideTile.type === 'floor' && !this.isTileInAnyRoom(outsideTile.x, outsideTile.y)) {
+          boundaries.push({ x, y: room.y, wall: 'north' });
+        }
+      }
+
+      if (room.y + room.height < this.height) {
+        const outsideTile = tiles[room.y + room.height][x];
+        if (outsideTile.type === 'floor' && !this.isTileInAnyRoom(outsideTile.x, outsideTile.y)) {
+          boundaries.push({ x, y: room.y + room.height - 1, wall: 'south' });
+        }
+      }
+    }
+
+    for (let y = room.y; y < room.y + room.height; y++) {
+      if (room.x > 0) {
+        const outsideTile = tiles[y][room.x - 1];
+        if (outsideTile.type === 'floor' && !this.isTileInAnyRoom(outsideTile.x, outsideTile.y)) {
+          boundaries.push({ x: room.x, y, wall: 'west' });
+        }
+      }
+
+      if (room.x + room.width < this.width) {
+        const outsideTile = tiles[y][room.x + room.width];
+        if (outsideTile.type === 'floor' && !this.isTileInAnyRoom(outsideTile.x, outsideTile.y)) {
+          boundaries.push({ x: room.x + room.width - 1, y, wall: 'east' });
+        }
+      }
+    }
+
+    return boundaries;
+  }
+
+  private isTileInAnyRoom(x: number, y: number): boolean {
+    for (const room of this.rooms) {
+      if (x >= room.x && x < room.x + room.width &&
+          y >= room.y && y < room.y + room.height) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private selectDoorPositions(
+    potentialDoors: Array<{x: number, y: number, wall: 'north' | 'south' | 'east' | 'west'}>,
+    count: number,
+    room: Room
+  ): Array<{x: number, y: number, wall: 'north' | 'south' | 'east' | 'west'}> {
+    const selected: Array<{x: number, y: number, wall: 'north' | 'south' | 'east' | 'west'}> = [];
+    const wallUsage = { north: 0, south: 0, east: 0, west: 0 };
+
+    const doorsByWall: {[key: string]: Array<{x: number, y: number, wall: 'north' | 'south' | 'east' | 'west'}>} = {
+      north: [],
+      south: [],
+      east: [],
+      west: []
+    };
+
+    for (const door of potentialDoors) {
+      doorsByWall[door.wall].push(door);
+    }
+
+    const availableWalls = Object.keys(doorsByWall).filter(wall => doorsByWall[wall].length > 0);
+
+    while (selected.length < count && availableWalls.length > 0) {
+      let minWall = availableWalls[0];
+      for (const wall of availableWalls) {
+        if (wallUsage[wall as keyof typeof wallUsage] < wallUsage[minWall as keyof typeof wallUsage]) {
+          minWall = wall;
+        }
+      }
+
+      const doors = doorsByWall[minWall];
+      if (doors.length > 0) {
+        const centerDoor = this.findCenterMostDoor(doors, room);
+        selected.push(centerDoor);
+        wallUsage[minWall as keyof typeof wallUsage]++;
+
+        doorsByWall[minWall] = doors.filter(d => d !== centerDoor);
+        if (doorsByWall[minWall].length === 0) {
+          const index = availableWalls.indexOf(minWall);
+          if (index > -1) {
+            availableWalls.splice(index, 1);
+          }
+        }
+      }
+    }
+
+    return selected;
+  }
+
+  private findCenterMostDoor(
+    doors: Array<{x: number, y: number, wall: string}>,
+    room: Room
+  ): {x: number, y: number, wall: 'north' | 'south' | 'east' | 'west'} {
+    const roomCenterX = room.x + Math.floor(room.width / 2);
+    const roomCenterY = room.y + Math.floor(room.height / 2);
+
+    let bestDoor = doors[0];
+    let bestDistance = Number.MAX_VALUE;
+
+    for (const door of doors) {
+      const distance = Math.abs(door.x - roomCenterX) + Math.abs(door.y - roomCenterY);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestDoor = door;
+      }
+    }
+
+    return bestDoor as {x: number, y: number, wall: 'north' | 'south' | 'east' | 'west'};
+  }
+
+  private placeDoorAtPosition(
+    doorPos: {x: number, y: number, wall: 'north' | 'south' | 'east' | 'west'},
+    tiles: DungeonTile[][]
+  ): void {
+    const tile = tiles[doorPos.y][doorPos.x];
+
+    const doorWall: Wall = {
+      exists: true,
+      type: 'door',
+      properties: {
+        locked: false,
+        open: false,
+        openMechanism: 'player',
+        keyId: undefined,
+        oneWay: undefined,
+        hidden: false,
+        discovered: true
+      }
+    };
+
+    if (doorPos.wall === 'north') {
+      tile.northWall = doorWall;
+      if (doorPos.y > 0) {
+        tiles[doorPos.y - 1][doorPos.x].southWall = doorWall;
+      }
+    } else if (doorPos.wall === 'south') {
+      tile.southWall = doorWall;
+      if (doorPos.y < this.height - 1) {
+        tiles[doorPos.y + 1][doorPos.x].northWall = doorWall;
+      }
+    } else if (doorPos.wall === 'west') {
+      tile.westWall = doorWall;
+      if (doorPos.x > 0) {
+        tiles[doorPos.y][doorPos.x - 1].eastWall = doorWall;
+      }
+    } else if (doorPos.wall === 'east') {
+      tile.eastWall = doorWall;
+      if (doorPos.x < this.width - 1) {
+        tiles[doorPos.y][doorPos.x + 1].westWall = doorWall;
+      }
+    }
+
+    const room = this.findRoomContainingTile(doorPos.x, doorPos.y);
+    if (room) {
+      room.doors.push({
+        x: doorPos.x,
+        y: doorPos.y,
+        wall: doorPos.wall,
+        locked: false,
+        keyId: undefined
+      });
+    }
+  }
+
+  private findRoomContainingTile(x: number, y: number): Room | null {
+    for (const room of this.rooms) {
+      if (x >= room.x && x < room.x + room.width &&
+          y >= room.y && y < room.y + room.height) {
+        return room;
+      }
+    }
+    return null;
+  }
+
+  private assignLockedDoors(tiles: DungeonTile[][]): void {
+    const allDoors: Array<{room: Room, doorIndex: number}> = [];
+
+    for (const room of this.rooms) {
+      for (let i = 0; i < room.doors.length; i++) {
+        allDoors.push({ room, doorIndex: i });
+      }
+    }
+
+    const lockedPercentage = 0.10 + this.rng.random() * 0.10;
+    const numLocked = Math.floor(allDoors.length * lockedPercentage);
+
+    for (let i = 0; i < numLocked && allDoors.length > 0; i++) {
+      const randomIndex = Math.floor(this.rng.random() * allDoors.length);
+      const { room, doorIndex } = allDoors[randomIndex];
+      const door = room.doors[doorIndex];
+
+      door.locked = true;
+      door.keyId = `key_${room.id}_${doorIndex}`;
+
+      const tile = tiles[door.y][door.x];
+      let wall;
+      switch (door.wall) {
+        case 'north':
+          wall = tile.northWall;
+          break;
+        case 'south':
+          wall = tile.southWall;
+          break;
+        case 'east':
+          wall = tile.eastWall;
+          break;
+        case 'west':
+          wall = tile.westWall;
+          break;
+      }
+
+      if (wall.properties) {
+        wall.properties.locked = true;
+        wall.properties.openMechanism = 'key';
+        wall.properties.keyId = door.keyId;
+      }
+
+      allDoors.splice(randomIndex, 1);
     }
   }
 

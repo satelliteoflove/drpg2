@@ -126,7 +126,7 @@ export class DungeonMapView {
   }
 
   private drawTile(tile: DungeonTile, x: number, y: number): void {
-    if (!tile.discovered && tile.type !== 'wall') {
+    if (!tile.discovered && tile.type !== 'solid') {
       this.currentRenderCtx.fillStyle = this.COLORS.undiscovered;
       this.currentRenderCtx.fillRect(x, y, this.TILE_SIZE, this.TILE_SIZE);
       return;
@@ -135,37 +135,35 @@ export class DungeonMapView {
     let color = this.COLORS.floor;
     let symbol = '';
 
-    switch (tile.type) {
-      case 'wall':
-        color = this.COLORS.wall;
-        break;
-      case 'floor':
-        color = this.COLORS.floor;
-        break;
-      case 'stairs_up':
-        color = this.COLORS.stairs_up;
-        symbol = '▲';
-        break;
-      case 'stairs_down':
-        color = this.COLORS.stairs_down;
-        symbol = '▼';
-        break;
-      case 'chest':
-        color = this.COLORS.chest;
-        symbol = '□';
-        break;
-      case 'door':
-        color = this.COLORS.door;
-        symbol = '◊';
-        break;
-      case 'trap':
-        color = this.COLORS.trap;
-        symbol = '×';
-        break;
-      case 'event':
-        color = this.COLORS.event;
-        symbol = '?';
-        break;
+    if (tile.type === 'solid') {
+      color = this.COLORS.wall;
+    } else if (tile.type === 'floor') {
+      color = this.COLORS.floor;
+
+      if (tile.special) {
+        switch (tile.special.type) {
+          case 'stairs_up':
+            color = this.COLORS.stairs_up;
+            symbol = '▲';
+            break;
+          case 'stairs_down':
+            color = this.COLORS.stairs_down;
+            symbol = '▼';
+            break;
+          case 'chest':
+            color = this.COLORS.chest;
+            symbol = '□';
+            break;
+          case 'trap':
+            color = this.COLORS.trap;
+            symbol = '×';
+            break;
+          case 'event':
+            color = this.COLORS.event;
+            symbol = '?';
+            break;
+        }
+      }
     }
 
     this.currentRenderCtx.fillStyle = color;
@@ -179,7 +177,7 @@ export class DungeonMapView {
       this.currentRenderCtx.fillText(symbol, x + this.TILE_SIZE / 2, y + this.TILE_SIZE / 2);
     }
 
-    if (tile.type !== 'wall') {
+    if (tile.type !== 'solid') {
       this.currentRenderCtx.strokeStyle = this.COLORS.wallLine;
       this.currentRenderCtx.lineWidth = 2;
 
