@@ -21,9 +21,9 @@ performance:
     topics: [baseline, metrics, performance measurements]
     summary: Performance baseline measurements and targets
 
-  - file: performance-baseline-2025-09-04.md
+  - file: archive/performance-baseline-2025-09-04.md
     topics: [baseline snapshot, metrics, performance history]
-    summary: Performance baseline snapshot from September 4, 2025
+    summary: Performance baseline snapshot from September 4, 2025 (archived)
 
   - file: performance-metrics-guide.md
     topics: [metrics, monitoring, performance tracking]
@@ -123,14 +123,6 @@ usage_and_setup:
     summary: How to play the game and use its features
 
 development:
-  - file: lessons-learned.md
-    topics: [development, best practices, retrospective, lessons]
-    summary: Development lessons learned and best practices discovered
-
-  - file: validation-report.md
-    topics: [validation, testing, quality assurance, test results]
-    summary: Validation and testing report for the game systems
-
   - file: utilities-reference.md
     topics: [utilities, DRY, code reuse, dice roller, entity utils, saving throws]
     summary: Reference documentation for core utility classes (DiceRoller, EntityUtils, SavingThrowCalculator)
