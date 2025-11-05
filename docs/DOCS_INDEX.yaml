@@ -14,8 +14,8 @@ ai_interface:
 
 performance:
   - file: PERFORMANCE.md
-    topics: [optimization, performance, profiling, benchmarks, metrics]
-    summary: Performance optimization guidelines and benchmarking
+    topics: [optimization, performance, profiling, benchmarks, metrics, monitoring, performance tracking]
+    summary: Performance optimization guidelines, benchmarking, and metrics interpretation
 
   - file: performance-baseline.md
     topics: [baseline, metrics, performance measurements]
@@ -24,10 +24,6 @@ performance:
   - file: archive/performance-baseline-2025-09-04.md
     topics: [baseline snapshot, metrics, performance history]
     summary: Performance baseline snapshot from September 4, 2025 (archived)
-
-  - file: performance-metrics-guide.md
-    topics: [metrics, monitoring, performance tracking]
-    summary: Guide for measuring and tracking performance metrics
 
 game_mechanics:
   - file: bishop-identification-mechanics.md
@@ -440,7 +436,7 @@ search_hints:
   rendering: [api/classes/RenderManager.md, api/classes/DungeonView.md, api/classes/StatusPanel.md, first-person-dungeon-rendering.yaml]
   first_person_dungeons: [first-person-dungeon-rendering.yaml]
   dungeon_rendering: [first-person-dungeon-rendering.yaml, api/classes/DungeonView.md]
-  performance: [PERFORMANCE.md, performance-metrics-guide.md, api/classes/RenderingOptimizer.md]
+  performance: [PERFORMANCE.md, performance-baseline.md, api/classes/RenderingOptimizer.md]
   items: [wizardry-item-system.md, wizardry_gaiden_4_items_*.md, api/interfaces/Item.md, api/classes/InventorySystem.md]
   architecture: [ARCHITECTURE.md, api/classes/Game.md]
   game_mechanics: [bishop-identification-mechanics.md, wizardry-item-system.md]
