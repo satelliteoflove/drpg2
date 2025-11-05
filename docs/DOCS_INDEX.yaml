@@ -26,13 +26,9 @@ performance:
     summary: Performance baseline snapshot from September 4, 2025 (archived)
 
 game_mechanics:
-  - file: bishop-identification-mechanics.md
-    topics: [bishop, class, identification, game mechanics, items]
-    summary: Bishop class identification mechanics and implementation
-
   - file: wizardry-item-system.md
-    topics: [items, equipment, inventory, wizardry mechanics]
-    summary: Complete item system documentation based on Wizardry
+    topics: [items, equipment, inventory, wizardry mechanics, bishop, identification, curse risk, authentic mechanics]
+    summary: Complete item system documentation based on Wizardry, including authentic Bishop identification mechanics
 
 wizardry_items:
   files_pattern: wizardry_gaiden_4_items_*.md
@@ -439,7 +435,9 @@ search_hints:
   performance: [PERFORMANCE.md, performance-baseline.md, api/classes/RenderingOptimizer.md]
   items: [wizardry-item-system.md, wizardry_gaiden_4_items_*.md, api/interfaces/Item.md, api/classes/InventorySystem.md]
   architecture: [ARCHITECTURE.md, api/classes/Game.md]
-  game_mechanics: [bishop-identification-mechanics.md, wizardry-item-system.md]
+  game_mechanics: [wizardry-item-system.md]
+  identification: [wizardry-item-system.md, api/classes/InventorySystem.md]
+  bishop: [wizardry-item-system.md]
   setup: [README.md, USAGE.md]
   api: [api/README.md, api/globals.md]
   combat: [api/classes/CombatScene.md, api/classes/CombatSystem.md, api/interfaces/Attack.md]
