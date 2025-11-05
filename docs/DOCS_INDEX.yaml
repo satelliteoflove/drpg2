@@ -7,11 +7,6 @@ architecture:
   topics: [hybrid architecture, system design, service-oriented, traditional OOP, dependency injection, scene management]
   summary: Hybrid architecture combining service-oriented infrastructure with traditional OOP for game logic
 
-api_reference:
-  file: API_REFERENCE.md
-  topics: [API, classes, methods, interfaces, type definitions]
-  summary: Complete API documentation for all game classes and interfaces
-
 ai_interface:
   file: ai-interface.md
   topics: [AI, automation, testing, programmatic control, agent interface]
@@ -139,11 +134,6 @@ development:
   - file: utilities-reference.md
     topics: [utilities, DRY, code reuse, dice roller, entity utils, saving throws]
     summary: Reference documentation for core utility classes (DiceRoller, EntityUtils, SavingThrowCalculator)
-
-ai_plans:
-  - file: ai/logs/tavern-implementation-analysis.md
-    topics: [tavern, implementation analysis, planning, architecture, party management]
-    summary: Analysis and planning document for Gilgamesh's Tavern implementation
 
 # API Documentation Root
 api_root:
@@ -460,10 +450,10 @@ search_hints:
   dungeon_rendering: [first-person-dungeon-rendering.yaml, api/classes/DungeonView.md]
   performance: [PERFORMANCE.md, performance-metrics-guide.md, api/classes/RenderingOptimizer.md]
   items: [wizardry-item-system.md, wizardry_gaiden_4_items_*.md, api/interfaces/Item.md, api/classes/InventorySystem.md]
-  architecture: [ARCHITECTURE.md, API_REFERENCE.md, api/classes/Game.md]
+  architecture: [ARCHITECTURE.md, api/classes/Game.md]
   game_mechanics: [bishop-identification-mechanics.md, wizardry-item-system.md]
   setup: [README.md, USAGE.md]
-  api: [API_REFERENCE.md, api/README.md, api/globals.md]
+  api: [api/README.md, api/globals.md]
   combat: [api/classes/CombatScene.md, api/classes/CombatSystem.md, api/interfaces/Attack.md]
   dungeon: [api/classes/DungeonGenerator.md, api/classes/DungeonScene.md, api/interfaces/DungeonLevel.md, wizardry-dungeon-architecture.md]
   services: [api/classes/GameServices.md, api/classes/ServiceContainer.md, api/classes/ServiceRegistry.md]
@@ -475,12 +465,12 @@ search_hints:
   utilities: [utilities-reference.md, src/utils/DiceRoller.ts, src/utils/EntityUtils.ts, src/utils/SavingThrowCalculator.ts]
   magic: [wizardry_gaiden_4_spells.md, src/systems/magic/, src/data/spells/]
   ai_testing: [ai-interface.md, src/core/AIInterface.ts]
-  temple: [temple-mechanics.md, temple-requirements.md, src/systems/temple/, src/scenes/TempleScene.ts]
+  temple: [temple-mechanics.md, archive/temple-requirements-archived-2025-11-05.md, src/systems/temple/, src/scenes/TempleScene.ts]
   tavern: [tavern-mechanics.md, src/scenes/TavernScene.ts]
   party_management: [tavern-mechanics.md, api/classes/Party.md]
-  status_effects: [status-effects.md, temple-requirements.md, api/type-aliases/CharacterStatus.md]
+  status_effects: [status-effects.md, temple-mechanics.md, api/type-aliases/CharacterStatus.md]
   conditions: [status-effects.md, temple-mechanics.md]
-  cure: [status-effects.md, wizardry_gaiden_4_spells.md, temple-requirements.md]
+  cure: [status-effects.md, wizardry_gaiden_4_spells.md, temple-mechanics.md]
   doors: [wizardry-dungeon-architecture.md, dungeon-generation-technical.md]
   walls: [wizardry-dungeon-architecture.md, dungeon-generation-technical.md]
   raycasting: [wizardry-dungeon-architecture.md, first-person-dungeon-rendering.yaml]
