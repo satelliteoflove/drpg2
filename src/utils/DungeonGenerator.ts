@@ -32,6 +32,7 @@ export class DungeonGenerator {
     this.generateCorridors(tiles);
     this.placeStairs(tiles);
     this.placeChests(tiles);
+    this.placeTrapClusters(tiles);
     this.placeSpecialTiles(tiles);
     this.calculateWalls(tiles);
     this.placeDoors(tiles);
@@ -504,6 +505,157 @@ export class DungeonGenerator {
 
   private calculateChestItems(): any[] {
     return [];
+  }
+
+  private identifyHighValueRooms(): Room[] {
+    const highValueRooms: Room[] = [];
+
+    for (const room of this.rooms) {
+      if (room.specialTiles && room.specialTiles.length > 0) {
+        highValueRooms.push(room);
+      }
+    }
+
+    return highValueRooms;
+  }
+
+  private getCorridorApproaches(room: Room, tiles: DungeonTile[][], maxDistance: number = 3): Array<{ x: number; y: number }> {
+    const approaches: Array<{ x: number; y: number }> = [];
+
+    for (let dy = -maxDistance; dy <= room.height + maxDistance; dy++) {
+      for (let dx = -maxDistance; dx <= room.width + maxDistance; dx++) {
+        const x = room.x + dx;
+        const y = room.y + dy;
+
+        if (x < 0 || x >= this.width || y < 0 || y >= this.height) continue;
+
+        const tile = tiles[y][x];
+        if (tile.type !== 'floor') continue;
+
+        const isInsideRoom = dx >= 0 && dx < room.width && dy >= 0 && dy < room.height;
+        if (isInsideRoom) continue;
+
+        const isNearRoom =
+          (dx >= -maxDistance && dx < 0) ||
+          (dx >= room.width && dx < room.width + maxDistance) ||
+          (dy >= -maxDistance && dy < 0) ||
+          (dy >= room.height && dy < room.height + maxDistance);
+
+        if (isNearRoom) {
+          approaches.push({ x, y });
+        }
+      }
+    }
+
+    return approaches;
+  }
+
+  private generateTrapProperties(): any {
+    const baseDamage = 5 + (this.level * 2);
+    const variance = Math.floor(this.rng.random() * 5);
+    const damage = baseDamage + variance;
+
+    const trapTypeRoll = this.rng.random();
+    let trapType = 'spike';
+    let statusType: any = undefined;
+    let statusChance: number | undefined = undefined;
+    let statusDuration: number | undefined = undefined;
+
+    if (trapTypeRoll < 0.6) {
+      trapType = 'spike';
+    } else if (trapTypeRoll < 0.9) {
+      trapType = 'poison';
+      statusType = 'poisoned';
+      statusChance = 0.3 + (this.level * 0.05);
+      statusDuration = 3 + this.level;
+    } else {
+      trapType = 'paralysis';
+      statusType = 'paralyzed';
+      statusChance = 0.2 + (this.level * 0.03);
+      statusDuration = 2;
+    }
+
+    return {
+      trapType,
+      damage,
+      statusType,
+      statusChance,
+      statusDuration,
+      oneTime: false
+    };
+  }
+
+  private placeTrapClusters(tiles: DungeonTile[][]): void {
+    const dungeonSize = this.width * this.height;
+    const targetTraps = Math.floor((dungeonSize / (24 * 24)) * (15 + this.rng.random() * 10));
+
+    let trapsPlaced = 0;
+
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (tiles[y][x].special?.type === 'stairs_up' || tiles[y][x].special?.type === 'stairs_down' || tiles[y][x].special?.type === 'chest') {
+          const room = this.rooms.find(r =>
+            x >= r.x && x < r.x + r.width &&
+            y >= r.y && y < r.y + r.height
+          );
+
+          if (room) {
+            if (!room.specialTiles) {
+              room.specialTiles = [];
+            }
+            room.specialTiles.push({ x, y, type: tiles[y][x].special!.type });
+          }
+        }
+      }
+    }
+
+    const highValueRooms = this.identifyHighValueRooms();
+
+    for (const room of highValueRooms) {
+      const approaches = this.getCorridorApproaches(room, tiles, 3);
+
+      if (approaches.length > 0) {
+        const sequenceLength = 3 + Math.floor(this.rng.random() * 3);
+        const shuffled = approaches.sort(() => this.rng.random() - 0.5);
+        const selectedApproaches = shuffled.slice(0, Math.min(sequenceLength, approaches.length));
+
+        for (const pos of selectedApproaches) {
+          if (trapsPlaced >= targetTraps) break;
+
+          const tile = tiles[pos.y][pos.x];
+          if (tile.special) continue;
+
+          tile.special = {
+            type: 'trap',
+            properties: this.generateTrapProperties()
+          };
+          trapsPlaced++;
+        }
+      }
+
+      const hasChest = room.specialTiles?.some(st => st.type === 'chest');
+      if (hasChest) {
+        const roomTraps = 1 + Math.floor(this.rng.random() * 2);
+        let roomTrapsPlaced = 0;
+
+        for (let attempt = 0; attempt < 20 && roomTrapsPlaced < roomTraps; attempt++) {
+          if (trapsPlaced >= targetTraps) break;
+
+          const rx = room.x + Math.floor(this.rng.random() * room.width);
+          const ry = room.y + Math.floor(this.rng.random() * room.height);
+
+          const tile = tiles[ry][rx];
+          if (tile.type === 'floor' && !tile.special) {
+            tile.special = {
+              type: 'trap',
+              properties: this.generateTrapProperties()
+            };
+            trapsPlaced++;
+            roomTrapsPlaced++;
+          }
+        }
+      }
+    }
   }
 
   private recordStairsPositions(tiles: DungeonTile[][]): {

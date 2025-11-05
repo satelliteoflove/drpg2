@@ -85,13 +85,9 @@ wizardry_gaiden_4_systems:
     topics: [spells, japanese source, authentic data, reference, wizardry gaiden]
     summary: Original Japanese source page for all Wizardry Gaiden IV spells (definitive reference)
 
-  - file: temple-requirements.md
-    topics: [temple, services, resurrection, healing, status effects, cure, dispel curse, wizardry gaiden]
-    summary: Temple of Cant service requirements with resurrection mechanics, costs, and formulas for WGIV
-
   - file: temple-mechanics.md
     topics: [temple, gold pooling, level-based costs, payment system, resurrection, service mechanics, wizardry gaiden]
-    summary: Complete temple mechanics including level-based pricing, automatic gold pooling, and service implementation details
+    summary: "PRIMARY: Complete temple mechanics including level-based pricing, automatic gold pooling, resurrection formulas, and vitality/age effects"
 
   - file: training-grounds-mechanics.md
     topics: [training grounds, character management, class change, roster, character creation, town services, wizardry gaiden]
@@ -425,12 +421,30 @@ api_variables:
 
 dungeon_architecture:
   - file: wizardry-dungeon-architecture.md
-    topics: [dungeon architecture, walls-on-edges, door system, raycasting, wizardry model, dungeon generation, level design, WGIV analysis]
-    summary: Analysis of Wizardry dungeon architecture with walls-on-edges model, door mechanics, WGIV F1 map analysis, and comparison with current DRPG2 implementation
+    topics: [dungeon architecture, walls-on-edges, door system, raycasting, wizardry model]
+    summary: "FOUNDATIONAL: Walls-on-edges architectural model (referenced by 2025 technical design)"
 
-  - file: wizardry-dungeon-generation-design.md
-    topics: [dungeon generation, procedural generation, algorithm design, room placement, corridor carving, door placement, puzzle design, WGIV analysis, A* pathfinding, MST, edge cases, integration guide]
-    summary: Complete standalone dungeon generation system design with WGIV F1 analysis, 8-phase algorithm, detailed pseudocode (A*, MST, wall calculation, door placement), JSON examples, codebase integration guide, and comprehensive edge case handling
+archive:
+  - file: archive/wizardry-dungeon-generation-design-archived-2025-11-03.md
+    topics: [ARCHIVED, WGIV analysis, historical reference, algorithm pseudocode]
+    summary: "ARCHIVED 2025-11-03: Original WGIV-focused design (superseded by 2025 design docs)"
+
+  - file: archive/temple-requirements-archived-2025-11-05.md
+    topics: [ARCHIVED, temple, requirements, historical reference]
+    summary: "ARCHIVED 2025-11-05: Original temple requirements with fixed costs (superseded by temple-mechanics.md with corrected formulas)"
+
+dungeon_design_2025:
+  - file: dungeon-game-design.md
+    topics: [game design, character-driven narrative, pacing, NPCs, events, save system, consequence enforcement, dungeon philosophy, character moments]
+    summary: "PRIMARY: Character-driven narrative design philosophy and game systems (WHAT/WHY)"
+
+  - file: dungeon-generation-technical.md
+    topics: [dungeon generation, procedural generation, algorithm, rooms, corridors, MST, navigation features, theming, validation, A* pathfinding, solvability]
+    summary: "PRIMARY: Technical specifications and 6-phase generation algorithm (HOW) - References wizardry-dungeon-architecture.md as foundation"
+
+  - file: dungeon-implementation-guide.md
+    topics: [implementation, tunable constants, configuration, MVP roadmap, debug tools, codebase integration, balance tuning, game balance]
+    summary: "PRIMARY: Implementation guide with complete tunable constants system and phased development priorities (BUILD)"
 
 first_person_rendering:
   file: first-person-dungeon-rendering.yaml
@@ -467,9 +481,13 @@ search_hints:
   status_effects: [status-effects.md, temple-requirements.md, api/type-aliases/CharacterStatus.md]
   conditions: [status-effects.md, temple-mechanics.md]
   cure: [status-effects.md, wizardry_gaiden_4_spells.md, temple-requirements.md]
-  doors: [wizardry-dungeon-architecture.md, wizardry-dungeon-generation-design.md]
-  walls: [wizardry-dungeon-architecture.md, wizardry-dungeon-generation-design.md]
+  doors: [wizardry-dungeon-architecture.md, dungeon-generation-technical.md]
+  walls: [wizardry-dungeon-architecture.md, dungeon-generation-technical.md]
   raycasting: [wizardry-dungeon-architecture.md, first-person-dungeon-rendering.yaml]
-  dungeon_design: [wizardry-dungeon-architecture.md, wizardry-dungeon-generation-design.md, api/classes/DungeonGenerator.md]
-  dungeon_generation: [wizardry-dungeon-generation-design.md, api/classes/DungeonGenerator.md]
-  procedural_generation: [wizardry-dungeon-generation-design.md]
+  dungeon_design: [dungeon-game-design.md, dungeon-generation-technical.md, wizardry-dungeon-architecture.md]
+  dungeon_generation: [dungeon-generation-technical.md, dungeon-implementation-guide.md, api/classes/DungeonGenerator.md]
+  procedural_generation: [dungeon-generation-technical.md]
+  tunable_constants: [dungeon-implementation-guide.md]
+  character_narrative: [dungeon-game-design.md]
+  mvp_roadmap: [dungeon-implementation-guide.md]
+  game_balance: [dungeon-implementation-guide.md]

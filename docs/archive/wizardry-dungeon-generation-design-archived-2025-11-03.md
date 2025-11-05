@@ -557,10 +557,52 @@ Treasure chests placed strategically to reward exploration:
    - Before `placeSpecialTiles()` to avoid conflicts
    - Uses room metadata from Phase 2
 
+✅ **Phase 6.3: Strategic Trap Clusters - COMPLETE**
+
+Strategic trap placement creates risk/reward gameplay by clustering traps near valuable areas:
+
+1. **High-Value Target Identification:**
+   - Identifies rooms containing stairs (entry/exit points)
+   - Identifies rooms containing chests (treasure locations)
+   - These rooms become targets for trap protection
+
+2. **Corridor Approach Traps:**
+   - Scans 3-tile radius around high-value rooms
+   - Identifies corridor tiles leading to valuable rooms
+   - Places 3-5 trap sequences along approaches
+   - Creates "trap runs" that challenge players before rewards
+
+3. **Room-Based Traps:**
+   - Places 1-2 traps inside treasure rooms
+   - Random placement within room bounds
+   - Creates tension when collecting loot
+
+4. **Trap Difficulty Scaling:**
+   - Base damage: 5 + (level × 2) + random variance (0-5)
+   - Trap types: 60% spike, 30% poison, 10% paralysis
+   - Poison: 30% + (level × 5%) status chance, 3 + level duration
+   - Paralysis: 20% + (level × 3%) status chance, 2 turn duration
+   - All traps are reusable (not one-time)
+
+5. **Trap Density:**
+   - Target count: 15-25 traps for 24x24 dungeon
+   - Scales proportionally with dungeon size
+   - Formula: (width × height / 576) × (15 + random(10))
+
+6. **Helper Methods:**
+   - `identifyHighValueRooms()`: Finds rooms with stairs/chests
+   - `getCorridorApproaches()`: Identifies approach tiles within distance
+   - `generateTrapProperties()`: Creates scaled trap with type/damage/status
+   - `placeTrapClusters()`: Orchestrates strategic placement
+
+7. **Integration:**
+   - Called after `placeChests()` in generation pipeline
+   - Before `placeSpecialTiles()` to avoid conflicts
+   - Marks rooms with `specialTiles` array for tracking
+
 **Pending Implementation:**
 
 - Phase 6.2: Teleporter Network (color pairing, bidirectional links)
-- Phase 6.3: Trap Clusters (strategic placement near treasures)
 - Phase 6.4: Switch System (controls for doors/teleporters/gates)
 
 ### Phase 7: Create Encounter Zones

@@ -131,8 +131,7 @@ export class TempleUIRenderer {
       { service: 'cure_paralyzed', name: 'Cure Paralysis' },
       { service: 'cure_stoned', name: 'Cure Petrification' },
       { service: 'resurrect_dead', name: 'Resurrect from Dead' },
-      { service: 'resurrect_ashes', name: 'Resurrect from Ashes' },
-      { service: 'dispel_curse', name: 'Dispel Curse' }
+      { service: 'resurrect_ashes', name: 'Resurrect from Ashes' }
     ];
 
     ctx.textAlign = 'left';
@@ -174,8 +173,7 @@ export class TempleUIRenderer {
       'cure_paralyzed': 'Cure Paralysis',
       'cure_stoned': 'Cure Petrification',
       'resurrect_dead': 'Resurrect from Dead',
-      'resurrect_ashes': 'Resurrect from Ashes',
-      'dispel_curse': 'Dispel Curse'
+      'resurrect_ashes': 'Resurrect from Ashes'
     };
 
     ctx.fillStyle = '#fff';
@@ -291,8 +289,7 @@ export class TempleUIRenderer {
       'cure_paralyzed': 'Cure Paralysis',
       'cure_stoned': 'Cure Petrification',
       'resurrect_dead': 'Resurrect from Dead',
-      'resurrect_ashes': 'Resurrect from Ashes',
-      'dispel_curse': 'Dispel Curse'
+      'resurrect_ashes': 'Resurrect from Ashes'
     };
 
     const cost = this.stateManager.getServiceCost(stateContext.selectedService, character);

@@ -4,8 +4,7 @@ export type TempleService =
   | 'cure_paralyzed'
   | 'cure_stoned'
   | 'resurrect_dead'
-  | 'resurrect_ashes'
-  | 'dispel_curse';
+  | 'resurrect_ashes';
 
 export type TempleState =
   | 'main'
@@ -20,7 +19,6 @@ export interface ServiceCost {
   cure_stoned: number;
   resurrect_dead: number;
   resurrect_ashes: number;
-  dispel_curse: number;
 }
 
 export type ResurrectionOutcome = 'success' | 'turned_to_ashes' | 'lost';

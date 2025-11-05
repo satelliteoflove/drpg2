@@ -23,8 +23,7 @@ export class TempleStateManager {
     cure_paralyzed: GAME_CONFIG.TEMPLE.SERVICE_COSTS.CURE_PARALYZED,
     cure_stoned: GAME_CONFIG.TEMPLE.SERVICE_COSTS.CURE_STONED,
     resurrect_dead: GAME_CONFIG.TEMPLE.SERVICE_COSTS.RESURRECT_DEAD,
-    resurrect_ashes: GAME_CONFIG.TEMPLE.SERVICE_COSTS.RESURRECT_ASHES,
-    dispel_curse: GAME_CONFIG.TEMPLE.SERVICE_COSTS.DISPEL_CURSE
+    resurrect_ashes: GAME_CONFIG.TEMPLE.SERVICE_COSTS.RESURRECT_ASHES
   };
 
   private static SERVICE_INFO: Record<TempleService, ServiceInfo> = {
@@ -51,15 +50,6 @@ export class TempleStateManager {
       cost: GAME_CONFIG.TEMPLE.SERVICE_COSTS.RESURRECT_ASHES,
       description: 'Attempt to restore a character from ashes (Base Cost × Level)',
       eligibilityCheck: (character: Character) => character.hasStatus('Ashed')
-    },
-    dispel_curse: {
-      name: 'Dispel Curse',
-      cost: GAME_CONFIG.TEMPLE.SERVICE_COSTS.DISPEL_CURSE,
-      description: 'Remove curses from equipped items (Base Cost × Level)',
-      eligibilityCheck: (character: Character) => {
-        if (!character.equipment) return false;
-        return Object.values(character.equipment).some(item => item?.cursed === true);
-      }
     }
   };
 
@@ -113,8 +103,7 @@ export class TempleStateManager {
       'cure_paralyzed',
       'cure_stoned',
       'resurrect_dead',
-      'resurrect_ashes',
-      'dispel_curse'
+      'resurrect_ashes'
     ];
   }
 
