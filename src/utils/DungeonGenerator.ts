@@ -10,6 +10,7 @@ export class DungeonGenerator {
   private seedString: string;
   private currentRegion: number = 0;
   private tiles: DungeonTile[][] = [];
+  private doorConnectors: Set<string> = new Set();
 
   constructor(width: number = 20, height: number = 20, seed?: string) {
     this.width = width % 2 === 0 ? width + 1 : width;
@@ -25,6 +26,7 @@ export class DungeonGenerator {
   public generateLevel(level: number): DungeonLevel {
     this.currentRegion = 0;
     this.rooms = [];
+    this.doorConnectors = new Set();
 
     console.log('[DungeonGen] Starting fresh generation');
 
@@ -261,6 +263,7 @@ export class DungeonGenerator {
 
     const merged = new Map<number, number>();
     const openRegions = new Set<number>([0]);
+    const openedConnectors: Connector[] = [];
 
     while (openRegions.size < this.currentRegion) {
       const candidates = connectors.filter(c => {
@@ -275,7 +278,8 @@ export class DungeonGenerator {
       }
 
       const connector = candidates[Math.floor(this.rng.random() * candidates.length)];
-      this.tiles[connector.y][connector.x].type = 'floor';
+      this.openConnector(connector);
+      openedConnectors.push(connector);
 
       const regions = Array.from(connector.regions).map(r => this.getRoot(r, merged));
       const mainRegion = regions.find(r => openRegions.has(r)) || regions[0];
@@ -298,7 +302,24 @@ export class DungeonGenerator {
       }
     }
 
-    console.log(`[DungeonGen] Connected ${openRegions.size}/${this.currentRegion} regions`);
+    console.log(`[DungeonGen] Connected ${openRegions.size}/${this.currentRegion} regions with ${openedConnectors.length} connectors`);
+
+    const extraConnectorChance = GAME_CONFIG.DUNGEON.ROOMS_AND_MAZES.EXTRA_CONNECTOR_CHANCE;
+    let extraConnectors = 0;
+
+    for (const connector of connectors) {
+      if (this.rng.random() * 100 < extraConnectorChance) {
+        this.openConnector(connector);
+        extraConnectors++;
+      }
+    }
+
+    console.log(`[DungeonGen] Added ${extraConnectors} extra connectors for loops (${extraConnectorChance}% chance)`);
+  }
+
+  private openConnector(connector: Connector): void {
+    this.tiles[connector.y][connector.x].type = 'floor';
+    this.doorConnectors.add(`${connector.x},${connector.y}`);
   }
 
   private findAllConnectors(): Connector[] {
@@ -373,16 +394,53 @@ export class DungeonGenerator {
   }
 
   private updateWalls(): void {
+    const enableDoors = GAME_CONFIG.DUNGEON.ENABLE_DOORS;
+    const doorChance = GAME_CONFIG.DUNGEON.DOOR_CHANCE;
+
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
         if (this.tiles[y][x].type !== 'floor') continue;
+
+        const northIsDoorConnector = y > 0 && this.doorConnectors.has(`${x},${y - 1}`);
+        const southIsDoorConnector = y < this.height - 1 && this.doorConnectors.has(`${x},${y + 1}`);
+        const westIsDoorConnector = x > 0 && this.doorConnectors.has(`${x - 1},${y}`);
+        const eastIsDoorConnector = x < this.width - 1 && this.doorConnectors.has(`${x + 1},${y}`);
 
         this.tiles[y][x].northWall.exists = y === 0 || this.tiles[y - 1][x].type === 'solid';
         this.tiles[y][x].southWall.exists = y === this.height - 1 || this.tiles[y + 1][x].type === 'solid';
         this.tiles[y][x].westWall.exists = x === 0 || this.tiles[y][x - 1].type === 'solid';
         this.tiles[y][x].eastWall.exists = x === this.width - 1 || this.tiles[y][x + 1].type === 'solid';
+
+        if (enableDoors) {
+          if (northIsDoorConnector && this.rng.random() < doorChance) {
+            this.placeDoorWall(this.tiles[y][x].northWall);
+          }
+          if (southIsDoorConnector && this.rng.random() < doorChance) {
+            this.placeDoorWall(this.tiles[y][x].southWall);
+          }
+          if (westIsDoorConnector && this.rng.random() < doorChance) {
+            this.placeDoorWall(this.tiles[y][x].westWall);
+          }
+          if (eastIsDoorConnector && this.rng.random() < doorChance) {
+            this.placeDoorWall(this.tiles[y][x].eastWall);
+          }
+        }
       }
     }
+  }
+
+  private placeDoorWall(wall: Wall): void {
+    wall.exists = true;
+    wall.type = 'door';
+    wall.properties = {
+      locked: false,
+      open: false,
+      openMechanism: 'player',
+      keyId: undefined,
+      oneWay: undefined,
+      hidden: false,
+      discovered: true
+    };
   }
 
   private placeStairs(): {up?: {x: number, y: number}, down?: {x: number, y: number}} {
