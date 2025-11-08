@@ -1,28 +1,35 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState } from '../types/GameTypes';
-import { DungeonView } from '../ui/DungeonView';
+import { DungeonViewRaycast } from '../ui/DungeonViewRaycast';
 import { StatusPanel } from '../ui/StatusPanel';
 import { DungeonMapView } from '../ui/DungeonMapView';
 import { DebugOverlay } from '../ui/DebugOverlay';
+import { PerformanceOverlay } from '../ui/PerformanceOverlay';
 import { DebugLogger } from '../utils/DebugLogger';
 import { DungeonMovementHandler } from '../systems/dungeon/DungeonMovementHandler';
 import { DungeonItemPickupUI } from '../systems/dungeon/DungeonItemPickupUI';
 import { DungeonInputHandler } from '../systems/dungeon/DungeonInputHandler';
+import { GAME_CONFIG } from '../config/GameConstants';
+import { PerformanceMonitor } from '../utils/PerformanceMonitor';
 
 export class DungeonScene extends Scene {
   protected gameState: GameState;
   protected sceneManager: SceneManager;
-  private dungeonView!: DungeonView;
+  private dungeonView!: DungeonViewRaycast;
   private statusPanel!: StatusPanel;
   private messageLog: any;
   private dungeonMapView!: DungeonMapView;
   private debugOverlay!: DebugOverlay;
+  private performanceOverlay!: PerformanceOverlay;
 
   private movementHandler!: DungeonMovementHandler;
   private itemPickupUI!: DungeonItemPickupUI;
   private dungeonInputHandler!: DungeonInputHandler;
 
   private isAwaitingCastleStairsResponse: boolean = false;
+  private turnAnimationTimer: number = 0;
+  private performanceMonitor: PerformanceMonitor;
+  private doorPassageState: { x: number; y: number; direction: 'north' | 'south' | 'east' | 'west' } | null = null;
 
   constructor(gameState: GameState, sceneManager: SceneManager, _inputManager: any) {
     super('Dungeon');
@@ -44,9 +51,12 @@ export class DungeonScene extends Scene {
       this.movementHandler,
       this.itemPickupUI
     );
+    this.performanceMonitor = PerformanceMonitor.getInstance();
   }
 
   public enter(): void {
+    this.performanceMonitor.startMonitoring('dungeon');
+
     const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
 
     if (!this.gameState.hasEnteredDungeon && currentDungeon) {
@@ -77,15 +87,50 @@ export class DungeonScene extends Scene {
   }
 
   public exit(): void {
-    // Clean up when exiting
+    this.performanceMonitor.stopMonitoring();
   }
 
-  public update(_deltaTime: number): void {
-    // Update logic
+  public update(deltaTime: number): void {
+    this.performanceMonitor.markUpdateStart();
+
+    const animationController = this.movementHandler.getTurnAnimationController();
+
+    if (animationController.isActive()) {
+      this.turnAnimationTimer += deltaTime;
+
+      const animType = animationController.getAnimationType();
+      const frameDuration = animType === 'turn'
+        ? GAME_CONFIG.DUNGEON.TURN_FRAME_DURATION_MS
+        : GAME_CONFIG.DUNGEON.MOVE_FRAME_DURATION_MS;
+
+      if (this.turnAnimationTimer >= frameDuration) {
+        this.turnAnimationTimer = 0;
+        const animationComplete = animationController.advanceFrame();
+
+        if (animationComplete) {
+          DebugLogger.debug('DungeonScene', `${animType} animation completed`);
+          if (this.dungeonView) {
+            this.dungeonView.setViewAngle(null);
+          }
+        }
+      }
+
+      if (this.dungeonView && animationController.isActive()) {
+        const currentAngle = animationController.getCurrentAngle();
+        if (currentAngle !== null) {
+          this.dungeonView.setViewAngle(currentAngle);
+        }
+      }
+    }
+
+    this.performanceMonitor.markUpdateEnd();
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
+    this.performanceMonitor.markRenderStart();
     this.renderImperative(ctx);
+    this.performanceMonitor.markRenderEnd();
+    this.performanceMonitor.recordFrame();
   }
 
   public hasLayeredRendering(): boolean {
@@ -93,6 +138,8 @@ export class DungeonScene extends Scene {
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
+    this.performanceMonitor.markRenderStart();
+
     const { renderManager, mainContext } = renderContext;
 
     if (!this.dungeonView) {
@@ -102,11 +149,24 @@ export class DungeonScene extends Scene {
     const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
     if (currentDungeon) {
       this.dungeonView.setDungeon(currentDungeon);
-      this.dungeonView.setPlayerPosition(
-        this.gameState.party.x,
-        this.gameState.party.y,
-        this.gameState.party.facing
-      );
+
+      const animationController = this.movementHandler.getTurnAnimationController();
+      const offset = animationController.getCurrentPositionOffset();
+
+      let visualX = this.gameState.party.x + offset.dx;
+      let visualY = this.gameState.party.y + offset.dy;
+
+      visualX = Math.max(0, Math.min(currentDungeon.width - 0.01, visualX));
+      visualY = Math.max(0, Math.min(currentDungeon.height - 0.01, visualY));
+
+      if (offset.dx !== 0 || offset.dy !== 0) {
+        DebugLogger.info(
+          'DungeonScene',
+          `Move animation: logical=(${this.gameState.party.x}, ${this.gameState.party.y}), offset=(${offset.dx.toFixed(2)}, ${offset.dy.toFixed(2)}), visual=(${visualX.toFixed(2)}, ${visualY.toFixed(2)})`
+        );
+      }
+
+      this.dungeonView.setPlayerPosition(visualX, visualY, this.gameState.party.facing);
     }
 
     renderManager.renderBackground((ctx) => {
@@ -130,7 +190,8 @@ export class DungeonScene extends Scene {
       // Render info panel
       this.renderDungeonInfo(ctx);
 
-      if (this.dungeonMapView) {
+      if (this.dungeonMapView && currentDungeon) {
+        this.dungeonMapView.setDungeon(currentDungeon);
         this.dungeonMapView.setPlayerPosition(
           this.gameState.party.x,
           this.gameState.party.y,
@@ -154,7 +215,14 @@ export class DungeonScene extends Scene {
       if (this.debugOverlay && this.debugOverlay.isOpen()) {
         this.debugOverlay.render(this.gameState);
       }
+
+      if (this.performanceOverlay) {
+        this.performanceOverlay.render(ctx);
+      }
     });
+
+    this.performanceMonitor.markRenderEnd();
+    this.performanceMonitor.recordFrame();
   }
 
   private renderImperative(ctx: CanvasRenderingContext2D): void {
@@ -171,11 +239,17 @@ export class DungeonScene extends Scene {
     }
 
     this.dungeonView.setDungeon(currentDungeon);
-    this.dungeonView.setPlayerPosition(
-      this.gameState.party.x,
-      this.gameState.party.y,
-      this.gameState.party.facing
-    );
+
+    const animationController = this.movementHandler.getTurnAnimationController();
+    const offset = animationController.getCurrentPositionOffset();
+
+    let visualX = this.gameState.party.x + offset.dx;
+    let visualY = this.gameState.party.y + offset.dy;
+
+    visualX = Math.max(0, Math.min(currentDungeon.width - 0.01, visualX));
+    visualY = Math.max(0, Math.min(currentDungeon.height - 0.01, visualY));
+
+    this.dungeonView.setPlayerPosition(visualX, visualY, this.gameState.party.facing);
     this.dungeonView.render(ctx);
 
     // Render header
@@ -186,7 +260,8 @@ export class DungeonScene extends Scene {
     // Render info panel
     this.renderDungeonInfo(ctx);
 
-    if (this.dungeonMapView) {
+    if (this.dungeonMapView && currentDungeon) {
+      this.dungeonMapView.setDungeon(currentDungeon);
       this.dungeonMapView.setPlayerPosition(
         this.gameState.party.x,
         this.gameState.party.y,
@@ -209,6 +284,10 @@ export class DungeonScene extends Scene {
     this.updateDebugData();
     if (this.debugOverlay && this.debugOverlay.isOpen()) {
       this.debugOverlay.render(this.gameState);
+    }
+
+    if (this.performanceOverlay) {
+      this.performanceOverlay.render(ctx);
     }
   }
 
@@ -275,11 +354,13 @@ export class DungeonScene extends Scene {
 
     // Current tile
     if (currentTile) {
-      const tileColor = currentTile.type === 'stairs_up' ? '#ffa500' :
-                       currentTile.type === 'stairs_down' ? '#ffa500' :
-                       currentTile.type === 'chest' ? '#ffff00' : '#aaa';
+      const specialType = currentTile.special?.type;
+      const tileColor = specialType === 'stairs_up' ? '#ffa500' :
+                       specialType === 'stairs_down' ? '#ffa500' :
+                       specialType === 'chest' ? '#ffff00' : '#aaa';
       ctx.fillStyle = tileColor;
-      ctx.fillText(`On: ${currentTile.type.replace('_', ' ')}`, infoX + 10, infoY + 110);
+      const displayType = specialType || currentTile.type;
+      ctx.fillText(`On: ${displayType.replace('_', ' ')}`, infoX + 10, infoY + 110);
     }
 
     // Statistics
@@ -295,13 +376,37 @@ export class DungeonScene extends Scene {
 
     ctx.fillText(`Turn Count: ${this.gameState.turnCount || 0}`, infoX + 10, infoY + 190);
     ctx.fillText(`Combat: ${this.gameState.combatEnabled ? 'Enabled' : 'Disabled'}`, infoX + 10, infoY + 210);
+
+    if (this.gameState.dungeonSeed) {
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('SEED', infoX + 10, infoY + 240);
+
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#aaa';
+      const seed = this.gameState.dungeonSeed;
+      const maxWidth = infoWidth - 20;
+      const charWidth = 6;
+      const charsPerLine = Math.floor(maxWidth / charWidth);
+
+      if (seed.length <= charsPerLine) {
+        ctx.fillText(seed, infoX + 10, infoY + 260);
+      } else {
+        const line1 = seed.substring(0, charsPerLine);
+        const line2 = seed.substring(charsPerLine);
+        ctx.fillText(line1, infoX + 10, infoY + 260);
+        ctx.fillText(line2, infoX + 10, infoY + 275);
+      }
+    }
   }
 
   private initializeUI(canvas: HTMLCanvasElement): void {
-    this.dungeonView = new DungeonView(canvas);
+    DebugLogger.info('DungeonScene', 'Initializing raycasting dungeon renderer');
+    this.dungeonView = new DungeonViewRaycast(canvas, this);
     this.statusPanel = new StatusPanel(canvas, 10, 80, 240, 480);  // Left side panel
     this.dungeonMapView = new DungeonMapView(canvas);
     this.debugOverlay = new DebugOverlay(canvas);
+    this.performanceOverlay = new PerformanceOverlay(canvas);
 
     const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
     if (currentDungeon) {
@@ -324,6 +429,19 @@ export class DungeonScene extends Scene {
   }
 
   public handleInput(key: string): boolean {
+    if (key === 'shift+p') {
+      if (this.performanceOverlay) {
+        this.performanceOverlay.toggle();
+      }
+      return true;
+    }
+
+    if (key === 'shift+r') {
+      this.performanceMonitor.reset();
+      DebugLogger.info('DungeonScene', 'Performance metrics reset');
+      return true;
+    }
+
     this.dungeonInputHandler.setContext({
       isAwaitingCastleStairsResponse: this.isAwaitingCastleStairsResponse,
       dungeonMapView: this.dungeonMapView
@@ -331,7 +449,6 @@ export class DungeonScene extends Scene {
 
     const handled = this.dungeonInputHandler.handleInput(key);
 
-    // Update isAwaitingCastleStairsResponse from the input handler's context
     this.isAwaitingCastleStairsResponse = this.dungeonInputHandler.getIsAwaitingResponse();
 
     return handled;
@@ -342,7 +459,7 @@ export class DungeonScene extends Scene {
     ctx.font = '12px monospace';
     ctx.textAlign = 'center';
 
-    const controls = 'WASD/Arrows: Move | ENTER: Interact | TAB: Inventory | M: Map';
+    const controls = 'WASD/Arrows: Move | ENTER: Interact | TAB: Inventory | M: Map | Shift+P: Perf | Shift+R: Reset';
     ctx.fillText(controls, ctx.canvas.width / 2, ctx.canvas.height - 20);
   }
 
@@ -351,11 +468,19 @@ export class DungeonScene extends Scene {
     if (!currentDungeon) return;
   }
 
-  public getDungeonView(): DungeonView | null {
+  public getDungeonView(): DungeonViewRaycast | null {
     return this.dungeonView || null;
   }
 
   public getStatusPanel(): StatusPanel | null {
     return this.statusPanel || null;
+  }
+
+  public setDoorPassageState(state: { x: number; y: number; direction: 'north' | 'south' | 'east' | 'west' } | null): void {
+    this.doorPassageState = state;
+  }
+
+  public getDoorPassageState(): { x: number; y: number; direction: 'north' | 'south' | 'east' | 'west' } | null {
+    return this.doorPassageState;
   }
 }

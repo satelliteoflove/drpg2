@@ -1,453 +1,499 @@
-import { DungeonEvent, DungeonLevel, DungeonTile, OverrideZone } from '../types/GameTypes';
+import { DungeonLevel, DungeonTile, Wall, Room, Connector } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
+import { SeededRandom } from './SeededRandom';
 
 export class DungeonGenerator {
   private width: number;
   private height: number;
-  private level: number;
-  private rooms: { x: number; y: number; width: number; height: number }[] = [];
+  private rooms: Room[] = [];
+  private rng: SeededRandom;
+  private seedString: string;
+  private currentRegion: number = 0;
+  private tiles: DungeonTile[][] = [];
+  private doorConnectors: Set<string> = new Set();
 
-  constructor(width: number = 20, height: number = 20) {
-    this.width = width;
-    this.height = height;
-    this.level = 1;
+  constructor(width: number = 20, height: number = 20, seed?: string) {
+    this.width = width % 2 === 0 ? width + 1 : width;
+    this.height = height % 2 === 0 ? height + 1 : height;
+    this.seedString = seed || SeededRandom.generateSeedString();
+    this.rng = new SeededRandom(this.seedString);
+  }
+
+  public getSeed(): string {
+    return this.seedString;
   }
 
   public generateLevel(level: number): DungeonLevel {
-    this.level = level;
-    const tiles = this.initializeTiles();
-    this.generateRooms(tiles);
-    this.generateCorridors(tiles);
-    this.placeStairs(tiles);
-    this.placeSpecialTiles(tiles);
-    this.calculateWalls(tiles);
+    this.currentRegion = 0;
+    this.rooms = [];
+    this.doorConnectors = new Set();
 
-    const overrideZones = this.generateOverrideZones(tiles);
-    const events = this.generateEvents(tiles);
-    const startPosition = this.findValidStartPosition(tiles);
+    console.log('[DungeonGen] Starting fresh generation');
+
+    this.initializeTiles();
+    this.addRooms();
+    this.addMazes();
+    this.connectRegions();
+    if (GAME_CONFIG.DUNGEON.ROOMS_AND_MAZES.REMOVE_DEAD_ENDS) {
+      this.removeDeadEnds();
+    }
+    this.updateWalls();
+
+    const stairsPositions = this.placeStairs();
+    const startPosition = this.findStartPosition();
 
     return {
       level,
       width: this.width,
       height: this.height,
-      tiles,
-      overrideZones,
-      events,
+      tiles: this.tiles,
+      overrideZones: [],
+      events: [],
       startX: startPosition.x,
       startY: startPosition.y,
+      stairsUp: stairsPositions.up,
+      stairsDown: stairsPositions.down,
     };
   }
 
-  private initializeTiles(): DungeonTile[][] {
-    const tiles: DungeonTile[][] = [];
+  private initializeTiles(): void {
+    this.tiles = [];
 
     for (let y = 0; y < this.height; y++) {
-      tiles[y] = [];
+      this.tiles[y] = [];
       for (let x = 0; x < this.width; x++) {
-        tiles[y][x] = {
+        this.tiles[y][x] = {
           x,
           y,
-          type: 'wall',
+          type: 'solid',
           discovered: false,
           hasMonster: false,
           hasItem: false,
-          northWall: true,
-          southWall: true,
-          eastWall: true,
-          westWall: true,
+          northWall: this.createWall(true),
+          southWall: this.createWall(true),
+          eastWall: this.createWall(true),
+          westWall: this.createWall(true),
+          region: undefined,
         };
       }
     }
 
+    console.log(`[DungeonGen] Initialized ${this.width}x${this.height} tiles (all solid)`);
+  }
+
+  private createWall(exists: boolean): Wall {
+    return {
+      exists,
+      type: 'solid',
+      properties: null
+    };
+  }
+
+  private addRooms(): void {
+    const numAttempts = GAME_CONFIG.DUNGEON.ROOMS_AND_MAZES.ROOM_ATTEMPTS;
+    let roomsPlaced = 0;
+    let oddTilesCarved = 0;
+
+    for (let i = 0; i < numAttempts; i++) {
+      const minSize = GAME_CONFIG.DUNGEON.MIN_ROOM_SIZE;
+      const maxSize = minSize + GAME_CONFIG.DUNGEON.MAX_ROOM_EXTRA_SIZE;
+      const size = this.randomOddInRange(minSize, maxSize);
+      const width = size;
+      const height = size;
+
+      const x = this.randomOddInRange(1, this.width - width - 1);
+      const y = this.randomOddInRange(1, this.height - height - 1);
+
+      const room: Room = {
+        id: `room_${roomsPlaced}`,
+        x,
+        y,
+        width,
+        height,
+        type: 'medium',
+        doors: [],
+        specialTiles: []
+      };
+
+      if (!this.roomOverlaps(room)) {
+        const oddBefore = this.countOddFloorTiles();
+        this.carveRoom(room);
+        const oddAfter = this.countOddFloorTiles();
+        oddTilesCarved += (oddAfter - oddBefore);
+        this.rooms.push(room);
+        roomsPlaced++;
+      }
+    }
+
+    const totalOddTiles = Math.floor(this.width / 2) * Math.floor(this.height / 2);
+    console.log(`[DungeonGen] Placed ${roomsPlaced} rooms, carved ${oddTilesCarved}/${totalOddTiles} odd tiles (expected: ${totalOddTiles - oddTilesCarved} solid odd tiles remaining)`);
+  }
+
+  private randomOddInRange(min: number, max: number): number {
+    min = min % 2 === 0 ? min + 1 : min;
+    max = max % 2 === 0 ? max - 1 : max;
+
+    const range = (max - min) / 2 + 1;
+    const offset = Math.floor(this.rng.random() * range);
+    return min + offset * 2;
+  }
+
+  private roomOverlaps(room: Room): boolean {
+    for (const other of this.rooms) {
+      if (room.x < other.x + other.width &&
+          room.x + room.width > other.x &&
+          room.y < other.y + other.height &&
+          room.y + room.height > other.y) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private carveRoom(room: Room): void {
+    let tilesCarved = 0;
+    let oddTilesCarved = 0;
+    for (let y = room.y; y < room.y + room.height; y++) {
+      for (let x = room.x; x < room.x + room.width; x++) {
+        this.tiles[y][x].type = 'floor';
+        this.tiles[y][x].region = this.currentRegion;
+        tilesCarved++;
+        if (x % 2 === 1 && y % 2 === 1) oddTilesCarved++;
+      }
+    }
+    console.log(`[DungeonGen]   Room at (${room.x},${room.y}) ${room.width}x${room.height}: carved ${tilesCarved} total tiles, ${oddTilesCarved} odd tiles`);
+    this.currentRegion++;
+  }
+
+  private addMazes(): void {
+    let mazesStarted = 0;
+    let oddTilesChecked = 0;
+    let oddSolidTiles = 0;
+    let oddFloorBeforeMazes = 0;
+
+    for (let y = 1; y < this.height; y += 2) {
+      for (let x = 1; x < this.width; x += 2) {
+        oddTilesChecked++;
+        if (this.tiles[y][x].type === 'solid') {
+          oddSolidTiles++;
+          this.growMaze(x, y);
+          mazesStarted++;
+          this.currentRegion++;
+        } else {
+          oddFloorBeforeMazes++;
+        }
+      }
+    }
+
+    const oddFloorAfterMazes = this.countOddFloorTiles();
+    const oddCarvedByMazes = oddFloorAfterMazes - oddFloorBeforeMazes;
+    console.log(`[DungeonGen] Started ${mazesStarted} mazes at solid odd tiles (${oddSolidTiles} found)`);
+    console.log(`[DungeonGen] Odd tiles: ${oddFloorBeforeMazes} floor before mazes, ${oddFloorAfterMazes} after mazes (${oddCarvedByMazes} carved by mazes)`);
+  }
+
+  private growMaze(startX: number, startY: number): void {
+    const cells: {x: number, y: number}[] = [];
+    let lastDir: 'n' | 's' | 'e' | 'w' | null = null;
+    let tilesCarved = 0;
+    let oddTilesCarved = 0;
+
+    this.carveTile(startX, startY);
+    cells.push({x: startX, y: startY});
+    tilesCarved++;
+    oddTilesCarved++;
+
+    while (cells.length > 0) {
+      const cell = cells[cells.length - 1];
+
+      const unmadeNeighbors = this.getUnmadeNeighbors(cell.x, cell.y);
+
+      if (unmadeNeighbors.length === 0) {
+        cells.pop();
+        lastDir = null;
+        continue;
+      }
+
+      let dir: 'n' | 's' | 'e' | 'w';
+      const windingPercent = GAME_CONFIG.DUNGEON.ROOMS_AND_MAZES.WINDING_PERCENT;
+      if (lastDir && unmadeNeighbors.includes(lastDir) && this.rng.random() * 100 > windingPercent) {
+        dir = lastDir;
+      } else {
+        dir = unmadeNeighbors[Math.floor(this.rng.random() * unmadeNeighbors.length)];
+      }
+
+      const dx = dir === 'e' ? 1 : (dir === 'w' ? -1 : 0);
+      const dy = dir === 's' ? 1 : (dir === 'n' ? -1 : 0);
+
+      const betweenX = cell.x + dx;
+      const betweenY = cell.y + dy;
+      const nextX = cell.x + dx * 2;
+      const nextY = cell.y + dy * 2;
+
+      this.carveTile(betweenX, betweenY);
+      this.carveTile(nextX, nextY);
+      tilesCarved += 2;
+      oddTilesCarved++;
+
+      cells.push({x: nextX, y: nextY});
+      lastDir = dir;
+    }
+
+    console.log(`[DungeonGen]   Maze at (${startX},${startY}): carved ${tilesCarved} total tiles, ${oddTilesCarved} odd tiles`);
+  }
+
+  private carveTile(x: number, y: number): void {
+    this.tiles[y][x].type = 'floor';
+    this.tiles[y][x].region = this.currentRegion;
+  }
+
+  private getUnmadeNeighbors(x: number, y: number): ('n' | 's' | 'e' | 'w')[] {
+    const neighbors: ('n' | 's' | 'e' | 'w')[] = [];
+
+    if (y >= 2 && this.tiles[y - 2][x].type === 'solid') neighbors.push('n');
+    if (y < this.height - 2 && this.tiles[y + 2][x].type === 'solid') neighbors.push('s');
+    if (x < this.width - 2 && this.tiles[y][x + 2].type === 'solid') neighbors.push('e');
+    if (x >= 2 && this.tiles[y][x - 2].type === 'solid') neighbors.push('w');
+
+    return neighbors;
+  }
+
+  private connectRegions(): void {
+    const connectors = this.findAllConnectors();
+    console.log(`[DungeonGen] Found ${connectors.length} connectors`);
+
+    const merged = new Map<number, number>();
+    const openRegions = new Set<number>([0]);
+    const openedConnectors: Connector[] = [];
+
+    while (openRegions.size < this.currentRegion) {
+      const candidates = connectors.filter(c => {
+        const regions = Array.from(c.regions).map(r => this.getRoot(r, merged));
+        return regions.some(r => openRegions.has(r)) &&
+               regions.some(r => !openRegions.has(r));
+      });
+
+      if (candidates.length === 0) {
+        console.log(`[DungeonGen] No more connectors, connected ${openRegions.size}/${this.currentRegion} regions`);
+        break;
+      }
+
+      const connector = candidates[Math.floor(this.rng.random() * candidates.length)];
+      this.openConnector(connector);
+      openedConnectors.push(connector);
+
+      const regions = Array.from(connector.regions).map(r => this.getRoot(r, merged));
+      const mainRegion = regions.find(r => openRegions.has(r)) || regions[0];
+
+      for (const region of regions) {
+        if (region !== mainRegion) {
+          merged.set(region, mainRegion);
+        }
+        openRegions.add(region);
+      }
+
+      connectors.splice(connectors.indexOf(connector), 1);
+
+      for (let i = connectors.length - 1; i >= 0; i--) {
+        const c = connectors[i];
+        const cRegions = Array.from(c.regions).map(r => this.getRoot(r, merged));
+        if (new Set(cRegions).size < 2) {
+          connectors.splice(i, 1);
+        }
+      }
+    }
+
+    console.log(`[DungeonGen] Connected ${openRegions.size}/${this.currentRegion} regions with ${openedConnectors.length} connectors`);
+
+    const extraConnectorChance = GAME_CONFIG.DUNGEON.ROOMS_AND_MAZES.EXTRA_CONNECTOR_CHANCE;
+    let extraConnectors = 0;
+
+    for (const connector of connectors) {
+      if (this.rng.random() * 100 < extraConnectorChance) {
+        this.openConnector(connector);
+        extraConnectors++;
+      }
+    }
+
+    console.log(`[DungeonGen] Added ${extraConnectors} extra connectors for loops (${extraConnectorChance}% chance)`);
+  }
+
+  private openConnector(connector: Connector): void {
+    this.tiles[connector.y][connector.x].type = 'floor';
+    this.doorConnectors.add(`${connector.x},${connector.y}`);
+  }
+
+  private findAllConnectors(): Connector[] {
+    const connectors: Connector[] = [];
+
+    for (let y = 1; y < this.height - 1; y++) {
+      for (let x = 1; x < this.width - 1; x++) {
+        if (this.tiles[y][x].type !== 'solid') continue;
+
+        const regions = new Set<number>();
+
+        if (this.tiles[y - 1][x].type === 'floor' && this.tiles[y - 1][x].region !== undefined) {
+          regions.add(this.tiles[y - 1][x].region!);
+        }
+        if (this.tiles[y + 1][x].type === 'floor' && this.tiles[y + 1][x].region !== undefined) {
+          regions.add(this.tiles[y + 1][x].region!);
+        }
+        if (this.tiles[y][x - 1].type === 'floor' && this.tiles[y][x - 1].region !== undefined) {
+          regions.add(this.tiles[y][x - 1].region!);
+        }
+        if (this.tiles[y][x + 1].type === 'floor' && this.tiles[y][x + 1].region !== undefined) {
+          regions.add(this.tiles[y][x + 1].region!);
+        }
+
+        if (regions.size >= 2) {
+          connectors.push({x, y, regions});
+        }
+      }
+    }
+
+    return connectors;
+  }
+
+  private getRoot(region: number, merged: Map<number, number>): number {
+    if (!merged.has(region)) return region;
+    const parent = merged.get(region)!;
+    const root = this.getRoot(parent, merged);
+    merged.set(region, root);
+    return root;
+  }
+
+  private removeDeadEnds(): void {
+    const oddBefore = this.countOddFloorTiles();
+    let removed = 0;
+    let done = false;
+
+    while (!done) {
+      done = true;
+
+      for (let y = 1; y < this.height - 1; y++) {
+        for (let x = 1; x < this.width - 1; x++) {
+          if (this.tiles[y][x].type !== 'floor') continue;
+
+          let exits = 0;
+          if (this.tiles[y - 1][x].type === 'floor') exits++;
+          if (this.tiles[y + 1][x].type === 'floor') exits++;
+          if (this.tiles[y][x - 1].type === 'floor') exits++;
+          if (this.tiles[y][x + 1].type === 'floor') exits++;
+
+          if (exits === 1) {
+            this.tiles[y][x].type = 'solid';
+            done = false;
+            removed++;
+          }
+        }
+      }
+    }
+
+    const oddAfter = this.countOddFloorTiles();
+    const oddRemoved = oddBefore - oddAfter;
+    console.log(`[DungeonGen] Removed ${removed} total dead ends (${oddRemoved} odd tiles removed)`);
+  }
+
+  private updateWalls(): void {
+    const enableDoors = GAME_CONFIG.DUNGEON.ENABLE_DOORS;
+    const doorChance = GAME_CONFIG.DUNGEON.DOOR_CHANCE;
+
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (this.tiles[y][x].type !== 'floor') continue;
+
+        const northIsDoorConnector = y > 0 && this.doorConnectors.has(`${x},${y - 1}`);
+        const southIsDoorConnector = y < this.height - 1 && this.doorConnectors.has(`${x},${y + 1}`);
+        const westIsDoorConnector = x > 0 && this.doorConnectors.has(`${x - 1},${y}`);
+        const eastIsDoorConnector = x < this.width - 1 && this.doorConnectors.has(`${x + 1},${y}`);
+
+        this.tiles[y][x].northWall.exists = y === 0 || this.tiles[y - 1][x].type === 'solid';
+        this.tiles[y][x].southWall.exists = y === this.height - 1 || this.tiles[y + 1][x].type === 'solid';
+        this.tiles[y][x].westWall.exists = x === 0 || this.tiles[y][x - 1].type === 'solid';
+        this.tiles[y][x].eastWall.exists = x === this.width - 1 || this.tiles[y][x + 1].type === 'solid';
+
+        if (enableDoors) {
+          if (northIsDoorConnector && this.rng.random() < doorChance) {
+            this.placeDoorWall(this.tiles[y][x].northWall);
+          }
+          if (southIsDoorConnector && this.rng.random() < doorChance) {
+            this.placeDoorWall(this.tiles[y][x].southWall);
+          }
+          if (westIsDoorConnector && this.rng.random() < doorChance) {
+            this.placeDoorWall(this.tiles[y][x].westWall);
+          }
+          if (eastIsDoorConnector && this.rng.random() < doorChance) {
+            this.placeDoorWall(this.tiles[y][x].eastWall);
+          }
+        }
+      }
+    }
+  }
+
+  private placeDoorWall(wall: Wall): void {
+    wall.exists = true;
+    wall.type = 'door';
+    wall.properties = {
+      locked: false,
+      open: false,
+      openMechanism: 'player',
+      keyId: undefined,
+      oneWay: undefined,
+      hidden: false,
+      discovered: true
+    };
+  }
+
+  private placeStairs(): {up?: {x: number, y: number}, down?: {x: number, y: number}} {
+    const floorTiles = this.getAllFloorTiles();
+
+    if (floorTiles.length < 2) {
+      return {};
+    }
+
+    const upTile = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
+    upTile.special = {type: 'stairs_up'};
+
+    const downTile = floorTiles[Math.floor(this.rng.random() * floorTiles.length)];
+    downTile.special = {type: 'stairs_down'};
+
+    return {
+      up: {x: upTile.x, y: upTile.y},
+      down: {x: downTile.x, y: downTile.y}
+    };
+  }
+
+  private findStartPosition(): {x: number, y: number} {
+    const floorTiles = this.getAllFloorTiles();
+
+    if (floorTiles.length === 0) {
+      return {x: 1, y: 1};
+    }
+
+    const tile = floorTiles[0];
+    return {x: tile.x, y: tile.y};
+  }
+
+  private getAllFloorTiles(): DungeonTile[] {
+    const tiles: DungeonTile[] = [];
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (this.tiles[y][x].type === 'floor') {
+          tiles.push(this.tiles[y][x]);
+        }
+      }
+    }
     return tiles;
   }
 
-  private generateRooms(tiles: DungeonTile[][]): void {
-    const numRooms = 5 + Math.floor(Math.random() * 5);
-    const rooms: { x: number; y: number; width: number; height: number }[] = [];
-
-    for (let i = 0; i < numRooms; i++) {
-      const roomWidth = 3 + Math.floor(Math.random() * 5);
-      const roomHeight = 3 + Math.floor(Math.random() * 5);
-      const x = 1 + Math.floor(Math.random() * (this.width - roomWidth - 2));
-      const y = 1 + Math.floor(Math.random() * (this.height - roomHeight - 2));
-
-      let overlaps = false;
-      for (const room of rooms) {
-        if (
-          x < room.x + room.width + 1 &&
-          x + roomWidth + 1 > room.x &&
-          y < room.y + room.height + 1 &&
-          y + roomHeight + 1 > room.y
-        ) {
-          overlaps = true;
-          break;
-        }
-      }
-
-      if (!overlaps) {
-        rooms.push({ x, y, width: roomWidth, height: roomHeight });
-
-        for (let ry = y; ry < y + roomHeight; ry++) {
-          for (let rx = x; rx < x + roomWidth; rx++) {
-            if (tiles[ry] && tiles[ry][rx]) {
-              tiles[ry][rx].type = 'floor';
-            }
-          }
+  private countOddFloorTiles(): number {
+    let count = 0;
+    for (let y = 1; y < this.height; y += 2) {
+      for (let x = 1; x < this.width; x += 2) {
+        if (this.tiles[y][x].type === 'floor') {
+          count++;
         }
       }
     }
-
-    this.rooms = rooms;
-  }
-
-  private generateCorridors(tiles: DungeonTile[][]): void {
-    const floorTiles: DungeonTile[] = [];
-
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        if (tiles[y][x].type === 'floor') {
-          floorTiles.push(tiles[y][x]);
-        }
-      }
-    }
-
-    for (let i = 0; i < 10; i++) {
-      if (floorTiles.length < 2) break;
-
-      const start = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-      const end = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-
-      this.createCorridor(tiles, start.x, start.y, end.x, end.y);
-    }
-  }
-
-  private createCorridor(
-    tiles: DungeonTile[][],
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number
-  ): void {
-    let x = x1;
-    let y = y1;
-
-    while (x !== x2 || y !== y2) {
-      if (tiles[y] && tiles[y][x]) {
-        tiles[y][x].type = 'floor';
-      }
-
-      if (Math.random() < 0.5) {
-        if (x < x2) x++;
-        else if (x > x2) x--;
-        else if (y < y2) y++;
-        else if (y > y2) y--;
-      } else {
-        if (y < y2) y++;
-        else if (y > y2) y--;
-        else if (x < x2) x++;
-        else if (x > x2) x--;
-      }
-
-      if (x < 1) x = 1;
-      if (x >= this.width - 1) x = this.width - 2;
-      if (y < 1) y = 1;
-      if (y >= this.height - 1) y = this.height - 2;
-    }
-  }
-
-  private placeStairs(tiles: DungeonTile[][]): void {
-    const floorTiles = this.getFloorTiles(tiles);
-
-    if (this.level === 1) {
-      // Floor 1: Place castle stairs (up to town) at a valid floor location
-      if (floorTiles.length >= 2) {
-        // Place stairs up (to castle/town) at a random floor tile
-        const upStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-        upStairs.type = 'stairs_up';
-
-        // Place stairs down at a different floor tile
-        const remainingTiles = floorTiles.filter((t) => t !== upStairs);
-        if (remainingTiles.length > 0) {
-          const downStairs = remainingTiles[Math.floor(Math.random() * remainingTiles.length)];
-          downStairs.type = 'stairs_down';
-        }
-      }
-    } else {
-      // Other floors: Use existing random placement
-      if (floorTiles.length >= 2) {
-        const upStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-        upStairs.type = 'stairs_up';
-
-        const downStairs = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-        if (downStairs !== upStairs) {
-          downStairs.type = 'stairs_down';
-        }
-      }
-    }
-  }
-
-  private placeSpecialTiles(tiles: DungeonTile[][]): void {
-    const floorTiles = this.getFloorTiles(tiles);
-    const numSpecial = Math.min(
-      GAME_CONFIG.DUNGEON.MIN_SPECIAL_TILES +
-        Math.floor(Math.random() * GAME_CONFIG.DUNGEON.MAX_EXTRA_SPECIAL_TILES),
-      floorTiles.length
-    );
-
-    for (let i = 0; i < numSpecial; i++) {
-      const tile = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-      const rand = Math.random();
-
-      // Build probability ranges based on enabled features
-      let chestThreshold = 0;
-      let trapThreshold = 0;
-      let doorThreshold = 0;
-
-      if (GAME_CONFIG.DUNGEON.ENABLE_TREASURE_CHESTS) {
-        chestThreshold = GAME_CONFIG.DUNGEON.CHEST_CHANCE;
-        trapThreshold = chestThreshold + GAME_CONFIG.DUNGEON.TRAP_CHANCE;
-      } else {
-        trapThreshold = GAME_CONFIG.DUNGEON.TRAP_CHANCE;
-      }
-
-      if (GAME_CONFIG.DUNGEON.ENABLE_DOORS) {
-        doorThreshold = trapThreshold + GAME_CONFIG.DUNGEON.DOOR_CHANCE;
-      }
-
-      if (GAME_CONFIG.DUNGEON.ENABLE_TREASURE_CHESTS && rand < chestThreshold) {
-        tile.type = 'chest';
-      } else if (rand < trapThreshold) {
-        tile.type = 'trap';
-      } else if (GAME_CONFIG.DUNGEON.ENABLE_DOORS && rand < doorThreshold) {
-        tile.type = 'door';
-      } else {
-        tile.type = 'event';
-      }
-    }
-  }
-
-  private calculateWalls(tiles: DungeonTile[][]): void {
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        const tile = tiles[y][x];
-
-        if (tile.type !== 'wall') {
-          tile.northWall = y === 0 || tiles[y - 1][x].type === 'wall';
-          tile.southWall = y === this.height - 1 || tiles[y + 1][x].type === 'wall';
-          tile.westWall = x === 0 || tiles[y][x - 1].type === 'wall';
-          tile.eastWall = x === this.width - 1 || tiles[y][x + 1].type === 'wall';
-        }
-      }
-    }
-  }
-
-  private getFloorTiles(tiles: DungeonTile[][]): DungeonTile[] {
-    const floorTiles: DungeonTile[] = [];
-
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        if (tiles[y][x].type === 'floor') {
-          floorTiles.push(tiles[y][x]);
-        }
-      }
-    }
-
-    return floorTiles;
-  }
-
-  private generateOverrideZones(tiles: DungeonTile[][]): OverrideZone[] {
-    const zones: OverrideZone[] = [];
-
-    // Generate safe zone around starting position (if enabled)
-    if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_SAFE_ZONES) {
-      const startPos = this.findValidStartPosition(tiles);
-      zones.push({
-        x1: Math.max(0, startPos.x - 2),
-        y1: Math.max(0, startPos.y - 2),
-        x2: Math.min(this.width - 1, startPos.x + 2),
-        y2: Math.min(this.height - 1, startPos.y + 2),
-        type: 'safe',
-        data: { description: 'Starting area - safe from encounters' },
-      });
-    }
-
-    // Generate boss zones in largest rooms (if enabled)
-    if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_BOSS_ZONES) {
-      const largeRooms = this.rooms.filter((room) => room.width * room.height >= 16);
-      for (const room of largeRooms.slice(0, 2)) {
-        zones.push({
-          x1: room.x,
-          y1: room.y,
-          x2: room.x + room.width - 1,
-          y2: room.y + room.height - 1,
-          type: 'boss',
-          data: {
-            bossType: 'floor_guardian',
-            encounterRate: 1.0,
-            monsterGroups: [`boss_level_${this.level}`],
-            description: 'Guardian chamber',
-          },
-        });
-      }
-    }
-
-    // Generate special mob zones based on level theme (if enabled)
-    if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_SPECIAL_MOB_ZONES) {
-      const numSpecialZones = 1 + Math.floor(Math.random() * 2);
-      for (let i = 0; i < numSpecialZones; i++) {
-        const room = this.rooms[Math.floor(Math.random() * this.rooms.length)];
-        if (room) {
-          zones.push({
-            x1: room.x,
-            y1: room.y,
-            x2: room.x + room.width - 1,
-            y2: room.y + room.height - 1,
-            type: 'special_mobs',
-            data: {
-              monsterGroups: this.getSpecialMonsterGroupsForLevel(),
-              encounterRate: 0.15,
-              description: `Lair of ${this.getSpecialMonsterGroupsForLevel()[0]}s`,
-            },
-          });
-        }
-      }
-    }
-
-    // Generate high frequency zones in corridors (if enabled)
-    if (GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.ENABLE_HIGH_FREQUENCY_ZONES) {
-      const numHighFreq = 2 + Math.floor(Math.random() * 2);
-      for (let i = 0; i < numHighFreq; i++) {
-        const x1 = Math.floor(Math.random() * (this.width - 4));
-        const y1 = Math.floor(Math.random() * (this.height - 4));
-        const x2 = x1 + 2 + Math.floor(Math.random() * 3);
-        const y2 = y1 + 2 + Math.floor(Math.random() * 3);
-
-        zones.push({
-          x1,
-          y1,
-          x2: Math.min(x2, this.width - 1),
-          y2: Math.min(y2, this.height - 1),
-          type: 'high_frequency',
-          data: {
-            encounterRate: 0.08,
-            description: 'Dangerous corridor - high monster activity',
-          },
-        });
-      }
-    }
-
-    return zones;
-  }
-
-  private getSpecialMonsterGroupsForLevel(): string[] {
-    const specialMonsters = [
-      ['giant_spider', 'dire_wolf', 'owlbear'],
-      ['shadow', 'wraith', 'banshee'],
-      ['troll_shaman', 'stone_giant', 'chimera'],
-      ['dragon_wyrmling', 'lich', 'demon_lord'],
-      ['ancient_dragon', 'pit_fiend', 'solar'],
-    ];
-
-    const levelIndex = Math.min(this.level - 1, specialMonsters.length - 1);
-    return specialMonsters[levelIndex];
-  }
-
-  private generateEvents(tiles: DungeonTile[][]): DungeonEvent[] {
-    const events: DungeonEvent[] = [];
-    const eventTiles = [];
-
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        if (tiles[y][x].type === 'event') {
-          eventTiles.push({ x, y });
-        }
-      }
-    }
-
-    for (const tile of eventTiles) {
-      const eventType = this.getRandomEventType();
-      events.push({
-        x: tile.x,
-        y: tile.y,
-        type: eventType,
-        data: this.getEventData(eventType),
-        triggered: false,
-      });
-    }
-
-    return events;
-  }
-
-  private getRandomEventType():
-    | 'message'
-    | 'trap'
-    | 'treasure'
-    | 'teleport'
-    | 'spinner'
-    | 'darkness' {
-    const types: ('message' | 'trap' | 'treasure' | 'teleport' | 'spinner' | 'darkness')[] = [
-      'message',
-      'trap',
-      'treasure',
-      'teleport',
-      'spinner',
-      'darkness',
-    ];
-    return types[Math.floor(Math.random() * types.length)];
-  }
-
-  private getEventData(type: string): any {
-    switch (type) {
-      case 'message':
-        return { text: 'You sense an ancient presence here...' };
-      case 'trap':
-        return { damage: 5 + this.level * 2 };
-      case 'treasure':
-        return { gold: 50 + this.level * 20 };
-      case 'teleport':
-        return {
-          x: Math.floor(Math.random() * this.width),
-          y: Math.floor(Math.random() * this.height),
-        };
-      case 'spinner':
-        return { rotations: 1 + Math.floor(Math.random() * 3) };
-      case 'darkness':
-        return { duration: 10 };
-      default:
-        return {};
-    }
-  }
-
-  private findValidStartPosition(tiles: DungeonTile[][]): { x: number; y: number } {
-    // Floor 1: Start at the stairs up position
-    if (this.level === 1) {
-      for (let y = 0; y < this.height; y++) {
-        for (let x = 0; x < this.width; x++) {
-          if (tiles[y][x].type === 'stairs_up') {
-            return { x, y };
-          }
-        }
-      }
-    }
-
-    // Other floors use existing logic
-    if (this.rooms.length > 0) {
-      const firstRoom = this.rooms[0];
-      const centerX = firstRoom.x + Math.floor(firstRoom.width / 2);
-      const centerY = firstRoom.y + Math.floor(firstRoom.height / 2);
-
-      if (tiles[centerY] && tiles[centerY][centerX] && tiles[centerY][centerX].type === 'floor') {
-        return { x: centerX, y: centerY };
-      }
-    }
-
-    const floorTiles = this.getFloorTiles(tiles);
-    if (floorTiles.length > 0) {
-      const randomFloor = floorTiles[Math.floor(Math.random() * floorTiles.length)];
-      return { x: randomFloor.x, y: randomFloor.y };
-    }
-
-    return { x: 1, y: 1 };
+    return count;
   }
 }

@@ -29,13 +29,82 @@ Based on research from Wizardry V: Heart of the Maelstrom, Wizardry Gaiden IV, a
 ### Unidentified Items ✅ **IMPLEMENTED**
 - Found items initially appear with `unidentifiedName` (e.g., "?Sword", "?Armor")
 - Must be identified before true properties and rarity are known
-- **Current Identification System**:
-  - **Bishop class specialty**: Base 75% chance + 2% per level + INT bonus
-  - **Other classes**: Base 50% chance + 1% per level + INT bonus  
-  - **Intelligence bonus**: +5% per 2 points of INT above 10
-  - **Maximum chance**: 95% (always 5% chance of failure)
-  - **Critical failure**: Rolling >95% curses the item instead of identifying it
-  - **Keyboard shortcut**: Press 'I' in inventory to attempt identification
+- **Keyboard shortcut**: Press 'I' in inventory to attempt identification
+
+#### Bishop Identification System (Authentic Wizardry Mechanics)
+
+The identification system faithfully implements classic Wizardry (1-5) mechanics, where Bishops serve their traditional role as the party's item identifier.
+
+**Bishop Exclusivity:**
+- **Only Bishops can identify items** in the dungeon (implemented in `InventorySystem.identifyItem()`)
+- Other classes must use shop identification services
+- Enforced via class check that returns 0% chance for non-Bishops
+
+**Success Rate Formula:**
+```typescript
+// From Character.ts - Authentic Wizardry formula
+const successRate = (this.level * 0.05) + 0.10;
+return Math.min(successRate, 1.0); // Cap at 100%
+```
+
+**Success Rates by Level:**
+- Level 1 Bishop: 15% chance to identify
+- Level 5 Bishop: 35% chance to identify
+- Level 10 Bishop: 60% chance to identify
+- Level 14 Bishop: 80% chance to identify
+- Level 18+ Bishop: 100% chance to identify (capped)
+
+**Curse Risk Formula:**
+```typescript
+// From InventorySystem.ts - Separate risk calculation
+const curseRisk = Math.max(0, 0.35 - (bishop.level * 0.03));
+```
+
+**Curse Risk by Level:**
+- Level 1 Bishop: 32% curse risk
+- Level 5 Bishop: 20% curse risk
+- Level 10 Bishop: 5% curse risk
+- Level 12+ Bishop: 0% curse risk (safe)
+
+**Implementation Details:**
+
+The `Character.getIdentificationChance()` method:
+```typescript
+public getIdentificationChance(): number {
+    // Only Bishops can identify items
+    if (this.characterClass !== 'Bishop') {
+        return 0;
+    }
+    // Authentic Wizardry formula
+    const successRate = (this.level * 0.05) + 0.10;
+    return Math.min(successRate, 1.0);
+}
+```
+
+The `InventorySystem.identifyItem()` method implements the complete flow:
+1. **Bishop Check**: Validates character is a Bishop
+2. **Success Calculation**: Uses authentic formula
+3. **Curse Risk**: Separate risk calculation for cursed items
+4. **Curse Behavior**: Cursed items auto-equip on failed identification
+5. **Multiple Attempts**: Allows retrying on unidentified items
+
+**Configuration Constants** (`src/config/GameConstants.ts`):
+```typescript
+IDENTIFICATION: {
+    BASE_CHANCE: 0.10,           // 10% base chance
+    LEVEL_MULTIPLIER: 0.05,      // 5% per level
+    MAX_CHANCE: 1.0,             // 100% cap
+    CURSE_BASE_RISK: 0.35,       // 35% base curse risk
+    CURSE_RISK_REDUCTION: 0.03,  // 3% reduction per level
+    SHOP_COST_MULTIPLIER: 0.5    // 50% of item value
+}
+```
+
+**Game Balance Impact:**
+- **Essential for Dungeon Parties**: Only class that can identify items in the field
+- **Risk/Reward Dynamic**: Low-level Bishops face real curse danger
+- **Progression Incentive**: Bishop levels directly improve identification safety
+- **Resource Management**: Choose between risky Bishop attempts or expensive shop fees
 
 ### Cursed Items ✅ **IMPLEMENTED**
 - **Definition**: Items that cannot be voluntarily unequipped once worn
@@ -128,13 +197,29 @@ Based on research from Wizardry V: Heart of the Maelstrom, Wizardry Gaiden IV, a
 - **Visual Indicator**: "G: Pick Up Items" shown when items present
 - **Combat Drops**: Monster loot appears on floor after victory
 
+#### Shop Identification Service
+
+**Shop System** (`src/systems/ShopSystem.ts`):
+```typescript
+public identifyItem(itemId: string): IdentificationResult {
+    // 100% success rate at shops
+    // Cost: 50% of item value (configurable)
+    // No curse risk
+}
+```
+
+**Shop Mechanics:**
+- **100% successful identification** - No risk of failure
+- **Costs 50% of item's base value** (default, configurable)
+- **No curse risk** - Safe alternative to Bishop identification
+- **Available to all classes** - Anyone can use shop services
+
 ## Shop and Trading System 🚧 **PLANNED**
 
 ### Future Implementation
-- **Identification Service**: Pay to identify unknown items safely  
 - **Buying/Selling**: Shop inventory and pricing system
 - **Uncurse Service**: Remove cursed items (destroys item)
-- **Current Status**: Shop system not yet implemented
+- **Current Status**: Shop identification implemented, full shop system not yet complete
 
 ## Special Mechanics
 

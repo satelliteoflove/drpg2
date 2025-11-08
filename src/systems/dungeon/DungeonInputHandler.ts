@@ -4,6 +4,7 @@ import { DebugLogger } from '../../utils/DebugLogger';
 import { DungeonMovementHandler, MovementResult } from './DungeonMovementHandler';
 import { DungeonItemPickupUI } from './DungeonItemPickupUI';
 import { SceneManager } from '../../core/Scene';
+import { SaveManager } from '../../utils/SaveManager';
 
 export interface DungeonInputContext {
   isAwaitingCastleStairsResponse?: boolean;
@@ -115,9 +116,6 @@ export class DungeonInputHandler {
         case 'combat':
           DebugLogger.debug('DungeonInputHandler', 'Combat triggered from movement');
           break;
-        case 'stairs':
-          this.checkForCastleReturn();
-          break;
       }
     }
   }
@@ -168,22 +166,25 @@ export class DungeonInputHandler {
     const currentTile = currentFloor.tiles[this.gameState.party.y][this.gameState.party.x];
     if (!currentTile) return;
 
-    switch (currentTile.type) {
+    const doorWall = this.getDoorInFront(currentTile);
+    if (doorWall) {
+      this.passThroughDoor(currentTile, doorWall);
+      return;
+    }
+
+    if (!currentTile.special) {
+      this.messageLog?.addSystemMessage('Nothing to interact with here.');
+      return;
+    }
+
+    switch (currentTile.special.type) {
       case 'stairs_up':
         if (this.gameState.currentFloor === 1) {
-          // Special case for returning to town from floor 1
           this.messageLog?.addSystemMessage('You are at the castle entrance. Do you want to return to town? (Y/N)');
           this.context.isAwaitingCastleStairsResponse = true;
         } else if (this.gameState.currentFloor > 1) {
-          // Go up one floor
-          this.gameState.currentFloor--;
-          const newFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
-          if (newFloor && newFloor.stairsDown) {
-            this.gameState.party.x = newFloor.stairsDown.x;
-            this.gameState.party.y = newFloor.stairsDown.y;
-          }
-          this.movementHandler.updateDiscoveredTiles();
-          this.messageLog?.addSystemMessage(`Ascended to floor ${this.gameState.currentFloor}`);
+          SaveManager.saveGame(this.gameState, this.gameState.playtimeSeconds || 0);
+          this.movementHandler.handleStairsUp();
         } else {
           this.messageLog?.addSystemMessage("You're already on the top floor!");
         }
@@ -191,34 +192,31 @@ export class DungeonInputHandler {
 
       case 'stairs_down':
         if (this.gameState.currentFloor < this.gameState.dungeon.length) {
-          // Go down one floor
-          this.gameState.currentFloor++;
-          const newFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
-          if (newFloor && newFloor.stairsUp) {
-            this.gameState.party.x = newFloor.stairsUp.x;
-            this.gameState.party.y = newFloor.stairsUp.y;
+          if (currentTile.special.properties?.locked && currentTile.special.properties?.requiredKeyIds) {
+            const requiredKeys = currentTile.special.properties.requiredKeyIds;
+            if (!this.hasRequiredKeys(requiredKeys)) {
+              const keyNames = requiredKeys.map(id => this.getKeyDisplayName(id)).join(', ');
+              this.messageLog?.addSystemMessage(`The stairs are locked. You need: ${keyNames}`);
+              return;
+            }
+
+            this.consumeKeysFromParty(requiredKeys);
+            currentTile.special.properties.locked = false;
+            this.messageLog?.addSystemMessage('You unlock the stairs and descend...');
           }
-          this.movementHandler.updateDiscoveredTiles();
-          this.messageLog?.addSystemMessage(`Descended to floor ${this.gameState.currentFloor}`);
+
+          SaveManager.saveGame(this.gameState, this.gameState.playtimeSeconds || 0);
+          this.movementHandler.handleStairsDown();
         } else {
           this.messageLog?.addSystemMessage("You're already on the bottom floor!");
         }
         break;
 
       case 'chest':
-        if (!currentTile.properties?.opened) {
+        if (!currentTile.special.properties?.opened) {
           this.openChest(currentTile);
         } else {
           this.messageLog?.addSystemMessage('The chest has already been opened.');
-        }
-        break;
-
-      case 'door':
-        if (currentTile.properties?.locked) {
-          this.messageLog?.addSystemMessage('The door is locked. You need a key.');
-        } else {
-          currentTile.type = 'floor';
-          this.messageLog?.addSystemMessage('You open the door.');
         }
         break;
 
@@ -228,8 +226,8 @@ export class DungeonInputHandler {
   }
 
   private openChest(tile: any): void {
-    const items = tile.properties?.items || [];
-    const gold = tile.properties?.gold || 0;
+    const items = tile.special?.properties?.items || [];
+    const gold = tile.special?.properties?.gold || 0;
 
     if (gold > 0) {
       this.gameState.party.pooledGold += gold;
@@ -240,7 +238,67 @@ export class DungeonInputHandler {
       this.itemPickupUI.startItemPickup(items);
     }
 
-    tile.properties = { ...tile.properties, opened: true };
+    if (tile.special) {
+      tile.special.properties = { ...tile.special.properties, opened: true };
+    }
+  }
+
+  private getDoorInFront(currentTile: any): 'north' | 'south' | 'east' | 'west' | null {
+    const facing = this.gameState.party.facing;
+
+    switch (facing) {
+      case 'north':
+        if (currentTile.northWall?.type === 'door') return 'north';
+        break;
+      case 'south':
+        if (currentTile.southWall?.type === 'door') return 'south';
+        break;
+      case 'east':
+        if (currentTile.eastWall?.type === 'door') return 'east';
+        break;
+      case 'west':
+        if (currentTile.westWall?.type === 'door') return 'west';
+        break;
+    }
+
+    return null;
+  }
+
+  private passThroughDoor(currentTile: any, direction: 'north' | 'south' | 'east' | 'west'): void {
+    let wall;
+    switch (direction) {
+      case 'north':
+        wall = currentTile.northWall;
+        break;
+      case 'south':
+        wall = currentTile.southWall;
+        break;
+      case 'east':
+        wall = currentTile.eastWall;
+        break;
+      case 'west':
+        wall = currentTile.westWall;
+        break;
+    }
+
+    if (!wall || wall.type !== 'door' || !wall.properties) return;
+
+    if (wall.properties.locked) {
+      this.messageLog?.addSystemMessage('The door is locked.');
+      return;
+    }
+
+    const openMechanism = wall.properties.openMechanism || 'player';
+
+    if (openMechanism === 'lever' || openMechanism === 'event') {
+      if (!wall.properties.open) {
+        this.messageLog?.addSystemMessage('The door won\'t budge.');
+        return;
+      }
+    }
+
+    const absoluteDirection = direction;
+    this.movementHandler.handleDoorPassage(absoluteDirection);
   }
 
   private toggleCombat(): void {
@@ -293,6 +351,7 @@ export class DungeonInputHandler {
     const normalizedKey = key.toLowerCase();
     if (normalizedKey === 'y') {
       this.context.isAwaitingCastleStairsResponse = false;
+      SaveManager.saveGame(this.gameState, this.gameState.playtimeSeconds || 0);
       // Reset the movement handler's last position so the prompt can be triggered again
       this.movementHandler.resetLastTileEventPosition();
       this.sceneManager.switchTo('town');
@@ -307,24 +366,48 @@ export class DungeonInputHandler {
     return false;
   }
 
-  private checkForCastleReturn(): void {
-    // Check if we're on floor 1 and just used stairs up
-    if (this.gameState.currentFloor === 1) {
-      const currentTile = this.gameState.dungeon[0]?.tiles[this.gameState.party.y][this.gameState.party.x];
-      if (currentTile?.type === 'stairs_up') {
-        this.context.isAwaitingCastleStairsResponse = true;
-        // Message already shown by movement handler
-        return;
+  private hasRequiredKeys(requiredKeyIds: string[]): boolean {
+    for (const keyId of requiredKeyIds) {
+      if (!this.findKeyInParty(keyId)) {
+        return false;
       }
     }
+    return true;
+  }
 
-    const castleStairsPos = this.movementHandler.getCastleStairsPosition();
-    if (castleStairsPos &&
-        this.gameState.party.x === castleStairsPos.x &&
-        this.gameState.party.y === castleStairsPos.y &&
-        this.gameState.currentFloor === 0) {
-      this.context.isAwaitingCastleStairsResponse = true;
-      this.messageLog?.addSystemMessage('Return to town? (Y/N)');
+  private findKeyInParty(keyId: string): boolean {
+    const party = this.gameState.party;
+    for (const character of party.characters) {
+      const hasKey = character.inventory.some((item: any) => item.id === keyId);
+      if (hasKey) return true;
+    }
+    return false;
+  }
+
+  private consumeKeysFromParty(requiredKeyIds: string[]): void {
+    const party = this.gameState.party;
+    for (const keyId of requiredKeyIds) {
+      let consumed = false;
+      for (const character of party.characters) {
+        if (consumed) break;
+        const keyIndex = character.inventory.findIndex((item: any) => item.id === keyId);
+        if (keyIndex !== -1) {
+          character.inventory.splice(keyIndex, 1);
+          consumed = true;
+        }
+      }
     }
   }
+
+  private getKeyDisplayName(keyId: string): string {
+    const parts = keyId.split('_');
+    if (parts.length >= 2) {
+      const type = parts[0];
+      if (type === 'bronze') return 'Bronze Key';
+      if (type === 'silver') return 'Silver Key';
+      if (type === 'gold') return 'Gold Key';
+    }
+    return 'Key';
+  }
+
 }

@@ -30,12 +30,8 @@ This pragmatic hybrid approach provides clean separation of concerns while maint
 - **Scene Manager**: Handles transitions and lifecycle management
 - **Layered Rendering**: Support for both traditional and layer-based rendering approaches
 
-### 4. Dual Rendering System
+### 4. Rendering System
 - **Canvas Rendering**: Traditional 2D context for pixel-perfect retro aesthetics
-- **ASCII Rendering** (Feature-Flagged): 80x25 text grid for AI-friendly visualization
-  - Designed to help AI systems understand and manipulate game state
-  - Enable via `window.FeatureFlags.enable('ascii_rendering')`
-  - Complete implementation across all major scenes
 - **Rendering Optimization**: Frame-based optimization with dirty region tracking
 - **Layer Compositing**: Separate rendering layers for background, entities, effects, UI
 - **Performance Monitoring**: Built-in FPS tracking and render statistics
@@ -63,18 +59,12 @@ src/
 ├── systems/        # Game logic systems
 │   ├── CombatSystem.ts
 │   ├── InventorySystem.ts
-│   ├── SceneManager.ts
 │   └── ShopSystem.ts
 ├── services/       # Service layer and dependency injection
 │   ├── ServiceContainer.ts
 │   ├── ServiceRegistry.ts
 │   ├── GameServices.ts
 │   └── interfaces/
-├── rendering/      # ASCII rendering system
-│   ├── CanvasRenderer.ts
-│   ├── ASCIIState.ts
-│   ├── BaseASCIIScene.ts
-│   └── ascii/
 ├── ui/            # User interface components
 ├── utils/         # Utility functions and helpers
 ├── types/         # TypeScript type definitions

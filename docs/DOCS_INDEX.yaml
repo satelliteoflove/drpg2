@@ -1,16 +1,11 @@
 # Documentation Index for DRPG2
 # This file provides a searchable index for Claude Code to efficiently navigate project documentation
-# Last updated: 2025-10-15
+# Last updated: 2025-10-28
 
 architecture:
   file: ARCHITECTURE.md
   topics: [hybrid architecture, system design, service-oriented, traditional OOP, dependency injection, scene management]
   summary: Hybrid architecture combining service-oriented infrastructure with traditional OOP for game logic
-
-api_reference:
-  file: API_REFERENCE.md
-  topics: [API, classes, methods, interfaces, type definitions]
-  summary: Complete API documentation for all game classes and interfaces
 
 ai_interface:
   file: ai-interface.md
@@ -19,29 +14,21 @@ ai_interface:
 
 performance:
   - file: PERFORMANCE.md
-    topics: [optimization, performance, profiling, benchmarks, metrics]
-    summary: Performance optimization guidelines and benchmarking
+    topics: [optimization, performance, profiling, benchmarks, metrics, monitoring, performance tracking]
+    summary: Performance optimization guidelines, benchmarking, and metrics interpretation
 
   - file: performance-baseline.md
     topics: [baseline, metrics, performance measurements]
     summary: Performance baseline measurements and targets
 
-  - file: performance-baseline-2025-09-04.md
+  - file: archive/performance-baseline-2025-09-04.md
     topics: [baseline snapshot, metrics, performance history]
-    summary: Performance baseline snapshot from September 4, 2025
-
-  - file: performance-metrics-guide.md
-    topics: [metrics, monitoring, performance tracking]
-    summary: Guide for measuring and tracking performance metrics
+    summary: Performance baseline snapshot from September 4, 2025 (archived)
 
 game_mechanics:
-  - file: bishop-identification-mechanics.md
-    topics: [bishop, class, identification, game mechanics, items]
-    summary: Bishop class identification mechanics and implementation
-
   - file: wizardry-item-system.md
-    topics: [items, equipment, inventory, wizardry mechanics]
-    summary: Complete item system documentation based on Wizardry
+    topics: [items, equipment, inventory, wizardry mechanics, bishop, identification, curse risk, authentic mechanics]
+    summary: Complete item system documentation based on Wizardry, including authentic Bishop identification mechanics
 
 wizardry_items:
   files_pattern: wizardry_gaiden_4_items_*.md
@@ -85,13 +72,9 @@ wizardry_gaiden_4_systems:
     topics: [spells, japanese source, authentic data, reference, wizardry gaiden]
     summary: Original Japanese source page for all Wizardry Gaiden IV spells (definitive reference)
 
-  - file: temple-requirements.md
-    topics: [temple, services, resurrection, healing, status effects, cure, dispel curse, wizardry gaiden]
-    summary: Temple of Cant service requirements with resurrection mechanics, costs, and formulas for WGIV
-
   - file: temple-mechanics.md
     topics: [temple, gold pooling, level-based costs, payment system, resurrection, service mechanics, wizardry gaiden]
-    summary: Complete temple mechanics including level-based pricing, automatic gold pooling, and service implementation details
+    summary: "PRIMARY: Complete temple mechanics including level-based pricing, automatic gold pooling, resurrection formulas, and vitality/age effects"
 
   - file: training-grounds-mechanics.md
     topics: [training grounds, character management, class change, roster, character creation, town services, wizardry gaiden]
@@ -132,22 +115,9 @@ usage_and_setup:
     summary: How to play the game and use its features
 
 development:
-  - file: lessons-learned.md
-    topics: [development, best practices, retrospective, lessons]
-    summary: Development lessons learned and best practices discovered
-
-  - file: validation-report.md
-    topics: [validation, testing, quality assurance, test results]
-    summary: Validation and testing report for the game systems
-
   - file: utilities-reference.md
     topics: [utilities, DRY, code reuse, dice roller, entity utils, saving throws]
     summary: Reference documentation for core utility classes (DiceRoller, EntityUtils, SavingThrowCalculator)
-
-ai_plans:
-  - file: ai/logs/tavern-implementation-analysis.md
-    topics: [tavern, implementation analysis, planning, architecture, party management]
-    summary: Analysis and planning document for Gilgamesh's Tavern implementation
 
 # API Documentation Root
 api_root:
@@ -423,17 +393,59 @@ api_variables:
     topics: [service identifiers, DI tokens, service keys]
     summary: Service identifier constants
 
+dungeon_architecture:
+  - file: wizardry-dungeon-architecture.md
+    topics: [dungeon architecture, walls-on-edges, door system, raycasting, wizardry model]
+    summary: "FOUNDATIONAL: Walls-on-edges architectural model (referenced by 2025 technical design)"
+
+archive:
+  - file: archive/wizardry-dungeon-generation-design-archived-2025-11-03.md
+    topics: [ARCHIVED, WGIV analysis, historical reference, algorithm pseudocode]
+    summary: "ARCHIVED 2025-11-03: Original WGIV-focused design (superseded by 2025 design docs)"
+
+  - file: archive/temple-requirements-archived-2025-11-05.md
+    topics: [ARCHIVED, temple, requirements, historical reference]
+    summary: "ARCHIVED 2025-11-05: Original temple requirements with fixed costs (superseded by temple-mechanics.md with corrected formulas)"
+
+dungeon_design_2025:
+  - file: dungeon-game-design.md
+    topics: [game design, character-driven narrative, pacing, NPCs, events, save system, consequence enforcement, dungeon philosophy, character moments]
+    summary: "PRIMARY: Character-driven narrative design philosophy and game systems (WHAT/WHY)"
+
+  - file: dungeon-generation-technical.md
+    topics: [dungeon generation, procedural generation, algorithm, rooms, corridors, MST, navigation features, theming, validation, A* pathfinding, solvability]
+    summary: "PRIMARY: Technical specifications and 6-phase generation algorithm (HOW) - References wizardry-dungeon-architecture.md as foundation"
+
+  - file: dungeon-implementation-guide.md
+    topics: [implementation, tunable constants, configuration, MVP roadmap, debug tools, codebase integration, balance tuning, game balance]
+    summary: "PRIMARY: Implementation guide with complete tunable constants system and phased development priorities (BUILD)"
+
+  - file: dungeon-implementation-gap-analysis.md
+    topics: [gap analysis, implementation status, missing features, current vs design, action plan, MVP checklist, priority roadmap]
+    summary: "CRITICAL: Comprehensive gap analysis comparing current code implementation against design documentation with prioritized action plan"
+
+first_person_rendering:
+  file: first-person-dungeon-rendering.yaml
+  topics: [first-person view, dungeon rendering, depth layers, segment rendering, perspective transform, classic dungeon crawler, wizardry style, eye of the beholder, blobber, tiles, cells, layers, brick patterns, gradient shading, GIMP tutorial]
+  summary: Comprehensive tutorial on creating graphics for classic first-person dungeon crawlers with segment-based rendering, perspective transforms, and depth shading
+  images_folder: docs/sources/first-person-dungeons-images/
+  source_html: docs/sources/first-person-dungeons-tutorial.html
+
 # Search hints for common queries
 search_hints:
-  rendering: [api/classes/RenderManager.md, api/classes/DungeonView.md, api/classes/StatusPanel.md]
-  performance: [PERFORMANCE.md, performance-metrics-guide.md, api/classes/RenderingOptimizer.md]
+  rendering: [api/classes/RenderManager.md, api/classes/DungeonView.md, api/classes/StatusPanel.md, first-person-dungeon-rendering.yaml]
+  first_person_dungeons: [first-person-dungeon-rendering.yaml]
+  dungeon_rendering: [first-person-dungeon-rendering.yaml, api/classes/DungeonView.md]
+  performance: [PERFORMANCE.md, performance-baseline.md, api/classes/RenderingOptimizer.md]
   items: [wizardry-item-system.md, wizardry_gaiden_4_items_*.md, api/interfaces/Item.md, api/classes/InventorySystem.md]
-  architecture: [ARCHITECTURE.md, API_REFERENCE.md, api/classes/Game.md]
-  game_mechanics: [bishop-identification-mechanics.md, wizardry-item-system.md]
+  architecture: [ARCHITECTURE.md, api/classes/Game.md]
+  game_mechanics: [wizardry-item-system.md]
+  identification: [wizardry-item-system.md, api/classes/InventorySystem.md]
+  bishop: [wizardry-item-system.md]
   setup: [README.md, USAGE.md]
-  api: [API_REFERENCE.md, api/README.md, api/globals.md]
+  api: [api/README.md, api/globals.md]
   combat: [api/classes/CombatScene.md, api/classes/CombatSystem.md, api/interfaces/Attack.md]
-  dungeon: [api/classes/DungeonGenerator.md, api/classes/DungeonScene.md, api/interfaces/DungeonLevel.md]
+  dungeon: [api/classes/DungeonGenerator.md, api/classes/DungeonScene.md, api/interfaces/DungeonLevel.md, wizardry-dungeon-architecture.md]
   services: [api/classes/GameServices.md, api/classes/ServiceContainer.md, api/classes/ServiceRegistry.md]
   scenes: [api/classes/Scene.md, api/classes/SceneManager.md, api/interfaces/SceneRenderContext.md]
   character: [api/classes/Character.md, api/interfaces/CharacterStats.md, api/classes/CharacterCreationScene.md, wizardry_gaiden_4_character_parameters.md]
@@ -443,9 +455,22 @@ search_hints:
   utilities: [utilities-reference.md, src/utils/DiceRoller.ts, src/utils/EntityUtils.ts, src/utils/SavingThrowCalculator.ts]
   magic: [wizardry_gaiden_4_spells.md, src/systems/magic/, src/data/spells/]
   ai_testing: [ai-interface.md, src/core/AIInterface.ts]
-  temple: [temple-mechanics.md, temple-requirements.md, src/systems/temple/, src/scenes/TempleScene.ts]
+  temple: [temple-mechanics.md, archive/temple-requirements-archived-2025-11-05.md, src/systems/temple/, src/scenes/TempleScene.ts]
   tavern: [tavern-mechanics.md, src/scenes/TavernScene.ts]
   party_management: [tavern-mechanics.md, api/classes/Party.md]
-  status_effects: [status-effects.md, temple-requirements.md, api/type-aliases/CharacterStatus.md]
+  status_effects: [status-effects.md, temple-mechanics.md, api/type-aliases/CharacterStatus.md]
   conditions: [status-effects.md, temple-mechanics.md]
-  cure: [status-effects.md, wizardry_gaiden_4_spells.md, temple-requirements.md]
+  cure: [status-effects.md, wizardry_gaiden_4_spells.md, temple-mechanics.md]
+  doors: [wizardry-dungeon-architecture.md, dungeon-generation-technical.md]
+  walls: [wizardry-dungeon-architecture.md, dungeon-generation-technical.md]
+  raycasting: [wizardry-dungeon-architecture.md, first-person-dungeon-rendering.yaml]
+  dungeon_design: [dungeon-game-design.md, dungeon-generation-technical.md, wizardry-dungeon-architecture.md]
+  dungeon_generation: [dungeon-generation-technical.md, dungeon-implementation-guide.md, api/classes/DungeonGenerator.md]
+  procedural_generation: [dungeon-generation-technical.md]
+  tunable_constants: [dungeon-implementation-guide.md]
+  character_narrative: [dungeon-game-design.md]
+  mvp_roadmap: [dungeon-implementation-guide.md, dungeon-implementation-gap-analysis.md]
+  game_balance: [dungeon-implementation-guide.md]
+  gap_analysis: [dungeon-implementation-gap-analysis.md]
+  implementation_status: [dungeon-implementation-gap-analysis.md]
+  missing_features: [dungeon-implementation-gap-analysis.md]

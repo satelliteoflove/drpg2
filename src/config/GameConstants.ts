@@ -91,24 +91,26 @@ export const GAME_CONFIG = {
     LOST_CHANCE_FROM_ASH: 0.1,
     MAX_DEATHS_BEFORE_ASH: 5,
     VITALITY_LOSS_ON_DEATH: 1,
-    VITALITY_LOSS_ON_ASH: 2,
+    VITALITY_LOSS_ON_ASH: 3,
     AGE_INCREASE_ON_DEATH: 1,
-    AGE_INCREASE_ON_ASH: 5,
+    AGE_INCREASE_ON_ASH: 10,
   },
 
   TEMPLE: {
     SERVICE_COSTS: {
-      CURE_PARALYZED: 1,
-      CURE_STONED: 1,
-      RESURRECT_DEAD: 2,
-      RESURRECT_ASHES: 5,
-      DISPEL_CURSE: 500,
+      CURE_PARALYZED: 100,
+      CURE_STONED: 100,
+      RESURRECT_DEAD: 200,
+      RESURRECT_ASHES: 500,
     },
     RESURRECTION: {
+      DEAD_BASE_CHANCE: 0.5,
+      DEAD_VITALITY_MULTIPLIER: 0.03,
+      DEAD_LEVEL_BONUS: 0.02,
+      ASHES_BASE_CHANCE: 0.4,
+      ASHES_VITALITY_MULTIPLIER: 0.03,
       MAX_SUCCESS_CHANCE: 0.95,
-      VITALITY_BONUS_MULTIPLIER_DEAD: 0.01,
-      VITALITY_BONUS_MULTIPLIER_ASHES: 0.005,
-      ASHES_BASE_CHANCE_MULTIPLIER: 0.5,
+      MIN_SUCCESS_CHANCE: 0.1,
       HP_RESTORED_ON_SUCCESS: 1,
     },
   },
@@ -158,8 +160,9 @@ export const GAME_CONFIG = {
   },
 
   DUNGEON: {
-    DEFAULT_WIDTH: 20,
-    DEFAULT_HEIGHT: 20,
+    DEFAULT_SEED: 'cannibal-king',
+    DEFAULT_WIDTH: 30,
+    DEFAULT_HEIGHT: 30,
     MIN_ROOMS: 5,
     MAX_EXTRA_ROOMS: 5,
     MIN_ROOM_SIZE: 3,
@@ -169,7 +172,7 @@ export const GAME_CONFIG = {
     MIN_SPECIAL_TILES: 3,
     MAX_EXTRA_SPECIAL_TILES: 3,
     ENABLE_TREASURE_CHESTS: false, // Generate treasure chests in dungeon
-    ENABLE_DOORS: false, // Generate doors in dungeon
+    ENABLE_DOORS: true,
     CHEST_CHANCE: 0.3,
     TRAP_CHANCE: 0.5,
     DOOR_CHANCE: 0.7,
@@ -177,8 +180,62 @@ export const GAME_CONFIG = {
     MAX_EXTRA_ENCOUNTER_ZONES: 3,
     MIN_ZONE_SIZE: 3,
     MAX_ZONE_EXTRA_SIZE: 5,
-    // Fog of War / Discovery settings
-    VIEW_DISTANCE: 1, // How many tiles in each direction the player can see/discover (3 = 7x7 area)
+    VIEW_DISTANCE: 3,
+    TURN_ANIMATION_FRAMES: 4,
+    TURN_FRAME_DURATION_MS: 50,
+    MOVE_ANIMATION_FRAMES: 4,
+    MOVE_FRAME_DURATION_MS: 50,
+    ROOM_GENERATION: {
+      LARGE: { min: 1, max: 2 },
+      MEDIUM: { min: 2, max: 3 },
+      SMALL: { min: 3, max: 5 },
+      MIN_SPACING: 0,
+    },
+    DOOR_SYSTEM: {
+      LOCKED_PERCENTAGE: { min: 0.10, max: 0.20 },
+      ONEWAY_PERCENTAGE: { min: 0.10, max: 0.20 },
+      KEYS_PER_FLOOR_EARLY: 1,
+      KEYS_PER_FLOOR_MID: 2,
+      KEYS_PER_FLOOR_DEEP: { min: 2, max: 3 },
+    },
+    ROOMS_AND_MAZES: {
+      ROOM_ATTEMPTS: 50,
+      WINDING_PERCENT: 60,
+      EXTRA_CONNECTOR_CHANCE: 4,
+      REMOVE_DEAD_ENDS: false,
+    },
+  },
+
+  DUNGEON_VISUAL: {
+    FOV_DEGREES: 70,
+    RAY_ORIGIN_OFFSET: 0.5,
+    VIEW_WIDTH: 500,
+    VIEW_HEIGHT: 400,
+    VIEW_X: 260,
+    VIEW_Y: 80,
+    INNER_VIEW_WIDTH: 460,
+    INNER_VIEW_HEIGHT: 310,
+    COLOR_SCHEME: 'warm' as 'warm' | 'stone' | 'dark',
+    SCHEMES: {
+      warm: {
+        wall: '#C87533',
+        mortar: '#8B5A2B',
+        floor: '#A0522D',
+        ceiling: '#654321',
+      },
+      stone: {
+        wall: '#708090',
+        mortar: '#4A5568',
+        floor: '#556B2F',
+        ceiling: '#2F4F4F',
+      },
+      dark: {
+        wall: '#3A3A3A',
+        mortar: '#1A1A1A',
+        floor: '#2A2A2A',
+        ceiling: '#0A0A0A',
+      },
+    },
   },
 
   EVENTS: {

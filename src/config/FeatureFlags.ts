@@ -14,6 +14,7 @@ export interface FeatureFlag {
 // Feature flag keys
 export enum FeatureFlagKey {
   PERFORMANCE_MONITORING = 'performance_monitoring',
+  RAYCAST_RENDERER = 'raycast_renderer',
 }
 
 // Feature flags configuration
@@ -43,8 +44,15 @@ class FeatureFlagsManager {
     this.registerFlag({
       name: FeatureFlagKey.PERFORMANCE_MONITORING,
       description: 'Enable performance monitoring',
-      enabled: true, // Already implemented and active
+      enabled: true,
       experimental: false,
+    });
+
+    this.registerFlag({
+      name: FeatureFlagKey.RAYCAST_RENDERER,
+      description: 'Use raycasting (Wolfenstein-style) for dungeon rendering',
+      enabled: true,
+      experimental: true,
     });
 
     DebugLogger.info('FeatureFlags', `Initialized ${this.flags.size} feature flags`);

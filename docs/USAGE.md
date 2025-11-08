@@ -115,7 +115,7 @@ export class MyService implements IMyService {
 
 // 3. Register in ServiceIdentifiers
 export const ServiceIdentifiers = {
-  MY_SERVICE: createServiceIdentifier<IMyService>('MyService'),
+  MyService: createServiceIdentifier('MyService', MyService),
 };
 
 // 4. Register in GameServices
@@ -171,20 +171,25 @@ public render(ctx: CanvasRenderingContext2D): void {
 ```typescript
 public renderLayered(renderContext: SceneRenderContext): void {
   const { renderManager } = renderContext;
-  
+
   // Background layer
-  renderManager.renderToLayer('background', (ctx) => {
-    this.renderBackground(ctx);
+  renderManager.renderBackground((ctx) => {
+    this.drawBackground(ctx);
   });
-  
-  // Entity layer  
-  renderManager.renderToLayer('entities', (ctx) => {
-    this.renderEntities(ctx);
+
+  // Dungeon layer
+  renderManager.renderDungeon((ctx) => {
+    this.drawDungeonWalls(ctx);
   });
-  
+
+  // Entity layer
+  renderManager.renderEntities((ctx) => {
+    this.drawCharacters(ctx);
+  });
+
   // UI layer
-  renderManager.renderToLayer('ui', (ctx) => {
-    this.renderUI(ctx);
+  renderManager.renderUI((ctx) => {
+    this.drawInterface(ctx);
   });
 }
 ```

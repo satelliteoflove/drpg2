@@ -98,9 +98,6 @@ export class TempleServiceHandler {
       case 'resurrect_ashes':
         result = this.resurrectFromAshes(character, cost);
         break;
-      case 'dispel_curse':
-        result = this.dispelCurse(character, cost);
-        break;
       default:
         result = {
           success: false,
@@ -168,14 +165,12 @@ export class TempleServiceHandler {
       };
     }
 
-    const vitalityBonus = Math.floor(
-      character.stats.vitality / GAME_CONFIG.DEATH_SYSTEM.VITALITY_BONUS_DIVISOR
-    );
-    const levelBonus = character.level * GAME_CONFIG.DEATH_SYSTEM.LEVEL_BONUS_MULTIPLIER;
-    const baseChance = GAME_CONFIG.DEATH_SYSTEM.BASE_SURVIVAL_CHANCE;
+    const vitalityBonus = character.stats.vitality * GAME_CONFIG.TEMPLE.RESURRECTION.DEAD_VITALITY_MULTIPLIER;
+    const levelBonus = character.level * GAME_CONFIG.TEMPLE.RESURRECTION.DEAD_LEVEL_BONUS;
+    const baseChance = GAME_CONFIG.TEMPLE.RESURRECTION.DEAD_BASE_CHANCE;
     const successChance = Math.min(
       GAME_CONFIG.TEMPLE.RESURRECTION.MAX_SUCCESS_CHANCE,
-      baseChance + vitalityBonus * GAME_CONFIG.TEMPLE.RESURRECTION.VITALITY_BONUS_MULTIPLIER_DEAD + levelBonus
+      baseChance + vitalityBonus + levelBonus
     );
 
     const roll = DiceRoller.rollPercentile();
@@ -260,13 +255,11 @@ export class TempleServiceHandler {
       };
     }
 
-    const vitalityBonus = Math.floor(
-      character.stats.vitality / GAME_CONFIG.DEATH_SYSTEM.VITALITY_BONUS_DIVISOR
-    );
-    const baseChance = GAME_CONFIG.DEATH_SYSTEM.BASE_SURVIVAL_CHANCE * GAME_CONFIG.TEMPLE.RESURRECTION.ASHES_BASE_CHANCE_MULTIPLIER;
+    const vitalityBonus = character.stats.vitality * GAME_CONFIG.TEMPLE.RESURRECTION.ASHES_VITALITY_MULTIPLIER;
+    const baseChance = GAME_CONFIG.TEMPLE.RESURRECTION.ASHES_BASE_CHANCE;
     const successChance = Math.max(
-      GAME_CONFIG.DEATH_SYSTEM.MIN_SURVIVAL_CHANCE,
-      baseChance + vitalityBonus * GAME_CONFIG.TEMPLE.RESURRECTION.VITALITY_BONUS_MULTIPLIER_ASHES
+      GAME_CONFIG.TEMPLE.RESURRECTION.MIN_SUCCESS_CHANCE,
+      baseChance + vitalityBonus
     );
 
     const roll = DiceRoller.rollPercentile();
@@ -330,41 +323,5 @@ export class TempleServiceHandler {
         resurrectionResult
       };
     }
-  }
-
-  private dispelCurse(character: Character, cost: number): ServiceExecutionResult {
-    if (!character.equipment) {
-      return {
-        success: false,
-        message: `${character.name} has no equipment.`,
-        goldSpent: cost
-      };
-    }
-
-    let cursedItemsFound = 0;
-    let cursedItemsRemoved = 0;
-
-    for (const slot in character.equipment) {
-      const item = character.equipment[slot as keyof typeof character.equipment];
-      if (item && item.cursed) {
-        cursedItemsFound++;
-        item.cursed = false;
-        cursedItemsRemoved++;
-      }
-    }
-
-    if (cursedItemsFound === 0) {
-      return {
-        success: false,
-        message: `${character.name} has no cursed items equipped.`,
-        goldSpent: cost
-      };
-    }
-
-    return {
-      success: true,
-      message: `Removed curses from ${cursedItemsRemoved} item${cursedItemsRemoved !== 1 ? 's' : ''} on ${character.name}!`,
-      goldSpent: cost
-    };
   }
 }

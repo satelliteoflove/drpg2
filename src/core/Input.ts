@@ -1,5 +1,4 @@
 import { GAME_CONFIG } from '../config/GameConstants';
-import { DebugLogger } from '../utils/DebugLogger';
 
 export class InputManager {
   private keys: Set<string> = new Set();
@@ -19,17 +18,15 @@ export class InputManager {
     this.keyDownHandler = (event) => {
       let key = event.key.toLowerCase();
 
-      // Debug logging for ctrl combinations
-      if (event.ctrlKey && GAME_CONFIG.DEBUG_MODE) {
-        DebugLogger.debug('InputManager', `Original key: ${event.key}, After lowercase: ${key}`);
-      }
-
       // Handle modifier keys
+      // For Shift, we need to check if it was intentionally held (for special keys like F1-F12, arrows, etc)
+      // Single letters being capitalized is just Shift's normal behavior
+      const isSpecialKey = key.length > 1 || event.key === event.key.toUpperCase();
+
       if (event.ctrlKey && key !== 'control') {
         key = 'ctrl+' + key;
-        if (GAME_CONFIG.DEBUG_MODE) {
-          DebugLogger.debug('InputManager', `Final key string: ${key}`);
-        }
+      } else if (event.shiftKey && key !== 'shift' && isSpecialKey) {
+        key = 'shift+' + key;
       }
 
       this.keys.add(key);
@@ -62,9 +59,13 @@ export class InputManager {
     this.keyUpHandler = (event) => {
       let key = event.key.toLowerCase();
 
+      const isSpecialKey = key.length > 1 || event.key === event.key.toUpperCase();
+
       // Handle modifier keys
       if (event.ctrlKey && key !== 'control') {
         key = 'ctrl+' + key;
+      } else if (event.shiftKey && key !== 'shift' && isSpecialKey) {
+        key = 'shift+' + key;
       }
 
       this.keys.delete(key);

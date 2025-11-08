@@ -29,6 +29,7 @@ import { DebugLogger } from '../utils/DebugLogger';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
 import { StarterCharacterFactory } from '../utils/StarterCharacterFactory';
 import { STARTER_CHARACTER_TEMPLATES } from '../config/StarterCharacters';
+import { DungeonGenerator } from '../utils/DungeonGenerator';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -144,8 +145,13 @@ export class Game {
   }
 
   private generateNewDungeon(): void {
-    const generator = this.services.getDungeonGenerator();
+    const generator = new DungeonGenerator(
+      GAME_CONFIG.DUNGEON.DEFAULT_WIDTH,
+      GAME_CONFIG.DUNGEON.DEFAULT_HEIGHT,
+      this.gameState.dungeonSeed
+    );
     this.gameState.dungeon = [];
+    this.gameState.dungeonSeed = generator.getSeed();
 
     for (let i = 1; i <= 10; i++) {
       this.gameState.dungeon.push(generator.generateLevel(i));
@@ -329,6 +335,7 @@ export class Game {
     this.performanceMonitor.markUpdateStart();
 
     this.gameState.gameTime += deltaTime;
+    this.gameState.playtimeSeconds = Math.floor((Date.now() - this.playtimeStart) / 1000);
     this.frameCount++;
     this.sceneManager.update(deltaTime);
 
@@ -474,6 +481,7 @@ export class Game {
     this.gameState.currentFloor = 1;
     this.gameState.inCombat = false;
     this.gameState.gameTime = 0;
+    this.gameState.playtimeSeconds = 0;
     this.gameState.turnCount = 0;
     this.gameState.combatEnabled = true;
     this.gameState.currentEncounter = undefined;

@@ -13,6 +13,7 @@ import { SpellMenu } from '../ui/SpellMenu';
 import { SpellTargetSelector } from '../ui/SpellTargetSelector';
 import { SpellRegistry } from '../systems/magic/SpellRegistry';
 import { SpellId } from '../types/SpellTypes';
+import { SaveManager } from '../utils/SaveManager';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
@@ -740,6 +741,9 @@ export class CombatScene extends Scene {
       } else {
         this.messageLog.addDeathMessage('Defeated...');
       }
+
+      SaveManager.saveGame(this.gameState, this.gameState.playtimeSeconds || 0);
+      DebugLogger.debug('CombatScene', 'Game saved after combat');
 
       this.sceneManager.switchTo('dungeon');
     } catch (error) {

@@ -8,6 +8,7 @@ import { DungeonGenerator } from '../utils/DungeonGenerator';
 import { ErrorHandler } from '../utils/ErrorHandler';
 import { SpellCaster } from '../systems/magic/SpellCaster';
 import { SpellRegistry } from '../systems/magic/SpellRegistry';
+import { GAME_CONFIG } from '../config/GameConstants';
 import { SpellValidation } from '../systems/magic/SpellValidation';
 import { CombatSystem } from '../systems/CombatSystem';
 import { StatusEffectSystem } from '../systems/StatusEffectSystem';
@@ -63,7 +64,10 @@ export class GameServices {
     // Register DungeonGenerator (non-singleton as it's stateless)
     this.container.register(
       ServiceIdentifiers.DungeonGenerator,
-      () => new DungeonGenerator(20, 20),
+      () => new DungeonGenerator(
+        GAME_CONFIG.DUNGEON.DEFAULT_WIDTH,
+        GAME_CONFIG.DUNGEON.DEFAULT_HEIGHT
+      ),
       { singleton: false }
     );
 

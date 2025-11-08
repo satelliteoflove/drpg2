@@ -267,3 +267,15 @@ ${'='.repeat(80)}`
     this.info('DebugLogger', 'ASCII logs exported');
   }
 }
+
+if (typeof window !== 'undefined') {
+  (window as any).DebugLogger = {
+    getRecent: (count = 50) => DebugLogger.getRecentLogs(count),
+    getLogs: () => DebugLogger.getLogsAsString(),
+    clear: () => DebugLogger.clearLogs(),
+    export: () => DebugLogger.exportLogs(),
+    setLevel: (level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR') => DebugLogger.setLogLevel(level),
+    enable: () => DebugLogger.setEnabled(true),
+    disable: () => DebugLogger.setEnabled(false),
+  };
+}

@@ -151,11 +151,7 @@ export class MainMenuScene extends Scene {
     switch (selectedText) {
       case 'New Game':
         SaveManager.deleteSave();
-        if ((window as any).game?.instance?.resetGame) {
-          (window as any).game.instance.resetGame();
-        } else {
-          this.sceneManager.switchTo('town');
-        }
+        this.sceneManager.switchTo('new_game');
         break;
 
       case 'Continue Game':

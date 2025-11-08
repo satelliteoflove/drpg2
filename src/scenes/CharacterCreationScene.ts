@@ -3,6 +3,7 @@ import { CharacterAlignment, CharacterClass, CharacterRace, GameState } from '..
 import { Character } from '../entities/Character';
 import { DungeonGenerator } from '../utils/DungeonGenerator';
 import { MenuInputHandler } from '../ui/components/MenuInputHandler';
+import { GAME_CONFIG } from '../config/GameConstants';
 
 export class CharacterCreationScene extends Scene {
   private gameState: GameState;
@@ -618,8 +619,13 @@ export class CharacterCreationScene extends Scene {
   }
 
   private generateNewDungeon(): void {
-    const generator = new DungeonGenerator(20, 20);
+    const generator = new DungeonGenerator(
+      GAME_CONFIG.DUNGEON.DEFAULT_WIDTH,
+      GAME_CONFIG.DUNGEON.DEFAULT_HEIGHT,
+      this.gameState.dungeonSeed
+    );
     this.gameState.dungeon = [];
+    this.gameState.dungeonSeed = generator.getSeed();
 
     for (let i = 1; i <= 10; i++) {
       this.gameState.dungeon.push(generator.generateLevel(i));
