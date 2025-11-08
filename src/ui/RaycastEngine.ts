@@ -9,6 +9,7 @@ export interface RayHit {
   textureX: number;
   wallType?: 'solid' | 'door' | 'secret' | 'illusory';
   doorOpen?: boolean;
+  oneWay?: Direction;
 }
 
 export class RaycastEngine {
@@ -115,6 +116,7 @@ export class RaycastEngine {
 
     let wallType: 'solid' | 'door' | 'secret' | 'illusory' = 'solid';
     let doorOpen = false;
+    let oneWay: Direction | undefined = undefined;
 
     if (mapX >= 0 && mapX < this.dungeon.width && mapY >= 0 && mapY < this.dungeon.height) {
       const hitTile = this.dungeon.tiles[mapY][mapX];
@@ -132,6 +134,7 @@ export class RaycastEngine {
         if (wall) {
           wallType = wall.type;
           doorOpen = wall.properties?.open || false;
+          oneWay = wall.properties?.oneWay;
         }
       }
     }
@@ -145,6 +148,7 @@ export class RaycastEngine {
       textureX: textureX,
       wallType: wallType,
       doorOpen: doorOpen,
+      oneWay: oneWay,
     };
   }
 

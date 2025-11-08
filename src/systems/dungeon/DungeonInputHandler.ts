@@ -4,6 +4,7 @@ import { DebugLogger } from '../../utils/DebugLogger';
 import { DungeonMovementHandler, MovementResult } from './DungeonMovementHandler';
 import { DungeonItemPickupUI } from './DungeonItemPickupUI';
 import { SceneManager } from '../../core/Scene';
+import { SaveManager } from '../../utils/SaveManager';
 
 export interface DungeonInputContext {
   isAwaitingCastleStairsResponse?: boolean;
@@ -182,6 +183,7 @@ export class DungeonInputHandler {
           this.messageLog?.addSystemMessage('You are at the castle entrance. Do you want to return to town? (Y/N)');
           this.context.isAwaitingCastleStairsResponse = true;
         } else if (this.gameState.currentFloor > 1) {
+          SaveManager.saveGame(this.gameState, this.gameState.playtimeSeconds || 0);
           this.movementHandler.handleStairsUp();
         } else {
           this.messageLog?.addSystemMessage("You're already on the top floor!");
@@ -190,6 +192,20 @@ export class DungeonInputHandler {
 
       case 'stairs_down':
         if (this.gameState.currentFloor < this.gameState.dungeon.length) {
+          if (currentTile.special.properties?.locked && currentTile.special.properties?.requiredKeyIds) {
+            const requiredKeys = currentTile.special.properties.requiredKeyIds;
+            if (!this.hasRequiredKeys(requiredKeys)) {
+              const keyNames = requiredKeys.map(id => this.getKeyDisplayName(id)).join(', ');
+              this.messageLog?.addSystemMessage(`The stairs are locked. You need: ${keyNames}`);
+              return;
+            }
+
+            this.consumeKeysFromParty(requiredKeys);
+            currentTile.special.properties.locked = false;
+            this.messageLog?.addSystemMessage('You unlock the stairs and descend...');
+          }
+
+          SaveManager.saveGame(this.gameState, this.gameState.playtimeSeconds || 0);
           this.movementHandler.handleStairsDown();
         } else {
           this.messageLog?.addSystemMessage("You're already on the bottom floor!");
@@ -335,6 +351,7 @@ export class DungeonInputHandler {
     const normalizedKey = key.toLowerCase();
     if (normalizedKey === 'y') {
       this.context.isAwaitingCastleStairsResponse = false;
+      SaveManager.saveGame(this.gameState, this.gameState.playtimeSeconds || 0);
       // Reset the movement handler's last position so the prompt can be triggered again
       this.movementHandler.resetLastTileEventPosition();
       this.sceneManager.switchTo('town');
@@ -347,6 +364,50 @@ export class DungeonInputHandler {
       return true;
     }
     return false;
+  }
+
+  private hasRequiredKeys(requiredKeyIds: string[]): boolean {
+    for (const keyId of requiredKeyIds) {
+      if (!this.findKeyInParty(keyId)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private findKeyInParty(keyId: string): boolean {
+    const party = this.gameState.party;
+    for (const character of party.characters) {
+      const hasKey = character.inventory.some((item: any) => item.id === keyId);
+      if (hasKey) return true;
+    }
+    return false;
+  }
+
+  private consumeKeysFromParty(requiredKeyIds: string[]): void {
+    const party = this.gameState.party;
+    for (const keyId of requiredKeyIds) {
+      let consumed = false;
+      for (const character of party.characters) {
+        if (consumed) break;
+        const keyIndex = character.inventory.findIndex((item: any) => item.id === keyId);
+        if (keyIndex !== -1) {
+          character.inventory.splice(keyIndex, 1);
+          consumed = true;
+        }
+      }
+    }
+  }
+
+  private getKeyDisplayName(keyId: string): string {
+    const parts = keyId.split('_');
+    if (parts.length >= 2) {
+      const type = parts[0];
+      if (type === 'bronze') return 'Bronze Key';
+      if (type === 'silver') return 'Silver Key';
+      if (type === 'gold') return 'Gold Key';
+    }
+    return 'Key';
   }
 
 }

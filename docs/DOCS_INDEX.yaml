@@ -420,6 +420,10 @@ dungeon_design_2025:
     topics: [implementation, tunable constants, configuration, MVP roadmap, debug tools, codebase integration, balance tuning, game balance]
     summary: "PRIMARY: Implementation guide with complete tunable constants system and phased development priorities (BUILD)"
 
+  - file: dungeon-implementation-gap-analysis.md
+    topics: [gap analysis, implementation status, missing features, current vs design, action plan, MVP checklist, priority roadmap]
+    summary: "CRITICAL: Comprehensive gap analysis comparing current code implementation against design documentation with prioritized action plan"
+
 first_person_rendering:
   file: first-person-dungeon-rendering.yaml
   topics: [first-person view, dungeon rendering, depth layers, segment rendering, perspective transform, classic dungeon crawler, wizardry style, eye of the beholder, blobber, tiles, cells, layers, brick patterns, gradient shading, GIMP tutorial]
@@ -465,5 +469,8 @@ search_hints:
   procedural_generation: [dungeon-generation-technical.md]
   tunable_constants: [dungeon-implementation-guide.md]
   character_narrative: [dungeon-game-design.md]
-  mvp_roadmap: [dungeon-implementation-guide.md]
+  mvp_roadmap: [dungeon-implementation-guide.md, dungeon-implementation-gap-analysis.md]
   game_balance: [dungeon-implementation-guide.md]
+  gap_analysis: [dungeon-implementation-gap-analysis.md]
+  implementation_status: [dungeon-implementation-gap-analysis.md]
+  missing_features: [dungeon-implementation-gap-analysis.md]

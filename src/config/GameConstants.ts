@@ -161,8 +161,8 @@ export const GAME_CONFIG = {
 
   DUNGEON: {
     DEFAULT_SEED: 'cannibal-king',
-    DEFAULT_WIDTH: 20,
-    DEFAULT_HEIGHT: 20,
+    DEFAULT_WIDTH: 30,
+    DEFAULT_HEIGHT: 30,
     MIN_ROOMS: 5,
     MAX_EXTRA_ROOMS: 5,
     MIN_ROOM_SIZE: 3,
@@ -185,6 +185,25 @@ export const GAME_CONFIG = {
     TURN_FRAME_DURATION_MS: 50,
     MOVE_ANIMATION_FRAMES: 4,
     MOVE_FRAME_DURATION_MS: 50,
+    ROOM_GENERATION: {
+      LARGE: { min: 1, max: 2 },
+      MEDIUM: { min: 2, max: 3 },
+      SMALL: { min: 3, max: 5 },
+      MIN_SPACING: 0,
+    },
+    DOOR_SYSTEM: {
+      LOCKED_PERCENTAGE: { min: 0.10, max: 0.20 },
+      ONEWAY_PERCENTAGE: { min: 0.10, max: 0.20 },
+      KEYS_PER_FLOOR_EARLY: 1,
+      KEYS_PER_FLOOR_MID: 2,
+      KEYS_PER_FLOOR_DEEP: { min: 2, max: 3 },
+    },
+    ROOMS_AND_MAZES: {
+      ROOM_ATTEMPTS: 50,
+      WINDING_PERCENT: 60,
+      EXTRA_CONNECTOR_CHANCE: 4,
+      REMOVE_DEAD_ENDS: false,
+    },
   },
 
   DUNGEON_VISUAL: {

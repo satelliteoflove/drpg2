@@ -5,6 +5,8 @@
 
 **Last Updated:** 2025-11-03
 
+**IMPORTANT:** See `dungeon-implementation-gap-analysis.md` for comprehensive analysis of what's currently implemented vs what's documented here, with prioritized action plan.
+
 ---
 
 ## PART 1: TUNABLE CONSTANTS SYSTEM
@@ -81,7 +83,7 @@ export const FEATURE_CONSTANTS = {
   // Keys
   KEY_COUNT_FLOOR_1_3: 1,
   KEY_COUNT_FLOOR_4_6: 2,
-  KEY_COUNT_FLOOR_7_PLUS: 3,
+  KEY_COUNT_FLOOR_7_PLUS: { min: 2, max: 3 },
   KEY_MIN_DISTANCE_APART: 8,              // Tiles between keys
   KEY_MIN_DISTANCE_FROM_STAIRS: 10,       // Tiles from exit
 

@@ -145,7 +145,11 @@ export class Game {
   }
 
   private generateNewDungeon(): void {
-    const generator = new DungeonGenerator(20, 20, this.gameState.dungeonSeed);
+    const generator = new DungeonGenerator(
+      GAME_CONFIG.DUNGEON.DEFAULT_WIDTH,
+      GAME_CONFIG.DUNGEON.DEFAULT_HEIGHT,
+      this.gameState.dungeonSeed
+    );
     this.gameState.dungeon = [];
     this.gameState.dungeonSeed = generator.getSeed();
 
@@ -331,6 +335,7 @@ export class Game {
     this.performanceMonitor.markUpdateStart();
 
     this.gameState.gameTime += deltaTime;
+    this.gameState.playtimeSeconds = Math.floor((Date.now() - this.playtimeStart) / 1000);
     this.frameCount++;
     this.sceneManager.update(deltaTime);
 
@@ -476,6 +481,7 @@ export class Game {
     this.gameState.currentFloor = 1;
     this.gameState.inCombat = false;
     this.gameState.gameTime = 0;
+    this.gameState.playtimeSeconds = 0;
     this.gameState.turnCount = 0;
     this.gameState.combatEnabled = true;
     this.gameState.currentEncounter = undefined;

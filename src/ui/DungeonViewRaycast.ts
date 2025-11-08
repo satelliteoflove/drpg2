@@ -251,6 +251,68 @@ export class DungeonViewRaycast {
       0, 0, 1, wallHeight,
       x, drawStart, 1, wallHeight
     );
+
+    if (hit.wallType === 'door' && hit.oneWay && !hit.doorOpen) {
+      this.renderOneWayIndicator(x, drawStart, drawEnd, hit);
+    }
+  }
+
+  private renderOneWayIndicator(
+    x: number,
+    drawStart: number,
+    drawEnd: number,
+    hit: RayHit
+  ): void {
+    const centerY = (drawStart + drawEnd) / 2;
+    const indicatorSize = Math.min(20, (drawEnd - drawStart) / 4);
+
+    this.currentRenderCtx.strokeStyle = '#FFD700';
+    this.currentRenderCtx.lineWidth = 2;
+    this.currentRenderCtx.beginPath();
+
+    const arrowDirection = this.getArrowDirection(hit.oneWay!, hit.side);
+    if (arrowDirection === 'up') {
+      this.currentRenderCtx.moveTo(x, centerY + indicatorSize / 2);
+      this.currentRenderCtx.lineTo(x, centerY - indicatorSize / 2);
+      this.currentRenderCtx.moveTo(x - 3, centerY - indicatorSize / 4);
+      this.currentRenderCtx.lineTo(x, centerY - indicatorSize / 2);
+      this.currentRenderCtx.lineTo(x + 3, centerY - indicatorSize / 4);
+    } else if (arrowDirection === 'down') {
+      this.currentRenderCtx.moveTo(x, centerY - indicatorSize / 2);
+      this.currentRenderCtx.lineTo(x, centerY + indicatorSize / 2);
+      this.currentRenderCtx.moveTo(x - 3, centerY + indicatorSize / 4);
+      this.currentRenderCtx.lineTo(x, centerY + indicatorSize / 2);
+      this.currentRenderCtx.lineTo(x + 3, centerY + indicatorSize / 4);
+    } else if (arrowDirection === 'left') {
+      this.currentRenderCtx.moveTo(x + 3, centerY);
+      this.currentRenderCtx.lineTo(x - 3, centerY);
+      this.currentRenderCtx.moveTo(x - 1, centerY - 3);
+      this.currentRenderCtx.lineTo(x - 3, centerY);
+      this.currentRenderCtx.lineTo(x - 1, centerY + 3);
+    } else if (arrowDirection === 'right') {
+      this.currentRenderCtx.moveTo(x - 3, centerY);
+      this.currentRenderCtx.lineTo(x + 3, centerY);
+      this.currentRenderCtx.moveTo(x + 1, centerY - 3);
+      this.currentRenderCtx.lineTo(x + 3, centerY);
+      this.currentRenderCtx.lineTo(x + 1, centerY + 3);
+    }
+
+    this.currentRenderCtx.stroke();
+  }
+
+  private getArrowDirection(
+    oneWay: Direction,
+    wallSide: 'north' | 'south' | 'east' | 'west'
+  ): 'up' | 'down' | 'left' | 'right' {
+    if (oneWay === wallSide) {
+      switch (wallSide) {
+        case 'north': return 'up';
+        case 'south': return 'down';
+        case 'east': return 'right';
+        case 'west': return 'left';
+      }
+    }
+    return 'right';
   }
 
   private renderSprites(playerX: number, playerY: number, playerAngle: number): void {

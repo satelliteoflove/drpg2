@@ -226,6 +226,7 @@ export interface SpecialTile {
     targetX?: number;
     targetY?: number;
     monsters?: any[];
+    requiredKeyIds?: string[];
   };
 }
 
@@ -300,6 +301,13 @@ export interface DungeonTile {
   westWall: Wall;
   special?: SpecialTile;
   encounterZoneId?: string;
+  region?: number;
+}
+
+export interface Connector {
+  x: number;
+  y: number;
+  regions: Set<number>;
 }
 
 export interface DungeonLevel {
@@ -394,6 +402,7 @@ export interface GameState {
   };
   characterRoster: ICharacter[];
   dungeonSeed?: string;
+  playtimeSeconds?: number;
 }
 
 export interface Encounter {

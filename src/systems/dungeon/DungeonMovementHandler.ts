@@ -6,11 +6,12 @@ import { GAME_CONFIG } from '../../config/GameConstants';
 import { StatusEffectSystem } from '../StatusEffectSystem';
 import { ModifierSystem } from '../ModifierSystem';
 import { TurnAnimationController, CardinalDirection } from './TurnAnimationController';
+import { LineOfSightCalculator } from '../../utils/LineOfSightCalculator';
 
 export interface MovementResult {
   moved: boolean;
   blocked: boolean;
-  triggered: 'combat' | 'trap' | 'event' | 'stairs' | 'chest' | 'door' | null;
+  triggered: 'combat' | 'trap' | 'event' | 'stairs' | 'chest' | 'treasure' | 'door' | null;
   message?: string;
 }
 
@@ -72,6 +73,12 @@ export class DungeonMovementHandler {
     const newY = party.y + delta.dy;
 
     const currentTile = currentFloor.tiles[party.y][party.x];
+
+    const oneWayBlocked = this.isBlockedByOneWayDoor(currentTile, absoluteDirection);
+    if (oneWayBlocked) {
+      this.messageLog?.addSystemMessage('The door only opens from the other side.');
+      return { moved: false, blocked: true, triggered: null };
+    }
 
     if (!this.canMoveTo(null, currentTile, absoluteDirection)) {
       this.messageLog?.addSystemMessage('The way is blocked.');
@@ -166,21 +173,39 @@ export class DungeonMovementHandler {
     });
   }
 
+  private isBlockedByOneWayDoor(currentTile: DungeonTile, direction: Direction): boolean {
+    switch (direction) {
+      case 'north':
+        return !!(currentTile.northWall.properties?.oneWay && currentTile.northWall.properties.oneWay === 'south');
+      case 'south':
+        return !!(currentTile.southWall.properties?.oneWay && currentTile.southWall.properties.oneWay === 'north');
+      case 'east':
+        return !!(currentTile.eastWall.properties?.oneWay && currentTile.eastWall.properties.oneWay === 'west');
+      case 'west':
+        return !!(currentTile.westWall.properties?.oneWay && currentTile.westWall.properties.oneWay === 'east');
+    }
+    return false;
+  }
+
   private canMoveTo(targetTile: DungeonTile | null, currentTile: DungeonTile | null, direction: Direction): boolean {
     if (!currentTile) return targetTile !== null && targetTile.type !== 'solid';
 
     switch (direction) {
       case 'north':
         if (currentTile.northWall.exists && !currentTile.northWall.properties?.open) return false;
+        if (currentTile.northWall.properties?.oneWay && currentTile.northWall.properties.oneWay === 'south') return false;
         break;
       case 'south':
         if (currentTile.southWall.exists && !currentTile.southWall.properties?.open) return false;
+        if (currentTile.southWall.properties?.oneWay && currentTile.southWall.properties.oneWay === 'north') return false;
         break;
       case 'east':
         if (currentTile.eastWall.exists && !currentTile.eastWall.properties?.open) return false;
+        if (currentTile.eastWall.properties?.oneWay && currentTile.eastWall.properties.oneWay === 'west') return false;
         break;
       case 'west':
         if (currentTile.westWall.exists && !currentTile.westWall.properties?.open) return false;
+        if (currentTile.westWall.properties?.oneWay && currentTile.westWall.properties.oneWay === 'east') return false;
         break;
     }
 
@@ -241,6 +266,13 @@ export class DungeonMovementHandler {
         } else {
           this.handleChest(tile);
           return 'chest';
+        }
+        break;
+
+      case 'treasure':
+        if (!tile.special.properties?.opened) {
+          this.handleTreasure(tile);
+          return 'treasure';
         }
         break;
 
@@ -406,6 +438,30 @@ export class DungeonMovementHandler {
     }
 
     tile.special.properties.opened = true;
+  }
+
+  private handleTreasure(tile: DungeonTile): void {
+    if (!tile.special?.properties) return;
+
+    const items = tile.special.properties.items || [];
+    const gold = tile.special.properties.gold || 0;
+
+    if (gold > 0) {
+      this.gameState.party.pooledGold += gold;
+      this.messageLog?.addSystemMessage(`Found ${gold} gold!`);
+    }
+
+    if (items.length > 0) {
+      if (!this.gameState.pendingLoot) {
+        this.gameState.pendingLoot = [];
+      }
+      this.gameState.pendingLoot.push(...items);
+      const itemName = items[0].name;
+      this.messageLog?.addSystemMessage(`Found ${itemName}!`);
+    }
+
+    tile.special.properties.opened = true;
+    tile.hasItem = false;
   }
 
   private handleTrap(tile: DungeonTile): void {
@@ -606,6 +662,11 @@ export class DungeonMovementHandler {
     const party = this.gameState.party;
     const viewDistance = GAME_CONFIG.DUNGEON.VIEW_DISTANCE;
 
+    const playerX = party.x + 0.5;
+    const playerY = party.y + 0.5;
+
+    const losCalculator = new LineOfSightCalculator(currentFloor);
+
     for (let dy = -viewDistance; dy <= viewDistance; dy++) {
       for (let dx = -viewDistance; dx <= viewDistance; dx++) {
         const tileX = party.x + dx;
@@ -614,7 +675,7 @@ export class DungeonMovementHandler {
         if (tileX >= 0 && tileX < currentFloor.width &&
             tileY >= 0 && tileY < currentFloor.height) {
           const tile = currentFloor.tiles[tileY][tileX];
-          if (tile) {
+          if (tile && losCalculator.hasLineOfSight(playerX, playerY, tileX, tileY)) {
             tile.discovered = true;
           }
         }
