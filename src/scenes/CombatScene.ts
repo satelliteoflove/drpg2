@@ -65,6 +65,9 @@ export class CombatScene extends Scene {
     this.pendingSpellId = null;
     this.spellMenu.close();
 
+    // Process any initial monster turns
+    this.combatSystem.processTurnsUntilPlayer();
+
     DebugLogger.debug('CombatScene', 'Combat scene entered - UI state reset');
   }
 
@@ -72,7 +75,7 @@ export class CombatScene extends Scene {
     this.gameState.inCombat = false;
   }
 
-  private initializeCombat(): void {
+  private initializeCombat(): void{
     const monsters = this.generateMonsters();
     const aliveCharacters = this.gameState.party.getAliveCharacters();
 
@@ -313,12 +316,10 @@ export class CombatScene extends Scene {
     this.statusPanel.render(this.gameState.party, ctx);
     this.messageLog.render(ctx);
 
-    if (this.combatSystem.canPlayerAct()) {
-      this.renderActionMenu(ctx);
-    }
+    this.renderActionMenu(ctx, this.combatSystem.canPlayerAct());
   }
 
-  private renderActionMenu(ctx: CanvasRenderingContext2D): void {
+  private renderActionMenu(ctx: CanvasRenderingContext2D, enabled: boolean): void {
     // Render turn order in top-right
     this.renderTurnOrder(ctx);
 
@@ -340,7 +341,8 @@ export class CombatScene extends Scene {
     ctx.lineWidth = 2;
     ctx.strokeRect(menuX, menuY, menuWidth, menuHeight);
 
-    ctx.fillStyle = '#fff';
+    const titleColor = enabled ? '#fff' : '#666';
+    ctx.fillStyle = titleColor;
     ctx.font = 'bold 14px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('COMBAT OPTIONS', menuX + menuWidth / 2, menuY + 20);
@@ -353,14 +355,18 @@ export class CombatScene extends Scene {
     if (this.actionState === 'select_action') {
       const actions = this.combatSystem.getPlayerOptions();
 
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = enabled ? '#fff' : '#666';
       ctx.font = '12px monospace';
       ctx.fillText('Select Action:', menuX + 10, actionsStartY);
 
       actions.forEach((action, index) => {
         const y = actionsStartY + 20 + index * 18;
 
-        ctx.fillStyle = index === this.selectedAction ? '#ffff00' : '#fff';
+        if (enabled) {
+          ctx.fillStyle = index === this.selectedAction ? '#ffff00' : '#fff';
+        } else {
+          ctx.fillStyle = '#555';
+        }
         ctx.fillText(`${index + 1}. ${action}`, menuX + 20, y);
       });
     } else if (this.actionState === 'select_target') {
@@ -472,6 +478,11 @@ export class CombatScene extends Scene {
     // Debug instant kill - Ctrl+K kills all enemies
     if (key === 'ctrl+k') {
       this.executeInstantKill();
+      return true;
+    }
+
+    // Block input when it's not the player's turn
+    if (!this.combatSystem.canPlayerAct()) {
       return true;
     }
 

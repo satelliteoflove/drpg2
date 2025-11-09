@@ -642,6 +642,24 @@ export class CombatSystem {
     this.checkCombatEnd();
   }
 
+  public processTurnsUntilPlayer(): void {
+    if (!this.encounter) return;
+
+    while (!this.canPlayerAct() && this.encounter) {
+      const currentUnit = this.getCurrentUnit();
+      if (!currentUnit || EntityUtils.isCharacter(currentUnit)) break;
+
+      const result = this.executeMonsterTurn();
+      if (result && this.onMessage) {
+        this.onMessage(result);
+      }
+
+      this.nextTurn();
+
+      if (this.checkCombatEnd()) break;
+    }
+  }
+
   private updateCombatDebugData(): void {
     const currentUnit = this.getCurrentUnit();
     const currentTurnName = currentUnit
