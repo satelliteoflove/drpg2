@@ -1,846 +1,89 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
-import { GameState, Item, Monster } from '../types/GameTypes';
-import { Character } from '../entities/Character';
+import { GameState } from '../types/GameTypes';
 import { CombatSystem } from '../systems/CombatSystem';
-import { StatusPanel } from '../ui/StatusPanel';
-import { DebugOverlay } from '../ui/DebugOverlay';
-import { DataLoader } from '../utils/DataLoader';
-import { InventorySystem } from '../systems/InventorySystem';
-import { KEY_BINDINGS } from '../config/KeyBindings';
-import { DebugLogger } from '../utils/DebugLogger';
-import { EntityUtils } from '../utils/EntityUtils';
-import { SpellMenu } from '../ui/SpellMenu';
-import { SpellTargetSelector } from '../ui/SpellTargetSelector';
-import { SpellRegistry } from '../systems/magic/SpellRegistry';
-import { SpellId } from '../types/SpellTypes';
-import { SaveManager } from '../utils/SaveManager';
-import { UI_CONSTANTS } from '../config/UIConstants';
+import { CombatStateManager } from './combat/CombatStateManager';
+import { CombatUIManager } from './combat/CombatUIManager';
+import { CombatInputController } from './combat/CombatInputController';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
   private sceneManager: SceneManager;
   private combatSystem: CombatSystem;
-  private statusPanel!: StatusPanel;
-  private debugOverlay!: DebugOverlay;
-  private messageLog: any; // Shared from gameState
-  private selectedAction: number = 0;
-  private selectedTarget: number = 0;
-  private selectedSpell: number = 0;
-  private actionState: 'select_action' | 'select_target' | 'select_spell' | 'spell_target' | 'waiting' =
-    'select_action';
-  private isProcessingAction: boolean = false; // Prevent multiple simultaneous actions
-  private lastActionTime: number = 0; // Debounce rapid input
-  private spellMenu: SpellMenu;
-  private spellTargetSelector: SpellTargetSelector;
-  private pendingSpellId: string | null = null;
+  private stateManager: CombatStateManager;
+  private uiManager: CombatUIManager;
+  private inputController: CombatInputController;
 
   constructor(gameState: GameState, sceneManager: SceneManager) {
     super('Combat');
     this.gameState = gameState;
     this.sceneManager = sceneManager;
     this.combatSystem = new CombatSystem();
-    this.spellMenu = new SpellMenu();
-    this.spellTargetSelector = new SpellTargetSelector();
 
-    // Initialize messageLog immediately to avoid runtime errors
-    this.messageLog = this.gameState.messageLog;
+    this.stateManager = new CombatStateManager(this.gameState, this.combatSystem);
+    this.uiManager = new CombatUIManager(this.gameState, this.combatSystem, this.stateManager);
+    this.inputController = new CombatInputController(
+      this.gameState,
+      this.combatSystem,
+      this.stateManager,
+      this.uiManager,
+      this.sceneManager
+    );
 
-    // Safety check - if messageLog is still undefined, create a temporary one
-    if (!this.messageLog) {
-      DebugLogger.warn('CombatScene', 'MessageLog not found in gameState, this should not happen');
-    }
+    this.stateManager.setOnCombatEnd((_victory, _rewards, _escaped) => {
+      this.sceneManager.switchTo('dungeon');
+    });
   }
 
   public enter(): void {
-    // Set debug overlay scene name
-    this.debugOverlay?.setCurrentScene('Combat');
+    this.uiManager.setDebugOverlayScene('Combat');
 
-    this.initializeCombat();
-    this.actionState = 'select_action';
-    this.selectedAction = 0;
-    this.selectedTarget = 0;
-    this.selectedSpell = 0;
-    this.isProcessingAction = false;
-    this.lastActionTime = 0;
-    this.pendingSpellId = null;
-    this.spellMenu.close();
+    this.stateManager.initializeCombat();
+    this.stateManager.resetState();
 
-    // Process any initial monster turns
-    this.combatSystem.processTurnsUntilPlayer();
+    this.uiManager.getSpellMenu().close();
 
-    DebugLogger.debug('CombatScene', 'Combat scene entered - UI state reset');
+    this.stateManager.processInitialMonsterTurns();
   }
 
   public exit(): void {
     this.gameState.inCombat = false;
   }
 
-  private initializeCombat(): void{
-    const monsters = this.generateMonsters();
-    const aliveCharacters = this.gameState.party.getAliveCharacters();
-
-    // Generate appropriate encounter message based on monsters and context
-    this.generateEncounterMessage(monsters);
-
-    this.combatSystem.startCombat(
-      monsters,
-      aliveCharacters,
-      this.gameState.currentFloor,
-      (victory: boolean, rewards, escaped) => {
-        this.endCombat(victory, rewards, escaped);
-      },
-      (message: string) => {
-        // Callback for monster turn messages
-        if (message) {
-          this.messageLog.addCombatMessage(message);
-        }
-      }
-    );
-  }
-
-  private generateMonsters(): Monster[] {
-    const dungeonLevel = this.gameState.currentFloor;
-    const partyLevel = this.getAveragePartyLevel();
-
-    return DataLoader.generateMonstersForLevel(dungeonLevel, partyLevel);
-  }
-
-  private getAveragePartyLevel(): number {
-    const aliveCharacters = this.gameState.party.getAliveCharacters();
-    if (aliveCharacters.length === 0) return 1;
-
-    const totalLevel = aliveCharacters.reduce(
-      (sum: number, character: any) => sum + character.level,
-      0
-    );
-    return Math.floor(totalLevel / aliveCharacters.length);
-  }
-
-  private generateEncounterMessage(monsters: Monster[]): void {
-    // Always generate message based on actual monsters encountered
-    const monsterCounts = new Map<string, number>();
-    monsters.forEach((monster) => {
-      const baseName = monster.name.replace(/ \d+$/, ''); // Remove number suffix
-      monsterCounts.set(baseName, (monsterCounts.get(baseName) || 0) + 1);
-    });
-
-    const monsterTypes = Array.from(monsterCounts.entries());
-
-    // Helper function to add correct article (a/an)
-    const withArticle = (word: string): string => {
-      const vowels = ['a', 'e', 'i', 'o', 'u'];
-      const article = vowels.includes(word[0].toLowerCase()) ? 'an' : 'a';
-      return `${article} ${word}`;
-    };
-
-    // Always generate message based on actual monsters
-    if (monsterTypes.length === 1) {
-      const [type, count] = monsterTypes[0];
-      if (count === 1) {
-        this.messageLog.addCombatMessage(
-          `${withArticle(type.toLowerCase()).charAt(0).toUpperCase() + withArticle(type.toLowerCase()).slice(1)} appears!`
-        );
-      } else {
-        this.messageLog.addCombatMessage(`A group of ${count} ${type.toLowerCase()}s appears!`);
-      }
-    } else {
-      const typeList = monsterTypes
-        .map(([type, count]) =>
-          count === 1 ? withArticle(type.toLowerCase()) : `${count} ${type.toLowerCase()}s`
-        )
-        .join(', ');
-      this.messageLog.addCombatMessage(`A hostile group appears: ${typeList}!`);
-    }
-
-    // Clear encounter context after use
-    this.gameState.encounterContext = undefined;
-  }
-
   public update(_deltaTime: number): void {
-    // CombatSystem now handles all turn processing automatically
-    // Just check if party is wiped after any updates
-    if (this.gameState.party.isWiped()) {
-      this.messageLog.addDeathMessage('Party defeated!');
-      this.isProcessingAction = false;
-      this.endCombat(false, undefined, false);
+    if (this.stateManager.checkPartyWiped()) {
       return;
     }
 
-    // Check if we should reset UI state when it's player's turn
-    const canPlayerAct = this.combatSystem.canPlayerAct();
-    if (canPlayerAct && this.actionState === 'waiting') {
-      this.actionState = 'select_action';
-      this.isProcessingAction = false;
-    }
+    this.stateManager.updateForPlayerTurn();
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
-    if (!this.statusPanel) {
-      this.initializeUI(ctx.canvas);
-    }
-
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-    this.renderCombatHeader(ctx);
-    this.renderCombatArea(ctx);
-    this.renderUI(ctx);
-    this.renderCombatInfo(ctx);
-
-    // Update and render debug overlay
-    this.updateDebugData();
-    this.debugOverlay.render(this.gameState);
+    this.uiManager.render(ctx);
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
-    const { renderManager } = renderContext;
-
-    if (!this.statusPanel) {
-      this.initializeUI(renderContext.mainContext.canvas);
-    }
-
-    renderManager.renderBackground((ctx) => {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      this.renderCombatHeader(ctx);
-    });
-
-    renderManager.renderEntities((ctx) => {
-      this.renderCombatArea(ctx);
-    });
-
-    renderManager.renderUI((ctx) => {
-      this.renderUI(ctx);
-      this.renderCombatInfo(ctx);
-      this.renderCombatControls(ctx);
-
-      // Update and render debug overlay
-      this.updateDebugData();
-      this.debugOverlay.render(this.gameState);
-    });
-  }
-
-  private initializeUI(canvas: HTMLCanvasElement): void {
-    this.statusPanel = new StatusPanel(
-      canvas,
-      UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
-      UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
-      UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,
-      UI_CONSTANTS.LAYOUT.STATUS_PANEL_HEIGHT
-    );
-    this.debugOverlay = new DebugOverlay(canvas);
-
-    // Only add combat message, don't create a new log
-    this.messageLog.addCombatMessage('Combat begins!');
-  }
-
-  private renderCombatArea(ctx: CanvasRenderingContext2D): void {
-    // Main combat view area - match dungeon view position exactly
-    ctx.fillStyle = '#1a0000';
-    ctx.fillRect(260, 80, 500, 400);
-
-    ctx.strokeStyle = '#600000';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(260, 80, 500, 400);
-
-    const encounter = this.combatSystem.getEncounter();
-    if (!encounter) return;
-
-    this.renderMonsters(ctx, encounter.monsters);
-  }
-
-  private renderMonsters(ctx: CanvasRenderingContext2D, monsters: Monster[]): void {
-    monsters.forEach((monster, index) => {
-      if (monster.hp <= 0) return;
-
-      // Center monsters in the combat area
-      const x = 320 + (index % 3) * 140;
-      const y = 160 + Math.floor(index / 3) * 100;
-
-      if (this.actionState === 'select_target' && index === this.selectedTarget) {
-        ctx.fillStyle = '#ffff00';
-        ctx.fillRect(x - 5, y - 5, 110, 110);
-      }
-
-      ctx.fillStyle = '#800000';
-      ctx.fillRect(x, y, 100, 100);
-
-      ctx.strokeStyle = '#ff0000';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, 100, 100);
-
-      ctx.fillStyle = '#fff';
-      ctx.font = '12px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(monster.name, x + 50, y + 20);
-
-      const hpPercent = monster.hp / monster.maxHp;
-      ctx.fillStyle = '#333';
-      ctx.fillRect(x + 10, y + 30, 80, 8);
-
-      ctx.fillStyle = hpPercent > 0.5 ? '#00ff00' : hpPercent > 0.25 ? '#ffaa00' : '#ff0000';
-      ctx.fillRect(x + 10, y + 30, 80 * hpPercent, 8);
-
-      ctx.fillStyle = '#fff';
-      ctx.font = '10px monospace';
-      ctx.fillText(`${monster.hp}/${monster.maxHp}`, x + 50, y + 50);
-
-      if (monster.statuses && monster.statuses.length > 0) {
-        ctx.fillStyle = '#ffaa00';
-        ctx.font = '9px monospace';
-        const statusText = monster.statuses.map(s => this.getStatusIcon(s.type)).join(' ');
-        ctx.fillText(statusText, x + 50, y + 62);
-      }
-    });
-  }
-
-  private getStatusIcon(statusType: string): string {
-    const icons: Record<string, string> = {
-      'Sleeping': 'SLP',
-      'Paralyzed': 'PAR',
-      'Poisoned': 'PSN',
-      'Stoned': 'STN',
-      'Silenced': 'SIL',
-      'Blinded': 'BLD',
-      'Confused': 'CNF',
-      'Afraid': 'FER',
-      'Charmed': 'CHM',
-      'Berserk': 'BRK',
-      'Blessed': 'BLS',
-      'Cursed': 'CRS'
-    };
-    return icons[statusType] || statusType.substring(0, 3).toUpperCase();
-  }
-
-  private renderUI(ctx: CanvasRenderingContext2D): void {
-    this.statusPanel.render(this.gameState.party, ctx);
-    this.messageLog.render(ctx);
-
-    this.renderActionMenu(ctx, this.combatSystem.canPlayerAct());
-  }
-
-  private renderActionMenu(ctx: CanvasRenderingContext2D, enabled: boolean): void {
-    // Render turn order in top-right
-    this.renderTurnOrder(ctx);
-
-    // Render combat options below turn order
-    const menuX = 770;
-    const menuY = 290;
-    const menuWidth = 240;
-    const menuHeight = 270;
-
-    const spellMenuX = 280;
-    const spellMenuY = 150;
-    const spellMenuWidth = 600;
-    const spellMenuHeight = 400;
-
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(menuX, menuY, menuWidth, menuHeight);
-
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(menuX, menuY, menuWidth, menuHeight);
-
-    const titleColor = enabled ? '#fff' : '#666';
-    ctx.fillStyle = titleColor;
-    ctx.font = 'bold 14px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('COMBAT OPTIONS', menuX + menuWidth / 2, menuY + 20);
-    ctx.textAlign = 'left';
-    ctx.font = '12px monospace';
-
-    // Action menu
-    const actionsStartY = menuY + 45;
-
-    if (this.actionState === 'select_action') {
-      const actions = this.combatSystem.getPlayerOptions();
-
-      ctx.fillStyle = enabled ? '#fff' : '#666';
-      ctx.font = '12px monospace';
-      ctx.fillText('Select Action:', menuX + 10, actionsStartY);
-
-      actions.forEach((action, index) => {
-        const y = actionsStartY + 20 + index * 18;
-
-        if (enabled) {
-          ctx.fillStyle = index === this.selectedAction ? '#ffff00' : '#fff';
-        } else {
-          ctx.fillStyle = '#555';
-        }
-        ctx.fillText(`${index + 1}. ${action}`, menuX + 20, y);
-      });
-    } else if (this.actionState === 'select_target') {
-      ctx.fillStyle = '#fff';
-      ctx.font = '12px monospace';
-      ctx.fillText('Select Target:', menuX + 10, actionsStartY);
-      ctx.fillText('LEFT/RIGHT: Select', menuX + 10, actionsStartY + 20);
-      ctx.fillText('ENTER: Confirm', menuX + 10, actionsStartY + 40);
-    } else if (this.actionState === 'select_spell') {
-      this.spellMenu.render(ctx, spellMenuX, spellMenuY, spellMenuWidth, spellMenuHeight);
-    } else if (this.actionState === 'spell_target') {
-      const encounter = this.combatSystem.getEncounter();
-      if (encounter) {
-        // Center with combat area (x=260, width=500, center=510)
-        // Align bottom with party status box bottom (y=80+480=560)
-        const selectorWidth = 350;
-        const selectorHeight = 80;
-        const selectorX = 510 - (selectorWidth / 2);  // Center: 335
-        const selectorY = 560 - selectorHeight;        // Bottom aligned: 480
-        this.spellTargetSelector.render(ctx, selectorX, selectorY);
-      }
-    } else if (this.actionState === 'waiting') {
-      ctx.fillText('Processing turn...', menuX + 10, menuY + 25);
-    }
-  }
-
-  private renderCombatHeader(ctx: CanvasRenderingContext2D): void {
-    // Header panel similar to dungeon scene
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(10, 10, ctx.canvas.width - 20, 60);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, ctx.canvas.width - 20, 60);
-
-    // Title
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 24px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('COMBAT', ctx.canvas.width / 2, 45);
-
-    // Current turn info
-    const currentUnit = this.combatSystem.getCurrentUnit();
-    if (currentUnit) {
-      ctx.fillStyle = '#ffa500';
-      ctx.font = '14px monospace';
-      ctx.textAlign = 'right';
-      const unitName = currentUnit.name;
-      ctx.fillText(`Current Turn: ${unitName}`, ctx.canvas.width - 30, 45);
-    }
-  }
-
-  private renderTurnOrder(ctx: CanvasRenderingContext2D): void {
-    // Turn order panel - match dungeon info panel position
-    const orderX = 770;
-    const orderY = 80;
-    const orderWidth = 240;
-    const orderHeight = 200;
-
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(orderX, orderY, orderWidth, orderHeight);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(orderX, orderY, orderWidth, orderHeight);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 14px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('TURN ORDER', orderX + orderWidth / 2, orderY + 20);
-    ctx.textAlign = 'left';
-
-    const encounter = this.combatSystem.getEncounter();
-    if (encounter) {
-      const turnOrder = encounter.turnOrder.slice(0, 6); // Show next 6 turns
-      const currentUnit = this.combatSystem.getCurrentUnit();
-      ctx.font = '12px monospace';
-
-      turnOrder.forEach((unit, idx) => {
-        const unitName = EntityUtils.getName(unit as Character | Monster);
-        const isCurrent = unit === currentUnit;
-        ctx.fillStyle = isCurrent ? '#ffff00' : '#aaa';
-        ctx.fillText(`${idx + 1}. ${unitName}`, orderX + 10, orderY + 45 + idx * 18);
-      });
-    }
-  }
-
-  private renderCombatInfo(ctx: CanvasRenderingContext2D): void {
-    // Show debug hint
-    ctx.fillStyle = '#888';
-    ctx.font = '10px monospace';
-    ctx.fillText(
-      '[DEBUG: Press Ctrl+K for instant kill]',
-      ctx.canvas.width - 200,
-      ctx.canvas.height - 10
-    );
+    this.uiManager.renderLayered(renderContext);
   }
 
   public handleInput(key: string): boolean {
-    // Handle debug scene key combination
-    if (key === KEY_BINDINGS.dungeonActions.debugOverlay) {
-      DebugLogger.debug('CombatScene', 'Switching to debug scene from combat');
-      const debugScene = this.sceneManager.getScene('debug') as any;
-      if (debugScene && debugScene.setPreviousScene) {
-        debugScene.setPreviousScene('combat');
-      }
-      this.sceneManager.switchTo('debug');
-      return true;
-    }
-
-    // Debug instant kill - Ctrl+K kills all enemies
-    if (key === 'ctrl+k') {
-      this.executeInstantKill();
-      return true;
-    }
-
-    // Block input when it's not the player's turn
-    if (!this.combatSystem.canPlayerAct()) {
-      return true;
-    }
-
-    // Ignore all input if we're processing an action or waiting
-    if (this.isProcessingAction || this.actionState === 'waiting') return true;
-
-    if (this.actionState === 'select_action') {
-      return this.handleActionSelection(key);
-    } else if (this.actionState === 'select_target') {
-      return this.handleTargetSelection(key);
-    } else if (this.actionState === 'select_spell') {
-      return this.handleSpellSelection(key);
-    } else if (this.actionState === 'spell_target') {
-      return this.handleSpellTargetSelection(key);
-    }
-
-    return false;
-  }
-
-  private handleActionSelection(key: string): boolean {
-    const actions = this.combatSystem.getPlayerOptions();
-
-    if (key === KEY_BINDINGS.combat.selectUp) {
-      this.selectedAction = Math.max(0, this.selectedAction - 1);
-      return true;
-    } else if (key === KEY_BINDINGS.combat.selectDown) {
-      this.selectedAction = Math.min(actions.length - 1, this.selectedAction + 1);
-      return true;
-    } else if (key === KEY_BINDINGS.combat.confirm) {
-      const selectedActionText = actions[this.selectedAction];
-
-      if (selectedActionText === 'Attack') {
-        this.actionState = 'select_target';
-        this.selectedTarget = 0;
-      } else if (selectedActionText === 'Cast Spell') {
-        const currentUnit = this.combatSystem.getCurrentUnit();
-        if (currentUnit && EntityUtils.isCharacter(currentUnit)) {
-          this.openSpellMenu(currentUnit);
-        }
-      } else {
-        this.executeAction(selectedActionText);
-      }
-      return true;
-    }
-
-    return false;
-  }
-
-  private handleTargetSelection(key: string): boolean {
-    const encounter = this.combatSystem.getEncounter();
-    if (!encounter) return false;
-
-    const aliveMonsters = encounter.monsters.filter((m) => m.hp > 0);
-
-    if (key === KEY_BINDINGS.combat.selectLeft) {
-      this.selectedTarget = Math.max(0, this.selectedTarget - 1);
-      return true;
-    } else if (key === KEY_BINDINGS.combat.selectRight) {
-      this.selectedTarget = Math.min(aliveMonsters.length - 1, this.selectedTarget + 1);
-      return true;
-    } else if (key === KEY_BINDINGS.combat.confirm) {
-      if (this.pendingSpellId) {
-        this.executeAction('Cast Spell', this.selectedTarget, this.pendingSpellId);
-        this.pendingSpellId = null;
-      } else {
-        this.executeAction('Attack', this.selectedTarget);
-      }
-      return true;
-    } else if (key === KEY_BINDINGS.combat.cancel) {
-      this.actionState = 'select_action';
-      return true;
-    }
-
-    return false;
-  }
-
-  private handleSpellSelection(key: string): boolean {
-    return this.spellMenu.handleInput(key);
-  }
-
-  private handleSpellTargetSelection(key: string): boolean {
-    const handled = this.spellTargetSelector.handleInput(key);
-    if (!this.spellTargetSelector.isActive()) {
-      // Target was selected or cancelled
-      this.actionState = 'select_action';
-    }
-    return handled;
-  }
-
-  private openSpellMenu(caster: Character): void {
-    const knownSpells = caster.getKnownSpells();
-    if (knownSpells.length === 0) {
-      this.messageLog.addCombatMessage(`${caster.name} doesn't know any spells!`);
-      return;
-    }
-
-    this.actionState = 'select_spell';
-    this.spellMenu.open(
-      caster,
-      (spellId: string) => {
-        this.handleSpellSelected(spellId);
-      },
-      () => {
-        this.actionState = 'select_action';
-      }
-    );
-  }
-
-  private handleSpellSelected(spellId: string): void {
-    const registry = SpellRegistry.getInstance();
-    const spell = registry.getSpellById(spellId as SpellId);
-    if (!spell) {
-      this.messageLog.addCombatMessage('Unknown spell!');
-      this.actionState = 'select_action';
-      return;
-    }
-
-    const currentUnit = this.combatSystem.getCurrentUnit();
-    if (!currentUnit || !EntityUtils.isCharacter(currentUnit)) {
-      this.actionState = 'select_action';
-      return;
-    }
-
-    const encounter = this.combatSystem.getEncounter();
-    if (!encounter) {
-      this.actionState = 'select_action';
-      return;
-    }
-
-    this.pendingSpellId = spellId;
-
-    this.spellTargetSelector.setupForSpell(
-      spell,
-      encounter.monsters,
-      this.gameState.party.getAliveCharacters(),
-      (target: Character | Monster | null) => {
-        this.executeSpellWithTarget(spellId, target);
-      },
-      () => {
-        this.actionState = 'select_action';
-        this.pendingSpellId = null;
-      }
-    );
-
-    if (this.spellTargetSelector.isActive()) {
-      this.actionState = 'spell_target';
-    }
-  }
-
-  private executeSpellWithTarget(spellId: string, target: Character | Monster | null): void {
-    this.executeAction('Cast Spell', undefined, spellId, target ?? undefined);
-    this.pendingSpellId = null;
-  }
-
-  private executeAction(action: string, targetIndex?: number, spellId?: string, target?: Character | Monster): void {
-    const now = Date.now();
-
-    // Debounce rapid input - ignore if pressed too quickly
-    if (now - this.lastActionTime < 100) {
-      DebugLogger.debug('CombatScene', 'Action debounced - pressed too quickly');
-      return;
-    }
-    this.lastActionTime = now;
-
-    // Prevent multiple simultaneous executions
-    if (this.isProcessingAction) {
-      DebugLogger.debug('CombatScene', 'Action blocked - already processing');
-      return;
-    }
-
-    this.isProcessingAction = true;
-    this.actionState = 'waiting';
-
-    let result = '';
-    if (action === 'Attack') {
-      result = this.combatSystem.executePlayerAction(action, targetIndex ?? this.selectedTarget);
-    } else if (action === 'Cast Spell') {
-      const spellToUse = this.pendingSpellId || spellId;
-      result = this.combatSystem.executePlayerAction(action, targetIndex ?? this.selectedTarget, spellToUse, target);
-      this.pendingSpellId = null;
-    } else {
-      result = this.combatSystem.executePlayerAction(action);
-    }
-
-    DebugLogger.debug('CombatScene', `Action result: "${result}"`);
-
-    // Handle different result types
-    if (result === 'Action already in progress') {
-      // CombatSystem is busy - reset UI immediately
-      DebugLogger.debug('CombatScene', 'CombatSystem busy - resetting UI');
-      this.isProcessingAction = false;
-      this.actionState = 'select_action';
-      return;
-    } else if (result === 'Combat state invalid') {
-      // Combat ended unexpectedly
-      DebugLogger.debug('CombatScene', 'Combat state invalid - resetting UI');
-      this.isProcessingAction = false;
-      this.actionState = 'select_action';
-      return;
-    } else if (result && result.length > 0) {
-      // Valid action result
-      this.messageLog.addCombatMessage(result);
-    }
-
-    // Update UI state immediately
-    const canAct = this.combatSystem.canPlayerAct();
-    this.actionState = canAct ? 'select_action' : 'waiting';
-    this.selectedAction = 0;
-    this.isProcessingAction = false;
-    DebugLogger.debug(
-      'CombatScene',
-      `UI state reset - canPlayerAct: ${canAct}, actionState: ${this.actionState}`
-    );
-  }
-
-
-  private executeInstantKill(): void {
-    const encounter = this.combatSystem.getEncounter();
-    if (!encounter) return;
-
-    // Deal 999 damage to all enemies
-    this.messageLog.addSystemMessage(
-      '[DEBUG] Instant Kill activated! Dealing 999 damage to all enemies.'
-    );
-
-    encounter.monsters.forEach((monster) => {
-      if (monster.hp > 0) {
-        monster.hp = 0;
-        this.messageLog.addCombatMessage(`${monster.name} takes 999 damage and is defeated!`);
-      }
-    });
-
-    // Force check combat end to trigger rewards
-    this.combatSystem.forceCheckCombatEnd();
-  }
-
-  private endCombat(
-    victory: boolean,
-    rewards?: { experience: number; gold: number; items: Item[] },
-    escaped?: boolean
-  ): void {
-    try {
-      DebugLogger.debug('CombatScene', 'endCombat called', { victory, rewards });
-
-      // Reset processing flag to prevent lockups
-      this.isProcessingAction = false;
-
-      if (victory && rewards) {
-        this.messageLog.addSystemMessage(
-          `Victory! Gained ${rewards.experience} experience and ${rewards.gold} gold!`
-        );
-
-        DebugLogger.debug('CombatScene', 'Distributing rewards to party...');
-        this.gameState.party.distributeExperience(rewards.experience);
-        this.gameState.party.distributeGold(rewards.gold);
-
-        // Handle item drops - store for distribution after scene switch
-        if (rewards.items && rewards.items.length > 0) {
-          this.messageLog.addSystemMessage(`Found ${rewards.items.length} item(s)!`);
-          rewards.items.forEach((item) => {
-            this.messageLog.addSystemMessage(
-              `- ${item.identified ? item.name : item.unidentifiedName || '?Item'}`
-            );
-          });
-
-          // Store items to be distributed when returning to dungeon
-          this.gameState.pendingLoot = rewards.items;
-        }
-
-        DebugLogger.debug('CombatScene', 'Rewards distributed successfully');
-      } else if (escaped) {
-        this.messageLog.addSystemMessage('Successfully ran away!');
-      } else {
-        this.messageLog.addDeathMessage('Defeated...');
-      }
-
-      SaveManager.saveGame(this.gameState, this.gameState.playtimeSeconds || 0);
-      DebugLogger.debug('CombatScene', 'Game saved after combat');
-
-      this.sceneManager.switchTo('dungeon');
-    } catch (error) {
-      DebugLogger.error('CombatScene', 'Error in endCombat', error);
-      this.messageLog.addWarningMessage('Error processing combat results');
-      this.isProcessingAction = false; // Ensure flag is reset even on error
-      this.sceneManager.switchTo('dungeon');
-    }
-  }
-
-  private renderCombatControls(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#888';
-    ctx.font = '10px monospace';
-    const y = ctx.canvas.height - 30;
-
-    if (this.actionState === 'select_action' && this.combatSystem.canPlayerAct()) {
-      let controls = 'UP/DOWN: Select Action | ENTER: Confirm';
-      if (this.selectedAction === 0) {
-        // Attack action
-        controls += ' | LEFT/RIGHT: Select Target';
-      }
-      ctx.fillText(controls, 10, y);
-      ctx.fillText('1: Attack | 2: Defend | 3: Run | K: Instant Kill (debug)', 10, y + 12);
-    } else {
-      ctx.fillText('Processing turn... please wait', 10, y);
-    }
-  }
-
-  private updateDebugData(): void {
-    if (!this.debugOverlay) return;
-
-    // Get current system debug data
-    const lootData = InventorySystem.getLootDebugData();
-    const combatData = CombatSystem.getCombatDebugData();
-
-    // Calculate party stats
-    const totalLuck = this.gameState.party.characters.reduce(
-      (sum: number, char: Character) => sum + char.stats.luck,
-      0
-    );
-    const averageLevel =
-      this.gameState.party.characters.reduce(
-        (sum: number, char: Character) => sum + char.level,
-        0
-      ) / this.gameState.party.characters.length;
-
-    // Update debug overlay with current data
-    this.debugOverlay.updateDebugData({
-      lootSystem: lootData,
-      partyStats: {
-        totalLuck,
-        luckMultiplier: lootData.luckMultiplier,
-        averageLevel,
-      },
-      combatSystem: combatData,
-    });
+    return this.inputController.handleInput(key);
   }
 
   public getTestState(): any {
+    const baseState = this.stateManager.getTestState();
     return {
-      actionState: this.actionState,
-      currentUnit: this.combatSystem.getCurrentUnit(),
-      monsters: this.combatSystem.getMonsters(),
-      party: this.combatSystem.getParty(),
-      spellMenuOpen: this.actionState === 'select_spell',
-      spellMenuState: this.spellMenu.getState(),
-      spellTargetSelectorState: this.spellTargetSelector.getState(),
-      availableSpells: this.actionState === 'select_spell' ? this.getAvailableSpells() : [],
-      selectedAction: this.selectedAction,
-      selectedTarget: this.selectedTarget,
-      selectedSpell: this.selectedSpell,
-      isProcessingAction: this.isProcessingAction,
-      pendingSpellId: this.pendingSpellId
+      ...baseState,
+      spellMenuOpen: baseState.actionState === 'select_spell',
+      spellMenuState: this.uiManager.getSpellMenu().getState(),
+      spellTargetSelectorState: this.uiManager.getSpellTargetSelector().getState(),
+      availableSpells: baseState.actionState === 'select_spell' ? this.getAvailableSpells() : []
     };
   }
 
   private getAvailableSpells(): string[] {
     const currentUnit = this.combatSystem.getCurrentUnit();
-    if (currentUnit && EntityUtils.isCharacter(currentUnit)) {
-      return currentUnit.knownSpells || [];
+    if (currentUnit && 'knownSpells' in currentUnit) {
+      return (currentUnit as any).knownSpells || [];
     }
     return [];
   }
