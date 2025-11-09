@@ -23,6 +23,7 @@ export class TownScene extends Scene {
 
   public enter(): void {
     this.selectedOption = 0;
+    this.gameState.hasEnteredDungeon = false;
   }
 
   public exit(): void {

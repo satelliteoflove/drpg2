@@ -464,14 +464,20 @@ export class DungeonGenerator {
   }
 
   private findStartPosition(): {x: number, y: number} {
-    const floorTiles = this.getAllFloorTiles();
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const tile = this.tiles[y][x];
+        if (tile.type === 'floor' && tile.special?.type === 'stairs_up') {
+          return {x: tile.x, y: tile.y};
+        }
+      }
+    }
 
+    const floorTiles = this.getAllFloorTiles();
     if (floorTiles.length === 0) {
       return {x: 1, y: 1};
     }
-
-    const tile = floorTiles[0];
-    return {x: tile.x, y: tile.y};
+    return {x: floorTiles[0].x, y: floorTiles[0].y};
   }
 
   private getAllFloorTiles(): DungeonTile[] {
