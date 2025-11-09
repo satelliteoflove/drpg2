@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
@@ -41,5 +42,33 @@ module.exports = {
     port: 8080,
     hot: true,
     open: true,
+    setupMiddlewares: (middlewares, devServer) => {
+      if (!devServer) {
+        throw new Error('webpack-dev-server is not defined');
+      }
+
+      devServer.app.post('/api/log', (req, res) => {
+        let body = '';
+        req.on('data', chunk => {
+          body += chunk.toString();
+        });
+        req.on('end', () => {
+          try {
+            const logData = JSON.parse(body);
+            const logFilePath = path.join(__dirname, 'debug.log');
+            const timestamp = new Date().toISOString();
+            const logEntry = `[${timestamp}] ${logData.level} [${logData.module}] ${logData.message}${logData.data ? ' ' + JSON.stringify(logData.data) : ''}\n`;
+
+            fs.appendFileSync(logFilePath, logEntry);
+            res.json({ success: true });
+          } catch (error) {
+            console.error('Error writing log:', error);
+            res.status(500).json({ success: false, error: error.message });
+          }
+        });
+      });
+
+      return middlewares;
+    },
   },
 };
