@@ -147,28 +147,7 @@ export class DungeonScene extends Scene {
       this.initializeUI(mainContext.canvas);
     }
 
-    const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
-    if (currentDungeon) {
-      this.dungeonView.setDungeon(currentDungeon);
-
-      const animationController = this.movementHandler.getTurnAnimationController();
-      const offset = animationController.getCurrentPositionOffset();
-
-      let visualX = this.gameState.party.x + offset.dx;
-      let visualY = this.gameState.party.y + offset.dy;
-
-      visualX = Math.max(0, Math.min(currentDungeon.width - 0.01, visualX));
-      visualY = Math.max(0, Math.min(currentDungeon.height - 0.01, visualY));
-
-      if (offset.dx !== 0 || offset.dy !== 0) {
-        DebugLogger.info(
-          'DungeonScene',
-          `Move animation: logical=(${this.gameState.party.x}, ${this.gameState.party.y}), offset=(${offset.dx.toFixed(2)}, ${offset.dy.toFixed(2)}), visual=(${visualX.toFixed(2)}, ${visualY.toFixed(2)})`
-        );
-      }
-
-      this.dungeonView.setPlayerPosition(visualX, visualY, this.gameState.party.facing);
-    }
+    const dungeonData = this.prepareDungeonViewForRendering();
 
     renderManager.renderBackground((ctx) => {
       this.renderBackground(ctx);
@@ -181,44 +160,8 @@ export class DungeonScene extends Scene {
     });
 
     renderManager.renderUI((ctx) => {
-      // Render header first
-      this.renderDungeonHeader(ctx);
-
-      if (this.statusPanel) {
-        this.statusPanel.render(this.gameState.party, ctx);
-      }
-
-      // Render info panel
-      this.renderDungeonInfo(ctx);
-
-      if (this.dungeonMapView && currentDungeon) {
-        this.dungeonMapView.setDungeon(currentDungeon);
-        this.dungeonMapView.setPlayerPosition(
-          this.gameState.party.x,
-          this.gameState.party.y,
-          this.gameState.party.facing
-        );
-        if (this.dungeonMapView.getIsVisible()) {
-          this.dungeonMapView.render(ctx);
-        }
-      }
-
-      this.itemPickupUI.render(ctx);
-
-      // Render the shared message log only when map is not visible
-      if (this.messageLog && !this.dungeonMapView?.getIsVisible()) {
-        this.messageLog.render(ctx);
-      }
-
-      this.renderControls(ctx);
-
-      this.updateDebugData();
-      if (this.debugOverlay && this.debugOverlay.isOpen()) {
-        this.debugOverlay.render(this.gameState);
-      }
-
-      if (this.performanceOverlay) {
-        this.performanceOverlay.render(ctx);
+      if (dungeonData) {
+        this.renderUIComponents(ctx, dungeonData.dungeon);
       }
     });
 
@@ -231,12 +174,27 @@ export class DungeonScene extends Scene {
       this.initializeUI(ctx.canvas);
     }
 
+    this.renderBackground(ctx);
+
+    const dungeonData = this.prepareDungeonViewForRendering();
+    if (!dungeonData) {
+      return;
+    }
+
+    this.dungeonView.render(ctx);
+
+    this.renderUIComponents(ctx, dungeonData.dungeon);
+  }
+
+  private renderBackground(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  }
 
+  private prepareDungeonViewForRendering(): { dungeon: any; visualX: number; visualY: number } | null {
     const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
     if (!currentDungeon) {
-      return;
+      return null;
     }
 
     this.dungeonView.setDungeon(currentDungeon);
@@ -250,15 +208,25 @@ export class DungeonScene extends Scene {
     visualX = Math.max(0, Math.min(currentDungeon.width - 0.01, visualX));
     visualY = Math.max(0, Math.min(currentDungeon.height - 0.01, visualY));
 
-    this.dungeonView.setPlayerPosition(visualX, visualY, this.gameState.party.facing);
-    this.dungeonView.render(ctx);
+    if (offset.dx !== 0 || offset.dy !== 0) {
+      DebugLogger.info(
+        'DungeonScene',
+        `Move animation: logical=(${this.gameState.party.x}, ${this.gameState.party.y}), offset=(${offset.dx.toFixed(2)}, ${offset.dy.toFixed(2)}), visual=(${visualX.toFixed(2)}, ${visualY.toFixed(2)})`
+      );
+    }
 
-    // Render header
+    this.dungeonView.setPlayerPosition(visualX, visualY, this.gameState.party.facing);
+
+    return { dungeon: currentDungeon, visualX, visualY };
+  }
+
+  private renderUIComponents(ctx: CanvasRenderingContext2D, currentDungeon: any): void {
     this.renderDungeonHeader(ctx);
 
-    this.statusPanel.render(this.gameState.party, ctx);
+    if (this.statusPanel) {
+      this.statusPanel.render(this.gameState.party, ctx);
+    }
 
-    // Render info panel
     this.renderDungeonInfo(ctx);
 
     if (this.dungeonMapView && currentDungeon) {
@@ -275,7 +243,6 @@ export class DungeonScene extends Scene {
 
     this.itemPickupUI.render(ctx);
 
-    // Render the shared message log only when map is not visible
     if (this.messageLog && !this.dungeonMapView?.getIsVisible()) {
       this.messageLog.render(ctx);
     }
@@ -290,11 +257,6 @@ export class DungeonScene extends Scene {
     if (this.performanceOverlay) {
       this.performanceOverlay.render(ctx);
     }
-  }
-
-  private renderBackground(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   }
 
   private renderDungeonHeader(ctx: CanvasRenderingContext2D): void {
