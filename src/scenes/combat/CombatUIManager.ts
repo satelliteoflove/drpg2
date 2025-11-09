@@ -303,16 +303,20 @@ export class CombatUIManager {
 
     const encounter = this.combatSystem.getEncounter();
     if (encounter) {
-      const turnOrder = encounter.turnOrder.slice(0, 6);
+      const currentTurnIndex = encounter.currentTurn;
+      const totalUnits = encounter.turnOrder.length;
       const currentUnit = this.combatSystem.getCurrentUnit();
       ctx.font = '12px monospace';
 
-      turnOrder.forEach((unit, idx) => {
+      const displayCount = Math.min(6, totalUnits);
+      for (let i = 0; i < displayCount; i++) {
+        const turnIndex = (currentTurnIndex + i) % totalUnits;
+        const unit = encounter.turnOrder[turnIndex];
         const unitName = EntityUtils.getName(unit as Character | Monster);
         const isCurrent = unit === currentUnit;
         ctx.fillStyle = isCurrent ? '#ffff00' : '#aaa';
-        ctx.fillText(`${idx + 1}. ${unitName}`, orderX + 10, orderY + 45 + idx * 18);
-      });
+        ctx.fillText(`${i + 1}. ${unitName}`, orderX + 10, orderY + 45 + i * 18);
+      }
     }
   }
 
