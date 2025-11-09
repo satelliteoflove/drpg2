@@ -3,6 +3,8 @@ import { Character } from '../../entities/Character';
 import { StatusPanel } from '../../ui/StatusPanel';
 import { TempleStateContext, TempleService } from '../../types/TempleTypes';
 import { TempleStateManager } from './TempleStateManager';
+import { UIRenderingUtils } from '../../utils/UIRenderingUtils';
+import { UI_CONSTANTS } from '../../config/UIConstants';
 
 export class TempleUIRenderer {
   private gameState: GameState;
@@ -20,7 +22,13 @@ export class TempleUIRenderer {
   public render(ctx: CanvasRenderingContext2D, stateContext: TempleStateContext): void {
     if (!this.canvas) {
       this.canvas = ctx.canvas;
-      this.statusPanel = new StatusPanel(ctx.canvas, 10, 80, 240, 480);
+      this.statusPanel = new StatusPanel(
+        ctx.canvas,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_HEIGHT
+      );
     }
 
     ctx.fillStyle = '#1a1a1a';
@@ -41,23 +49,13 @@ export class TempleUIRenderer {
   }
 
   private renderHeader(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(10, 10, ctx.canvas.width - 20, 60);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, ctx.canvas.width - 20, 60);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 24px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('TEMPLE OF DIVINE RESTORATION', ctx.canvas.width / 2, 45);
-
     const partyGold = this.gameState.party.characters?.reduce((sum: number, char: Character) => sum + char.gold, 0) || 0;
 
-    ctx.fillStyle = '#ffa500';
-    ctx.font = '14px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(`Party Gold: ${partyGold}g`, ctx.canvas.width - 30, 45);
+    UIRenderingUtils.renderHeader(ctx, {
+      title: 'TEMPLE OF DIVINE RESTORATION',
+      showGold: true,
+      partyGold
+    });
   }
 
   private renderMainArea(ctx: CanvasRenderingContext2D, stateContext: TempleStateContext): void {
@@ -66,7 +64,7 @@ export class TempleUIRenderer {
     const mainWidth = 500;
     const mainHeight = 480;
 
-    this.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
+    UIRenderingUtils.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
 
     switch (stateContext.currentState) {
       case 'main':
@@ -386,7 +384,7 @@ export class TempleUIRenderer {
     const infoWidth = 240;
     const infoHeight = 480;
 
-    this.drawPanel(ctx, infoX, infoY, infoWidth, infoHeight);
+    UIRenderingUtils.drawPanel(ctx, infoX, infoY, infoWidth, infoHeight);
 
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 14px monospace';
@@ -496,14 +494,6 @@ export class TempleUIRenderer {
       ctx.fillStyle = '#4a4';
       ctx.fillText('All party members OK', infoX + 15, statusY);
     }
-  }
-
-  private drawPanel(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): void {
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(x, y, width, height);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, width, height);
   }
 
   private hasEquippedCursedItems(character: Character): boolean {

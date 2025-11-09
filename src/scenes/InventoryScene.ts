@@ -3,6 +3,8 @@ import { GameState, Item } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { InventorySystem } from '../systems/InventorySystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
+import { ItemUtils } from '../utils/ItemUtils';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export class InventoryScene extends Scene {
   private gameState: GameState;
@@ -35,8 +37,7 @@ export class InventoryScene extends Scene {
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
-    // Fallback for direct rendering - should not be used since we have layered rendering
-    console.warn('[INVENTORY] Using direct rendering fallback - layered rendering preferred');
+    DebugLogger.warn('InventoryScene', 'Using direct rendering fallback - layered rendering preferred');
 
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -326,7 +327,7 @@ export class InventoryScene extends Scene {
     } else if (key === 'u' && items.length > 0) {
       const item = items[this.selectedItem];
       if (item && item.equipped) {
-        const equipSlot = this.getEquipSlot(item.type);
+        const equipSlot = ItemUtils.getEquipSlot(item.type);
         if (equipSlot && InventorySystem.unequipItem(character, equipSlot)) {
           this.gameState.messageLog?.addSystemMessage(`${character.name} unequipped ${item.name}`);
         } else if (item.cursed) {
@@ -450,26 +451,5 @@ export class InventoryScene extends Scene {
     }
 
     return false;
-  }
-
-  private getEquipSlot(itemType: string) {
-    switch (itemType) {
-      case 'weapon':
-        return 'weapon';
-      case 'armor':
-        return 'armor';
-      case 'shield':
-        return 'shield';
-      case 'helmet':
-        return 'helmet';
-      case 'gauntlets':
-        return 'gauntlets';
-      case 'boots':
-        return 'boots';
-      case 'accessory':
-        return 'accessory';
-      default:
-        return null;
-    }
   }
 }

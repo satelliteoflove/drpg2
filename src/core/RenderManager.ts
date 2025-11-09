@@ -7,6 +7,7 @@ import {
 import { GAME_CONFIG } from '../config/GameConstants';
 import { ErrorHandler } from '../utils/ErrorHandler';
 import { Scene } from './Scene';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export interface RenderStats {
   fps: number;
@@ -307,10 +308,10 @@ export class RenderManager {
 
   public debugLayers(): void {
     if (GAME_CONFIG.DEBUG_MODE) {
-      console.log('=== Layer Debug Info ===');
+      DebugLogger.debug('RenderManager', '=== Layer Debug Info ===');
       const layers = this.getAllLayers();
       for (const [name, layer] of layers) {
-        console.log(`Layer ${name}:`, {
+        DebugLogger.debug('RenderManager', `Layer ${name}`, {
           zIndex: layer.zIndex,
           isDirty: layer.isDirty,
           persistent: layer.persistent,

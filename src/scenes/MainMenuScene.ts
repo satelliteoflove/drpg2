@@ -2,6 +2,7 @@ import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState } from '../types/GameTypes';
 import { SaveManager } from '../utils/SaveManager';
 import { MenuInputHandler } from '../ui/components/MenuInputHandler';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export class MainMenuScene extends Scene {
   private sceneManager: SceneManager;
@@ -71,10 +72,8 @@ export class MainMenuScene extends Scene {
     const startY = 280;
     const lineHeight = 50;
 
-    // Debug: Log menu options
     if (this.menuOptions.length === 0) {
-      console.warn('MainMenuScene: No menu options available!');
-      // Fallback - ensure menu options exist
+      DebugLogger.warn('MainMenuScene', 'No menu options available');
       this.updateMenuOptions();
     }
 

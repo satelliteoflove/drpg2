@@ -1,5 +1,6 @@
 import { Character } from '../entities/Character';
 import { Monster } from '../types/GameTypes';
+import { DebugLogger } from './DebugLogger';
 
 export type CombatEntity = Character | Monster;
 
@@ -53,7 +54,7 @@ export class EntityUtils {
     const maxHP = this.getMaxHP(entity);
     const actualHealing = Math.min(healing, maxHP - currentHP);
     const newHP = currentHP + actualHealing;
-    console.log(`[EntityUtils.applyHealing] ${entity.name}: currentHP=${currentHP}, maxHP=${maxHP}, healing=${healing}, actualHealing=${actualHealing}, newHP=${newHP}`);
+    DebugLogger.debug('EntityUtils', `applyHealing ${entity.name}: currentHP=${currentHP}, maxHP=${maxHP}, healing=${healing}, actualHealing=${actualHealing}, newHP=${newHP}`);
     this.setHP(entity, newHP);
     return actualHealing;
   }

@@ -86,7 +86,7 @@ export class SceneManager {
 
       if (this._currentScene) {
         DebugLogger.debug('SceneManager', 'Entering new scene: ' + this._currentScene.getName());
-        console.log('[SceneManager] About to call enter() on scene:', this._currentScene.getName());
+        DebugLogger.debug('SceneManager', 'About to call enter() on scene: ' + this._currentScene.getName());
         // Reset layers for the new scene
         if (this.renderManager) {
           this.renderManager.resetForSceneChange();
@@ -96,7 +96,7 @@ export class SceneManager {
           this.onSceneChange(this._currentScene.getName());
         }
         this._currentScene.enter();
-        console.log('[SceneManager] Called enter() on scene:', this._currentScene.getName());
+        DebugLogger.debug('SceneManager', 'Called enter() on scene: ' + this._currentScene.getName());
       }
     }
 

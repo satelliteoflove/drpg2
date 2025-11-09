@@ -9,6 +9,7 @@ import { GAME_CONFIG } from '../config/GameConstants';
 import { DataLoader } from '../utils/DataLoader';
 import { DebugLogger } from '../utils/DebugLogger';
 import { EquipmentModifierManager } from './EquipmentModifierManager';
+import { ItemUtils } from '../utils/ItemUtils';
 
 interface LootDebugData {
   dungeonLevel: number;
@@ -92,7 +93,7 @@ export class InventorySystem {
       return false; // Character's alignment cannot use this item
     }
 
-    const equipSlot = this.getEquipSlot(item.type);
+    const equipSlot = ItemUtils.getEquipSlot(item.type);
     if (!equipSlot) return false;
 
     const currentEquipped = character.equipment[equipSlot];
@@ -135,28 +136,6 @@ export class InventorySystem {
 
     return true;
   }
-
-  private static getEquipSlot(itemType: string): keyof Equipment | null {
-    switch (itemType) {
-      case 'weapon':
-        return 'weapon';
-      case 'armor':
-        return 'armor';
-      case 'shield':
-        return 'shield';
-      case 'helmet':
-        return 'helmet';
-      case 'gauntlets':
-        return 'gauntlets';
-      case 'boots':
-        return 'boots';
-      case 'accessory':
-        return 'accessory';
-      default:
-        return null;
-    }
-  }
-
 
   public static useItem(character: Character, itemId: string): string {
     const itemIndex = character.inventory.findIndex((i) => i.id === itemId);
@@ -293,6 +272,89 @@ export class InventorySystem {
     return this.getInventoryWeight(character) > this.getCarryCapacity(character);
   }
 
+  private static validateItemForIdentification(
+    character: Character,
+    itemId: string
+  ):
+    | { valid: false; result: { success: boolean; cursed?: boolean; message: string } }
+    | { valid: true; item: Item } {
+    const item = character.inventory.find((i) => i.id === itemId);
+
+    if (!item) {
+      return { valid: false, result: { success: false, message: 'Item not found' } };
+    }
+
+    if (item.identified) {
+      return { valid: false, result: { success: false, message: 'Item already identified' } };
+    }
+
+    if (character.class !== 'Bishop') {
+      return {
+        valid: false,
+        result: {
+          success: false,
+          message: 'Only Bishops can identify items. Visit a shop for identification service.',
+        },
+      };
+    }
+
+    return { valid: true, item };
+  }
+
+  private static calculateIdentificationRates(character: Character): {
+    successRate: number;
+    curseRisk: number;
+  } {
+    const successRate = Math.min(
+      GAME_CONFIG.ITEMS.IDENTIFICATION.MAX_CHANCE,
+      character.level * GAME_CONFIG.ITEMS.IDENTIFICATION.BISHOP_LEVEL_MULTIPLIER +
+        GAME_CONFIG.ITEMS.IDENTIFICATION.BISHOP_BASE_CHANCE
+    );
+
+    const curseRisk = Math.max(
+      0,
+      GAME_CONFIG.ITEMS.IDENTIFICATION.CURSE_BASE_RISK -
+        character.level * GAME_CONFIG.ITEMS.IDENTIFICATION.CURSE_LEVEL_REDUCTION
+    );
+
+    return { successRate, curseRisk };
+  }
+
+  private static handleCursedIdentification(
+    item: Item,
+    character: Character,
+    itemId: string,
+    identifyRoll: number,
+    successRate: number,
+    curseRoll: number,
+    curseRisk: number
+  ): { success: boolean; cursed?: boolean; message: string } | null {
+    if (!item.cursed || curseRoll >= curseRisk || item.equipped) {
+      return null;
+    }
+
+    const equipped = this.equipItem(character, itemId);
+    if (!equipped) {
+      return null;
+    }
+
+    item.identified = true;
+
+    if (identifyRoll < successRate) {
+      return {
+        success: true,
+        cursed: true,
+        message: `Identified ${item.name} but it's cursed and bonds to ${character.name}!`,
+      };
+    } else {
+      return {
+        success: false,
+        cursed: true,
+        message: `Failed to identify, but the ${item.name} is cursed and bonds to ${character.name}!`,
+      };
+    }
+  }
+
   public static identifyItem(
     character: Character,
     itemId: string
@@ -301,69 +363,31 @@ export class InventorySystem {
     cursed?: boolean;
     message: string;
   } {
-    const item = character.inventory.find((i) => i.id === itemId);
-
-    if (!item) {
-      return { success: false, message: 'Item not found' };
+    const validation = this.validateItemForIdentification(character, itemId);
+    if (!validation.valid) {
+      return validation.result;
     }
 
-    if (item.identified) {
-      return { success: false, message: 'Item already identified' };
-    }
-
-    // Only Bishops can identify items (authentic Wizardry mechanic)
-    if (character.class !== 'Bishop') {
-      return {
-        success: false,
-        message: 'Only Bishops can identify items. Visit a shop for identification service.',
-      };
-    }
-
-    // Calculate success rate using authentic Wizardry formula: (Level × 5%) + 10%
-    const successRate = Math.min(
-      GAME_CONFIG.ITEMS.IDENTIFICATION.MAX_CHANCE,
-      character.level * GAME_CONFIG.ITEMS.IDENTIFICATION.BISHOP_LEVEL_MULTIPLIER +
-        GAME_CONFIG.ITEMS.IDENTIFICATION.BISHOP_BASE_CHANCE
-    );
-
-    // Calculate curse risk using authentic Wizardry formula: 35% - (Level × 3%)
-    const curseRisk = Math.max(
-      0,
-      GAME_CONFIG.ITEMS.IDENTIFICATION.CURSE_BASE_RISK -
-        character.level * GAME_CONFIG.ITEMS.IDENTIFICATION.CURSE_LEVEL_REDUCTION
-    );
+    const item = validation.item;
+    const { successRate, curseRisk } = this.calculateIdentificationRates(character);
 
     const identifyRoll = Math.random();
     const curseRoll = Math.random();
 
-    // Check for curse risk (happens regardless of identification success)
-    if (item.cursed && curseRoll < curseRisk && !item.equipped) {
-      // Force equip the cursed item
-      const equipped = this.equipItem(character, itemId);
-      if (equipped) {
-        item.identified = true; // Curse reveals itself
-
-        if (identifyRoll < successRate) {
-          // Identified successfully but still got cursed
-          return {
-            success: true,
-            cursed: true,
-            message: `Identified ${item.name} but it's cursed and bonds to ${character.name}!`,
-          };
-        } else {
-          // Failed to identify and got cursed
-          return {
-            success: false,
-            cursed: true,
-            message: `Failed to identify, but the ${item.name} is cursed and bonds to ${character.name}!`,
-          };
-        }
-      }
+    const cursedResult = this.handleCursedIdentification(
+      item,
+      character,
+      itemId,
+      identifyRoll,
+      successRate,
+      curseRoll,
+      curseRisk
+    );
+    if (cursedResult) {
+      return cursedResult;
     }
 
-    // Check identification success
     if (identifyRoll < successRate) {
-      // Success!
       item.identified = true;
       return {
         success: true,
@@ -371,7 +395,6 @@ export class InventorySystem {
         message: `Identified: ${this.getItemDescription(item)}`,
       };
     } else {
-      // Normal failure
       return {
         success: false,
         message: 'Failed to identify the item',
@@ -419,7 +442,7 @@ export class InventorySystem {
 
     // If it's equipped, unequip it first
     if (item.equipped) {
-      const equipSlot = this.getEquipSlot(item.type);
+      const equipSlot = ItemUtils.getEquipSlot(item.type);
       if (equipSlot) {
         this.unequipItem(character, equipSlot);
       }

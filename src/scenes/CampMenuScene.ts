@@ -3,6 +3,7 @@ import { GameState } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { MenuInputHandler } from '../ui/components/MenuInputHandler';
 import { DungeonMovementHandler } from '../systems/dungeon/DungeonMovementHandler';
+import { UIRenderingUtils } from '../utils/UIRenderingUtils';
 
 type CampState = 'menu' | 'selectCharacter';
 
@@ -74,11 +75,7 @@ export class CampMenuScene extends Scene {
     const panelWidth = 500;
     const panelHeight = 350;
 
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
+    UIRenderingUtils.drawPanel(ctx, panelX, panelY, panelWidth, panelHeight);
 
     ctx.fillStyle = '#ffa500';
     ctx.font = 'bold 20px monospace';
@@ -125,11 +122,7 @@ export class CampMenuScene extends Scene {
     const panelWidth = 600;
     const panelHeight = 400;
 
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
+    UIRenderingUtils.drawPanel(ctx, panelX, panelY, panelWidth, panelHeight);
 
     ctx.fillStyle = '#ffa500';
     ctx.font = 'bold 18px monospace';

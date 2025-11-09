@@ -1,3 +1,5 @@
+import { DebugLogger } from '../utils/DebugLogger';
+
 export interface ServiceIdentifier<T = any> {
   name: string;
   type: new (...args: any[]) => T;
@@ -71,7 +73,7 @@ export class ServiceContainer {
         try {
           instance.dispose();
         } catch (error) {
-          console.warn('Error disposing service instance:', error);
+          DebugLogger.warn('ServiceContainer', 'Error disposing service instance', { error });
         }
       }
     }

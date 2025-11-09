@@ -13,6 +13,7 @@ import { ActiveStatusEffect } from '../types/StatusEffectTypes';
 import { ActiveModifier, ModifierSystem } from '../systems/ModifierSystem';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { TypeValidation } from '../utils/TypeValidation';
+import { DebugLogger } from '../utils/DebugLogger';
 import { RACES } from '../config/races';
 import { CLASSES_BY_ID } from '../config/classes';
 import {
@@ -237,12 +238,12 @@ export class Character implements ICharacter {
   }
 
   private learnStartingSpells(): void {
-    console.log(`[DEBUG] learnStartingSpells called for ${this.name} (${this.class})`);
+    DebugLogger.debug('Character', `learnStartingSpells called for ${this.name} (${this.class})`);
     if (!this.canCastSpells()) {
-      console.log(`[DEBUG] ${this.name} cannot cast spells`);
+      DebugLogger.debug('Character', `${this.name} cannot cast spells`);
       return;
     }
-    console.log(`[DEBUG] ${this.name} can cast spells, assigning...`);
+    DebugLogger.debug('Character', `${this.name} can cast spells, assigning...`);
 
     // Import spell database
     try {
@@ -281,7 +282,7 @@ export class Character implements ICharacter {
       }
     }
     } catch (error) {
-      console.error('Failed to load starting spells:', error);
+      DebugLogger.error('Character', 'Failed to load starting spells', { error });
       // Fallback - just add the spell IDs directly
       if (this.class === 'Mage' || this.class === 'Bishop') {
         this.knownSpells.push('m1_flame_dart');
@@ -339,7 +340,7 @@ export class Character implements ICharacter {
 
     // This is a placeholder - actual spell learning would integrate with spell data
     // For now, just track that new spell levels are available
-    console.log(`${this.name} can now learn spell levels: ${availableSpellLevels.join(', ')} from schools: ${spellSchools.join(', ')}`);
+    DebugLogger.info('Character', `${this.name} can now learn spell levels: ${availableSpellLevels.join(', ')} from schools: ${spellSchools.join(', ')}`);
   }
 
   public takeDamage(amount: number): void {

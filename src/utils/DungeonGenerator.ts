@@ -1,6 +1,7 @@
 import { DungeonLevel, DungeonTile, Wall, Room, Connector } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { SeededRandom } from './SeededRandom';
+import { DebugLogger } from './DebugLogger';
 
 export class DungeonGenerator {
   private width: number;
@@ -28,7 +29,7 @@ export class DungeonGenerator {
     this.rooms = [];
     this.doorConnectors = new Set();
 
-    console.log('[DungeonGen] Starting fresh generation');
+    DebugLogger.debug('DungeonGenerator', 'Starting fresh generation');
 
     this.initializeTiles();
     this.addRooms();
@@ -78,7 +79,7 @@ export class DungeonGenerator {
       }
     }
 
-    console.log(`[DungeonGen] Initialized ${this.width}x${this.height} tiles (all solid)`);
+    DebugLogger.debug('DungeonGenerator', `Initialized ${this.width}x${this.height} tiles (all solid)`);
   }
 
   private createWall(exists: boolean): Wall {
@@ -126,7 +127,7 @@ export class DungeonGenerator {
     }
 
     const totalOddTiles = Math.floor(this.width / 2) * Math.floor(this.height / 2);
-    console.log(`[DungeonGen] Placed ${roomsPlaced} rooms, carved ${oddTilesCarved}/${totalOddTiles} odd tiles (expected: ${totalOddTiles - oddTilesCarved} solid odd tiles remaining)`);
+    DebugLogger.debug('DungeonGenerator', `Placed ${roomsPlaced} rooms, carved ${oddTilesCarved}/${totalOddTiles} odd tiles (expected: ${totalOddTiles - oddTilesCarved} solid odd tiles remaining)`);
   }
 
   private randomOddInRange(min: number, max: number): number {
@@ -161,7 +162,7 @@ export class DungeonGenerator {
         if (x % 2 === 1 && y % 2 === 1) oddTilesCarved++;
       }
     }
-    console.log(`[DungeonGen]   Room at (${room.x},${room.y}) ${room.width}x${room.height}: carved ${tilesCarved} total tiles, ${oddTilesCarved} odd tiles`);
+    DebugLogger.debug('DungeonGenerator', `  Room at (${room.x},${room.y}) ${room.width}x${room.height}: carved ${tilesCarved} total tiles, ${oddTilesCarved} odd tiles`);
     this.currentRegion++;
   }
 
@@ -187,8 +188,8 @@ export class DungeonGenerator {
 
     const oddFloorAfterMazes = this.countOddFloorTiles();
     const oddCarvedByMazes = oddFloorAfterMazes - oddFloorBeforeMazes;
-    console.log(`[DungeonGen] Started ${mazesStarted} mazes at solid odd tiles (${oddSolidTiles} found)`);
-    console.log(`[DungeonGen] Odd tiles: ${oddFloorBeforeMazes} floor before mazes, ${oddFloorAfterMazes} after mazes (${oddCarvedByMazes} carved by mazes)`);
+    DebugLogger.debug('DungeonGenerator', `Started ${mazesStarted} mazes at solid odd tiles (${oddSolidTiles} found)`);
+    DebugLogger.debug('DungeonGenerator', `Odd tiles: ${oddFloorBeforeMazes} floor before mazes, ${oddFloorAfterMazes} after mazes (${oddCarvedByMazes} carved by mazes)`);
   }
 
   private growMaze(startX: number, startY: number): void {
@@ -238,7 +239,7 @@ export class DungeonGenerator {
       lastDir = dir;
     }
 
-    console.log(`[DungeonGen]   Maze at (${startX},${startY}): carved ${tilesCarved} total tiles, ${oddTilesCarved} odd tiles`);
+    DebugLogger.debug('DungeonGenerator', `  Maze at (${startX},${startY}): carved ${tilesCarved} total tiles, ${oddTilesCarved} odd tiles`);
   }
 
   private carveTile(x: number, y: number): void {
@@ -259,7 +260,7 @@ export class DungeonGenerator {
 
   private connectRegions(): void {
     const connectors = this.findAllConnectors();
-    console.log(`[DungeonGen] Found ${connectors.length} connectors`);
+    DebugLogger.debug('DungeonGenerator', `Found ${connectors.length} connectors`);
 
     const merged = new Map<number, number>();
     const openRegions = new Set<number>([0]);
@@ -273,7 +274,7 @@ export class DungeonGenerator {
       });
 
       if (candidates.length === 0) {
-        console.log(`[DungeonGen] No more connectors, connected ${openRegions.size}/${this.currentRegion} regions`);
+        DebugLogger.debug('DungeonGenerator', `No more connectors, connected ${openRegions.size}/${this.currentRegion} regions`);
         break;
       }
 
@@ -302,7 +303,7 @@ export class DungeonGenerator {
       }
     }
 
-    console.log(`[DungeonGen] Connected ${openRegions.size}/${this.currentRegion} regions with ${openedConnectors.length} connectors`);
+    DebugLogger.debug('DungeonGenerator', `Connected ${openRegions.size}/${this.currentRegion} regions with ${openedConnectors.length} connectors`);
 
     const extraConnectorChance = GAME_CONFIG.DUNGEON.ROOMS_AND_MAZES.EXTRA_CONNECTOR_CHANCE;
     let extraConnectors = 0;
@@ -314,7 +315,7 @@ export class DungeonGenerator {
       }
     }
 
-    console.log(`[DungeonGen] Added ${extraConnectors} extra connectors for loops (${extraConnectorChance}% chance)`);
+    DebugLogger.debug('DungeonGenerator', `Added ${extraConnectors} extra connectors for loops (${extraConnectorChance}% chance)`);
   }
 
   private openConnector(connector: Connector): void {
@@ -390,7 +391,7 @@ export class DungeonGenerator {
 
     const oddAfter = this.countOddFloorTiles();
     const oddRemoved = oddBefore - oddAfter;
-    console.log(`[DungeonGen] Removed ${removed} total dead ends (${oddRemoved} odd tiles removed)`);
+    DebugLogger.debug('DungeonGenerator', `Removed ${removed} total dead ends (${oddRemoved} odd tiles removed)`);
   }
 
   private updateWalls(): void {

@@ -4,6 +4,18 @@
  */
 
 export const UI_CONSTANTS = {
+  // Colors
+  COLORS: {
+    PANEL_BACKGROUND: '#2a2a2a',
+    PANEL_BORDER: '#666',
+    TEXT_PRIMARY: '#fff',
+    TEXT_SECONDARY: '#aaa',
+    TEXT_HIGHLIGHT: '#00ff00',
+    TEXT_WARNING: '#ffa500',
+    TEXT_ERROR: '#ff0000',
+    TEXT_SUCCESS: '#00ff00',
+  },
+
   // Layout & Positioning
   LAYOUT: {
     WINDOW_PADDING: 20,
@@ -34,6 +46,23 @@ export const UI_CONSTANTS = {
     INPUT_WIDTH: 200,
     INPUT_HEIGHT: 30,
     FORM_ROW_HEIGHT: 40,
+
+    // Panel padding
+    PANEL_PADDING: 10,
+
+    // Header positioning
+    HEADER_TITLE_Y: 45,
+    HEADER_GOLD_OFFSET: 30,
+
+    // Status panel
+    STATUS_PANEL_X: 10,
+    STATUS_PANEL_Y: 80,
+    STATUS_PANEL_WIDTH: 240,
+    STATUS_PANEL_HEIGHT: 480,
+
+    // Main content area (to the right of status panel)
+    MAIN_CONTENT_X: 260,
+    MAIN_CONTENT_Y: 80,
   },
 
   // Text Positioning

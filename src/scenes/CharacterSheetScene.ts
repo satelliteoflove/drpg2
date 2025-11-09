@@ -3,6 +3,7 @@ import { GameState, Equipment, Item } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { InventorySystem } from '../systems/InventorySystem';
 import { MenuInputHandler } from '../ui/components/MenuInputHandler';
+import { UIRenderingUtils } from '../utils/UIRenderingUtils';
 
 type CharacterSheetMode = 'view' | 'items' | 'itemDetail' | 'spells' | 'spellDetail';
 type CombinedItem = { item: Item; equipSlot?: keyof Equipment; isEquipped: boolean; originalIndex: number };
@@ -151,11 +152,7 @@ export class CharacterSheetScene extends Scene {
     const width = ctx.canvas.width - 40;
     const height = 50;
 
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(x, y, width, height);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, width, height);
+    UIRenderingUtils.drawPanel(ctx, x, y, width, height);
 
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 18px monospace';
@@ -173,11 +170,7 @@ export class CharacterSheetScene extends Scene {
     const width = 240;
     const height = 320;
 
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(x, y, width, height);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, width, height);
+    UIRenderingUtils.drawPanel(ctx, x, y, width, height);
 
     ctx.fillStyle = '#ffa500';
     ctx.font = 'bold 14px monospace';
@@ -232,11 +225,7 @@ export class CharacterSheetScene extends Scene {
     const width = 330;
     const height = 490;
 
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(x, y, width, height);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, width, height);
+    UIRenderingUtils.drawPanel(ctx, x, y, width, height);
 
     const allItems = this.getCombinedItems(character);
     const totalPages = Math.max(1, Math.ceil(allItems.length / this.itemsPerPage));
@@ -302,11 +291,7 @@ export class CharacterSheetScene extends Scene {
     const width = 370;
     const height = 490;
 
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(x, y, width, height);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, width, height);
+    UIRenderingUtils.drawPanel(ctx, x, y, width, height);
 
     const spells = character.spells || [];
     const totalPages = Math.max(1, Math.ceil(spells.length / this.spellsPerPage));

@@ -1,5 +1,5 @@
 import { Game } from './core/Game';
-import './config/FeatureFlags'; // Initialize feature flags and expose to window
+import './config/FeatureFlags';
 import { createAIInterface } from './core/AIInterface';
 import { DiceRoller } from './utils/DiceRoller';
 import { EntityUtils } from './utils/EntityUtils';
@@ -10,6 +10,7 @@ import { Character } from './entities/Character';
 import { Party } from './entities/Party';
 import { GameServices } from './services/GameServices';
 import { GAME_CONFIG } from './config/GameConstants';
+import { DebugLogger } from './utils/DebugLogger';
 
 document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -74,6 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
     (window as any).GameServices = GameServices;
     (window as any).GAME_CONFIG = GAME_CONFIG;
 
-    console.log('AI Interface available: window.AI.describe(), window.AI.getState(), window.AI.sendKey(key), etc.');
+    DebugLogger.info('AIInterface', 'AI Interface available: window.AI.describe(), window.AI.getState(), window.AI.sendKey(key), etc.');
   }
 });

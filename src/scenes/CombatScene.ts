@@ -14,6 +14,7 @@ import { SpellTargetSelector } from '../ui/SpellTargetSelector';
 import { SpellRegistry } from '../systems/magic/SpellRegistry';
 import { SpellId } from '../types/SpellTypes';
 import { SaveManager } from '../utils/SaveManager';
+import { UI_CONSTANTS } from '../config/UIConstants';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
@@ -217,8 +218,13 @@ export class CombatScene extends Scene {
   }
 
   private initializeUI(canvas: HTMLCanvasElement): void {
-    // Use EXACT same position and dimensions as dungeon scene
-    this.statusPanel = new StatusPanel(canvas, 10, 80, 240, 480);
+    this.statusPanel = new StatusPanel(
+      canvas,
+      UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
+      UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
+      UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,
+      UI_CONSTANTS.LAYOUT.STATUS_PANEL_HEIGHT
+    );
     this.debugOverlay = new DebugOverlay(canvas);
 
     // Only add combat message, don't create a new log
@@ -401,7 +407,7 @@ export class CombatScene extends Scene {
       ctx.fillStyle = '#ffa500';
       ctx.font = '14px monospace';
       ctx.textAlign = 'right';
-      const unitName = EntityUtils.isCharacter(currentUnit as any) ? currentUnit.name : currentUnit.name;
+      const unitName = currentUnit.name;
       ctx.fillText(`Current Turn: ${unitName}`, ctx.canvas.width - 30, 45);
     }
   }
@@ -432,7 +438,7 @@ export class CombatScene extends Scene {
       ctx.font = '12px monospace';
 
       turnOrder.forEach((unit, idx) => {
-        const unitName = EntityUtils.getName(unit as any);
+        const unitName = EntityUtils.getName(unit as Character | Monster);
         const isCurrent = unit === currentUnit;
         ctx.fillStyle = isCurrent ? '#ffff00' : '#aaa';
         ctx.fillText(`${idx + 1}. ${unitName}`, orderX + 10, orderY + 45 + idx * 18);
@@ -502,8 +508,8 @@ export class CombatScene extends Scene {
         this.selectedTarget = 0;
       } else if (selectedActionText === 'Cast Spell') {
         const currentUnit = this.combatSystem.getCurrentUnit();
-        if (currentUnit && EntityUtils.isCharacter(currentUnit as any)) {
-          this.openSpellMenu(currentUnit as Character);
+        if (currentUnit && EntityUtils.isCharacter(currentUnit)) {
+          this.openSpellMenu(currentUnit);
         }
       } else {
         this.executeAction(selectedActionText);
@@ -584,7 +590,7 @@ export class CombatScene extends Scene {
     }
 
     const currentUnit = this.combatSystem.getCurrentUnit();
-    if (!currentUnit || !EntityUtils.isCharacter(currentUnit as any)) {
+    if (!currentUnit || !EntityUtils.isCharacter(currentUnit)) {
       this.actionState = 'select_action';
       return;
     }
@@ -822,7 +828,7 @@ export class CombatScene extends Scene {
 
   private getAvailableSpells(): string[] {
     const currentUnit = this.combatSystem.getCurrentUnit();
-    if (currentUnit && EntityUtils.isCharacter(currentUnit as any)) {
+    if (currentUnit && EntityUtils.isCharacter(currentUnit)) {
       return currentUnit.knownSpells || [];
     }
     return [];

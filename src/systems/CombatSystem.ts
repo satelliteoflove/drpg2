@@ -69,13 +69,12 @@ export class CombatSystem {
         isDead: false
       })),
       surprise: Math.random() < GAME_CONFIG.ENCOUNTER.SURPRISE_CHANCE,
-      canRun: true, // Keep for compatibility, no longer used
       turnOrder: this.calculateTurnOrder(party, monsters),
       currentTurn: 0,
     };
 
     if (this.encounter.surprise) {
-      this.encounter.turnOrder = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as any));
+      this.encounter.turnOrder = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as Character | Monster));
     }
 
     // Update debug data
@@ -97,9 +96,9 @@ export class CombatSystem {
     });
   }
 
-  public getCurrentUnit(): any {
+  public getCurrentUnit(): Character | Monster | null {
     if (!this.encounter) return null;
-    return this.encounter.turnOrder[this.encounter.currentTurn] || null;
+    return this.encounter.turnOrder[this.encounter.currentTurn] as Character | Monster || null;
   }
 
   public getMonsters(): Monster[] {
@@ -112,12 +111,12 @@ export class CombatSystem {
 
   public canPlayerAct(): boolean {
     const currentUnit = this.getCurrentUnit();
-    return currentUnit !== null && EntityUtils.isCharacter(currentUnit as any);
+    return currentUnit !== null && EntityUtils.isCharacter(currentUnit);
   }
 
   public getPlayerOptions(): string[] {
     const currentUnit = this.getCurrentUnit();
-    if (!currentUnit || !EntityUtils.isCharacter(currentUnit as any)) return [];
+    if (!currentUnit || !EntityUtils.isCharacter(currentUnit)) return [];
 
     const options = ['Attack', 'Defend', 'Use Item', 'Escape'];
 
@@ -330,7 +329,7 @@ export class CombatSystem {
       return '';
     }
 
-    if (EntityUtils.isCharacter(currentUnit as any)) {
+    if (EntityUtils.isCharacter(currentUnit)) {
       // It's a player's turn, not a monster's - reset flag and skip
       this.isProcessingTurn = false;
       return '';
@@ -338,7 +337,7 @@ export class CombatSystem {
 
     const monster = currentUnit;
     const alivePlayers = this.encounter.turnOrder.filter(
-      (unit) => EntityUtils.isCharacter(unit as any) && !(unit as Character).isDead
+      (unit) => EntityUtils.isCharacter(unit as Character | Monster) && !unit.isDead
     ) as Character[];
 
     if (alivePlayers.length === 0) {
@@ -460,7 +459,7 @@ export class CombatSystem {
       previousTurn,
       newTurn: this.encounter.currentTurn,
       nextUnit: this.encounter.turnOrder[this.encounter.currentTurn] ?
-        EntityUtils.getName(this.encounter.turnOrder[this.encounter.currentTurn] as any) : 'none'
+        EntityUtils.getName(this.encounter.turnOrder[this.encounter.currentTurn] as Character | Monster) : 'none'
     });
 
     // Remove dead units from turn order
@@ -474,12 +473,11 @@ export class CombatSystem {
 
     const currentUnit = this.getCurrentUnit();
 
-    if (currentUnit && EntityUtils.isCharacter(currentUnit as any)) {
-      const char = currentUnit as Character;
-      this.statusEffectSystem.tick(char, 'combat');
-      this.modifierSystem.tick(char, 'combat');
+    if (currentUnit && EntityUtils.isCharacter(currentUnit)) {
+      this.statusEffectSystem.tick(currentUnit, 'combat');
+      this.modifierSystem.tick(currentUnit, 'combat');
 
-      if (char.isDead) {
+      if (currentUnit.isDead) {
         this.cleanupDeadUnits();
         if (this.checkCombatEnd()) {
           this.resetTurnState();
@@ -490,7 +488,7 @@ export class CombatSystem {
       }
     }
 
-    const isMonster = currentUnit && EntityUtils.isMonster(currentUnit as any);
+    const isMonster = currentUnit && EntityUtils.isMonster(currentUnit);
 
     if (isMonster) {
       const monster = currentUnit as Monster;
@@ -538,11 +536,10 @@ export class CombatSystem {
     if (!this.encounter) return;
 
     this.encounter.turnOrder = this.encounter.turnOrder.filter((unit) => {
-      if (EntityUtils.isCharacter(unit as any)) {
-        return !(unit as Character).isDead;
+      if (EntityUtils.isCharacter(unit as Character | Monster)) {
+        return !unit.isDead;
       } else {
-        const monster = unit as Monster;
-        return monster.hp > 0;
+        return unit.hp > 0;
       }
     });
 
@@ -554,7 +551,7 @@ export class CombatSystem {
   private checkCombatEnd(): boolean {
     if (!this.encounter) return true;
 
-    const alivePlayers = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as any) && !(unit as Character).isDead);
+    const alivePlayers = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as Character | Monster) && !unit.isDead);
     const aliveMonsters = this.encounter.monsters.filter((m) => m.hp > 0);
 
     if (alivePlayers.length === 0) {
@@ -599,7 +596,7 @@ export class CombatSystem {
   private getAveragePartyLevel(): number {
     if (!this.encounter) return 1;
 
-    const partyMembers = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as any)) as Character[];
+    const partyMembers = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as Character | Monster)) as Character[];
     if (partyMembers.length === 0) return 1;
 
     const totalLevel = partyMembers.reduce((sum, character) => sum + character.level, 0);
@@ -635,7 +632,7 @@ export class CombatSystem {
 
     const aliveMonsters = this.encounter.monsters.filter((m) => m.hp > 0);
     const alivePlayers = this.encounter.turnOrder.filter(
-      (unit) => EntityUtils.isCharacter(unit as any) && !(unit as Character).isDead
+      (unit) => EntityUtils.isCharacter(unit as Character | Monster) && !unit.isDead
     ).length;
 
     return `Players: ${alivePlayers} | Monsters: ${aliveMonsters.length}`;
@@ -648,14 +645,14 @@ export class CombatSystem {
   private updateCombatDebugData(): void {
     const currentUnit = this.getCurrentUnit();
     const currentTurnName = currentUnit
-      ? EntityUtils.isCharacter(currentUnit as any)
+      ? EntityUtils.isCharacter(currentUnit)
         ? currentUnit.name
         : currentUnit.name
       : 'No active unit';
 
     const turnOrderNames =
       this.encounter?.turnOrder.map((unit) =>
-        EntityUtils.isCharacter(unit as any) ? `${unit.name} (${(unit as Character).class})` : unit.name
+        EntityUtils.isCharacter(unit as Character | Monster) ? `${unit.name} (${(unit as Character).class})` : unit.name
       ) || [];
 
     CombatSystem.debugData = {
@@ -669,7 +666,7 @@ export class CombatSystem {
   private calculateEscapeChances(): { name: string; chance: number }[] {
     if (!this.encounter) return [];
 
-    const partyMembers = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as any)) as Character[];
+    const partyMembers = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as Character | Monster)) as Character[];
     return partyMembers.map((char) => {
       let escapeChance = 0.5;
       const agilityBonus = (char.stats.agility - 10) * 0.02;

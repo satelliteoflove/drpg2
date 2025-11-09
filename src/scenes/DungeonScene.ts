@@ -11,6 +11,7 @@ import { DungeonItemPickupUI } from '../systems/dungeon/DungeonItemPickupUI';
 import { DungeonInputHandler } from '../systems/dungeon/DungeonInputHandler';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
+import { UI_CONSTANTS } from '../config/UIConstants';
 
 export class DungeonScene extends Scene {
   protected gameState: GameState;
@@ -403,7 +404,13 @@ export class DungeonScene extends Scene {
   private initializeUI(canvas: HTMLCanvasElement): void {
     DebugLogger.info('DungeonScene', 'Initializing raycasting dungeon renderer');
     this.dungeonView = new DungeonViewRaycast(canvas, this);
-    this.statusPanel = new StatusPanel(canvas, 10, 80, 240, 480);  // Left side panel
+    this.statusPanel = new StatusPanel(
+      canvas,
+      UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
+      UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
+      UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,
+      UI_CONSTANTS.LAYOUT.STATUS_PANEL_HEIGHT
+    );
     this.dungeonMapView = new DungeonMapView(canvas);
     this.debugOverlay = new DebugOverlay(canvas);
     this.performanceOverlay = new PerformanceOverlay(canvas);

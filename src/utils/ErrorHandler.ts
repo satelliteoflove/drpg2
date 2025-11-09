@@ -1,3 +1,5 @@
+import { DebugLogger } from './DebugLogger';
+
 export enum ErrorSeverity {
   LOW = 'low',
   MEDIUM = 'medium',
@@ -38,14 +40,16 @@ export class ErrorHandler {
     }
 
     if (severity === ErrorSeverity.CRITICAL || severity === ErrorSeverity.HIGH) {
-      console.error(
-        `[${severity.toUpperCase()}] ${context ? `[${context}] ` : ''}${message}`,
-        error
+      DebugLogger.error(
+        context || 'ErrorHandler',
+        `[${severity.toUpperCase()}] ${message}`,
+        { error }
       );
     } else {
-      console.warn(
-        `[${severity.toUpperCase()}] ${context ? `[${context}] ` : ''}${message}`,
-        error
+      DebugLogger.warn(
+        context || 'ErrorHandler',
+        `[${severity.toUpperCase()}] ${message}`,
+        { error }
       );
     }
   }
