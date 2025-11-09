@@ -660,6 +660,11 @@ export class CombatSystem {
     }
   }
 
+  public processNextTurn(): void {
+    if (!this.encounter) return;
+    this.nextTurn();
+  }
+
   private updateCombatDebugData(): void {
     const currentUnit = this.getCurrentUnit();
     const currentTurnName = currentUnit

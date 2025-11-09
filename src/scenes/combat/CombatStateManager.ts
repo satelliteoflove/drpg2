@@ -26,6 +26,9 @@ export class CombatStateManager {
   private pendingSpellId: string | null = null;
   private isProcessingAction: boolean = false;
   private lastActionTime: number = 0;
+  private isProcessingInitialTurns: boolean = false;
+  private lastMonsterTurnTime: number = 0;
+  private readonly MONSTER_TURN_DELAY_MS = 200;
 
   private onCombatEndCallback?: (victory: boolean, rewards?: CombatRewards, escaped?: boolean) => void;
 
@@ -143,7 +146,56 @@ export class CombatStateManager {
   }
 
   public processInitialMonsterTurns(): void {
-    this.combatSystem.processTurnsUntilPlayer();
+    if (!this.combatSystem.canPlayerAct()) {
+      this.isProcessingInitialTurns = true;
+      this.lastMonsterTurnTime = Date.now();
+    }
+  }
+
+  public updateMonsterTurns(): boolean {
+    if (!this.isProcessingInitialTurns) {
+      return false;
+    }
+
+    if (this.combatSystem.canPlayerAct()) {
+      this.isProcessingInitialTurns = false;
+      return false;
+    }
+
+    const now = Date.now();
+    if (now - this.lastMonsterTurnTime < this.MONSTER_TURN_DELAY_MS) {
+      return true;
+    }
+
+    this.lastMonsterTurnTime = now;
+    const currentUnit = this.combatSystem.getCurrentUnit();
+    if (!currentUnit || !('hp' in currentUnit)) {
+      this.isProcessingInitialTurns = false;
+      return false;
+    }
+
+    const result = this.combatSystem.executeMonsterTurn();
+    if (result && this.messageLog) {
+      this.messageLog.addCombatMessage(result);
+    }
+
+    this.combatSystem.processNextTurn();
+
+    if (this.combatSystem.canPlayerAct() || this.checkCombatEnd()) {
+      this.isProcessingInitialTurns = false;
+    }
+
+    return true;
+  }
+
+  private checkCombatEnd(): boolean {
+    const encounter = this.combatSystem.getEncounter();
+    if (!encounter) return true;
+
+    const aliveMonsters = encounter.monsters.filter(m => m.hp > 0);
+    const aliveCharacters = this.gameState.party.getAliveCharacters();
+
+    return aliveMonsters.length === 0 || aliveCharacters.length === 0;
   }
 
   private generateMonsters(): Monster[] {

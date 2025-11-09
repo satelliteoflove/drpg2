@@ -54,6 +54,10 @@ export class CombatScene extends Scene {
       return;
     }
 
+    if (this.stateManager.updateMonsterTurns()) {
+      return;
+    }
+
     this.stateManager.updateForPlayerTurn();
   }
 

@@ -306,18 +306,6 @@ export class CombatUIManager {
       const currentTurnIndex = encounter.currentTurn;
       const totalUnits = encounter.turnOrder.length;
       const currentUnit = this.combatSystem.getCurrentUnit();
-      const monsters = this.combatSystem.getMonsters();
-
-      const charactersCount = encounter.turnOrder.filter(u => EntityUtils.isCharacter(u as any)).length;
-      const monstersCount = encounter.turnOrder.filter(u => EntityUtils.isMonster(u as any)).length;
-
-      if (charactersCount > 0 && monstersCount === 0 && monsters && monsters.length > 0) {
-        ctx.fillStyle = '#ff0000';
-        ctx.font = '10px monospace';
-        ctx.fillText('[DEBUG: Monsters missing from turn order!]', orderX + 10, orderY + 175);
-        ctx.fillText(`Chars: ${charactersCount}, Mons: ${monstersCount}/${monsters.length}`, orderX + 10, orderY + 190);
-      }
-
       ctx.font = '12px monospace';
 
       const displayCount = Math.min(6, totalUnits);
@@ -326,8 +314,7 @@ export class CombatUIManager {
         const unit = encounter.turnOrder[turnIndex];
         const unitName = EntityUtils.getName(unit as Character | Monster);
         const isCurrent = unit === currentUnit;
-        const isMonster = EntityUtils.isMonster(unit as any);
-        ctx.fillStyle = isCurrent ? '#ffff00' : (isMonster ? '#ff8888' : '#aaa');
+        ctx.fillStyle = isCurrent ? '#ffff00' : '#aaa';
         ctx.fillText(`${i + 1}. ${unitName}`, orderX + 10, orderY + 45 + i * 18);
       }
     }
