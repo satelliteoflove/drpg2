@@ -3,7 +3,7 @@ import { GameState, Item } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { InventorySystem } from '../systems/InventorySystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
-import { ItemUtils } from '../utils/ItemUtils';
+import { ItemUtils, EQUIPMENT_SLOT_KEYS } from '../utils/ItemUtils';
 import { DebugLogger } from '../utils/DebugLogger';
 
 export class InventoryScene extends Scene {
@@ -207,9 +207,7 @@ export class InventoryScene extends Scene {
     const character = this.gameState.party.characters[this.selectedCharacter];
     ctx.fillText(`${character.name}'s EQUIPMENT`, 10, 30);
 
-    const slots = ['weapon', 'armor', 'shield', 'helmet', 'gauntlets', 'boots', 'accessory'];
-
-    slots.forEach((slot, index: number) => {
+    EQUIPMENT_SLOT_KEYS.forEach((slot, index: number) => {
       const y = 70 + index * 25;
       const item = character.equipment[slot as keyof typeof character.equipment];
       const itemName = item ? item.name : '(empty)';

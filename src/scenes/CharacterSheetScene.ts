@@ -4,6 +4,7 @@ import { Character } from '../entities/Character';
 import { InventorySystem } from '../systems/InventorySystem';
 import { MenuInputHandler } from '../ui/components/MenuInputHandler';
 import { UIRenderingUtils } from '../utils/UIRenderingUtils';
+import { EQUIPMENT_SLOTS } from '../utils/ItemUtils';
 
 type CharacterSheetMode = 'view' | 'items' | 'itemDetail' | 'spells' | 'spellDetail';
 type CombinedItem = { item: Item; equipSlot?: keyof Equipment; isEquipped: boolean; originalIndex: number };
@@ -113,17 +114,8 @@ export class CharacterSheetScene extends Scene {
 
   private getCombinedItems(character: Character): CombinedItem[] {
     const combined: CombinedItem[] = [];
-    const equipSlots: Array<{ key: keyof Equipment; label: string }> = [
-      { key: 'weapon', label: 'Weapon' },
-      { key: 'armor', label: 'Armor' },
-      { key: 'shield', label: 'Shield' },
-      { key: 'helmet', label: 'Helmet' },
-      { key: 'gauntlets', label: 'Gauntlets' },
-      { key: 'boots', label: 'Boots' },
-      { key: 'accessory', label: 'Accessory' },
-    ];
 
-    equipSlots.forEach((slot, index) => {
+    EQUIPMENT_SLOTS.forEach((slot, index) => {
       const item = character.equipment[slot.key];
       if (item) {
         combined.push({
