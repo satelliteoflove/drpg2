@@ -5,6 +5,9 @@ import { DataLoader } from '../../utils/DataLoader';
 import { InventorySystem } from '../../systems/InventorySystem';
 import { DebugLogger } from '../../utils/DebugLogger';
 import { SaveManager } from '../../utils/SaveManager';
+import { GAME_CONFIG } from '../../config/GameConstants';
+import { StatusEffectSystem } from '../../systems/StatusEffectSystem';
+import { EntityUtils } from '../../utils/EntityUtils';
 
 export type ActionState = 'select_action' | 'select_target' | 'select_spell' | 'spell_target' | 'waiting';
 
@@ -28,7 +31,6 @@ export class CombatStateManager {
   private lastActionTime: number = 0;
   private isProcessingInitialTurns: boolean = false;
   private lastMonsterTurnTime: number = 0;
-  private readonly MONSTER_TURN_DELAY_MS = 200;
 
   private onCombatEndCallback?: (victory: boolean, rewards?: CombatRewards, escaped?: boolean) => void;
 
@@ -163,20 +165,32 @@ export class CombatStateManager {
     }
 
     const now = Date.now();
-    if (now - this.lastMonsterTurnTime < this.MONSTER_TURN_DELAY_MS) {
+    if (now - this.lastMonsterTurnTime < GAME_CONFIG.COMBAT.MONSTER_TURN_DELAY) {
       return true;
     }
 
     this.lastMonsterTurnTime = now;
     const currentUnit = this.combatSystem.getCurrentUnit();
-    if (!currentUnit || !('hp' in currentUnit)) {
+    if (!currentUnit || !EntityUtils.isMonster(currentUnit)) {
       this.isProcessingInitialTurns = false;
       return false;
     }
 
-    const result = this.combatSystem.executeMonsterTurn();
-    if (result && this.messageLog) {
-      this.messageLog.addCombatMessage(result);
+    const monster = currentUnit as Monster;
+    const statusSystem = StatusEffectSystem.getInstance();
+
+    if (statusSystem.isDisabled(monster)) {
+      const status = statusSystem.hasStatus(monster, 'Sleeping') ? 'asleep' :
+                     statusSystem.hasStatus(monster, 'Paralyzed') ? 'paralyzed' :
+                     statusSystem.hasStatus(monster, 'Stoned') ? 'petrified' : 'disabled';
+      if (this.messageLog) {
+        this.messageLog.addCombatMessage(`${monster.name} is ${status} and cannot act!`);
+      }
+    } else {
+      const result = this.combatSystem.executeMonsterTurn();
+      if (result && this.messageLog) {
+        this.messageLog.addCombatMessage(result);
+      }
     }
 
     this.combatSystem.processNextTurn();

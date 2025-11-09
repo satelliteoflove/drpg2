@@ -252,10 +252,17 @@ export class CombatInputController {
       this.messageLog.addCombatMessage(result);
     }
 
+    this.combatSystem.processNextTurn();
+
     const canAct = this.combatSystem.canPlayerAct();
     this.stateManager.setActionState(canAct ? 'select_action' : 'waiting');
     this.stateManager.setSelectedAction(0);
     this.stateManager.setProcessing(false);
+
+    if (!canAct) {
+      this.stateManager.processInitialMonsterTurns();
+    }
+
     DebugLogger.debug(
       'CombatInputController',
       `UI state reset - canPlayerAct: ${canAct}, actionState: ${this.stateManager.getActionState()}`

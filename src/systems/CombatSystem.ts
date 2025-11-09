@@ -177,12 +177,7 @@ export class CombatSystem {
         result = 'Invalid action';
     }
 
-    this.nextTurn();
-
-    // Additional safety: if we end up back at a player turn immediately, reset processing flag
-    if (this.canPlayerAct()) {
-      this.isProcessingTurn = false;
-    }
+    this.isProcessingTurn = false;
 
     return result;
   }
@@ -488,9 +483,7 @@ export class CombatSystem {
       }
     }
 
-    const isMonster = currentUnit && EntityUtils.isMonster(currentUnit);
-
-    if (isMonster) {
+    if (currentUnit && EntityUtils.isMonster(currentUnit)) {
       const monster = currentUnit as Monster;
       this.statusEffectSystem.tick(monster, 'combat');
 
@@ -503,33 +496,10 @@ export class CombatSystem {
         this.nextTurn();
         return;
       }
-
-      if (this.statusEffectSystem.isDisabled(monster)) {
-        const status = this.statusEffectSystem.hasStatus(monster, 'Sleeping') ? 'asleep' :
-                       this.statusEffectSystem.hasStatus(monster, 'Paralyzed') ? 'paralyzed' :
-                       this.statusEffectSystem.hasStatus(monster, 'Stoned') ? 'petrified' : 'disabled';
-        if (this.onMessage) {
-          this.onMessage(`${monster.name} is ${status} and cannot act!`);
-        }
-        this.nextTurn();
-        return;
-      }
-
-      // Execute monster turn immediately
-      const result = this.executeMonsterTurn();
-      if (result && this.onMessage) {
-        this.onMessage(result);
-      }
-
-      // Continue to next turn immediately
-      this.nextTurn();
-    } else {
-      // Player turn - reset state to allow player input
-      this.isProcessingTurn = false;
-
-      // Update debug data for current turn
-      this.updateCombatDebugData();
     }
+
+    this.isProcessingTurn = false;
+    this.updateCombatDebugData();
   }
 
   private cleanupDeadUnits(): void {

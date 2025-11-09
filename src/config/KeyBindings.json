@@ -23,10 +23,10 @@
     "debugOverlay": "ctrl+d"
   },
   "combat": {
-    "selectUp": "arrowup",
-    "selectDown": "arrowdown",
-    "selectLeft": "arrowleft",
-    "selectRight": "arrowright",
+    "selectUp": "k",
+    "selectDown": "j",
+    "selectLeft": "h",
+    "selectRight": "l",
     "confirm": "enter",
     "cancel": "escape"
   },
