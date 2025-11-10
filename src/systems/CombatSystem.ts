@@ -1,7 +1,6 @@
 import { Character } from '../entities/Character';
 import { Encounter, Item, Monster, CharacterStatus } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
-import { InventorySystem } from './InventorySystem';
 import { DebugLogger } from '../utils/DebugLogger';
 import { SpellCaster } from './magic/SpellCaster';
 import { SpellCastingContext, SpellId } from '../types/SpellTypes';
@@ -9,6 +8,7 @@ import { DiceRoller } from '../utils/DiceRoller';
 import { EntityUtils } from '../utils/EntityUtils';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { ModifierSystem } from './ModifierSystem';
+import { LootGenerator } from './inventory/LootGenerator';
 
 interface CombatDebugData {
   currentTurn: string;
@@ -30,9 +30,8 @@ export class CombatSystem {
     escaped?: boolean
   ) => void;
   private onMessage?: (message: string) => void;
-  private isProcessingTurn: boolean = false; // Prevent simultaneous turn processing
+  private isProcessingTurn: boolean = false;
 
-  // Debug data
   private static debugData: CombatDebugData = {
     currentTurn: '',
     turnOrder: [],
@@ -545,7 +544,7 @@ export class CombatSystem {
       }, 0);
 
       const partyLevel = this.getAveragePartyLevel();
-      const droppedItems = InventorySystem.generateMonsterLoot(
+      const droppedItems = LootGenerator.getInstance().generateMonsterLoot(
         this.encounter.monsters,
         partyLevel,
         this.dungeonLevel,

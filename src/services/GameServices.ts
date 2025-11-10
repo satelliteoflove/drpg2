@@ -3,15 +3,12 @@ import { ServiceIdentifiers } from './ServiceIdentifiers';
 import { RenderManager } from '../core/RenderManager';
 import { InputManager } from '../core/Input';
 import { SceneManager } from '../core/Scene';
-import { SaveManager } from '../utils/SaveManager';
-import { DungeonGenerator } from '../utils/DungeonGenerator';
-import { ErrorHandler } from '../utils/ErrorHandler';
 import { SpellCaster } from '../systems/magic/SpellCaster';
 import { SpellRegistry } from '../systems/magic/SpellRegistry';
-import { GAME_CONFIG } from '../config/GameConstants';
 import { SpellValidation } from '../systems/magic/SpellValidation';
-import { CombatSystem } from '../systems/CombatSystem';
 import { StatusEffectSystem } from '../systems/StatusEffectSystem';
+import { GAME_CONFIG } from '../config/GameConstants';
+import type { CombatSystem } from '../systems/CombatSystem';
 
 export interface GameServiceDependencies {
   canvas: HTMLCanvasElement;
@@ -24,9 +21,10 @@ export class GameServices {
 
   constructor(dependencies: GameServiceDependencies) {
     this.container = serviceContainer;
+    this.container.clear();
     this.dependencies = dependencies;
-    this.registerServices();
     GameServices.instance = this;
+    this.registerServices();
   }
 
   public static getInstance(): GameServices {
@@ -45,17 +43,26 @@ export class GameServices {
     // Register RenderManager with canvas dependency
     this.container.register(
       ServiceIdentifiers.RenderManager,
-      () => new RenderManager(this.dependencies.canvas),
+      () => {
+        const { RenderManager } = require('../core/RenderManager');
+        return new RenderManager(this.dependencies.canvas);
+      },
       { singleton: true }
     );
 
     // Register InputManager
-    this.container.register(ServiceIdentifiers.InputManager, () => new InputManager(), {
+    this.container.register(ServiceIdentifiers.InputManager, () => {
+      const { InputManager } = require('../core/Input');
+      return new InputManager();
+    }, {
       singleton: true,
     });
 
     // Register SceneManager
-    this.container.register(ServiceIdentifiers.SceneManager, () => new SceneManager(), {
+    this.container.register(ServiceIdentifiers.SceneManager, () => {
+      const { SceneManager } = require('../core/Scene');
+      return new SceneManager();
+    }, {
       singleton: true,
     });
 
@@ -64,43 +71,61 @@ export class GameServices {
     // Register DungeonGenerator (non-singleton as it's stateless)
     this.container.register(
       ServiceIdentifiers.DungeonGenerator,
-      () => new DungeonGenerator(
-        GAME_CONFIG.DUNGEON.DEFAULT_WIDTH,
-        GAME_CONFIG.DUNGEON.DEFAULT_HEIGHT
-      ),
+      () => {
+        const { DungeonGenerator } = require('../utils/DungeonGenerator');
+        return new DungeonGenerator(
+          GAME_CONFIG.DUNGEON.DEFAULT_WIDTH,
+          GAME_CONFIG.DUNGEON.DEFAULT_HEIGHT
+        );
+      },
       { singleton: false }
     );
 
     // Register Magic System Services
     this.container.register(
       ServiceIdentifiers.SpellRegistry,
-      () => SpellRegistry.getInstance(),
+      () => {
+        const { SpellRegistry } = require('../systems/magic/SpellRegistry');
+        return SpellRegistry.getInstance();
+      },
       { singleton: true }
     );
 
     this.container.register(
       ServiceIdentifiers.SpellValidation,
-      () => new SpellValidation(),
+      () => {
+        const { SpellValidation } = require('../systems/magic/SpellValidation');
+        return new SpellValidation();
+      },
       { singleton: true }
     );
 
     this.container.register(
       ServiceIdentifiers.SpellCaster,
-      () => SpellCaster.getInstance(),
+      () => {
+        const { SpellCaster } = require('../systems/magic/SpellCaster');
+        return SpellCaster.getInstance();
+      },
       { singleton: true }
     );
 
     // Register Combat System
     this.container.register(
       ServiceIdentifiers.CombatSystem,
-      () => new CombatSystem(),
+      () => {
+        const { CombatSystem } = require('../systems/CombatSystem');
+        return new CombatSystem();
+      },
       { singleton: true }
     );
 
     // Register Status Effect System
     this.container.register(
       ServiceIdentifiers.StatusEffectSystem,
-      () => StatusEffectSystem.getInstance(),
+      () => {
+        const { StatusEffectSystem } = require('../systems/StatusEffectSystem');
+        return StatusEffectSystem.getInstance();
+      },
       { singleton: true }
     );
   }
@@ -117,15 +142,17 @@ export class GameServices {
     return this.container.resolve(ServiceIdentifiers.SceneManager);
   }
 
-  public getSaveManager(): typeof SaveManager {
+  public getSaveManager() {
+    const { SaveManager } = require('../utils/SaveManager');
     return SaveManager;
   }
 
-  public getDungeonGenerator(): DungeonGenerator {
+  public getDungeonGenerator() {
     return this.container.resolve(ServiceIdentifiers.DungeonGenerator);
   }
 
-  public getErrorHandler(): typeof ErrorHandler {
+  public getErrorHandler() {
+    const { ErrorHandler } = require('../utils/ErrorHandler');
     return ErrorHandler;
   }
 

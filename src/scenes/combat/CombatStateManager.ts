@@ -2,12 +2,12 @@ import { GameState, Monster, Item } from '../../types/GameTypes';
 import { Character } from '../../entities/Character';
 import { CombatSystem } from '../../systems/CombatSystem';
 import { DataLoader } from '../../utils/DataLoader';
-import { InventorySystem } from '../../systems/InventorySystem';
 import { DebugLogger } from '../../utils/DebugLogger';
 import { SaveManager } from '../../utils/SaveManager';
 import { GAME_CONFIG } from '../../config/GameConstants';
 import { StatusEffectSystem } from '../../systems/StatusEffectSystem';
 import { EntityUtils } from '../../utils/EntityUtils';
+import { LootGenerator } from '../../systems/inventory/LootGenerator';
 
 export type ActionState = 'select_action' | 'select_target' | 'select_spell' | 'spell_target' | 'waiting';
 
@@ -338,7 +338,7 @@ export class CombatStateManager {
   }
 
   public getDebugData(): any {
-    const lootData = InventorySystem.getLootDebugData();
+    const lootData = LootGenerator.getInstance().getLootDebugData();
     const combatData = CombatSystem.getCombatDebugData();
 
     const totalLuck = this.gameState.party.characters.reduce(

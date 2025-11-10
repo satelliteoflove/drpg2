@@ -6,8 +6,6 @@ import { SaveManager } from '../utils/SaveManager';
 import { DungeonGenerator } from '../utils/DungeonGenerator';
 import { ErrorHandler } from '../utils/ErrorHandler';
 import { SpellValidation } from '../systems/magic/SpellValidation';
-import { CombatSystem } from '../systems/CombatSystem';
-import { StatusEffectSystem } from '../systems/StatusEffectSystem';
 
 export const ServiceIdentifiers = {
   RenderManager: createServiceIdentifier('RenderManager', RenderManager),
@@ -19,6 +17,6 @@ export const ServiceIdentifiers = {
   SpellRegistry: Symbol('SpellRegistry') as any,
   SpellValidation: createServiceIdentifier('SpellValidation', SpellValidation),
   SpellCaster: Symbol('SpellCaster') as any,
-  CombatSystem: createServiceIdentifier('CombatSystem', CombatSystem),
-  StatusEffectSystem: createServiceIdentifier('StatusEffectSystem', StatusEffectSystem),
+  CombatSystem: Symbol('CombatSystem') as any,
+  StatusEffectSystem: Symbol('StatusEffectSystem') as any,
 } as const;

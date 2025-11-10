@@ -149,13 +149,7 @@ export class DungeonInputHandler {
     return false;
   }
 
-  private handleSceneSwitch(key: string): boolean {
-    if (key === KEY_BINDINGS.dungeonActions.inventory) {
-      DebugLogger.debug('DungeonInputHandler', 'Tab pressed - switching to inventory scene');
-      this.sceneManager.switchTo('inventory');
-      return true;
-    }
-
+  private handleSceneSwitch(_key: string): boolean {
     return false;
   }
 

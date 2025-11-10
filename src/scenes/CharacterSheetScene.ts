@@ -1,10 +1,12 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState, Equipment, Item } from '../types/GameTypes';
 import { Character } from '../entities/Character';
-import { InventorySystem } from '../systems/InventorySystem';
 import { MenuInputHandler } from '../ui/components/MenuInputHandler';
 import { UIRenderingUtils } from '../utils/UIRenderingUtils';
 import { EQUIPMENT_SLOTS } from '../utils/ItemUtils';
+import { ItemManager } from '../systems/inventory/ItemManager';
+import { EncumbranceCalculator } from '../systems/inventory/EncumbranceCalculator';
+import { ItemDescriptionFormatter } from '../systems/inventory/ItemDescriptionFormatter';
 
 type CharacterSheetMode = 'view' | 'items' | 'itemDetail' | 'spells' | 'spellDetail';
 type CombinedItem = { item: Item; equipSlot?: keyof Equipment; isEquipped: boolean; originalIndex: number };
@@ -24,11 +26,19 @@ export class CharacterSheetScene extends Scene {
   private spellsPerPage: number = 12;
   private returnToScene: string = 'town';
 
+  private itemManager: ItemManager;
+  private encumbranceCalculator: EncumbranceCalculator;
+  private descriptionFormatter: ItemDescriptionFormatter;
+
   constructor(gameState: GameState, sceneManager: SceneManager) {
     super('CharacterSheet');
     this.gameState = gameState;
     this.sceneManager = sceneManager;
     this.messageLog = this.gameState.messageLog;
+
+    this.itemManager = ItemManager.getInstance();
+    this.encumbranceCalculator = EncumbranceCalculator.getInstance();
+    this.descriptionFormatter = ItemDescriptionFormatter.getInstance();
   }
 
   public enter(): void {
@@ -230,8 +240,8 @@ export class CharacterSheetScene extends Scene {
     ctx.textAlign = 'left';
     ctx.fillText(`ITEMS (${this.itemsPage + 1}/${totalPages})`, x + 10, y + 25);
 
-    const weight = InventorySystem.getInventoryWeight(character);
-    const capacity = InventorySystem.getCarryCapacity(character);
+    const weight = this.encumbranceCalculator.getInventoryWeight(character);
+    const capacity = this.encumbranceCalculator.getCarryCapacity(character);
     const weightColor = weight > capacity ? '#ff0000' : weight > capacity * 0.8 ? '#ffaa00' : '#fff';
 
     ctx.fillStyle = weightColor;
@@ -262,7 +272,7 @@ export class CharacterSheetScene extends Scene {
       }
 
       const prefix = isSelected ? '>' : ' ';
-      const itemName = InventorySystem.getItemDescription(combined.item);
+      const itemName = this.descriptionFormatter.getItemDescription(combined.item);
       const equipMarker = combined.isEquipped ? ' (E)' : '';
       const fullName = `${itemName}${equipMarker}`;
       const displayName = fullName.length > 36 ? fullName.substring(0, 33) + '...' : fullName;
@@ -398,7 +408,7 @@ export class CharacterSheetScene extends Scene {
       ctx.fillStyle = '#666';
       ctx.fillText('(No item selected)', modalX + 30, modalY + 70);
     } else if (item.identified) {
-      const itemDesc = InventorySystem.getItemDescription(item);
+      const itemDesc = this.descriptionFormatter.getItemDescription(item);
       const statusText = combined.isEquipped ? ' (EQUIPPED)' : '';
       ctx.fillStyle = '#fff';
       ctx.fillText(itemDesc + statusText, modalX + 30, modalY + 70);
@@ -730,7 +740,7 @@ export class CharacterSheetScene extends Scene {
         return;
       }
 
-      const success = InventorySystem.unequipItem(character, combined.equipSlot!);
+      const success = this.itemManager.unequipItem(character, combined.equipSlot!);
       if (success) {
         this.messageLog?.add(`Unequipped ${item.name}`);
       } else {
@@ -742,7 +752,7 @@ export class CharacterSheetScene extends Scene {
         return;
       }
 
-      const success = InventorySystem.equipItem(character, item.id);
+      const success = this.itemManager.equipItem(character, item.id);
       if (success) {
         this.messageLog?.add(`Equipped ${item.name}`);
       } else {
