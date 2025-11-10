@@ -19,6 +19,7 @@ export const ServiceIdentifiers = {
   SpellCaster: Symbol('SpellCaster') as any,
   CombatSystem: Symbol('CombatSystem') as any,
   StatusEffectSystem: Symbol('StatusEffectSystem') as any,
+  EquipmentModifierManager: Symbol('EquipmentModifierManager') as any,
   ItemManager: Symbol('ItemManager') as any,
   LootGenerator: Symbol('LootGenerator') as any,
   ItemIdentifier: Symbol('ItemIdentifier') as any,

@@ -15,13 +15,13 @@ export class StatusEffectSystem {
   private static instance: StatusEffectSystem;
   private equipmentManager: EquipmentModifierManager;
 
-  constructor() {
-    this.equipmentManager = EquipmentModifierManager.getInstance();
+  constructor(equipmentManager: EquipmentModifierManager) {
+    this.equipmentManager = equipmentManager;
   }
 
   public static getInstance(): StatusEffectSystem {
     if (!StatusEffectSystem.instance) {
-      StatusEffectSystem.instance = new StatusEffectSystem();
+      StatusEffectSystem.instance = new StatusEffectSystem(EquipmentModifierManager.getInstance());
     }
     return StatusEffectSystem.instance;
   }

@@ -10,15 +10,15 @@ export class ItemManager {
 
   public static getInstance(): ItemManager {
     if (!ItemManager.instance) {
-      ItemManager.instance = new ItemManager();
+      ItemManager.instance = new ItemManager(EquipmentModifierManager.getInstance());
     }
     return ItemManager.instance;
   }
 
   private equipmentManager: EquipmentModifierManager;
 
-  constructor() {
-    this.equipmentManager = EquipmentModifierManager.getInstance();
+  constructor(equipmentManager: EquipmentModifierManager) {
+    this.equipmentManager = equipmentManager;
   }
 
   public getItem(itemId: string): Item | null {

@@ -9,6 +9,7 @@ import { SpellValidation } from '../systems/magic/SpellValidation';
 import { StatusEffectSystem } from '../systems/StatusEffectSystem';
 import { GAME_CONFIG } from '../config/GameConstants';
 import type { CombatSystem } from '../systems/CombatSystem';
+import type { EquipmentModifierManager } from '../systems/EquipmentModifierManager';
 import type { ItemManager } from '../systems/inventory/ItemManager';
 import type { LootGenerator } from '../systems/inventory/LootGenerator';
 import type { ItemIdentifier } from '../systems/inventory/ItemIdentifier';
@@ -124,12 +125,23 @@ export class GameServices {
       { singleton: true }
     );
 
+    // Register Equipment Modifier Manager
+    this.container.register(
+      ServiceIdentifiers.EquipmentModifierManager,
+      () => {
+        const { EquipmentModifierManager } = require('../systems/EquipmentModifierManager');
+        return EquipmentModifierManager.getInstance();
+      },
+      { singleton: true }
+    );
+
     // Register Status Effect System
     this.container.register(
       ServiceIdentifiers.StatusEffectSystem,
       () => {
         const { StatusEffectSystem } = require('../systems/StatusEffectSystem');
-        return StatusEffectSystem.getInstance();
+        const equipmentManager = this.container.resolve(ServiceIdentifiers.EquipmentModifierManager);
+        return new StatusEffectSystem(equipmentManager);
       },
       { singleton: true }
     );
@@ -139,7 +151,8 @@ export class GameServices {
       ServiceIdentifiers.ItemManager,
       () => {
         const { ItemManager } = require('../systems/inventory/ItemManager');
-        return ItemManager.getInstance();
+        const equipmentManager = this.container.resolve(ServiceIdentifiers.EquipmentModifierManager);
+        return new ItemManager(equipmentManager);
       },
       { singleton: true }
     );
@@ -221,6 +234,10 @@ export class GameServices {
 
   public getCombatSystem(): CombatSystem {
     return this.container.resolve(ServiceIdentifiers.CombatSystem);
+  }
+
+  public getEquipmentModifierManager(): EquipmentModifierManager {
+    return this.container.resolve(ServiceIdentifiers.EquipmentModifierManager);
   }
 
   public getStatusEffectSystem(): StatusEffectSystem {
