@@ -9,6 +9,11 @@ import { SpellValidation } from '../systems/magic/SpellValidation';
 import { StatusEffectSystem } from '../systems/StatusEffectSystem';
 import { GAME_CONFIG } from '../config/GameConstants';
 import type { CombatSystem } from '../systems/CombatSystem';
+import type { ItemManager } from '../systems/inventory/ItemManager';
+import type { LootGenerator } from '../systems/inventory/LootGenerator';
+import type { ItemIdentifier } from '../systems/inventory/ItemIdentifier';
+import type { EncumbranceCalculator } from '../systems/inventory/EncumbranceCalculator';
+import type { ItemDescriptionFormatter } from '../systems/inventory/ItemDescriptionFormatter';
 
 export interface GameServiceDependencies {
   canvas: HTMLCanvasElement;
@@ -128,6 +133,52 @@ export class GameServices {
       },
       { singleton: true }
     );
+
+    // Register Inventory System Services
+    this.container.register(
+      ServiceIdentifiers.ItemManager,
+      () => {
+        const { ItemManager } = require('../systems/inventory/ItemManager');
+        return ItemManager.getInstance();
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.LootGenerator,
+      () => {
+        const { LootGenerator } = require('../systems/inventory/LootGenerator');
+        return LootGenerator.getInstance();
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.ItemIdentifier,
+      () => {
+        const { ItemIdentifier } = require('../systems/inventory/ItemIdentifier');
+        return ItemIdentifier.getInstance();
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.EncumbranceCalculator,
+      () => {
+        const { EncumbranceCalculator } = require('../systems/inventory/EncumbranceCalculator');
+        return EncumbranceCalculator.getInstance();
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.ItemDescriptionFormatter,
+      () => {
+        const { ItemDescriptionFormatter } = require('../systems/inventory/ItemDescriptionFormatter');
+        return ItemDescriptionFormatter.getInstance();
+      },
+      { singleton: true }
+    );
   }
 
   public getRenderManager(): RenderManager {
@@ -174,6 +225,26 @@ export class GameServices {
 
   public getStatusEffectSystem(): StatusEffectSystem {
     return this.container.resolve(ServiceIdentifiers.StatusEffectSystem);
+  }
+
+  public getItemManager(): ItemManager {
+    return this.container.resolve(ServiceIdentifiers.ItemManager);
+  }
+
+  public getLootGenerator(): LootGenerator {
+    return this.container.resolve(ServiceIdentifiers.LootGenerator);
+  }
+
+  public getItemIdentifier(): ItemIdentifier {
+    return this.container.resolve(ServiceIdentifiers.ItemIdentifier);
+  }
+
+  public getEncumbranceCalculator(): EncumbranceCalculator {
+    return this.container.resolve(ServiceIdentifiers.EncumbranceCalculator);
+  }
+
+  public getItemDescriptionFormatter(): ItemDescriptionFormatter {
+    return this.container.resolve(ServiceIdentifiers.ItemDescriptionFormatter);
   }
 
   public dispose(): void {

@@ -7,7 +7,7 @@ import { SaveManager } from '../../utils/SaveManager';
 import { GAME_CONFIG } from '../../config/GameConstants';
 import { StatusEffectSystem } from '../../systems/StatusEffectSystem';
 import { EntityUtils } from '../../utils/EntityUtils';
-import { LootGenerator } from '../../systems/inventory/LootGenerator';
+import { GameServices } from '../../services/GameServices';
 
 export type ActionState = 'select_action' | 'select_target' | 'select_spell' | 'spell_target' | 'waiting';
 
@@ -338,7 +338,7 @@ export class CombatStateManager {
   }
 
   public getDebugData(): any {
-    const lootData = LootGenerator.getInstance().getLootDebugData();
+    const lootData = GameServices.getInstance().getLootGenerator().getLootDebugData();
     const combatData = CombatSystem.getCombatDebugData();
 
     const totalLuck = this.gameState.party.characters.reduce(

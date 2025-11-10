@@ -4,9 +4,10 @@ import { Character } from '../entities/Character';
 import { MenuInputHandler } from '../ui/components/MenuInputHandler';
 import { UIRenderingUtils } from '../utils/UIRenderingUtils';
 import { EQUIPMENT_SLOTS } from '../utils/ItemUtils';
-import { ItemManager } from '../systems/inventory/ItemManager';
-import { EncumbranceCalculator } from '../systems/inventory/EncumbranceCalculator';
-import { ItemDescriptionFormatter } from '../systems/inventory/ItemDescriptionFormatter';
+import { GameServices } from '../services/GameServices';
+import type { ItemManager } from '../systems/inventory/ItemManager';
+import type { EncumbranceCalculator } from '../systems/inventory/EncumbranceCalculator';
+import type { ItemDescriptionFormatter } from '../systems/inventory/ItemDescriptionFormatter';
 
 type CharacterSheetMode = 'view' | 'items' | 'itemDetail' | 'spells' | 'spellDetail';
 type CombinedItem = { item: Item; equipSlot?: keyof Equipment; isEquipped: boolean; originalIndex: number };
@@ -36,9 +37,10 @@ export class CharacterSheetScene extends Scene {
     this.sceneManager = sceneManager;
     this.messageLog = this.gameState.messageLog;
 
-    this.itemManager = ItemManager.getInstance();
-    this.encumbranceCalculator = EncumbranceCalculator.getInstance();
-    this.descriptionFormatter = ItemDescriptionFormatter.getInstance();
+    const services = GameServices.getInstance();
+    this.itemManager = services.getItemManager();
+    this.encumbranceCalculator = services.getEncumbranceCalculator();
+    this.descriptionFormatter = services.getItemDescriptionFormatter();
   }
 
   public enter(): void {

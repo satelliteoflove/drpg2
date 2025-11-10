@@ -5,7 +5,7 @@ import { CombatSystem } from '../systems/CombatSystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
 import { DebugLogger } from '../utils/DebugLogger';
-import { LootGenerator } from '../systems/inventory/LootGenerator';
+import { GameServices } from '../services/GameServices';
 
 export class DebugScene extends Scene {
   private gameState: GameState;
@@ -44,7 +44,7 @@ export class DebugScene extends Scene {
 
   private renderDebugContent(ctx: CanvasRenderingContext2D): void {
     // Get debug data from systems
-    const lootData = LootGenerator.getInstance().getLootDebugData();
+    const lootData = GameServices.getInstance().getLootGenerator().getLootDebugData();
     const combatData = CombatSystem.getCombatDebugData();
 
     let currentY = 30 - this.scrollOffset;

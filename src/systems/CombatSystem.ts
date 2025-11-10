@@ -8,7 +8,7 @@ import { DiceRoller } from '../utils/DiceRoller';
 import { EntityUtils } from '../utils/EntityUtils';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { ModifierSystem } from './ModifierSystem';
-import { LootGenerator } from './inventory/LootGenerator';
+import { GameServices } from '../services/GameServices';
 
 interface CombatDebugData {
   currentTurn: string;
@@ -544,7 +544,8 @@ export class CombatSystem {
       }, 0);
 
       const partyLevel = this.getAveragePartyLevel();
-      const droppedItems = LootGenerator.getInstance().generateMonsterLoot(
+      const lootGenerator = GameServices.getInstance().getLootGenerator();
+      const droppedItems = lootGenerator.generateMonsterLoot(
         this.encounter.monsters,
         partyLevel,
         this.dungeonLevel,
