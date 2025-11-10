@@ -63,6 +63,14 @@ export const UI_CONSTANTS = {
     // Main content area (to the right of status panel)
     MAIN_CONTENT_X: 260,
     MAIN_CONTENT_Y: 80,
+    MAIN_CONTENT_WIDTH: 500,
+    MAIN_CONTENT_HEIGHT: 480,
+
+    // Action menu (to the right of main content)
+    ACTION_MENU_X: 770,
+    ACTION_MENU_Y: 80,
+    ACTION_MENU_WIDTH: 240,
+    ACTION_MENU_HEIGHT: 480,
   },
 
   // Text Positioning

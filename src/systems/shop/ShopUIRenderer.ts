@@ -87,10 +87,10 @@ export class ShopUIRenderer {
   }
 
   private renderMainArea(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
-    const mainX = 260;
-    const mainY = 80;
-    const mainWidth = 500;
-    const mainHeight = 480;
+    const mainX = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_X;
+    const mainY = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_Y;
+    const mainWidth = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_WIDTH;
+    const mainHeight = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_HEIGHT;
 
     UIRenderingUtils.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
 
@@ -748,10 +748,10 @@ export class ShopUIRenderer {
   }
 
   private renderActionMenu(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
-    const menuX = 770;
-    const menuY = 80;
-    const menuWidth = 240;
-    const menuHeight = 480;
+    const menuX = UI_CONSTANTS.LAYOUT.ACTION_MENU_X;
+    const menuY = UI_CONSTANTS.LAYOUT.ACTION_MENU_Y;
+    const menuWidth = UI_CONSTANTS.LAYOUT.ACTION_MENU_WIDTH;
+    const menuHeight = UI_CONSTANTS.LAYOUT.ACTION_MENU_HEIGHT;
 
     UIRenderingUtils.drawPanel(ctx, menuX, menuY, menuWidth, menuHeight);
 
