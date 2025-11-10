@@ -39,9 +39,9 @@ export class CombatSystem {
     isActive: false,
   };
 
-  constructor() {
-    this.spellCaster = SpellCaster.getInstance();
-    this.statusEffectSystem = StatusEffectSystem.getInstance();
+  constructor(spellCaster?: SpellCaster, statusEffectSystem?: StatusEffectSystem) {
+    this.spellCaster = spellCaster || SpellCaster.getInstance();
+    this.statusEffectSystem = statusEffectSystem || StatusEffectSystem.getInstance();
     this.modifierSystem = ModifierSystem.getInstance();
   }
 

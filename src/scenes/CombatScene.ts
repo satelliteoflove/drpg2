@@ -1,9 +1,10 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState } from '../types/GameTypes';
-import { CombatSystem } from '../systems/CombatSystem';
+import type { CombatSystem } from '../systems/CombatSystem';
 import { CombatStateManager } from './combat/CombatStateManager';
 import { CombatUIManager } from './combat/CombatUIManager';
 import { CombatInputController } from './combat/CombatInputController';
+import { GameServices } from '../services/GameServices';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
@@ -17,7 +18,7 @@ export class CombatScene extends Scene {
     super('Combat');
     this.gameState = gameState;
     this.sceneManager = sceneManager;
-    this.combatSystem = new CombatSystem();
+    this.combatSystem = GameServices.getInstance().getCombatSystem();
 
     this.stateManager = new CombatStateManager(this.gameState, this.combatSystem);
     this.uiManager = new CombatUIManager(this.gameState, this.combatSystem, this.stateManager);

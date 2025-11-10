@@ -115,17 +115,7 @@ export class GameServices {
       { singleton: true }
     );
 
-    // Register Combat System
-    this.container.register(
-      ServiceIdentifiers.CombatSystem,
-      () => {
-        const { CombatSystem } = require('../systems/CombatSystem');
-        return new CombatSystem();
-      },
-      { singleton: true }
-    );
-
-    // Register Equipment Modifier Manager
+    // Register Equipment Modifier Manager (no dependencies)
     this.container.register(
       ServiceIdentifiers.EquipmentModifierManager,
       () => {
@@ -135,13 +125,25 @@ export class GameServices {
       { singleton: true }
     );
 
-    // Register Status Effect System
+    // Register Status Effect System (depends on EquipmentModifierManager)
     this.container.register(
       ServiceIdentifiers.StatusEffectSystem,
       () => {
         const { StatusEffectSystem } = require('../systems/StatusEffectSystem');
         const equipmentManager = this.container.resolve(ServiceIdentifiers.EquipmentModifierManager);
         return new StatusEffectSystem(equipmentManager);
+      },
+      { singleton: true }
+    );
+
+    // Register Combat System (depends on SpellCaster and StatusEffectSystem)
+    this.container.register(
+      ServiceIdentifiers.CombatSystem,
+      () => {
+        const { CombatSystem } = require('../systems/CombatSystem');
+        const spellCaster = this.container.resolve(ServiceIdentifiers.SpellCaster);
+        const statusEffectSystem = this.container.resolve(ServiceIdentifiers.StatusEffectSystem);
+        return new CombatSystem(spellCaster, statusEffectSystem);
       },
       { singleton: true }
     );
