@@ -209,7 +209,9 @@ export class CombatSystem {
     }
 
     if (target.hp === 0) {
+      target.isDead = true;
       result += ` ${target.name} is defeated!`;
+      this.cleanupDeadUnits();
     }
 
     return result;
@@ -330,6 +332,26 @@ export class CombatSystem {
     }
 
     const monster = currentUnit;
+
+    if (monster.hp <= 0 || monster.isDead) {
+      DebugLogger.debug('CombatSystem', 'Monster is dead, skipping turn', {
+        name: monster.name,
+        hp: monster.hp,
+        isDead: monster.isDead
+      });
+      this.isProcessingTurn = false;
+      return '';
+    }
+
+    if (this.statusEffectSystem.isDisabled(monster)) {
+      const status = this.statusEffectSystem.hasStatus(monster, 'Sleeping') ? 'asleep' :
+                     this.statusEffectSystem.hasStatus(monster, 'Paralyzed') ? 'paralyzed' :
+                     this.statusEffectSystem.hasStatus(monster, 'Stoned') ? 'petrified' : 'disabled';
+      DebugLogger.info('CombatSystem', `${monster.name} is ${status}, cannot act`);
+      this.isProcessingTurn = false;
+      return `${monster.name} is ${status} and cannot act!`;
+    }
+
     const alivePlayers = this.encounter.turnOrder.filter(
       (unit) => EntityUtils.isCharacter(unit as Character | Monster) && !unit.isDead
     ) as Character[];
