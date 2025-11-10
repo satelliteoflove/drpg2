@@ -57,7 +57,11 @@ export class StatusEffectSystem {
       target.statuses.push(effect);
     }
 
-    DebugLogger.info('StatusEffectSystem', `Applied ${effectType} to ${target.name}`, { effect });
+    DebugLogger.info('StatusEffectSystem', `Applied ${effectType} to ${target.name}`, {
+      effect,
+      targetId: (target as any).id,
+      statusesLength: target.statuses?.length || 0
+    });
 
     if (effectType === 'Dead' || effectType === 'Ashed' || effectType === 'Lost') {
       target.isDead = true;
@@ -116,7 +120,19 @@ export class StatusEffectSystem {
   }
 
   public tick(target: ICharacter | Monster, context: StatusEffectContext): void {
+    DebugLogger.debug('StatusEffectSystem', `tick() called on ${target.name}`, {
+      targetId: (target as any).id,
+      statusesBefore: target.statuses,
+      isArray: Array.isArray(target.statuses),
+      context
+    });
+
     if (!Array.isArray(target.statuses)) {
+      DebugLogger.warn('StatusEffectSystem', `tick() clearing statuses for ${target.name} - not an array!`, {
+        targetId: (target as any).id,
+        statusesValue: target.statuses,
+        statusesType: typeof target.statuses
+      });
       target.statuses = [];
       return;
     }
@@ -134,6 +150,11 @@ export class StatusEffectSystem {
         }
       }
     }
+
+    DebugLogger.debug('StatusEffectSystem', `tick() completed on ${target.name}`, {
+      targetId: (target as any).id,
+      statusesAfter: target.statuses
+    });
   }
 
   public getResistanceChance(target: ICharacter | Monster, effectType: CharacterStatus): number {
@@ -244,14 +265,6 @@ export class StatusEffectSystem {
         break;
 
       case 'Sleeping':
-        if (context === 'combat') {
-          const wakeChance = 20;
-          const roll = DiceRoller.rollPercentile();
-          if (roll <= wakeChance) {
-            this.removeStatusEffect(target, 'Sleeping');
-            DebugLogger.info('StatusEffectSystem', `${target.name} woke up naturally`);
-          }
-        }
         break;
 
       case 'Silenced':

@@ -160,6 +160,7 @@ export class CombatStateManager {
     }
 
     if (this.combatSystem.canPlayerAct()) {
+      DebugLogger.debug('CombatStateManager', 'Player can act, stopping monster turn processing');
       this.isProcessingInitialTurns = false;
       return false;
     }
@@ -172,6 +173,7 @@ export class CombatStateManager {
     this.lastMonsterTurnTime = now;
     const currentUnit = this.combatSystem.getCurrentUnit();
     if (!currentUnit || !EntityUtils.isMonster(currentUnit)) {
+      DebugLogger.debug('CombatStateManager', 'No current monster unit, stopping');
       this.isProcessingInitialTurns = false;
       return false;
     }
@@ -179,14 +181,23 @@ export class CombatStateManager {
     const monster = currentUnit as Monster;
     const statusSystem = StatusEffectSystem.getInstance();
 
+    DebugLogger.debug('CombatStateManager', `Processing monster turn for ${monster.name}`, {
+      monsterId: (monster as any).id,
+      hasStatuses: monster.statuses?.length || 0,
+      statuses: monster.statuses,
+      isDisabled: statusSystem.isDisabled(monster)
+    });
+
     if (statusSystem.isDisabled(monster)) {
       const status = statusSystem.hasStatus(monster, 'Sleeping') ? 'asleep' :
                      statusSystem.hasStatus(monster, 'Paralyzed') ? 'paralyzed' :
                      statusSystem.hasStatus(monster, 'Stoned') ? 'petrified' : 'disabled';
+      DebugLogger.info('CombatStateManager', `${monster.name} is ${status}, skipping turn`);
       if (this.messageLog) {
         this.messageLog.addCombatMessage(`${monster.name} is ${status} and cannot act!`);
       }
     } else {
+      DebugLogger.debug('CombatStateManager', `${monster.name} is executing turn`);
       const result = this.combatSystem.executeMonsterTurn();
       if (result && this.messageLog) {
         this.messageLog.addCombatMessage(result);
@@ -196,6 +207,7 @@ export class CombatStateManager {
     this.combatSystem.processNextTurn();
 
     if (this.combatSystem.canPlayerAct() || this.checkCombatEnd()) {
+      DebugLogger.debug('CombatStateManager', 'Stopping monster turn processing');
       this.isProcessingInitialTurns = false;
     }
 
@@ -327,6 +339,16 @@ export class CombatStateManager {
       return true;
     }
     return false;
+  }
+
+  public startMonsterTurnProcessing(): void {
+    if (!this.combatSystem.canPlayerAct()) {
+      DebugLogger.info('CombatStateManager', 'Starting monster turn processing');
+      this.isProcessingInitialTurns = true;
+      this.lastMonsterTurnTime = Date.now();
+    } else {
+      DebugLogger.debug('CombatStateManager', 'Not starting monster turns - player can act');
+    }
   }
 
   public updateForPlayerTurn(): void {

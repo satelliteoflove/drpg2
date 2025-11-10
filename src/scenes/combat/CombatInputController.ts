@@ -253,6 +253,7 @@ export class CombatInputController {
     }
 
     this.combatSystem.processNextTurn();
+    this.stateManager.startMonsterTurnProcessing();
 
     const canAct = this.combatSystem.canPlayerAct();
     this.stateManager.setActionState(canAct ? 'select_action' : 'waiting');

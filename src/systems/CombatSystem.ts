@@ -60,13 +60,10 @@ export class CombatSystem {
     this.onMessage = onMessage;
     this.dungeonLevel = dungeonLevel;
     this.party = party;
-    this.resetTurnState(); // Ensure clean state
+    this.resetTurnState();
 
     this.encounter = {
-      monsters: monsters.map((m) => ({
-        ...m,
-        isDead: false
-      })),
+      monsters: monsters,
       surprise: Math.random() < GAME_CONFIG.ENCOUNTER.SURPRISE_CHANCE,
       turnOrder: this.calculateTurnOrder(party, monsters),
       currentTurn: 0,
@@ -305,6 +302,12 @@ export class CombatSystem {
       inCombat: true
     };
 
+    DebugLogger.debug('CombatSystem', 'Casting spell with context', {
+      spell: spellId,
+      enemyIds: aliveMonsters.map((m: any) => m.id || 'no-id'),
+      enemyNames: aliveMonsters.map(m => m.name)
+    });
+
     const result = this.spellCaster.castSpell(caster, spellId, context);
 
     this.cleanupDeadUnits();
@@ -471,11 +474,12 @@ export class CombatSystem {
     const previousTurn = this.encounter.currentTurn;
     this.encounter.currentTurn = (this.encounter.currentTurn + 1) % this.encounter.turnOrder.length;
 
+    const nextUnit = this.encounter.turnOrder[this.encounter.currentTurn];
     DebugLogger.debug('CombatSystem', 'Turn advanced', {
       previousTurn,
       newTurn: this.encounter.currentTurn,
-      nextUnit: this.encounter.turnOrder[this.encounter.currentTurn] ?
-        EntityUtils.getName(this.encounter.turnOrder[this.encounter.currentTurn] as Character | Monster) : 'none'
+      nextUnit: nextUnit ? EntityUtils.getName(nextUnit as Character | Monster) : 'none',
+      nextUnitId: nextUnit ? (nextUnit as any).id || 'no-id' : 'none'
     });
 
     // Remove dead units from turn order
