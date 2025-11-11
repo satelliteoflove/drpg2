@@ -13,6 +13,9 @@ export class DebugLogger {
   private static isEnabled = true; // Can be toggled via localStorage
   private static logLevel: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' = 'DEBUG';
   private static asciiStateCallback: (() => string) | null = null;
+  private static logBuffer: LogEntry[] = [];
+  private static readonly FLUSH_INTERVAL_MS = 2000;
+  private static readonly MAX_BUFFER_SIZE = 50;
 
   static {
     // Check localStorage for debug settings
@@ -27,6 +30,13 @@ export class DebugLogger {
       if (level && ['DEBUG', 'INFO', 'WARN', 'ERROR'].includes(level)) {
         this.logLevel = level as typeof this.logLevel;
       }
+    }
+
+    // Start flush interval for file logging
+    if (typeof window !== 'undefined') {
+      window.setInterval(() => {
+        this.flushToFile();
+      }, this.FLUSH_INTERVAL_MS);
     }
   }
 
@@ -53,6 +63,14 @@ export class DebugLogger {
       this.logs = this.logs.slice(-this.maxLogs);
     }
 
+    // Add to buffer for file logging
+    this.logBuffer.push(entry);
+
+    // Flush if buffer is full
+    if (this.logBuffer.length >= this.MAX_BUFFER_SIZE) {
+      this.flushToFile();
+    }
+
     // Also output to console in development
     // eslint-disable-next-line no-undef
     if (typeof process !== 'undefined' && (process as any).env?.NODE_ENV === 'development') {
@@ -60,6 +78,31 @@ export class DebugLogger {
         entry.level === 'ERROR' ? 'error' : entry.level === 'WARN' ? 'warn' : 'log';
       console[consoleMethod](`[${entry.level}] ${entry.module}: ${entry.message}`, entry.data);
     }
+  }
+
+  private static flushToFile(): void {
+    if (this.logBuffer.length === 0) return;
+    if (typeof window === 'undefined' || typeof fetch === 'undefined') return;
+
+    const logsToSend = [...this.logBuffer];
+    this.logBuffer = [];
+
+    logsToSend.forEach((entry) => {
+      fetch('/api/log', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          level: entry.level,
+          module: entry.module,
+          message: entry.message,
+          data: entry.data,
+        }),
+      }).catch((error) => {
+        console.error('Failed to write log to file:', error);
+      });
+    });
   }
 
   public static debug(module: string, message: string, data?: any): void {

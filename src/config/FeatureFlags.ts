@@ -202,7 +202,6 @@ export function getFeatureStatus(): Record<string, boolean> {
   return FeatureFlags.getStatus();
 }
 
-// Console helper for debugging (accessible via browser console)
 if (typeof window !== 'undefined') {
   (window as any).FeatureFlags = {
     enable: (key: string) => FeatureFlags.setOverride(key, true),
@@ -210,8 +209,8 @@ if (typeof window !== 'undefined') {
     clear: (key: string) => FeatureFlags.clearOverride(key),
     clearAll: () => FeatureFlags.clearAllOverrides(),
     isEnabled: (key: string) => FeatureFlags.isEnabled(key),
-    status: () => console.table(FeatureFlags.getStatus()),
-    export: () => console.log(FeatureFlags.exportConfig()),
+    status: () => DebugLogger.info('FeatureFlags', 'Status', FeatureFlags.getStatus()),
+    export: () => DebugLogger.info('FeatureFlags', 'Config', FeatureFlags.exportConfig()),
   };
 
   DebugLogger.info('FeatureFlags', 'Console helpers available: window.FeatureFlags');

@@ -31,7 +31,7 @@ export class SpellEffectRegistry {
   private processors: Map<SpellEffectType, SpellEffectProcessor>;
   private defaultProcessor?: SpellEffectProcessor;
 
-  private constructor() {
+  constructor() {
     this.processors = new Map();
     this.initializeProcessors();
   }

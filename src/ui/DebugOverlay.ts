@@ -1,5 +1,6 @@
 import { Party } from '../entities/Party';
 import { GameState } from '../types/GameTypes';
+import { DebugLogger } from '../utils/DebugLogger';
 
 interface DebugData {
   partyStats?: {
@@ -38,11 +39,11 @@ export class DebugOverlay {
   }
 
   public toggle(): void {
-    console.log('[DEBUG OVERLAY] Toggle called! Current state:', this.isVisible);
+    DebugLogger.debug('DebugOverlay', `Toggle called! Current state: ${this.isVisible}`);
     this.isVisible = !this.isVisible;
-    console.log('[DEBUG OVERLAY] New state:', this.isVisible);
+    DebugLogger.debug('DebugOverlay', `New state: ${this.isVisible}`);
     if (this.isVisible) {
-      this.scrollOffset = 0; // Reset scroll when opening
+      this.scrollOffset = 0;
     }
   }
 

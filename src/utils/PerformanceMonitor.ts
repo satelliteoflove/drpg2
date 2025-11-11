@@ -200,7 +200,7 @@ export class PerformanceMonitor {
     if (deltaTime > 100) {
       const devToolsOpen = /./;
       devToolsOpen.toString = function() { (this as any).opened = true; return ''; };
-      console.log('%c', devToolsOpen);
+      DebugLogger.debug('PerformanceMonitor', 'Dev tools check', devToolsOpen);
       const devToolsStatus = (devToolsOpen as any).opened ? ' [DEV TOOLS OPEN]' : '';
 
       DebugLogger.warn(

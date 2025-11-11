@@ -24,7 +24,11 @@ export { Party } from './entities/Party';
 
 // Systems
 export { CombatSystem } from './systems/CombatSystem';
-export { InventorySystem } from './systems/InventorySystem';
+export { ItemManager } from './systems/inventory/ItemManager';
+export { LootGenerator } from './systems/inventory/LootGenerator';
+export { ItemIdentifier } from './systems/inventory/ItemIdentifier';
+export { EncumbranceCalculator } from './systems/inventory/EncumbranceCalculator';
+export { ItemDescriptionFormatter } from './systems/inventory/ItemDescriptionFormatter';
 
 // Scenes
 export { MainMenuScene } from './scenes/MainMenuScene';

@@ -4,7 +4,7 @@ import { SpellData, SpellCastingContext, SpellEffect } from '../../types/SpellTy
 import { SpellEffectConfig } from '../../data/spells/SpellEffectTypes';
 import { DiceRoller } from '../../utils/DiceRoller';
 import { EntityUtils, CombatEntity } from '../../utils/EntityUtils';
-import { SavingThrowCalculator } from '../../utils/SavingThrowCalculator';
+import { SavingThrowCalculator, SaveType } from '../../utils/SavingThrowCalculator';
 
 export interface EffectTarget {
   entity: Character | Monster;
@@ -79,8 +79,8 @@ export abstract class SpellEffectProcessor {
     return EntityUtils.getResistance(entity, element);
   }
 
-  protected checkSavingThrow(entity: CombatEntity, saveType: string, modifier: number = 0): boolean {
-    return SavingThrowCalculator.makeSavingThrow(entity, saveType as any, modifier);
+  protected checkSavingThrow(entity: CombatEntity, saveType: SaveType, modifier: number = 0): boolean {
+    return SavingThrowCalculator.makeSavingThrow(entity, saveType, modifier);
   }
 
   protected calculateSpellPower(caster: Character, spell: SpellData): number {

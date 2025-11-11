@@ -133,12 +133,28 @@ DebugLogger.info('ModuleName', 'Something happened', { data });  // ✅ CORRECT
 
 ### DebugLogger Features:
 - Configurable via localStorage settings
-- Export logs to file (Ctrl+Shift+L)
-- Maintains history for debugging
-- Integrates with development workflow
+- Automatically writes to debug.log file in project root
+- Batched file writing (2 second intervals or 50 entry buffer)
+- Maintains in-memory history for debugging
+- Export logs to downloadable file (Ctrl+Shift+L)
 - Can capture ASCII snapshots
+- Outputs to browser console in development mode
 
 Even in test scripts or utilities, prefer DebugLogger over console.log for consistency and better debugging capabilities.
+
+### File-Based Debug Logging
+
+DebugLogger automatically writes all log entries to `debug.log` in the project root:
+
+- **Automatic logging**: All DebugLogger calls are batched and written to file via webpack dev server middleware
+- **AI access**: Claude Code reads debug.log directly for troubleshooting without user intervention
+- **User access**: Users still have browser console for real-time debugging
+- **No manual export needed**: File logging happens automatically in background
+- **Fast iteration**: AI can diagnose issues by reading the log file immediately
+
+**For Claude Code**: Always check debug.log when troubleshooting issues or verifying behavior. The file contains all DebugLogger output with timestamps, levels, modules, and data.
+
+**For Users**: Continue using browser console for real-time feedback during gameplay. The log file is primarily for AI-assisted debugging.
 
 ## Testing Workflow
 
@@ -161,8 +177,9 @@ Even in test scripts or utilities, prefer DebugLogger over console.log for consi
 ### Development Process
 1. Always run `npm run typecheck` before marking work complete
 2. Use `AI.describe()` in browser console to understand current game state
-3. Use feature branches for new features
-4. The ai/ directory contains plans and logs for AI-assisted development
+3. Check debug.log file when troubleshooting issues (AI reads this automatically)
+4. Use feature branches for new features
+5. The ai/ directory contains plans and logs for AI-assisted development
 
 ## Utility Classes and DRY Principles
 
@@ -187,7 +204,13 @@ The magic and combat systems are registered as services:
 
 When implementing new features or fixing bugs:
 
-1. **Start with manual testing in browser console**:
+1. **Check debug.log for detailed execution traces**:
+   - Read debug.log directly to see all DebugLogger output
+   - Contains timestamps, log levels, modules, and data
+   - No need to ask user to check browser console
+   - Faster debugging iteration with direct file access
+
+2. **Use AI Interface for state verification**:
    ```javascript
    // Understand current state
    AI.describe()
@@ -198,7 +221,7 @@ When implementing new features or fixing bugs:
    AI.getState() // Verify change happened
    ```
 
-2. **Write assertions based on state, not visuals**:
+3. **Write assertions based on state, not visuals**:
    ```javascript
    // Instead of checking if a menu appears visually
    // Check the actual game state
@@ -208,7 +231,7 @@ When implementing new features or fixing bugs:
    console.assert(beforeScene !== afterScene, 'Scene should have changed');
    ```
 
-3. **Use the AI Interface to reproduce bugs**:
+4. **Use the AI Interface to reproduce bugs**:
    ```javascript
    // Create reproducible bug scenarios
    function reproduceBug() {
@@ -222,7 +245,7 @@ When implementing new features or fixing bugs:
    }
    ```
 
-4. **Validate game logic through the interface**:
+5. **Validate game logic through the interface**:
    ```javascript
    // Test damage calculation
    const enemyHp = AI.getCombat().enemies[0].hp;
@@ -231,3 +254,5 @@ When implementing new features or fixing bugs:
    const newHp = AI.getCombat().enemies[0].hp;
    console.log(`Damage dealt: ${enemyHp - newHp}`);
    ```
+
+**Key principle**: Claude Code reads debug.log directly for troubleshooting. Never ask the user to check browser console logs - read the debug.log file instead.

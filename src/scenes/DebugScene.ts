@@ -1,11 +1,11 @@
 import { Scene, SceneManager, SceneRenderContext } from '../core/Scene';
 import { GameState } from '../types/GameTypes';
 import { Character } from '../entities/Character';
-import { InventorySystem } from '../systems/InventorySystem';
 import { CombatSystem } from '../systems/CombatSystem';
 import { KEY_BINDINGS } from '../config/KeyBindings';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
 import { DebugLogger } from '../utils/DebugLogger';
+import { GameServices } from '../services/GameServices';
 
 export class DebugScene extends Scene {
   private gameState: GameState;
@@ -44,7 +44,7 @@ export class DebugScene extends Scene {
 
   private renderDebugContent(ctx: CanvasRenderingContext2D): void {
     // Get debug data from systems
-    const lootData = InventorySystem.getLootDebugData();
+    const lootData = GameServices.getInstance().getLootGenerator().getLootDebugData();
     const combatData = CombatSystem.getCombatDebugData();
 
     let currentY = 30 - this.scrollOffset;

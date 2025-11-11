@@ -2,6 +2,8 @@ import { GameState } from '../../types/GameTypes';
 import { TavernStateContext } from '../../types/TavernTypes';
 import { Character } from '../../entities/Character';
 import { StatusPanel } from '../../ui/StatusPanel';
+import { UIRenderingUtils } from '../../utils/UIRenderingUtils';
+import { UI_CONSTANTS } from '../../config/UIConstants';
 
 export class TavernUIRenderer {
   private gameState: GameState;
@@ -17,7 +19,12 @@ export class TavernUIRenderer {
   public render(ctx: CanvasRenderingContext2D, stateContext: TavernStateContext): void {
     if (!this.canvas) {
       this.canvas = ctx.canvas;
-      this.statusPanel = new StatusPanel(ctx.canvas, 10, 80, 240, 480);
+      this.statusPanel = new StatusPanel(
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_HEIGHT
+      );
     }
 
     ctx.fillStyle = '#1a1a1a';
@@ -38,25 +45,19 @@ export class TavernUIRenderer {
   }
 
   private renderHeader(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(10, 10, ctx.canvas.width - 20, 60);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, ctx.canvas.width - 20, 60);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 24px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('GILGAMESH\'S TAVERN', ctx.canvas.width / 2, 45);
+    UIRenderingUtils.renderHeader(ctx, {
+      title: 'GILGAMESH\'S TAVERN',
+      showGold: false
+    });
   }
 
   private renderMainArea(ctx: CanvasRenderingContext2D, stateContext: TavernStateContext): void {
-    const mainX = 260;
-    const mainY = 80;
-    const mainWidth = 500;
-    const mainHeight = 480;
+    const mainX = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_X;
+    const mainY = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_Y;
+    const mainWidth = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_WIDTH;
+    const mainHeight = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_HEIGHT;
 
-    this.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
+    UIRenderingUtils.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
 
     switch (stateContext.currentState) {
       case 'main':
@@ -363,12 +364,12 @@ export class TavernUIRenderer {
   }
 
   private renderActionMenu(ctx: CanvasRenderingContext2D, stateContext: TavernStateContext): void {
-    const menuX = 770;
-    const menuY = 80;
-    const menuWidth = 240;
-    const menuHeight = 480;
+    const menuX = UI_CONSTANTS.LAYOUT.ACTION_MENU_X;
+    const menuY = UI_CONSTANTS.LAYOUT.ACTION_MENU_Y;
+    const menuWidth = UI_CONSTANTS.LAYOUT.ACTION_MENU_WIDTH;
+    const menuHeight = UI_CONSTANTS.LAYOUT.ACTION_MENU_HEIGHT;
 
-    this.drawPanel(ctx, menuX, menuY, menuWidth, menuHeight);
+    UIRenderingUtils.drawPanel(ctx, menuX, menuY, menuWidth, menuHeight);
 
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 14px monospace';
@@ -424,14 +425,6 @@ export class TavernUIRenderer {
         ctx.fillText('ENTER: Continue', menuX + menuWidth / 2, menuY + menuHeight - 15);
       }
     }
-  }
-
-  private drawPanel(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): void {
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(x, y, width, height);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, width, height);
   }
 
   private isAlignmentCompatible(character: Character, party: Character[]): boolean {

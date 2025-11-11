@@ -6,8 +6,8 @@ import { SaveManager } from '../utils/SaveManager';
 import { DungeonGenerator } from '../utils/DungeonGenerator';
 import { ErrorHandler } from '../utils/ErrorHandler';
 import { SpellValidation } from '../systems/magic/SpellValidation';
-import { CombatSystem } from '../systems/CombatSystem';
-import { StatusEffectSystem } from '../systems/StatusEffectSystem';
+
+const createSimpleIdentifier = (name: string) => ({ name, type: null as any }) as any;
 
 export const ServiceIdentifiers = {
   RenderManager: createServiceIdentifier('RenderManager', RenderManager),
@@ -16,9 +16,18 @@ export const ServiceIdentifiers = {
   SaveManager: createServiceIdentifier('SaveManager', SaveManager),
   DungeonGenerator: createServiceIdentifier('DungeonGenerator', DungeonGenerator),
   ErrorHandler: createServiceIdentifier('ErrorHandler', ErrorHandler),
-  SpellRegistry: Symbol('SpellRegistry') as any,
+  SpellRegistry: createSimpleIdentifier('SpellRegistry'),
   SpellValidation: createServiceIdentifier('SpellValidation', SpellValidation),
-  SpellCaster: Symbol('SpellCaster') as any,
-  CombatSystem: createServiceIdentifier('CombatSystem', CombatSystem),
-  StatusEffectSystem: createServiceIdentifier('StatusEffectSystem', StatusEffectSystem),
+  SpellCaster: createSimpleIdentifier('SpellCaster'),
+  SpellEffectRegistry: createSimpleIdentifier('SpellEffectRegistry'),
+  SpellLearning: createSimpleIdentifier('SpellLearning'),
+  ModifierSystem: createSimpleIdentifier('ModifierSystem'),
+  CombatSystem: createSimpleIdentifier('CombatSystem'),
+  StatusEffectSystem: createSimpleIdentifier('StatusEffectSystem'),
+  EquipmentModifierManager: createSimpleIdentifier('EquipmentModifierManager'),
+  ItemManager: createSimpleIdentifier('ItemManager'),
+  LootGenerator: createSimpleIdentifier('LootGenerator'),
+  ItemIdentifier: createSimpleIdentifier('ItemIdentifier'),
+  EncumbranceCalculator: createSimpleIdentifier('EncumbranceCalculator'),
+  ItemDescriptionFormatter: createSimpleIdentifier('ItemDescriptionFormatter'),
 } as const;

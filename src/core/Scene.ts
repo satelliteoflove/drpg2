@@ -1,5 +1,6 @@
 import { RenderManager } from './RenderManager';
 import { DebugLogger } from '../utils/DebugLogger';
+import { ErrorHandler, ErrorSeverity } from '../utils/ErrorHandler';
 
 export interface SceneRenderContext {
   renderManager: RenderManager;
@@ -31,6 +32,25 @@ export abstract class Scene {
 
   public hasLayeredRendering(): boolean {
     return this.renderManager !== undefined;
+  }
+
+  protected handleError(error: Error, context: string, severity: ErrorSeverity = ErrorSeverity.MEDIUM): void {
+    const fullContext = `${this.constructor.name}.${context}`;
+    ErrorHandler.logError(error.message, severity, fullContext, error);
+  }
+
+  protected safeExecute<T>(
+    fn: () => T,
+    context: string,
+    fallback?: T,
+    severity: ErrorSeverity = ErrorSeverity.MEDIUM
+  ): T | undefined {
+    try {
+      return fn();
+    } catch (error) {
+      this.handleError(error as Error, context, severity);
+      return fallback;
+    }
   }
 }
 
@@ -72,7 +92,16 @@ export class SceneManager {
 
       if (this._currentScene) {
         DebugLogger.debug('SceneManager', 'Exiting current scene: ' + this._currentScene.getName());
-        this._currentScene.exit();
+        try {
+          this._currentScene.exit();
+        } catch (error) {
+          ErrorHandler.logError(
+            `Error exiting scene ${this._currentScene.getName()}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            ErrorSeverity.MEDIUM,
+            'SceneManager.update',
+            error instanceof Error ? error : undefined
+          );
+        }
       }
 
       const newScene = this.scenes.get(this.nextScene);
@@ -86,7 +115,7 @@ export class SceneManager {
 
       if (this._currentScene) {
         DebugLogger.debug('SceneManager', 'Entering new scene: ' + this._currentScene.getName());
-        console.log('[SceneManager] About to call enter() on scene:', this._currentScene.getName());
+        DebugLogger.debug('SceneManager', 'About to call enter() on scene: ' + this._currentScene.getName());
         // Reset layers for the new scene
         if (this.renderManager) {
           this.renderManager.resetForSceneChange();
@@ -95,20 +124,47 @@ export class SceneManager {
         if (this.onSceneChange) {
           this.onSceneChange(this._currentScene.getName());
         }
-        this._currentScene.enter();
-        console.log('[SceneManager] Called enter() on scene:', this._currentScene.getName());
+        try {
+          this._currentScene.enter();
+          DebugLogger.debug('SceneManager', 'Called enter() on scene: ' + this._currentScene.getName());
+        } catch (error) {
+          ErrorHandler.logError(
+            `Error entering scene ${this._currentScene.getName()}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            ErrorSeverity.HIGH,
+            'SceneManager.update',
+            error instanceof Error ? error : undefined
+          );
+        }
       }
     }
 
     if (this._currentScene) {
-      this._currentScene.update(deltaTime);
+      try {
+        this._currentScene.update(deltaTime);
+      } catch (error) {
+        ErrorHandler.logError(
+          `Error updating scene ${this._currentScene.getName()}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          ErrorSeverity.MEDIUM,
+          'SceneManager.update',
+          error instanceof Error ? error : undefined
+        );
+      }
     }
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
     if (this._currentScene) {
       DebugLogger.debug('SceneManager', 'Rendering scene: ' + this._currentScene.getName());
-      this._currentScene.render(ctx);
+      try {
+        this._currentScene.render(ctx);
+      } catch (error) {
+        ErrorHandler.logError(
+          `Error rendering scene ${this._currentScene.getName()}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          ErrorSeverity.MEDIUM,
+          'SceneManager.render',
+          error instanceof Error ? error : undefined
+        );
+      }
     } else {
       DebugLogger.debug('SceneManager', 'No current scene to render');
     }
@@ -116,16 +172,35 @@ export class SceneManager {
 
   public renderLayered(ctx: CanvasRenderingContext2D): void {
     if (this._currentScene && this.renderManager) {
-      this._currentScene.renderLayered({
-        renderManager: this.renderManager,
-        mainContext: ctx,
-      });
+      try {
+        this._currentScene.renderLayered({
+          renderManager: this.renderManager,
+          mainContext: ctx,
+        });
+      } catch (error) {
+        ErrorHandler.logError(
+          `Error in layered rendering for scene ${this._currentScene.getName()}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          ErrorSeverity.MEDIUM,
+          'SceneManager.renderLayered',
+          error instanceof Error ? error : undefined
+        );
+      }
     }
   }
 
   public handleInput(key: string): boolean {
     if (this._currentScene) {
-      return this._currentScene.handleInput(key);
+      try {
+        return this._currentScene.handleInput(key);
+      } catch (error) {
+        ErrorHandler.logError(
+          `Error handling input in scene ${this._currentScene.getName()}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          ErrorSeverity.MEDIUM,
+          'SceneManager.handleInput',
+          error instanceof Error ? error : undefined
+        );
+        return false;
+      }
     }
     return false;
   }

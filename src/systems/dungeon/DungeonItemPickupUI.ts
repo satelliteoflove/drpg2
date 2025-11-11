@@ -161,57 +161,6 @@ export class DungeonItemPickupUI {
     );
   }
 
-  public handleCombatLoot(loot: Item[]): void {
-    if (!loot || loot.length === 0) return;
-
-    const aliveCharacters = this.gameState.party.getAliveCharacters();
-    if (aliveCharacters.length === 0) {
-      this.messageLog?.addWarningMessage('No alive party members to collect loot!');
-      return;
-    }
-
-    let distributedCount = 0;
-    let characterIndex = 0;
-
-    for (const item of loot) {
-      let placed = false;
-
-      for (let attempts = 0; attempts < aliveCharacters.length && !placed; attempts++) {
-        const character = aliveCharacters[characterIndex];
-
-        if (character.inventory.length < GAME_CONFIG.ITEMS.INVENTORY.MAX_ITEMS_PER_CHARACTER) {
-          const existingItem = character.inventory.find(
-            (i: Item) => i.id === item.id && i.type === 'consumable'
-          );
-
-          if (existingItem && item.type === 'consumable') {
-            existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1);
-          } else {
-            character.inventory.push(item);
-          }
-
-          this.messageLog?.addItemMessage(
-            `${character.name} receives ${this.getItemDisplayName(item)}`
-          );
-          placed = true;
-          distributedCount++;
-        }
-
-        characterIndex = (characterIndex + 1) % aliveCharacters.length;
-      }
-
-      if (!placed) {
-        this.messageLog?.addWarningMessage(
-          `No room for ${this.getItemDisplayName(item)} - item lost!`
-        );
-      }
-    }
-
-    if (distributedCount > 0) {
-      this.messageLog?.addSystemMessage(`Collected ${distributedCount} items from combat.`);
-    }
-  }
-
   private assignItemToCharacter(characterIndex: number): void {
     const aliveCharacters = this.gameState.party.getAliveCharacters();
     const character = aliveCharacters[characterIndex];

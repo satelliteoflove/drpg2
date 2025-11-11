@@ -3,6 +3,8 @@ import { MenuInputHandler } from '../ui/components/MenuInputHandler';
 import { GameState } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { StatusPanel } from '../ui/StatusPanel';
+import { UIRenderingUtils } from '../utils/UIRenderingUtils';
+import { UI_CONSTANTS } from '../config/UIConstants';
 
 export class TownScene extends Scene {
   private sceneManager: SceneManager;
@@ -19,16 +21,9 @@ export class TownScene extends Scene {
     this.messageLog = this.gameState.messageLog;
   }
 
-  private drawPanel(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): void {
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(x, y, width, height);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, width, height);
-  }
-
   public enter(): void {
     this.selectedOption = 0;
+    this.gameState.hasEnteredDungeon = false;
   }
 
   public exit(): void {
@@ -39,7 +34,12 @@ export class TownScene extends Scene {
 
   public render(ctx: CanvasRenderingContext2D): void {
     if (!this.statusPanel) {
-      this.statusPanel = new StatusPanel(ctx.canvas, 10, 80, 240, 480);
+      this.statusPanel = new StatusPanel(
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_HEIGHT
+      );
     }
 
     ctx.fillStyle = '#1a1a1a';
@@ -60,10 +60,15 @@ export class TownScene extends Scene {
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
-    const { renderManager, mainContext } = renderContext;
+    const { renderManager } = renderContext;
 
     if (!this.statusPanel) {
-      this.statusPanel = new StatusPanel(mainContext.canvas, 10, 80, 240, 480);
+      this.statusPanel = new StatusPanel(
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_HEIGHT
+      );
     }
 
     renderManager.renderBackground((ctx) => {
@@ -88,29 +93,24 @@ export class TownScene extends Scene {
   }
 
   private renderHeader(ctx: CanvasRenderingContext2D): void {
-    this.drawPanel(ctx, 10, 10, ctx.canvas.width - 20, 60);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 24px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('TOWN OF LLYLGAMYN', ctx.canvas.width / 2, 45);
-
     const pooledGold = this.gameState.party.pooledGold || 0;
     const partyGold = this.gameState.party.characters?.reduce((sum: number, char: Character) => sum + char.gold, 0) || 0;
 
-    ctx.fillStyle = '#ffa500';
-    ctx.font = '14px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(`Pooled: ${pooledGold}g | Party: ${partyGold}g`, ctx.canvas.width - 30, 45);
+    UIRenderingUtils.renderHeader(ctx, {
+      title: 'TOWN OF LLYLGAMYN',
+      showGold: true,
+      pooledGold,
+      partyGold
+    });
   }
 
   private renderMainArea(ctx: CanvasRenderingContext2D): void {
-    const mainX = 260;
-    const mainY = 80;
+    const mainX = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_X;
+    const mainY = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_Y;
     const mainWidth = 500;
     const mainHeight = 480;
 
-    this.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
+    UIRenderingUtils.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
 
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 20px monospace';
@@ -138,7 +138,7 @@ export class TownScene extends Scene {
     const menuWidth = 240;
     const menuHeight = 480;
 
-    this.drawPanel(ctx, menuX, menuY, menuWidth, menuHeight);
+    UIRenderingUtils.drawPanel(ctx, menuX, menuY, menuWidth, menuHeight);
 
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 14px monospace';

@@ -71,6 +71,7 @@ export interface ICharacter {
   equipment: Equipment;
   inventory: Item[];
   spells: SpellData[];
+  knownSpells: string[];
   isDead: boolean;
   deathCount: number;
 }
@@ -408,7 +409,6 @@ export interface GameState {
 export interface Encounter {
   monsters: Monster[];
   surprise: boolean;
-  canRun: boolean;
   turnOrder: (ICharacter | Monster)[];
   currentTurn: number;
 }

@@ -3,6 +3,8 @@ import { Character } from '../../entities/Character';
 import { ShopInventory } from '../ShopSystem';
 import { StatusPanel } from '../../ui/StatusPanel';
 import { GAME_CONFIG } from '../../config/GameConstants';
+import { UIRenderingUtils } from '../../utils/UIRenderingUtils';
+import { UI_CONSTANTS } from '../../config/UIConstants';
 
 export type ShopState =
   | 'main_menu'
@@ -43,18 +45,15 @@ export class ShopUIRenderer {
     this.messageLog = messageLog;
   }
 
-  private drawPanel(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): void {
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(x, y, width, height);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, width, height);
-  }
-
   public render(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
     if (!this.canvas) {
       this.canvas = ctx.canvas;
-      this.statusPanel = new StatusPanel(ctx.canvas, 10, 80, 240, 480);
+      this.statusPanel = new StatusPanel(
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,
+        UI_CONSTANTS.LAYOUT.STATUS_PANEL_HEIGHT
+      );
     }
 
     ctx.fillStyle = '#1a1a1a';
@@ -75,33 +74,24 @@ export class ShopUIRenderer {
   }
 
   private renderShopHeader(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(10, 10, ctx.canvas.width - 20, 60);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, ctx.canvas.width - 20, 60);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 24px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('BOLTAC\'S TRADING POST', ctx.canvas.width / 2, 45);
-
     const pooledGold = this.gameState.party.pooledGold || 0;
     const partyGold = this.gameState.party.characters.reduce((sum: number, char: Character) => sum + char.gold, 0);
 
-    ctx.fillStyle = '#ffa500';
-    ctx.font = '14px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(`Pooled: ${pooledGold}g | Party: ${partyGold}g`, ctx.canvas.width - 30, 45);
+    UIRenderingUtils.renderHeader(ctx, {
+      title: 'BOLTAC\'S TRADING POST',
+      showGold: true,
+      pooledGold,
+      partyGold
+    });
   }
 
   private renderMainArea(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
-    const mainX = 260;
-    const mainY = 80;
-    const mainWidth = 500;
-    const mainHeight = 480;
+    const mainX = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_X;
+    const mainY = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_Y;
+    const mainWidth = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_WIDTH;
+    const mainHeight = UI_CONSTANTS.LAYOUT.MAIN_CONTENT_HEIGHT;
 
-    this.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
+    UIRenderingUtils.drawPanel(ctx, mainX, mainY, mainWidth, mainHeight);
 
     switch (context.state) {
       case 'main_menu':
@@ -757,12 +747,12 @@ export class ShopUIRenderer {
   }
 
   private renderActionMenu(ctx: CanvasRenderingContext2D, context: ShopRenderContext): void {
-    const menuX = 770;
-    const menuY = 80;
-    const menuWidth = 240;
-    const menuHeight = 480;
+    const menuX = UI_CONSTANTS.LAYOUT.ACTION_MENU_X;
+    const menuY = UI_CONSTANTS.LAYOUT.ACTION_MENU_Y;
+    const menuWidth = UI_CONSTANTS.LAYOUT.ACTION_MENU_WIDTH;
+    const menuHeight = UI_CONSTANTS.LAYOUT.ACTION_MENU_HEIGHT;
 
-    this.drawPanel(ctx, menuX, menuY, menuWidth, menuHeight);
+    UIRenderingUtils.drawPanel(ctx, menuX, menuY, menuWidth, menuHeight);
 
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 14px monospace';

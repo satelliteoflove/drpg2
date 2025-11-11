@@ -6,7 +6,6 @@ import { NewGameScene } from '../scenes/NewGameScene';
 import { DungeonScene } from '../scenes/DungeonScene';
 import { CharacterCreationScene } from '../scenes/CharacterCreationScene';
 import { CombatScene } from '../scenes/CombatScene';
-import { InventoryScene } from '../scenes/InventoryScene';
 import { DebugScene } from '../scenes/DebugScene';
 import { TownScene } from '../scenes/TownScene';
 import { ShopScene } from '../scenes/ShopScene';
@@ -145,21 +144,31 @@ export class Game {
   }
 
   private generateNewDungeon(): void {
-    const generator = new DungeonGenerator(
-      GAME_CONFIG.DUNGEON.DEFAULT_WIDTH,
-      GAME_CONFIG.DUNGEON.DEFAULT_HEIGHT,
-      this.gameState.dungeonSeed
-    );
-    this.gameState.dungeon = [];
-    this.gameState.dungeonSeed = generator.getSeed();
+    try {
+      const generator = new DungeonGenerator(
+        GAME_CONFIG.DUNGEON.DEFAULT_WIDTH,
+        GAME_CONFIG.DUNGEON.DEFAULT_HEIGHT,
+        this.gameState.dungeonSeed
+      );
+      this.gameState.dungeon = [];
+      this.gameState.dungeonSeed = generator.getSeed();
 
-    for (let i = 1; i <= 10; i++) {
-      this.gameState.dungeon.push(generator.generateLevel(i));
+      for (let i = 1; i <= 10; i++) {
+        this.gameState.dungeon.push(generator.generateLevel(i));
+      }
+
+      const firstLevel = this.gameState.dungeon[0];
+      this.gameState.party.x = firstLevel.startX;
+      this.gameState.party.y = firstLevel.startY;
+    } catch (error) {
+      ErrorHandler.logError(
+        `Failed to generate dungeon: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        ErrorSeverity.CRITICAL,
+        'Game.generateNewDungeon',
+        error instanceof Error ? error : undefined
+      );
+      this.gameState.dungeon = [];
     }
-
-    const firstLevel = this.gameState.dungeon[0];
-    this.gameState.party.x = firstLevel.startX;
-    this.gameState.party.y = firstLevel.startY;
   }
 
   private reconstructParty(partyData: unknown): Party {
@@ -271,7 +280,6 @@ export class Game {
       new DungeonScene(this.gameState, this.sceneManager, this.inputManager)
     );
     this.sceneManager.addScene('combat', new CombatScene(this.gameState, this.sceneManager));
-    this.sceneManager.addScene('inventory', new InventoryScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('debug', new DebugScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('town', new TownScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('shop', new ShopScene(this.gameState, this.sceneManager));

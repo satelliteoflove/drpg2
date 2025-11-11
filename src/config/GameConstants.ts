@@ -76,7 +76,7 @@ export const GAME_CONFIG = {
   },
 
   COMBAT: {
-    MONSTER_TURN_DELAY: 200, // Reduced from 1000ms to 200ms for more responsive combat
+    MONSTER_TURN_DELAY: 800,
     MAX_RECURSION_DEPTH: 100,
   },
 

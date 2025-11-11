@@ -1,4 +1,5 @@
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export class PerformanceOverlay {
   private performanceMonitor: PerformanceMonitor;
@@ -31,7 +32,7 @@ export class PerformanceOverlay {
     try {
       localStorage.setItem('performanceOverlay.visible', String(this.isVisible));
     } catch (error) {
-      console.error('Failed to save overlay visibility');
+      DebugLogger.error('PerformanceOverlay', 'Failed to save overlay visibility', { error });
     }
   }
 

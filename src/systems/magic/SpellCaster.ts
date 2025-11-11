@@ -25,10 +25,14 @@ export class SpellCaster {
   private healingProcessor: HealingEffect;
   private statusProcessor: StatusEffect;
 
-  private constructor() {
-    this.registry = SpellRegistry.getInstance();
-    this.effectRegistry = SpellEffectRegistry.getInstance();
-    this.validation = new SpellValidation();
+  constructor(
+    spellRegistry?: SpellRegistry,
+    spellEffectRegistry?: SpellEffectRegistry,
+    spellValidation?: SpellValidation
+  ) {
+    this.registry = spellRegistry || SpellRegistry.getInstance();
+    this.effectRegistry = spellEffectRegistry || SpellEffectRegistry.getInstance();
+    this.validation = spellValidation || new SpellValidation();
     this.damageProcessor = new DamageEffect();
     this.healingProcessor = new HealingEffect();
     this.statusProcessor = new StatusEffect();

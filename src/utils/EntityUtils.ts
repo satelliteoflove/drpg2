@@ -1,5 +1,6 @@
 import { Character } from '../entities/Character';
 import { Monster } from '../types/GameTypes';
+import { DebugLogger } from './DebugLogger';
 
 export type CombatEntity = Character | Monster;
 
@@ -53,7 +54,7 @@ export class EntityUtils {
     const maxHP = this.getMaxHP(entity);
     const actualHealing = Math.min(healing, maxHP - currentHP);
     const newHP = currentHP + actualHealing;
-    console.log(`[EntityUtils.applyHealing] ${entity.name}: currentHP=${currentHP}, maxHP=${maxHP}, healing=${healing}, actualHealing=${actualHealing}, newHP=${newHP}`);
+    DebugLogger.debug('EntityUtils', `applyHealing ${entity.name}: currentHP=${currentHP}, maxHP=${maxHP}, healing=${healing}, actualHealing=${actualHealing}, newHP=${newHP}`);
     this.setHP(entity, newHP);
     return actualHealing;
   }
@@ -84,8 +85,7 @@ export class EntityUtils {
 
   static getResistance(entity: CombatEntity, element: string): number {
     if (this.isCharacter(entity)) {
-      const resistances = (entity as any).resistances || {};
-      return resistances[element] || 0;
+      return 0;
     } else {
       if (entity.resistances && entity.resistances.includes(element)) {
         return 50;
@@ -99,7 +99,7 @@ export class EntityUtils {
 
   static getMagicResistance(entity: CombatEntity): number {
     if (this.isCharacter(entity)) {
-      return (entity as any).magicResistance || 0;
+      return 0;
     } else {
       return entity.magicResistance || 0;
     }
