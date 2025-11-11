@@ -11,7 +11,7 @@ export class SpellRegistry {
   private spellsById: Map<SpellId, SpellData>;
   private spellsByName: Map<string, SpellData>;
 
-  private constructor() {
+  constructor() {
     this.spellsBySchool = new Map();
     this.spellsById = new Map();
     this.spellsByName = new Map();

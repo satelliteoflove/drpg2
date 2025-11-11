@@ -39,10 +39,14 @@ export class CombatSystem {
     isActive: false,
   };
 
-  constructor(spellCaster?: SpellCaster, statusEffectSystem?: StatusEffectSystem) {
+  constructor(
+    spellCaster?: SpellCaster,
+    statusEffectSystem?: StatusEffectSystem,
+    modifierSystem?: ModifierSystem
+  ) {
     this.spellCaster = spellCaster || SpellCaster.getInstance();
     this.statusEffectSystem = statusEffectSystem || StatusEffectSystem.getInstance();
-    this.modifierSystem = ModifierSystem.getInstance();
+    this.modifierSystem = modifierSystem || ModifierSystem.getInstance();
   }
 
   public startCombat(

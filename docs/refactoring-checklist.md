@@ -7,7 +7,7 @@
 ## Progress Overview
 
 - **Critical Issues:** 7 total → 6 completed ✅, 1 remaining ⬜
-- **Major Issues:** 9 total → 7 completed ✅, 2 remaining ⬜
+- **Major Issues:** 9 total → 8 completed ✅, 1 remaining ⬜
 - **Minor Issues:** 6 total → 6 completed ✅, 0 remaining ⬜
 
 ---
@@ -237,29 +237,52 @@ None remaining!
 
 ---
 
-#### ⬜ 2.6: Complete Dependency Injection for Remaining Singletons
-**Status:** PARTIALLY COMPLETED
+#### ✅ 2.6: Complete Dependency Injection for Remaining Singletons
+**Status:** COMPLETED
 **Severity:** MAJOR
-**Current State:**
-- CombatSystem has optional DI (✅)
-- Many other systems still use `.getInstance()` directly without DI option
+**Date Completed:** 2025-11-10
 
-**Systems Needing DI:**
-- ModifierSystem - Used directly via getInstance()
-- SpellRegistry - Used directly via getInstance()
-- Other singleton systems
+**Systems Updated:**
 
-**Recommended Implementation:**
-1. Add all singletons to ServiceContainer
-2. Modify constructors to accept optional dependencies with getInstance() fallback
-3. Use GameServices.getX() methods instead of direct getInstance() calls
+1. **ModifierSystem**
+   - Made constructor public (no dependencies)
+   - Registered in ServiceContainer
+   - Added ServiceIdentifier
+   - Added `GameServices.getModifierSystem()` method
 
-**Benefits:**
-- Better testability across entire codebase
-- Consistent dependency management
-- Can inject different implementations for testing
+2. **SpellRegistry**
+   - Made constructor public (no dependencies)
+   - Already registered in ServiceContainer
 
-**Estimated Effort:** 1-2 days
+3. **SpellEffectRegistry**
+   - Made constructor public (no dependencies)
+   - Registered in ServiceContainer
+   - Added ServiceIdentifier
+   - Added `GameServices.getSpellEffectRegistry()` method
+
+4. **SpellLearning**
+   - Updated constructor to accept optional `SpellRegistry` parameter
+   - Registered in ServiceContainer with dependency injection
+   - Added ServiceIdentifier
+   - Added `GameServices.getSpellLearning()` method
+
+5. **SpellCaster**
+   - Updated constructor to accept optional parameters: `spellRegistry`, `spellEffectRegistry`, `spellValidation`
+   - Updated ServiceContainer registration to inject all dependencies
+
+6. **CombatSystem**
+   - Updated constructor to accept optional `modifierSystem` parameter
+   - Updated ServiceContainer registration to inject ModifierSystem
+   - Now receives all 3 dependencies via DI
+
+**Architecture Impact:**
+- All core game systems now support dependency injection
+- Service layer properly decoupled from singleton pattern
+- Entity classes (Character) continue using getInstance() (pragmatic for frequently-instantiated objects)
+
+**Verification:**
+- TypeScript compilation: ✅ Passed
+- Browser testing: ✅ All services registered, 0 runtime errors
 
 **Reference:** Comprehensive review Issue 2.6
 
@@ -438,18 +461,18 @@ None remaining!
 
 ### Large Effort (1-2 days each)
 - ⬜ 2.4: Implement Command pattern for combat actions (1-2 days)
-- ⬜ 2.6: Complete dependency injection for remaining singletons (1-2 days)
+- ✅ 2.6: Complete dependency injection for remaining singletons (COMPLETED 2025-11-10)
 
 ---
 
 ## 📈 METRICS
 
 **Original Issues Identified:** 22
-**Issues Completed:** 14 ✅
-**Issues Remaining:** 4 ⬜
+**Issues Completed:** 15 ✅
+**Issues Remaining:** 3 ⬜
 **Issues N/A:** 4 (InventoryScene doesn't exist, some issues already resolved)
 
-**Completion Rate:** 14/18 = 78%
+**Completion Rate:** 15/18 = 83%
 
 **Lines of Code Impact:**
 - Eliminated: ~500+ lines of duplicated/dead code
@@ -467,19 +490,18 @@ Start with **Issue 5.2** (StatusPanel rendering context) - simple architectural 
 Work on **Issue 3.4** (DungeonScene render duplication) - extract common render pipeline ✅ CONFIRMED
 
 ### If you have 1-2 days:
-Choose one:
 - **Issue 2.4** (Command pattern) - Makes combat system extensible
-- **Issue 2.6** (Complete DI) - Improves testability across codebase
 
 ### Recent Completions (2025-11-10):
 ✅ **Issue 3.1** (Entity Type Checking) - Removed 20 entity-related 'as any' casts, improved type safety
 ✅ **Issue 5.1** (Standardize Error Handling) - Added consistent error handling to all scenes and SceneManager
+✅ **Issue 2.6** (Complete Dependency Injection) - All core game systems now support DI
 
 ### Verification Status:
 ✅ All remaining issues have been analyzed and verified
 ✅ Issues 5.2 and 3.4 confirmed - ready to work on
-✅ Issues 3.1 and 5.1 **COMPLETED** 2025-11-10
-✅ Issues 2.4 and 2.6 remain as originally documented
+✅ Issues 3.1, 5.1, and 2.6 **COMPLETED** 2025-11-10
+✅ Only Issue 2.4 remains as major refactoring work
 
 ---
 
@@ -492,7 +514,7 @@ Choose one:
 
 ---
 
-**Last Updated:** 2025-11-10 (Issues 3.1 and 5.1 completed)
+**Last Updated:** 2025-11-10 (Issues 3.1, 5.1, and 2.6 completed)
 **Next Review:** After completing remaining issues or discovering new refactoring opportunities
 
 **Recent Work Notes (2025-11-10):**
@@ -511,7 +533,15 @@ Choose one:
   - All errors logged with proper context and severity levels
   - Prevents game crashes from unhandled errors
 
+- **Issue 2.6 COMPLETED**: Complete dependency injection for remaining singletons
+  - Updated 6 core systems: ModifierSystem, SpellRegistry, SpellEffectRegistry, SpellLearning, SpellCaster, CombatSystem
+  - All systems now accept optional dependencies via constructor
+  - All systems registered in ServiceContainer with proper dependency injection
+  - Added 4 new GameServices getter methods
+  - Backward compatibility maintained (getInstance() still works)
+  - TypeScript compilation passed, browser testing verified all services registered correctly
+
 **Previous Verification Notes:**
 - All remaining issues analyzed and current state documented
 - Issues 5.2 and 3.4 confirmed and ready for implementation
-- Issues 2.4 and 2.6 remain accurate as originally documented
+- Only Issue 2.4 (Command Pattern) remains as major refactoring work

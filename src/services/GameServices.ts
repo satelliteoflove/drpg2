@@ -9,7 +9,10 @@ import { SpellValidation } from '../systems/magic/SpellValidation';
 import { StatusEffectSystem } from '../systems/StatusEffectSystem';
 import { GAME_CONFIG } from '../config/GameConstants';
 import type { CombatSystem } from '../systems/CombatSystem';
+import type { ModifierSystem } from '../systems/ModifierSystem';
 import type { EquipmentModifierManager } from '../systems/EquipmentModifierManager';
+import type { SpellEffectRegistry } from '../systems/magic/SpellEffectRegistry';
+import type { SpellLearning } from '../systems/magic/SpellLearning';
 import type { ItemManager } from '../systems/inventory/ItemManager';
 import type { LootGenerator } from '../systems/inventory/LootGenerator';
 import type { ItemIdentifier } from '../systems/inventory/ItemIdentifier';
@@ -87,12 +90,41 @@ export class GameServices {
       { singleton: false }
     );
 
+    // Register Modifier System
+    this.container.register(
+      ServiceIdentifiers.ModifierSystem,
+      () => {
+        const { ModifierSystem } = require('../systems/ModifierSystem');
+        return new ModifierSystem();
+      },
+      { singleton: true }
+    );
+
     // Register Magic System Services
     this.container.register(
       ServiceIdentifiers.SpellRegistry,
       () => {
         const { SpellRegistry } = require('../systems/magic/SpellRegistry');
         return SpellRegistry.getInstance();
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.SpellEffectRegistry,
+      () => {
+        const { SpellEffectRegistry } = require('../systems/magic/SpellEffectRegistry');
+        return new SpellEffectRegistry();
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.SpellLearning,
+      () => {
+        const { SpellLearning } = require('../systems/magic/SpellLearning');
+        const spellRegistry = this.container.resolve(ServiceIdentifiers.SpellRegistry);
+        return new SpellLearning(spellRegistry);
       },
       { singleton: true }
     );
@@ -110,7 +142,10 @@ export class GameServices {
       ServiceIdentifiers.SpellCaster,
       () => {
         const { SpellCaster } = require('../systems/magic/SpellCaster');
-        return SpellCaster.getInstance();
+        const spellRegistry = this.container.resolve(ServiceIdentifiers.SpellRegistry);
+        const spellEffectRegistry = this.container.resolve(ServiceIdentifiers.SpellEffectRegistry);
+        const spellValidation = this.container.resolve(ServiceIdentifiers.SpellValidation);
+        return new SpellCaster(spellRegistry, spellEffectRegistry, spellValidation);
       },
       { singleton: true }
     );
@@ -136,14 +171,15 @@ export class GameServices {
       { singleton: true }
     );
 
-    // Register Combat System (depends on SpellCaster and StatusEffectSystem)
+    // Register Combat System (depends on SpellCaster, StatusEffectSystem, ModifierSystem)
     this.container.register(
       ServiceIdentifiers.CombatSystem,
       () => {
         const { CombatSystem } = require('../systems/CombatSystem');
         const spellCaster = this.container.resolve(ServiceIdentifiers.SpellCaster);
         const statusEffectSystem = this.container.resolve(ServiceIdentifiers.StatusEffectSystem);
-        return new CombatSystem(spellCaster, statusEffectSystem);
+        const modifierSystem = this.container.resolve(ServiceIdentifiers.ModifierSystem);
+        return new CombatSystem(spellCaster, statusEffectSystem, modifierSystem);
       },
       { singleton: true }
     );
@@ -222,8 +258,20 @@ export class GameServices {
     return ErrorHandler;
   }
 
+  public getModifierSystem(): ModifierSystem {
+    return this.container.resolve(ServiceIdentifiers.ModifierSystem);
+  }
+
   public getSpellRegistry(): SpellRegistry {
     return this.container.resolve(ServiceIdentifiers.SpellRegistry);
+  }
+
+  public getSpellEffectRegistry(): SpellEffectRegistry {
+    return this.container.resolve(ServiceIdentifiers.SpellEffectRegistry);
+  }
+
+  public getSpellLearning(): SpellLearning {
+    return this.container.resolve(ServiceIdentifiers.SpellLearning);
   }
 
   public getSpellValidation(): SpellValidation {

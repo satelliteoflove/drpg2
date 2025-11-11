@@ -8,8 +8,8 @@ export class SpellLearning {
   private static instance: SpellLearning;
   private spellRegistry: SpellRegistry;
 
-  private constructor() {
-    this.spellRegistry = SpellRegistry.getInstance();
+  constructor(spellRegistry?: SpellRegistry) {
+    this.spellRegistry = spellRegistry || SpellRegistry.getInstance();
   }
 
   static getInstance(): SpellLearning {
