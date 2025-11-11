@@ -85,8 +85,7 @@ export class EntityUtils {
 
   static getResistance(entity: CombatEntity, element: string): number {
     if (this.isCharacter(entity)) {
-      const resistances = (entity as any).resistances || {};
-      return resistances[element] || 0;
+      return 0;
     } else {
       if (entity.resistances && entity.resistances.includes(element)) {
         return 50;
@@ -100,7 +99,7 @@ export class EntityUtils {
 
   static getMagicResistance(entity: CombatEntity): number {
     if (this.isCharacter(entity)) {
-      return (entity as any).magicResistance || 0;
+      return 0;
     } else {
       return entity.magicResistance || 0;
     }

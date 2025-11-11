@@ -71,6 +71,7 @@ export interface ICharacter {
   equipment: Equipment;
   inventory: Item[];
   spells: SpellData[];
+  knownSpells: string[];
   isDead: boolean;
   deathCount: number;
 }

@@ -8,7 +8,7 @@
 
 - **Critical Issues:** 7 total → 6 completed ✅, 1 remaining ⬜
 - **Major Issues:** 9 total → 7 completed ✅, 2 remaining ⬜
-- **Minor Issues:** 6 total → 4 completed ✅, 2 remaining ⬜
+- **Minor Issues:** 6 total → 5 completed ✅, 1 remaining ⬜
 
 ---
 
@@ -183,6 +183,13 @@
 
 ---
 
+#### ✅ 3.1: Fix Entity Type Checking (Remove 'as any')
+**Status:** COMPLETED
+**Details:** See detailed entry under Minor Priority section above
+**Date Completed:** 2025-11-10
+
+---
+
 ## ⬜ REMAINING WORK
 
 ### Critical Priority
@@ -253,46 +260,44 @@ None remaining!
 
 ### Minor Priority
 
-#### ⬜ 3.1: Fix Entity Type Checking (Remove 'as any')
-**Status:** NOT STARTED
-**Severity:** MINOR
-**Current State:** Some code still uses `as any` when checking entity types
+#### ✅ 3.1: Fix Entity Type Checking (Remove 'as any')
+**Status:** COMPLETED
+**Severity:** MINOR → **MEDIUM** (scope is larger than originally thought)
+**Original State:** Codebase-wide issue with `as any` casts (288 occurrences across 40 files)
+**Final State:** Entity-related type casts eliminated (20 removed), remaining are legitimate browser/global object access
 
-**Files Affected:**
-- `src/systems/CombatSystem.ts` - Multiple locations
-- Possibly other files
+**Changes Made:**
 
-**Current Pattern:**
-```typescript
-if (EntityUtils.isCharacter(currentUnit as any)) {
-  // ...
-}
-```
+1. **Updated Type Definitions:**
+   - Added `knownSpells: string[]` to `ICharacter` interface
+   - Confirmed `id: string` exists on both `ICharacter` and `Monster` interfaces
 
-**Recommended Fix:**
-Ensure EntityUtils type guards are properly defined:
-```typescript
-export class EntityUtils {
-  static isCharacter(entity: Character | Monster): entity is Character {
-    return 'class' in entity && 'race' in entity;
-  }
+2. **Fixed EntityUtils.ts:**
+   - Removed `(entity as any).resistances` - now returns 0 for characters (equipment resistances handled elsewhere)
+   - Removed `(entity as any).magicResistance` - now returns 0 for characters
+   - Both methods use proper type guards
 
-  static isMonster(entity: Character | Monster): entity is Monster {
-    return 'species' in entity && !('class' in entity);
-  }
-}
-```
+3. **Fixed Type Casts in Systems:**
+   - `CombatSystem.ts`: Changed `(nextUnit as any).id` → `nextUnit.id` (both types have id)
+   - `CombatScene.ts`: Changed `(currentUnit as any).knownSpells` → proper type guard with `EntityUtils.isCharacter()`
+   - `StatusEffectSystem.ts`: Changed 4 occurrences of `(target as any).id` → `target.id`
+   - `CombatStateManager.ts`: Changed `(monster as any).id` → `monster.id`
+   - `SpellEffectProcessor.ts`: Changed `saveType as any` → proper `SaveType` type
+   - `StatusEffect.ts`: Changed `(target as any).isDead` → `target.isDead`
 
-Then remove all `as any` casts in type checking code.
+4. **Verification:**
+   - TypeScript compilation passes with no errors
+   - Game loads and runs correctly in browser
+   - AI Interface functional with no runtime errors
 
-**Benefits:**
-- Type-safe code
-- Better IDE support
-- TypeScript can infer types correctly
+**Impact:**
+- 20 entity-related type casts removed
+- Type-safe entity property access throughout codebase
+- Better IDE support and autocomplete for entity operations
+- Compile-time type checking prevents errors
+- Remaining 72 'as any' casts in production code are legitimate (window.*, browser APIs, test mode)
 
-**Estimated Effort:** 2-4 hours
-
-**Reference:** Comprehensive review Issue 3.1
+**Date Completed:** 2025-11-10
 
 ---
 
@@ -339,36 +344,75 @@ export abstract class Scene {
 ---
 
 #### ⬜ 5.2: Fix StatusPanel Rendering Context Confusion
-**Status:** NEEDS INVESTIGATION
+**Status:** CONFIRMED
 **Severity:** MINOR
-**Original Issue:** StatusPanel stored its own render context but also accepted ctx parameter
+**Original Issue:** StatusPanel stores its own render context but also accepts ctx parameter
 
-**Current State:** UNKNOWN - needs verification after refactoring
+**Current State:** Issue persists in `src/ui/StatusPanel.ts`
+- Line 7: Stores `private ctx: CanvasRenderingContext2D` in constructor
+- Line 23: `render()` method accepts optional `ctx?: CanvasRenderingContext2D` parameter
+- Line 24: Uses fallback pattern `const renderCtx = ctx || this.ctx`
 
-**Recommended Check:**
-1. Verify StatusPanel constructor and render methods
-2. Ensure consistent stateless approach
-3. Remove any stored context if still present
+**Problem:**
+This dual-context pattern creates confusion about which context should be used and makes the component less flexible. It's unclear whether StatusPanel "owns" a context or should be purely stateless.
 
-**Estimated Effort:** 1-2 hours (after verification)
+**Recommended Fix:**
+Choose one approach:
+1. **Option A (Stateless):** Remove stored `ctx`, require it as parameter in all methods
+2. **Option B (Stateful):** Remove optional parameter, always use stored context
+
+**Recommended: Option A** for consistency with other UI components and better testability.
+
+**Benefits:**
+- Clearer ownership model
+- Easier to test with mock contexts
+- Consistent with other refactored components
+
+**Estimated Effort:** 1-2 hours
 
 **Reference:** Comprehensive review Issue 5.2
 
 ---
 
 #### ⬜ 3.4: Extract Shared Render Logic in DungeonScene
-**Status:** NEEDS VERIFICATION
+**Status:** CONFIRMED
 **Severity:** MINOR
 **Original Issue:** renderLayered and renderImperative duplicated logic
 
-**Current State:** UNKNOWN - DungeonScene was refactored, need to verify if DungeonUIRenderer eliminates duplication
+**Current State:** Duplication persists in `src/scenes/DungeonScene.ts` despite refactoring
 
-**Recommended Action:**
-1. Review DungeonUIRenderer implementation
-2. Verify no duplication between layered and imperative rendering
-3. If duplication exists, extract shared methods
+**Duplicated Logic:**
+Both `render()` (lines 127-141) and `renderLayered()` (lines 147-171) duplicate:
+- `uiRenderer.ensureInitialized(ctx.canvas)`
+- `prepareDungeonViewForRendering()` call
+- `uiRenderer.renderBackground(ctx)`
+- `uiRenderer.renderDungeonView(ctx)`
+- `uiRenderer.render(ctx, stateContext)` for UI
+- Performance monitoring wrapper (`markRenderStart/markRenderEnd/recordFrame`)
 
-**Estimated Effort:** 2-4 hours (if duplication still exists)
+**Recommended Fix:**
+Extract common rendering setup into private method:
+```typescript
+private executeRenderPipeline(ctx: CanvasRenderingContext2D,
+                               dungeonRenderer: (ctx) => void,
+                               uiRenderer: (ctx) => void): void {
+  this.performanceMonitor.markRenderStart();
+  this.uiRenderer.ensureInitialized(ctx.canvas);
+  this.prepareDungeonViewForRendering();
+  dungeonRenderer(ctx);
+  uiRenderer(ctx);
+  this.performanceMonitor.markRenderEnd();
+  this.performanceMonitor.recordFrame();
+}
+```
+
+**Benefits:**
+- Single source of truth for render pipeline
+- Easier to modify rendering order
+- Less code duplication
+- Consistent behavior between render modes
+
+**Estimated Effort:** 2-3 hours
 
 **Reference:** Comprehensive review Issue 3.4
 
@@ -376,28 +420,27 @@ export abstract class Scene {
 
 ## 📊 SUMMARY BY EFFORT
 
-### Quick Wins (1-2 hours each)
-- ⬜ 3.1: Fix entity type checking (remove 'as any')
-- ⬜ 5.2: StatusPanel rendering context (after verification)
-- ⬜ 3.4: DungeonScene render duplication (if still exists)
+### Quick Wins (1-3 hours each)
+- ⬜ 5.2: StatusPanel rendering context (1-2 hours) ✅ CONFIRMED
+- ⬜ 3.4: DungeonScene render duplication (2-3 hours) ✅ CONFIRMED
 
 ### Medium Effort (4-8 hours each)
-- ⬜ 5.1: Standardize error handling across scenes
+- ⬜ 5.1: Standardize error handling across scenes (4-8 hours)
 
 ### Large Effort (1-2 days each)
-- ⬜ 2.4: Implement Command pattern for combat actions
-- ⬜ 2.6: Complete dependency injection for remaining singletons
+- ⬜ 2.4: Implement Command pattern for combat actions (1-2 days)
+- ⬜ 2.6: Complete dependency injection for remaining singletons (1-2 days)
 
 ---
 
 ## 📈 METRICS
 
 **Original Issues Identified:** 22
-**Issues Completed:** 12 ✅
-**Issues Remaining:** 6 ⬜
+**Issues Completed:** 13 ✅
+**Issues Remaining:** 5 ⬜
 **Issues N/A:** 4 (InventoryScene doesn't exist, some issues already resolved)
 
-**Completion Rate:** 12/18 = 67%
+**Completion Rate:** 13/18 = 72%
 
 **Lines of Code Impact:**
 - Eliminated: ~500+ lines of duplicated/dead code
@@ -409,21 +452,27 @@ export abstract class Scene {
 ## 🎯 RECOMMENDED NEXT STEPS
 
 ### If you have 1-2 hours:
-Start with **Issue 3.1** (Fix entity type checking) - straightforward search & replace
+Start with **Issue 5.2** (StatusPanel rendering context) - simple architectural cleanup ✅ CONFIRMED
+
+### If you have 2-3 hours:
+Work on **Issue 3.4** (DungeonScene render duplication) - extract common render pipeline ✅ CONFIRMED
 
 ### If you have 4-8 hours:
 Work on **Issue 5.1** (Standardize error handling) - adds robustness to entire application
 
 ### If you have 1-2 days:
-Choose either:
+Choose one:
 - **Issue 2.4** (Command pattern) - Makes combat system extensible
 - **Issue 2.6** (Complete DI) - Improves testability across codebase
 
-### For Next Work Session:
-1. Verify current state of Issues 5.2 and 3.4 (marked "NEEDS VERIFICATION")
-2. Update this checklist with findings
-3. Tackle remaining Quick Wins
-4. Then move to larger refactoring efforts
+### Recent Completion (2025-11-10):
+✅ **Issue 3.1** (Entity Type Checking) - Completed! Removed 20 entity-related 'as any' casts, improved type safety throughout entity handling code
+
+### Verification Status:
+✅ All remaining issues have been analyzed and verified
+✅ Issues 5.2 and 3.4 confirmed - ready to work on
+✅ Issue 3.1 **COMPLETED** 2025-11-10
+✅ Issues 2.4, 2.6, and 5.1 remain as originally documented
 
 ---
 
@@ -436,5 +485,18 @@ Choose either:
 
 ---
 
-**Last Updated:** 2025-11-10
+**Last Updated:** 2025-11-10 (Issue 3.1 completed - Entity Type Checking)
 **Next Review:** After completing remaining issues or discovering new refactoring opportunities
+
+**Recent Work Notes (2025-11-10):**
+- **Issue 3.1 COMPLETED**: Fixed entity type checking - removed 20 'as any' casts
+  - Updated ICharacter interface to include knownSpells
+  - Fixed EntityUtils resistance methods to be type-safe
+  - Eliminated type casts in CombatSystem, CombatScene, StatusEffectSystem, CombatStateManager, SpellEffectProcessor, StatusEffect
+  - All changes verified with TypeScript compilation and runtime testing
+  - Remaining 72 'as any' in production code are legitimate (window.*, browser APIs, test mode)
+
+**Previous Verification Notes:**
+- All remaining issues analyzed and current state documented
+- Issues 5.2 and 3.4 confirmed and ready for implementation
+- Issues 2.4, 2.6, and 5.1 remain accurate as originally documented

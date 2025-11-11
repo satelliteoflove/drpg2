@@ -479,7 +479,7 @@ export class CombatSystem {
       previousTurn,
       newTurn: this.encounter.currentTurn,
       nextUnit: nextUnit ? EntityUtils.getName(nextUnit as Character | Monster) : 'none',
-      nextUnitId: nextUnit ? (nextUnit as any).id || 'no-id' : 'none'
+      nextUnitId: nextUnit ? nextUnit.id || 'no-id' : 'none'
     });
 
     // Remove dead units from turn order

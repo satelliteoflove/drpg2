@@ -182,7 +182,7 @@ export class CombatStateManager {
     const statusSystem = StatusEffectSystem.getInstance();
 
     DebugLogger.debug('CombatStateManager', `Processing monster turn for ${monster.name}`, {
-      monsterId: (monster as any).id,
+      monsterId: monster.id,
       hasStatuses: monster.statuses?.length || 0,
       statuses: monster.statuses,
       isDisabled: statusSystem.isDisabled(monster)

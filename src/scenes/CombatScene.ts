@@ -5,6 +5,7 @@ import { CombatStateManager } from './combat/CombatStateManager';
 import { CombatUIManager } from './combat/CombatUIManager';
 import { CombatInputController } from './combat/CombatInputController';
 import { GameServices } from '../services/GameServices';
+import { EntityUtils } from '../utils/EntityUtils';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
@@ -87,8 +88,8 @@ export class CombatScene extends Scene {
 
   private getAvailableSpells(): string[] {
     const currentUnit = this.combatSystem.getCurrentUnit();
-    if (currentUnit && 'knownSpells' in currentUnit) {
-      return (currentUnit as any).knownSpells || [];
+    if (currentUnit && EntityUtils.isCharacter(currentUnit)) {
+      return currentUnit.knownSpells || [];
     }
     return [];
   }

@@ -59,7 +59,7 @@ export class StatusEffectSystem {
 
     DebugLogger.info('StatusEffectSystem', `Applied ${effectType} to ${target.name}`, {
       effect,
-      targetId: (target as any).id,
+      targetId: target.id,
       statusesLength: target.statuses?.length || 0
     });
 
@@ -121,7 +121,7 @@ export class StatusEffectSystem {
 
   public tick(target: ICharacter | Monster, context: StatusEffectContext): void {
     DebugLogger.debug('StatusEffectSystem', `tick() called on ${target.name}`, {
-      targetId: (target as any).id,
+      targetId: target.id,
       statusesBefore: target.statuses,
       isArray: Array.isArray(target.statuses),
       context
@@ -129,7 +129,7 @@ export class StatusEffectSystem {
 
     if (!Array.isArray(target.statuses)) {
       DebugLogger.warn('StatusEffectSystem', `tick() clearing statuses for ${target.name} - not an array!`, {
-        targetId: (target as any).id,
+        targetId: target.id,
         statusesValue: target.statuses,
         statusesType: typeof target.statuses
       });
@@ -152,7 +152,7 @@ export class StatusEffectSystem {
     }
 
     DebugLogger.debug('StatusEffectSystem', `tick() completed on ${target.name}`, {
-      targetId: (target as any).id,
+      targetId: target.id,
       statusesAfter: target.statuses
     });
   }

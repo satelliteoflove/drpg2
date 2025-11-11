@@ -40,7 +40,7 @@ export class StatusEffect extends SpellEffectProcessor {
       const targetName = this.getEntityName(target);
 
       DebugLogger.debug('StatusEffect', `Processing target: ${targetName}`, {
-        isDead: this.isCharacter(target) ? target.isDead : (target as any).isDead,
+        isDead: this.isCharacter(target) ? target.isDead : target.isDead,
         isCharacter: this.isCharacter(target)
       });
 
