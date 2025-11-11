@@ -40,7 +40,6 @@ export class DungeonUIRenderer {
     DebugLogger.info('DungeonUIRenderer', 'Initializing raycasting dungeon renderer');
     this.dungeonView = new DungeonViewRaycast(canvas, this.dungeonScene);
     this.statusPanel = new StatusPanel(
-      canvas,
       UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
       UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
       UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,

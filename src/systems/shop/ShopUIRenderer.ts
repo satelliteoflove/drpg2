@@ -49,7 +49,6 @@ export class ShopUIRenderer {
     if (!this.canvas) {
       this.canvas = ctx.canvas;
       this.statusPanel = new StatusPanel(
-        ctx.canvas,
         UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
         UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
         UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,

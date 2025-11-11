@@ -36,7 +36,6 @@ export class CombatUIManager {
 
   public initializeUI(canvas: HTMLCanvasElement): void {
     this.statusPanel = new StatusPanel(
-      canvas,
       UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
       UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
       UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,

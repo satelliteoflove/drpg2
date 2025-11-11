@@ -4,15 +4,13 @@ import { StatusEffectSystem } from '../systems/StatusEffectSystem';
 import { CharacterStatus } from '../types/GameTypes';
 
 export class StatusPanel {
-  private ctx: CanvasRenderingContext2D;
   private x: number;
   private y: number;
   private width: number;
   private height: number;
   private statusEffectSystem: StatusEffectSystem;
 
-  constructor(canvas: HTMLCanvasElement, x: number, y: number, width: number, height: number) {
-    this.ctx = canvas.getContext('2d')!;
+  constructor(x: number, y: number, width: number, height: number) {
     this.x = x;
     this.y = y;
     this.width = width;
@@ -20,15 +18,13 @@ export class StatusPanel {
     this.statusEffectSystem = StatusEffectSystem.getInstance();
   }
 
-  public render(party: Party, ctx?: CanvasRenderingContext2D): void {
-    const renderCtx = ctx || this.ctx;
+  public render(party: Party, ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(this.x, this.y, this.width, this.height);
 
-    renderCtx.fillStyle = '#2a2a2a';
-    renderCtx.fillRect(this.x, this.y, this.width, this.height);
-
-    renderCtx.strokeStyle = '#666';
-    renderCtx.lineWidth = 2;
-    renderCtx.strokeRect(this.x, this.y, this.width, this.height);
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(this.x, this.y, this.width, this.height);
 
     const charHeight = 75;
     const startY = this.y + 15;
@@ -37,7 +33,7 @@ export class StatusPanel {
 
     party.characters.slice(0, maxChars).forEach((char, index) => {
       const charY = startY + index * charHeight;
-      this.renderCharacterStatus(char, this.x + 10, charY, this.width - 20, charHeight - 5, renderCtx);
+      this.renderCharacterStatus(char, this.x + 10, charY, this.width - 20, charHeight - 5, ctx);
     });
   }
 

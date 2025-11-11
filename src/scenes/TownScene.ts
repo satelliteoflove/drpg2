@@ -35,7 +35,6 @@ export class TownScene extends Scene {
   public render(ctx: CanvasRenderingContext2D): void {
     if (!this.statusPanel) {
       this.statusPanel = new StatusPanel(
-        ctx.canvas,
         UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
         UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
         UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,
@@ -61,11 +60,10 @@ export class TownScene extends Scene {
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
-    const { renderManager, mainContext } = renderContext;
+    const { renderManager } = renderContext;
 
     if (!this.statusPanel) {
       this.statusPanel = new StatusPanel(
-        mainContext.canvas,
         UI_CONSTANTS.LAYOUT.STATUS_PANEL_X,
         UI_CONSTANTS.LAYOUT.STATUS_PANEL_Y,
         UI_CONSTANTS.LAYOUT.STATUS_PANEL_WIDTH,

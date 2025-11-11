@@ -125,19 +125,19 @@ export class DungeonScene extends Scene {
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
-    this.performanceMonitor.markRenderStart();
-
-    this.uiRenderer.ensureInitialized(ctx.canvas);
-    this.uiRenderer.renderBackground(ctx);
-
-    this.prepareDungeonViewForRendering();
-    this.uiRenderer.renderDungeonView(ctx);
-
-    const stateContext = this.stateManager.getStateContext();
-    this.uiRenderer.render(ctx, stateContext);
-
-    this.performanceMonitor.markRenderEnd();
-    this.performanceMonitor.recordFrame();
+    this.executeRenderPipeline(
+      ctx.canvas,
+      () => {
+        this.uiRenderer.renderBackground(ctx);
+      },
+      () => {
+        this.uiRenderer.renderDungeonView(ctx);
+      },
+      () => {
+        const stateContext = this.stateManager.getStateContext();
+        this.uiRenderer.render(ctx, stateContext);
+      }
+    );
   }
 
   public hasLayeredRendering(): boolean {
@@ -145,26 +145,42 @@ export class DungeonScene extends Scene {
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
-    this.performanceMonitor.markRenderStart();
-
     const { renderManager, mainContext } = renderContext;
 
-    this.uiRenderer.ensureInitialized(mainContext.canvas);
+    this.executeRenderPipeline(
+      mainContext.canvas,
+      () => {
+        renderManager.renderBackground((ctx) => {
+          this.uiRenderer.renderBackground(ctx);
+        });
+      },
+      () => {
+        renderManager.renderDungeon((ctx: CanvasRenderingContext2D) => {
+          this.uiRenderer.renderDungeonView(ctx);
+        });
+      },
+      () => {
+        renderManager.renderUI((ctx) => {
+          const stateContext = this.stateManager.getStateContext();
+          this.uiRenderer.render(ctx, stateContext);
+        });
+      }
+    );
+  }
 
+  private executeRenderPipeline(
+    canvas: HTMLCanvasElement,
+    renderBackground: () => void,
+    renderDungeon: () => void,
+    renderUI: () => void
+  ): void {
+    this.performanceMonitor.markRenderStart();
+    this.uiRenderer.ensureInitialized(canvas);
     this.prepareDungeonViewForRendering();
 
-    renderManager.renderBackground((ctx) => {
-      this.uiRenderer.renderBackground(ctx);
-    });
-
-    renderManager.renderDungeon((ctx: CanvasRenderingContext2D) => {
-      this.uiRenderer.renderDungeonView(ctx);
-    });
-
-    renderManager.renderUI((ctx) => {
-      const stateContext = this.stateManager.getStateContext();
-      this.uiRenderer.render(ctx, stateContext);
-    });
+    renderBackground();
+    renderDungeon();
+    renderUI();
 
     this.performanceMonitor.markRenderEnd();
     this.performanceMonitor.recordFrame();
