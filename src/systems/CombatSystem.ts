@@ -3,12 +3,15 @@ import { Encounter, Item, Monster, CharacterStatus } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { DebugLogger } from '../utils/DebugLogger';
 import { SpellCaster } from './magic/SpellCaster';
-import { SpellCastingContext, SpellId } from '../types/SpellTypes';
 import { DiceRoller } from '../utils/DiceRoller';
 import { EntityUtils } from '../utils/EntityUtils';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { ModifierSystem } from './ModifierSystem';
 import { GameServices } from '../services/GameServices';
+import { CombatActionRegistry } from './combat/actions/CombatActionRegistry';
+import { CombatActionContext, CombatActionParams } from './combat/actions/CombatAction';
+import { DamageCalculator } from './combat/helpers/DamageCalculator';
+import { WeaponEffectApplicator } from './combat/helpers/WeaponEffectApplicator';
 
 interface CombatDebugData {
   currentTurn: string;
@@ -24,6 +27,9 @@ export class CombatSystem {
   private spellCaster: SpellCaster;
   private statusEffectSystem: StatusEffectSystem;
   private modifierSystem: ModifierSystem;
+  private actionRegistry: CombatActionRegistry;
+  private damageCalculator: DamageCalculator;
+  private weaponEffectApplicator: WeaponEffectApplicator;
   private onCombatEnd?: (
     victory: boolean,
     rewards?: { experience: number; gold: number; items: Item[] },
@@ -42,11 +48,15 @@ export class CombatSystem {
   constructor(
     spellCaster?: SpellCaster,
     statusEffectSystem?: StatusEffectSystem,
-    modifierSystem?: ModifierSystem
+    modifierSystem?: ModifierSystem,
+    actionRegistry?: CombatActionRegistry
   ) {
     this.spellCaster = spellCaster || SpellCaster.getInstance();
     this.statusEffectSystem = statusEffectSystem || StatusEffectSystem.getInstance();
     this.modifierSystem = modifierSystem || ModifierSystem.getInstance();
+    this.actionRegistry = actionRegistry || new CombatActionRegistry();
+    this.damageCalculator = new DamageCalculator();
+    this.weaponEffectApplicator = new WeaponEffectApplicator(this.statusEffectSystem);
   }
 
   public startCombat(
@@ -133,7 +143,6 @@ export class CombatSystem {
       return 'Invalid action';
     }
 
-    // Prevent multiple simultaneous actions
     if (this.isProcessingTurn) {
       DebugLogger.debug('CombatSystem', 'Action rejected - already processing turn');
       return 'Action already in progress';
@@ -147,182 +156,50 @@ export class CombatSystem {
       spellId
     });
 
+    const combatAction = this.actionRegistry.get(action);
+    if (!combatAction) {
+      return 'Invalid action';
+    }
+
+    const context: CombatActionContext = {
+      encounter: this.encounter,
+      party: this.party,
+      spellCaster: this.spellCaster,
+      statusEffectSystem: this.statusEffectSystem,
+      modifierSystem: this.modifierSystem,
+      damageCalculator: this.damageCalculator,
+      weaponEffectApplicator: this.weaponEffectApplicator,
+      getCurrentUnit: () => this.getCurrentUnit(),
+      cleanupDeadUnits: () => this.cleanupDeadUnits(),
+      endCombat: (victory, rewards, escaped) => this.endCombat(victory, rewards, escaped)
+    };
+
+    const params: CombatActionParams = {
+      targetIndex,
+      spellId,
+      target
+    };
+
+    if (!combatAction.canExecute(context, params)) {
+      return `Cannot execute ${action}`;
+    }
+
     this.isProcessingTurn = true;
 
-    let result = '';
-
-    switch (action) {
-      case 'Attack':
-        result = this.executeAttack(currentUnit, targetIndex);
-        break;
-      case 'Cast Spell':
-        result = this.executeCastSpell(currentUnit, spellId, target);
-        break;
-      case 'Defend':
-        result = `${currentUnit.name} defends!`;
-        break;
-      case 'Use Item':
-        result = `${currentUnit.name} uses an item!`;
-        break;
-      case 'Escape':
-        if (this.attemptEscape(currentUnit)) {
-          this.isProcessingTurn = false;
-          this.endCombat(false, undefined, true); // Pass escaped = true
-          return `${currentUnit.name} successfully leads the party to safety!`;
-        } else {
-          result = `${currentUnit.name} could not escape!`;
-        }
-        break;
-      default:
-        result = 'Invalid action';
-    }
+    const result = combatAction.execute(context, params);
 
     this.isProcessingTurn = false;
 
-    return result;
-  }
-
-  private executeAttack(attacker: Character, targetIndex?: number): string {
-    if (!this.encounter) return 'No active combat';
-
-    const aliveMonsters = this.encounter.monsters.filter((m) => m.hp > 0);
-    if (aliveMonsters.length === 0) return 'No targets available';
-
-    const target =
-      targetIndex !== undefined && targetIndex < aliveMonsters.length
-        ? aliveMonsters[targetIndex]
-        : aliveMonsters[Math.floor(Math.random() * aliveMonsters.length)];
-
-    const damage = this.calculateDamage(attacker, target);
-    target.hp = Math.max(0, target.hp - damage);
-
-    let result = `${attacker.name} attacks ${target.name} for ${damage} damage!`;
-
-    const weapon = attacker.equipment.weapon;
-    if (weapon?.onHitEffect && target.hp > 0) {
-      const roll = Math.random();
-      if (roll < weapon.onHitEffect.chance) {
-        const effectApplied = this.applyWeaponEffect(attacker, target, weapon);
-        if (effectApplied) {
-          result += ` ${effectApplied}`;
-        }
-      }
+    if (result.shouldEndCombat) {
+      this.endCombat(
+        result.shouldEndCombat.victory,
+        result.shouldEndCombat.rewards,
+        result.shouldEndCombat.escaped
+      );
     }
 
-    if (target.hp === 0) {
-      target.isDead = true;
-      result += ` ${target.name} is defeated!`;
-      this.cleanupDeadUnits();
-    }
-
-    return result;
+    return result.message;
   }
-
-  private applyWeaponEffect(attacker: Character, target: Monster, weapon: Item): string | null {
-    if (!weapon.onHitEffect) return null;
-
-    const statusType = weapon.onHitEffect.statusType;
-    const duration = weapon.onHitEffect.duration;
-
-    DebugLogger.info('CombatSystem', `${weapon.name} triggers on-hit effect`, {
-      attacker: attacker.name,
-      target: target.name,
-      effect: statusType,
-      duration
-    });
-
-    const applied = this.statusEffectSystem.applyStatusEffect(target, statusType, {
-      duration,
-      source: weapon.name,
-      ignoreResistance: false
-    });
-
-    if (applied) {
-      return `${target.name} is afflicted by ${this.getStatusEffectName(statusType)}!`;
-    } else {
-      return `${target.name} resisted ${this.getStatusEffectName(statusType)}!`;
-    }
-  }
-
-  private getStatusEffectName(status: CharacterStatus): string {
-    const names: Record<CharacterStatus, string> = {
-      'OK': 'OK',
-      'Dead': 'death',
-      'Ashed': 'ashes',
-      'Lost': 'lost',
-      'Paralyzed': 'paralysis',
-      'Stoned': 'petrification',
-      'Poisoned': 'poison',
-      'Sleeping': 'sleep',
-      'Silenced': 'silence',
-      'Blinded': 'blindness',
-      'Confused': 'confusion',
-      'Afraid': 'fear',
-      'Charmed': 'charm',
-      'Berserk': 'berserk',
-      'Blessed': 'blessing',
-      'Cursed': 'curse'
-    };
-    return names[status] || status.toLowerCase();
-  }
-
-  private executeCastSpell(caster: Character, spellId?: string, selectedTarget?: Character | Monster): string {
-    if (!this.encounter || !spellId) return 'Invalid spell';
-
-    const aliveMonsters = this.encounter.monsters.filter((m) => {
-      return !m.isDead && m.hp > 0;
-    });
-    const aliveParty = this.party.filter(c => !c.isDead);
-
-    const spell = caster.getKnownSpells().find(s => s === spellId);
-
-    if (!spell) return 'Spell not found';
-
-    const spellData = this.spellCaster['registry'].getSpellById(spellId as SpellId);
-    if (!spellData) return 'Invalid spell';
-
-    let target: Character | Monster | undefined;
-
-    if (selectedTarget) {
-      // Use the target entity directly if provided
-      target = selectedTarget;
-    } else if (spellData.targetType === 'self') {
-      target = caster;
-    } else {
-      // Fallback for any cases without explicit target
-      if (spellData.targetType === 'enemy' && aliveMonsters.length > 0) {
-        target = aliveMonsters[0];
-      } else if (spellData.targetType === 'ally') {
-        target = caster;
-      }
-    }
-
-    const context: SpellCastingContext = {
-      casterId: caster.id,
-      caster: caster,
-      target: target,
-      party: aliveParty,
-      enemies: aliveMonsters,
-      inCombat: true
-    };
-
-    DebugLogger.debug('CombatSystem', 'Casting spell with context', {
-      spell: spellId,
-      enemyIds: aliveMonsters.map((m: any) => m.id || 'no-id'),
-      enemyNames: aliveMonsters.map(m => m.name)
-    });
-
-    const result = this.spellCaster.castSpell(caster, spellId, context);
-
-    this.cleanupDeadUnits();
-
-    if (result.success) {
-      return result.messages.join(' ');
-    } else {
-      return result.messages[0] || 'Spell failed';
-    }
-  }
-
 
   public executeMonsterTurn(): string {
     const currentUnit = this.getCurrentUnit();
@@ -419,53 +296,8 @@ export class CombatSystem {
     return descriptions[effect.toLowerCase()] || effect;
   }
 
-  private calculateDamage(attacker: Character, target: Monster): number {
-    let baseDamage = Math.floor(attacker.stats.strength / 2) + Math.floor(Math.random() * 6) + 1;
-
-    // Add weapon damage if equipped
-    const weapon = attacker.equipment.weapon;
-    if (weapon && weapon.effects) {
-      const damageEffect = weapon.effects.find((effect) => effect.type === 'damage');
-      if (damageEffect && damageEffect.type === 'damage') {
-        baseDamage += damageEffect.value;
-        DebugLogger.info(
-          'CombatSystem',
-          `${attacker.name} attacks with ${weapon.name} for +${damageEffect.value} damage!`
-        );
-      }
-    }
-
-    const attackBonus = attacker.effectiveAttack - Math.floor(attacker.level / 2);
-    const damageBonus = attacker.effectiveDamage;
-    baseDamage += attackBonus + damageBonus;
-
-    const defense = Math.floor(target.ac / 2);
-    return Math.max(1, baseDamage - defense);
-  }
-
   private rollDamage(damageString: string): number {
     return DiceRoller.roll(damageString);
-  }
-
-  private attemptEscape(character: Character): boolean {
-    if (!this.encounter) return false;
-
-    // Base escape chance is 50%
-    let escapeChance = 0.5;
-
-    // Character agility affects escape chance
-    // Higher agility = better escape chance
-    const agilityBonus = (character.stats.agility - 10) * 0.02; // +/-2% per point above/below 10
-    escapeChance = Math.max(0.1, Math.min(0.9, escapeChance + agilityBonus));
-
-    const success = Math.random() < escapeChance;
-
-    DebugLogger.info(
-      'CombatSystem',
-      `${character.name} attempts escape: ${Math.round(escapeChance * 100)}% chance, ${success ? 'SUCCESS' : 'FAILED'}`
-    );
-
-    return success;
   }
 
   private nextTurn(): void {

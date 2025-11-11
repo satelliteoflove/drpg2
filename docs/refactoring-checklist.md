@@ -7,7 +7,7 @@
 ## Progress Overview
 
 - **Critical Issues:** 7 total → 6 completed ✅, 1 remaining ⬜
-- **Major Issues:** 9 total → 8 completed ✅, 1 remaining ⬜
+- **Major Issues:** 9 total → 9 completed ✅, 0 remaining ⬜
 - **Minor Issues:** 6 total → 6 completed ✅, 0 remaining ⬜
 
 ---
@@ -207,33 +207,48 @@ None remaining!
 
 ### Major Priority
 
-#### ⬜ 2.4: Implement Command Pattern for Combat Actions
-**Status:** NOT STARTED
+#### ✅ 2.4: Implement Command Pattern for Combat Actions
+**Status:** COMPLETED
 **Severity:** MAJOR
-**Current State:** Switch statement still exists in CombatSystem.executePlayerAction()
+**Date Completed:** 2025-11-10
 
-**Files Affected:**
-- `src/systems/CombatSystem.ts:155-178` - Switch statement for actions
+**Files Created:**
+- `src/systems/combat/actions/CombatAction.ts` - Interface and type definitions
+- `src/systems/combat/actions/AttackAction.ts` - Attack implementation
+- `src/systems/combat/actions/CastSpellAction.ts` - Spell casting implementation
+- `src/systems/combat/actions/DefendAction.ts` - Defense buff (AC +2 for 1 turn)
+- `src/systems/combat/actions/UseItemAction.ts` - Stub with TODO
+- `src/systems/combat/actions/EscapeAction.ts` - Escape implementation
+- `src/systems/combat/actions/CombatActionRegistry.ts` - Registry for action lookup
+- `src/systems/combat/helpers/DamageCalculator.ts` - Extracted damage calculation
+- `src/systems/combat/helpers/WeaponEffectApplicator.ts` - Extracted weapon effects
 
-**Recommended Implementation:**
-1. Create `CombatAction` interface
-2. Implement action classes:
-   - `AttackAction.ts`
-   - `CastSpellAction.ts`
-   - `DefendAction.ts`
-   - `UseItemAction.ts`
-   - `FleeAction.ts`
-3. Create `CombatActionRegistry` to manage actions
-4. Replace switch statement with registry lookup
+**Files Modified:**
+- `src/systems/CombatSystem.ts` - Switch statement replaced with registry pattern
+- `src/services/GameServices.ts` - Updated to inject CombatActionRegistry
 
-**Benefits:**
-- Open/Closed Principle compliance
-- Easy to add new actions without modifying CombatSystem
-- Each action is independently testable
+**Implementation Details:**
+- Replaced switch statement with polymorphic dispatch using Command Pattern
+- Each action is a self-contained class implementing CombatAction interface
+- Actions receive context with all dependencies (services, helpers, callbacks)
+- DefendAction fully implemented with AC modifier (+2 for 1 turn via ModifierSystem)
+- EscapeAction returns shouldEndCombat flag in result for proper combat termination
+- Helper classes extracted (DamageCalculator, WeaponEffectApplicator) for reusability
+- Deleted methods: executeAttack, executeCastSpell, attemptEscape, calculateDamage, applyWeaponEffect, getStatusEffectName
 
-**Estimated Effort:** 1-2 days
+**Benefits Achieved:**
+- Open/Closed Principle: Add new actions without modifying CombatSystem
+- Single Responsibility: Each action class has one focused purpose
+- Testability: Actions can be tested in isolation with mock context
+- Extensibility: Easy to add action variants, conditional actions, or action chains
+- Code reduction: CombatSystem reduced by ~140 lines
 
-**Reference:** Full implementation in comprehensive review Issue 2.4
+**Verification:**
+- TypeScript compilation: ✅ Passed
+- Browser testing: ✅ CombatSystem loads correctly, 0 runtime errors
+- Backward compatibility: ✅ Same action strings, same error messages
+
+**Reference:** Comprehensive review Issue 2.4
 
 ---
 
@@ -460,7 +475,7 @@ private executeRenderPipeline(ctx: CanvasRenderingContext2D,
 None remaining!
 
 ### Large Effort (1-2 days each)
-- ⬜ 2.4: Implement Command pattern for combat actions (1-2 days)
+- ✅ 2.4: Implement Command pattern for combat actions (COMPLETED 2025-11-10)
 - ✅ 2.6: Complete dependency injection for remaining singletons (COMPLETED 2025-11-10)
 
 ---
@@ -468,11 +483,11 @@ None remaining!
 ## 📈 METRICS
 
 **Original Issues Identified:** 22
-**Issues Completed:** 15 ✅
-**Issues Remaining:** 3 ⬜
+**Issues Completed:** 16 ✅
+**Issues Remaining:** 2 ⬜
 **Issues N/A:** 4 (InventoryScene doesn't exist, some issues already resolved)
 
-**Completion Rate:** 15/18 = 83%
+**Completion Rate:** 16/18 = 89%
 
 **Lines of Code Impact:**
 - Eliminated: ~500+ lines of duplicated/dead code

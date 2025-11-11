@@ -171,15 +171,17 @@ export class GameServices {
       { singleton: true }
     );
 
-    // Register Combat System (depends on SpellCaster, StatusEffectSystem, ModifierSystem)
+    // Register Combat System (depends on SpellCaster, StatusEffectSystem, ModifierSystem, CombatActionRegistry)
     this.container.register(
       ServiceIdentifiers.CombatSystem,
       () => {
         const { CombatSystem } = require('../systems/CombatSystem');
+        const { CombatActionRegistry } = require('../systems/combat/actions/CombatActionRegistry');
         const spellCaster = this.container.resolve(ServiceIdentifiers.SpellCaster);
         const statusEffectSystem = this.container.resolve(ServiceIdentifiers.StatusEffectSystem);
         const modifierSystem = this.container.resolve(ServiceIdentifiers.ModifierSystem);
-        return new CombatSystem(spellCaster, statusEffectSystem, modifierSystem);
+        const actionRegistry = new CombatActionRegistry();
+        return new CombatSystem(spellCaster, statusEffectSystem, modifierSystem, actionRegistry);
       },
       { singleton: true }
     );
