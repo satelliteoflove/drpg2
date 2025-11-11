@@ -502,8 +502,10 @@ export class CharacterCreationScene extends Scene {
 
   private generatePreviewStats(): void {
     if (this.currentCharacter.race) {
-      const tempChar = new Character(this.nameInput, this.currentCharacter.race, 'Fighter', 'Good');
-      this.currentCharacter.stats = tempChar.stats;
+      this.safeExecute(() => {
+        const tempChar = new Character(this.nameInput, this.currentCharacter.race!, 'Fighter', 'Good');
+        this.currentCharacter.stats = tempChar.stats;
+      }, 'generatePreviewStats');
     }
   }
 
@@ -579,17 +581,24 @@ export class CharacterCreationScene extends Scene {
       this.currentCharacter.class &&
       this.currentCharacter.alignment
     ) {
-      const character = new Character(
-        this.nameInput,
-        this.currentCharacter.race,
-        this.currentCharacter.class,
-        this.currentCharacter.alignment,
-        this.currentCharacter.gender || 'male'
-      );
+      const success = this.safeExecute(() => {
+        const character = new Character(
+          this.nameInput,
+          this.currentCharacter.race!,
+          this.currentCharacter.class!,
+          this.currentCharacter.alignment!,
+          this.currentCharacter.gender || 'male'
+        );
 
-      this.gameState.party.addCharacter(character);
-      this.currentStep = 'party';
-      this.selectedIndex = 0;
+        this.gameState.party.addCharacter(character);
+        this.currentStep = 'party';
+        this.selectedIndex = 0;
+        return true;
+      }, 'createCharacter', false);
+
+      if (!success) {
+        this.startOver();
+      }
     }
   }
 

@@ -144,21 +144,31 @@ export class Game {
   }
 
   private generateNewDungeon(): void {
-    const generator = new DungeonGenerator(
-      GAME_CONFIG.DUNGEON.DEFAULT_WIDTH,
-      GAME_CONFIG.DUNGEON.DEFAULT_HEIGHT,
-      this.gameState.dungeonSeed
-    );
-    this.gameState.dungeon = [];
-    this.gameState.dungeonSeed = generator.getSeed();
+    try {
+      const generator = new DungeonGenerator(
+        GAME_CONFIG.DUNGEON.DEFAULT_WIDTH,
+        GAME_CONFIG.DUNGEON.DEFAULT_HEIGHT,
+        this.gameState.dungeonSeed
+      );
+      this.gameState.dungeon = [];
+      this.gameState.dungeonSeed = generator.getSeed();
 
-    for (let i = 1; i <= 10; i++) {
-      this.gameState.dungeon.push(generator.generateLevel(i));
+      for (let i = 1; i <= 10; i++) {
+        this.gameState.dungeon.push(generator.generateLevel(i));
+      }
+
+      const firstLevel = this.gameState.dungeon[0];
+      this.gameState.party.x = firstLevel.startX;
+      this.gameState.party.y = firstLevel.startY;
+    } catch (error) {
+      ErrorHandler.logError(
+        `Failed to generate dungeon: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        ErrorSeverity.CRITICAL,
+        'Game.generateNewDungeon',
+        error instanceof Error ? error : undefined
+      );
+      this.gameState.dungeon = [];
     }
-
-    const firstLevel = this.gameState.dungeon[0];
-    this.gameState.party.x = firstLevel.startX;
-    this.gameState.party.y = firstLevel.startY;
   }
 
   private reconstructParty(partyData: unknown): Party {
