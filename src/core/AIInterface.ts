@@ -3,6 +3,8 @@ import { GameState } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { DiceRoller } from '../utils/DiceRoller';
 import { EntityUtils } from '../utils/EntityUtils';
+import { RandomSelector } from '../utils/RandomSelector';
+import { DebugLogger } from '../utils/DebugLogger';
 
 export class AIInterface {
   private game: Game;
@@ -628,6 +630,69 @@ export class AIInterface {
     }
 
     return result;
+  }
+
+  public testRandomSelector(): void {
+    DebugLogger.info('AIInterface', 'Starting RandomSelector tests...');
+
+    try {
+      DebugLogger.info('AIInterface', 'Test 1: selectRandom with array');
+      const testArray = ['a', 'b', 'c', 'd', 'e'];
+      const selected = RandomSelector.selectRandom(testArray);
+      DebugLogger.info('AIInterface', `Result: ${selected} (should be one of: ${testArray.join(', ')})`);
+      DebugLogger.info('AIInterface', `✓ Result is valid: ${testArray.includes(selected)}`);
+
+      DebugLogger.info('AIInterface', 'Test 2: selectRandom distribution (100 trials)');
+      const counts: { [key: string]: number } = {};
+      for (let i = 0; i < 100; i++) {
+        const val = RandomSelector.selectRandom(testArray);
+        counts[val] = (counts[val] || 0) + 1;
+      }
+      DebugLogger.info('AIInterface', `Distribution: ${JSON.stringify(counts)}`);
+      DebugLogger.info('AIInterface', `✓ All values appeared: ${Object.keys(counts).length > 0}`);
+
+      DebugLogger.info('AIInterface', 'Test 3: selectWeighted');
+      const weightedOptions = [
+        { item: 'solo', weight: 0.4 },
+        { item: 'duo', weight: 0.4 },
+        { item: 'group', weight: 0.2 }
+      ];
+      const weightedResult = RandomSelector.selectWeighted(weightedOptions);
+      DebugLogger.info('AIInterface', `Result: ${weightedResult} (should be solo, duo, or group)`);
+      DebugLogger.info('AIInterface', `✓ Result is valid: ${['solo', 'duo', 'group'].includes(weightedResult)}`);
+
+      DebugLogger.info('AIInterface', 'Test 4: selectWeighted distribution (1000 trials)');
+      const weightCounts: { [key: string]: number } = {};
+      for (let i = 0; i < 1000; i++) {
+        const val = RandomSelector.selectWeighted(weightedOptions);
+        weightCounts[val] = (weightCounts[val] || 0) + 1;
+      }
+      DebugLogger.info('AIInterface', `Distribution: ${JSON.stringify(weightCounts)}`);
+      DebugLogger.info('AIInterface', `Expected ~40% solo, ~40% duo, ~20% group`);
+      DebugLogger.info('AIInterface', `Actual: ${(weightCounts.solo/10).toFixed(1)}% solo, ${(weightCounts.duo/10).toFixed(1)}% duo, ${(weightCounts.group/10).toFixed(1)}% group`);
+
+      DebugLogger.info('AIInterface', 'Test 5: Error handling - empty array');
+      try {
+        RandomSelector.selectRandom([]);
+        DebugLogger.error('AIInterface', '✗ Should have thrown error for empty array');
+      } catch (e: any) {
+        DebugLogger.info('AIInterface', `✓ Correctly threw error: ${e.message}`);
+      }
+
+      DebugLogger.info('AIInterface', 'Test 6: Error handling - negative weight');
+      try {
+        RandomSelector.selectWeighted([{ item: 'test', weight: -1 }]);
+        DebugLogger.error('AIInterface', '✗ Should have thrown error for negative weight');
+      } catch (e: any) {
+        DebugLogger.info('AIInterface', `✓ Correctly threw error: ${e.message}`);
+      }
+
+      DebugLogger.info('AIInterface', '=== All RandomSelector tests completed ===');
+      console.log('RandomSelector tests completed! Check debug.log for detailed results.');
+
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error during RandomSelector testing: ${error.message}`);
+    }
   }
 }
 

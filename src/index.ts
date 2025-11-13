@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
       getSpellMenu: () => aiInterface.getSpellMenuInfo(),
       selectSpell: (index: number) => aiInterface.selectSpellByIndex(index),
       navigateSpellMenu: (direction: 'up' | 'down' | 'left' | 'right') => aiInterface.navigateSpellMenu(direction),
+      testRandomSelector: () => aiInterface.testRandomSelector(),
     };
 
     // Also expose drpg namespace for backward compatibility

@@ -121,7 +121,7 @@ nodes:
       - "create-service-identifiers"
 
   - id: "create-random-selector"
-    status: "Ready"
+    status: "Completed"
     materialization: 0.95
     description: "Create RandomSelector utility for DRY random selection"
     detailed_description: |
@@ -337,7 +337,7 @@ nodes:
       - "add-banter-config"
 
   - id: "create-service-identifiers"
-    status: "Ready"
+    status: "Completed"
     materialization: 0.9
     description: "Add banter service identifiers to ServiceIdentifiers.ts"
     detailed_description: |

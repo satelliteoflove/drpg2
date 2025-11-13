@@ -30,4 +30,12 @@ export const ServiceIdentifiers = {
   ItemIdentifier: createSimpleIdentifier('ItemIdentifier'),
   EncumbranceCalculator: createSimpleIdentifier('EncumbranceCalculator'),
   ItemDescriptionFormatter: createSimpleIdentifier('ItemDescriptionFormatter'),
+  BanterOrchestrator: createSimpleIdentifier('BanterOrchestrator'),
+  TriggerDetector: createSimpleIdentifier('TriggerDetector'),
+  BanterGenerator: createSimpleIdentifier('BanterGenerator'),
+  BanterValidator: createSimpleIdentifier('BanterValidator'),
+  BanterPresenter: createSimpleIdentifier('BanterPresenter'),
+  BanterEventTracker: createSimpleIdentifier('BanterEventTracker'),
+  BanterMetrics: createSimpleIdentifier('BanterMetrics'),
+  CharacterPersonalityService: createSimpleIdentifier('CharacterPersonalityService'),
 } as const;
