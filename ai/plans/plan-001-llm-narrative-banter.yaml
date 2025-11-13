@@ -165,7 +165,7 @@ nodes:
       - "create-personality-service"
 
   - id: "create-color-palette"
-    status: "Ready"
+    status: "Completed"
     materialization: 0.9
     description: "Create 256-color HSL palette utility"
     detailed_description: |
@@ -207,7 +207,7 @@ nodes:
       - "create-personality-service"
 
   - id: "create-personality-service"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.9
     description: "Create CharacterPersonalityService for personality assignment"
     detailed_description: |

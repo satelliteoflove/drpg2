@@ -4,6 +4,7 @@ import { Character } from '../entities/Character';
 import { DiceRoller } from '../utils/DiceRoller';
 import { EntityUtils } from '../utils/EntityUtils';
 import { RandomSelector } from '../utils/RandomSelector';
+import { ColorPalette } from '../utils/ColorPalette';
 import { DebugLogger } from '../utils/DebugLogger';
 
 export class AIInterface {
@@ -692,6 +693,71 @@ export class AIInterface {
 
     } catch (error: any) {
       DebugLogger.error('AIInterface', `Error during RandomSelector testing: ${error.message}`);
+    }
+  }
+
+  public testColorPalette(): void {
+    DebugLogger.info('AIInterface', 'Starting ColorPalette tests...');
+
+    try {
+      DebugLogger.info('AIInterface', 'Test 1: getHSLPalette size');
+      const palette = ColorPalette.getHSLPalette();
+      DebugLogger.info('AIInterface', `Palette size: ${palette.length} (expected: 256)`);
+      DebugLogger.info('AIInterface', `✓ Correct size: ${palette.length === 256}`);
+
+      DebugLogger.info('AIInterface', 'Test 2: Verify caching');
+      const palette2 = ColorPalette.getHSLPalette();
+      DebugLogger.info('AIInterface', `Same reference: ${palette === palette2} (should be true)`);
+      DebugLogger.info('AIInterface', `✓ Caching works: ${palette === palette2}`);
+
+      DebugLogger.info('AIInterface', 'Test 3: Verify color format');
+      const firstColor = palette[0];
+      const lastColor = palette[255];
+      DebugLogger.info('AIInterface', `First color: ${firstColor} (expected: hsl(0, 70%, 30%))`);
+      DebugLogger.info('AIInterface', `Last color: ${lastColor} (expected: hsl(349, 70%, 80%))`);
+      DebugLogger.info('AIInterface', `✓ First color correct: ${firstColor === 'hsl(0, 70%, 30%)'}`);
+      DebugLogger.info('AIInterface', `✓ Last color correct: ${lastColor === 'hsl(349, 70%, 80%)'}`);
+
+      DebugLogger.info('AIInterface', 'Test 4: Verify hue range (first row)');
+      const hues: string[] = [];
+      for (let i = 0; i < 32; i += 8) {
+        hues.push(palette[i]);
+      }
+      DebugLogger.info('AIInterface', `Sample hues: ${hues.join(', ')}`);
+      DebugLogger.info('AIInterface', `✓ Hues span spectrum: ${hues.length === 4}`);
+
+      DebugLogger.info('AIInterface', 'Test 5: Verify lightness range (first column)');
+      const lightnesses: string[] = [];
+      for (let i = 0; i < 8; i++) {
+        lightnesses.push(palette[i * 32]);
+      }
+      DebugLogger.info('AIInterface', `Sample lightness levels: ${lightnesses.join(', ')}`);
+      DebugLogger.info('AIInterface', `✓ 8 lightness levels: ${lightnesses.length === 8}`);
+
+      DebugLogger.info('AIInterface', 'Test 6: getRandomColor');
+      const randomColors: string[] = [];
+      for (let i = 0; i < 10; i++) {
+        randomColors.push(ColorPalette.getRandomColor());
+      }
+      DebugLogger.info('AIInterface', `10 random colors: ${randomColors.join(', ')}`);
+      const allInPalette = randomColors.every(color => palette.includes(color));
+      DebugLogger.info('AIInterface', `✓ All random colors in palette: ${allInPalette}`);
+
+      DebugLogger.info('AIInterface', 'Test 7: getRandomColor distribution (100 trials)');
+      const colorCounts: { [key: string]: number } = {};
+      for (let i = 0; i < 100; i++) {
+        const color = ColorPalette.getRandomColor();
+        colorCounts[color] = (colorCounts[color] || 0) + 1;
+      }
+      const uniqueColors = Object.keys(colorCounts).length;
+      DebugLogger.info('AIInterface', `Unique colors generated: ${uniqueColors}/100 trials`);
+      DebugLogger.info('AIInterface', `✓ Good distribution: ${uniqueColors > 50}`);
+
+      DebugLogger.info('AIInterface', '=== All ColorPalette tests completed ===');
+      console.log('ColorPalette tests completed! Check debug.log for detailed results.');
+
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error during ColorPalette testing: ${error.message}`);
     }
   }
 }

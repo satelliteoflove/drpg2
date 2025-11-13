@@ -15,8 +15,8 @@
 npm run dev          # Start dev server at http://localhost:8080
 npm run build        # Production build
 npm run typecheck    # TypeScript checking (run before commits)
-# npm run test:e2e     # DISABLED - E2E tests are currently disabled
-# npm run test:e2e:ui  # DISABLED - E2E tests are currently disabled
+npm run test:e2e     # Temporary validation tests (delete after use)
+npm run test:e2e:ui  # Playwright UI mode for test development
 ```
 
 ## Architecture Overview
@@ -169,10 +169,15 @@ DebugLogger automatically writes all log entries to `debug.log` in the project r
 
 **Important**: When adding new properties to game entities (Character, Party, Monster, etc.), always update the AI Interface (`src/core/AIInterface.ts`) to expose that data for testing. For example, when `knownSpells` was added to Character, it needed to be added to the `getPartyInfo()` method so tests could verify spell assignments.
 
-2. **E2E Testing is Currently Disabled**
-   - Do not write new Playwright/E2E tests
-   - Use manual testing with the AI Interface in browser console
-   - Focus on unit tests if needed
+2. **Temporary E2E Validation Tests (for Claude Code only)**
+   - Claude Code CAN write temporary, laser-focused Playwright tests to validate functionality
+   - Tests execute AI Interface commands (e.g., `await page.evaluate(() => AI.testColorPalette())`)
+   - Tests verify results by reading debug.log file or checking game state
+   - **CRITICAL: Delete the test file once validation is complete**
+   - These are validation tools, NOT permanent test suites
+   - Keep tests minimal and focused on specific functionality being validated
+   - Test files go in __tests__/validation/ directory (temporary)
+   - User still tests by playing the game through normal UI
 
 ### Development Process
 1. Always run `npm run typecheck` before marking work complete
