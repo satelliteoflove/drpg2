@@ -77,7 +77,7 @@ entry_node: "create-enums-and-types"
 
 nodes:
   - id: "create-enums-and-types"
-    status: "Ready"
+    status: "Completed"
     materialization: 1.0
     description: "Create personality trait enums and banter type definitions"
     detailed_description: |
@@ -121,7 +121,7 @@ nodes:
       - "create-service-identifiers"
 
   - id: "create-random-selector"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.95
     description: "Create RandomSelector utility for DRY random selection"
     detailed_description: |
@@ -165,7 +165,7 @@ nodes:
       - "create-personality-service"
 
   - id: "create-color-palette"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.9
     description: "Create 256-color HSL palette utility"
     detailed_description: |
@@ -337,7 +337,7 @@ nodes:
       - "add-banter-config"
 
   - id: "create-service-identifiers"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.9
     description: "Add banter service identifiers to ServiceIdentifiers.ts"
     detailed_description: |
