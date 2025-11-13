@@ -207,7 +207,7 @@ nodes:
       - "create-personality-service"
 
   - id: "create-personality-service"
-    status: "Ready"
+    status: "Completed"
     materialization: 0.9
     description: "Create CharacterPersonalityService for personality assignment"
     detailed_description: |
@@ -254,7 +254,7 @@ nodes:
       - "extend-character-entity"
 
   - id: "extend-character-entity"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.9
     description: "Add personality traits and dialogue color fields to Character entity"
     detailed_description: |
