@@ -7,6 +7,8 @@ import { StatusEffectSystem } from '../StatusEffectSystem';
 import { ModifierSystem } from '../ModifierSystem';
 import { TurnAnimationController, CardinalDirection } from './TurnAnimationController';
 import { LineOfSightCalculator } from '../../utils/LineOfSightCalculator';
+import { GameServices } from '../../services/GameServices';
+import { BanterEventTracker } from '../../types/BanterTypes';
 
 export interface MovementResult {
   moved: boolean;
@@ -29,6 +31,7 @@ export class DungeonMovementHandler {
   private lastTileEventPosition: { x: number; y: number; floor: number } | null = null;
   private lastEncounterPosition: { x: number; y: number; floor: number } | null = null;
   private turnAnimationController: TurnAnimationController;
+  private eventTracker: BanterEventTracker | null = null;
 
   constructor(gameState: GameState, messageLog: any, sceneManager: SceneManager) {
     this.gameState = gameState;
@@ -37,10 +40,22 @@ export class DungeonMovementHandler {
     this.statusEffectSystem = StatusEffectSystem.getInstance();
     this.modifierSystem = ModifierSystem.getInstance();
     this.turnAnimationController = new TurnAnimationController();
+
+    try {
+      this.eventTracker = GameServices.getInstance().getBanterEventTracker();
+    } catch (e) {
+      DebugLogger.warn('DungeonMovementHandler', 'BanterEventTracker not available');
+    }
   }
 
   public getTurnAnimationController(): TurnAnimationController {
     return this.turnAnimationController;
+  }
+
+  private checkDarkZoneEntry(_tile: DungeonTile): void {
+    if (!this.eventTracker) {
+      return;
+    }
   }
 
   public handleMovement(direction: Direction): MovementResult {
@@ -116,6 +131,8 @@ export class DungeonMovementHandler {
       this.lastMoveTime = Date.now();
       this.tickAllPartyMembers();
       this.updateDiscoveredTiles();
+
+      this.checkDarkZoneEntry(targetTile);
 
       this.handleTileEffect(targetTile);
 

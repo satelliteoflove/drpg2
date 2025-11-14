@@ -337,7 +337,7 @@ export const GAME_CONFIG = {
       AMBIENT_DISTANCE: 10,
     },
     LLM: {
-      ENDPOINT: 'http://localhost:5000/v1/chat/completions',
+      ENDPOINT: 'http://192.168.1.82:5000/v1/chat/completions',
       MODEL: 'wayfarer-12b',
       MAX_INPUT_TOKENS: 8000,
       MAX_OUTPUT_TOKENS: 256,

@@ -524,6 +524,50 @@ BANTER: {
 }
 ```
 
+**IMPORTANT - API Request Format:**
+
+The oobabooga `/v1/chat/completions` endpoint uses **OpenAI-compatible message format**.
+
+**Implementation:**
+```typescript
+interface BuiltPrompt {
+  systemPrompt: string;
+  userPrompt: string;
+  metadata: {
+    triggerType: BanterTriggerType;
+    exchangeType: 'solo' | 'two_person' | 'group';
+    speaker: string;
+    estimatedTokens: number;
+  };
+}
+
+// PromptBuilder returns structured data
+const builtPrompt = PromptBuilder.buildPrompt(context);
+
+// BanterGenerator uses it directly
+fetch(endpoint, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    messages: [
+      { role: 'system', content: builtPrompt.systemPrompt },
+      { role: 'user', content: builtPrompt.userPrompt }
+    ],
+    temperature: 0.8,
+    max_tokens: 256,
+    repetition_penalty: 1.05,
+    min_p: 0.025
+  })
+})
+```
+
+**Design Principles:**
+- PromptBuilder returns structured `BuiltPrompt` interface, not formatted strings
+- System and user prompts are plain text (no ChatML tags)
+- BanterGenerator receives prompts ready to send to API
+- No conversion or parsing needed between builder and generator
+- Metadata included for logging and debugging
+
 ### 4.2 Async Generation with Queue
 
 **Problem:** LLM generation takes 2-5 seconds, can't block gameplay.

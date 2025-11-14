@@ -116,6 +116,17 @@ export interface BanterResponse {
   generatedAt: number;
 }
 
+export interface BuiltPrompt {
+  systemPrompt: string;
+  userPrompt: string;
+  metadata: {
+    triggerType: BanterTriggerType;
+    exchangeType: 'solo' | 'two_person' | 'group';
+    speaker: string;
+    estimatedTokens: number;
+  };
+}
+
 export interface ValidationResult {
   valid: boolean;
   errors: string[];

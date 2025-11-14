@@ -369,7 +369,7 @@ nodes:
       - "create-event-tracker"
 
   - id: "add-banter-config"
-    status: "Ready"
+    status: "Completed"
     materialization: 0.8
     description: "Add BANTER configuration section to GameConstants"
     detailed_description: |
@@ -418,7 +418,7 @@ nodes:
       - "create-event-tracker"
 
   - id: "create-event-tracker"
-    status: "Blocked"
+    status: "Completed"
     materialization: 0.8
     description: "Create BanterEventTracker service"
     detailed_description: |
@@ -463,7 +463,7 @@ nodes:
       - "integrate-event-tracking"
 
   - id: "create-trigger-detector"
-    status: "Blocked"
+    status: "Completed"
     materialization: 0.8
     description: "Create TriggerDetector service"
     detailed_description: |
@@ -511,7 +511,7 @@ nodes:
       - "create-metrics"
 
   - id: "create-metrics"
-    status: "Blocked"
+    status: "Completed"
     materialization: 0.8
     description: "Create BanterMetrics service"
     detailed_description: |
@@ -554,7 +554,7 @@ nodes:
       - "create-context-builder"
 
   - id: "integrate-event-tracking"
-    status: "Blocked"
+    status: "Completed"
     materialization: 0.7
     description: "Integrate BanterEventTracker into DungeonScene and CombatSystem"
     detailed_description: |
@@ -592,7 +592,7 @@ nodes:
       - "create-context-builder"
 
   - id: "create-context-builder"
-    status: "Blocked"
+    status: "Completed"
     materialization: 0.7
     description: "Create ContextBuilder utility"
     detailed_description: |
@@ -651,8 +651,8 @@ nodes:
       - "create-prompt-builder"
 
   - id: "create-prompt-builder"
-    status: "Blocked"
-    materialization: 0.7
+    status: "Completed"
+    materialization: 1.0
     description: "Create PromptBuilder utility"
     detailed_description: |
       Implement utility for building ChatML prompts for Wayfarer-12B.
@@ -707,8 +707,8 @@ nodes:
       - "create-generator"
 
   - id: "create-generator"
-    status: "Blocked"
-    materialization: 0.7
+    status: "Completed"
+    materialization: 1.0
     description: "Create BanterGenerator service"
     detailed_description: |
       Implement service for communicating with LLM API.
@@ -756,7 +756,7 @@ nodes:
       - "create-validator"
 
   - id: "create-validator"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.7
     description: "Create BanterValidator service"
     detailed_description: |

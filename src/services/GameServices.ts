@@ -19,6 +19,7 @@ import type { ItemIdentifier } from '../systems/inventory/ItemIdentifier';
 import type { EncumbranceCalculator } from '../systems/inventory/EncumbranceCalculator';
 import type { ItemDescriptionFormatter } from '../systems/inventory/ItemDescriptionFormatter';
 import type { CharacterPersonalityService } from './banter/CharacterPersonalityService';
+import type { BanterEventTracker } from '../types/BanterTypes';
 
 export interface GameServiceDependencies {
   canvas: HTMLCanvasElement;
@@ -242,6 +243,15 @@ export class GameServices {
       },
       { singleton: true }
     );
+
+    this.container.register(
+      ServiceIdentifiers.BanterEventTracker,
+      () => {
+        const { BanterEventTracker } = require('./banter/BanterEventTracker');
+        return new BanterEventTracker();
+      },
+      { singleton: true }
+    );
   }
 
   public getRenderManager(): RenderManager {
@@ -328,6 +338,10 @@ export class GameServices {
 
   public getCharacterPersonalityService(): CharacterPersonalityService {
     return this.container.resolve(ServiceIdentifiers.CharacterPersonalityService);
+  }
+
+  public getBanterEventTracker(): BanterEventTracker {
+    return this.container.resolve(ServiceIdentifiers.BanterEventTracker);
   }
 
   public dispose(): void {

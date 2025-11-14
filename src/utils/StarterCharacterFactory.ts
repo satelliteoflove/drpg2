@@ -7,8 +7,11 @@ import { CharacterStats } from '../types/GameTypes';
 import { calculateExperienceRequired } from '../config/progression/ExperienceTable';
 import { SpellId } from '../types/SpellTypes';
 import { DataLoader } from './DataLoader';
+import { CharacterPersonalityService } from '../services/banter/CharacterPersonalityService';
 
 export class StarterCharacterFactory {
+  private static personalityService = new CharacterPersonalityService();
+
   static createFromTemplate(template: StarterCharacterTemplate): Character {
     const character = new Character(
       template.name,
@@ -82,6 +85,8 @@ export class StarterCharacterFactory {
     }
 
     this.assignStartingSpells(character);
+
+    this.personalityService.initializeCharacterPersonality(character);
 
     return character;
   }
