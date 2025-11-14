@@ -308,6 +308,15 @@ export class GameServices {
     return this.container.resolve(ServiceIdentifiers.CombatSystem);
   }
 
+  public static getBanterOrchestrator(): any {
+    try {
+      const instance = GameServices.getInstance();
+      return instance.container.resolve(ServiceIdentifiers.BanterOrchestrator);
+    } catch (error) {
+      return null;
+    }
+  }
+
   public getEquipmentModifierManager(): EquipmentModifierManager {
     return this.container.resolve(ServiceIdentifiers.EquipmentModifierManager);
   }
