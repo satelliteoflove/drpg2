@@ -55,8 +55,39 @@ export class DebugLogger {
     return now.toISOString();
   }
 
+  private static serializeData(data: any): any {
+    if (!data) return data;
+    if (typeof data !== 'object') return data;
+
+    const serialized: any = {};
+
+    for (const key in data) {
+      const value = data[key];
+
+      if (value instanceof Error) {
+        serialized[key] = {
+          message: value.message,
+          stack: value.stack,
+          name: value.name,
+          ...((value as any).cause ? { cause: (value as any).cause } : {})
+        };
+      } else if (typeof value === 'object' && value !== null) {
+        serialized[key] = this.serializeData(value);
+      } else {
+        serialized[key] = value;
+      }
+    }
+
+    return serialized;
+  }
+
   private static addLog(entry: LogEntry): void {
-    this.logs.push(entry);
+    const serializedEntry = {
+      ...entry,
+      data: this.serializeData(entry.data)
+    };
+
+    this.logs.push(serializedEntry);
 
     // Trim logs if exceeding max
     if (this.logs.length > this.maxLogs) {
@@ -64,7 +95,7 @@ export class DebugLogger {
     }
 
     // Add to buffer for file logging
-    this.logBuffer.push(entry);
+    this.logBuffer.push(serializedEntry);
 
     // Flush if buffer is full
     if (this.logBuffer.length >= this.MAX_BUFFER_SIZE) {
@@ -76,7 +107,7 @@ export class DebugLogger {
     if (typeof process !== 'undefined' && (process as any).env?.NODE_ENV === 'development') {
       const consoleMethod =
         entry.level === 'ERROR' ? 'error' : entry.level === 'WARN' ? 'warn' : 'log';
-      console[consoleMethod](`[${entry.level}] ${entry.module}: ${entry.message}`, entry.data);
+      console[consoleMethod](`[${entry.level}] ${entry.module}: ${entry.message}`, serializedEntry.data);
     }
   }
 
