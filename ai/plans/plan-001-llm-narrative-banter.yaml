@@ -756,8 +756,8 @@ nodes:
       - "create-validator"
 
   - id: "create-validator"
-    status: "Ready"
-    materialization: 0.7
+    status: "Completed"
+    materialization: 1.0
     description: "Create BanterValidator service"
     detailed_description: |
       Implement service for validating LLM responses.
@@ -793,7 +793,7 @@ nodes:
       - "extend-message-log"
 
   - id: "extend-message-log"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.7
     description: "Extend MessageLog for character-colored banter"
     detailed_description: |
