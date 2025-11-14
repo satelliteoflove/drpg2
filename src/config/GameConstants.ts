@@ -322,6 +322,37 @@ export const GAME_CONFIG = {
   },
 
   DEBUG_MODE: false,
+
+  BANTER: {
+    TRIGGERS: {
+      TIME_INTERVAL_SECONDS: 180,
+      DISTANCE_INTERVAL_STEPS: 20,
+      COOLDOWN_SECONDS: 60,
+    },
+    PRIORITIES: {
+      CHARACTER_DEATH: 100,
+      LOW_HP_WARNING: 75,
+      DARK_ZONE_ENTRY: 50,
+      AMBIENT_TIME: 10,
+      AMBIENT_DISTANCE: 10,
+    },
+    LLM: {
+      ENDPOINT: 'http://localhost:5000/v1/chat/completions',
+      MODEL: 'wayfarer-12b',
+      MAX_INPUT_TOKENS: 8000,
+      MAX_OUTPUT_TOKENS: 256,
+      TEMPERATURE: 0.8,
+      REPETITION_PENALTY: 1.05,
+      MIN_P: 0.025,
+      TIMEOUT_MS: 5000,
+    },
+    DISABLE_BANTER: false,
+    EXCHANGE_DISTRIBUTION: {
+      SOLO_WEIGHT: 0.4,
+      TWO_PERSON_WEIGHT: 0.4,
+      GROUP_WEIGHT: 0.2,
+    },
+  },
 } as const;
 
 export type CharacterClass = (typeof GAME_CONFIG.HP_BONUSES)[keyof typeof GAME_CONFIG.HP_BONUSES];
