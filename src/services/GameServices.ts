@@ -18,6 +18,7 @@ import type { LootGenerator } from '../systems/inventory/LootGenerator';
 import type { ItemIdentifier } from '../systems/inventory/ItemIdentifier';
 import type { EncumbranceCalculator } from '../systems/inventory/EncumbranceCalculator';
 import type { ItemDescriptionFormatter } from '../systems/inventory/ItemDescriptionFormatter';
+import type { CharacterPersonalityService } from './banter/CharacterPersonalityService';
 
 export interface GameServiceDependencies {
   canvas: HTMLCanvasElement;
@@ -232,6 +233,15 @@ export class GameServices {
       },
       { singleton: true }
     );
+
+    this.container.register(
+      ServiceIdentifiers.CharacterPersonalityService,
+      () => {
+        const { CharacterPersonalityService } = require('./banter/CharacterPersonalityService');
+        return new CharacterPersonalityService();
+      },
+      { singleton: true }
+    );
   }
 
   public getRenderManager(): RenderManager {
@@ -314,6 +324,10 @@ export class GameServices {
 
   public getItemDescriptionFormatter(): ItemDescriptionFormatter {
     return this.container.resolve(ServiceIdentifiers.ItemDescriptionFormatter);
+  }
+
+  public getCharacterPersonalityService(): CharacterPersonalityService {
+    return this.container.resolve(ServiceIdentifiers.CharacterPersonalityService);
   }
 
   public dispose(): void {

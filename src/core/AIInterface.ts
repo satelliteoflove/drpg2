@@ -192,7 +192,6 @@ export class AIInterface {
         break;
       case 'mainmenu':
       case 'new game':
-      case 'character creation':
         actions.push('ArrowUp', 'ArrowDown', 'Enter', 'Escape');
         break;
       default:
@@ -227,8 +226,6 @@ export class AIInterface {
         return 'At the Main Menu';
       case 'new game':
         return 'Starting a new game';
-      case 'character creation':
-        return 'Creating characters';
       default:
         return `In ${scene} scene`;
     }

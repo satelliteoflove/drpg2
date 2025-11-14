@@ -299,8 +299,8 @@ nodes:
       - "integrate-personality-service"
 
   - id: "integrate-personality-service"
-    status: "Ready"
-    materialization: 0.85
+    status: "Completed"
+    materialization: 1.0
     description: "Integrate CharacterPersonalityService into character creation flow"
     detailed_description: |
       Hook CharacterPersonalityService into character creation to assign personality.
@@ -369,7 +369,7 @@ nodes:
       - "create-event-tracker"
 
   - id: "add-banter-config"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.8
     description: "Add BANTER configuration section to GameConstants"
     detailed_description: |
