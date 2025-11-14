@@ -51,7 +51,7 @@ export class BanterOrchestrator {
 
     if (trigger) {
       this.generationQueue.push(trigger);
-      this.triggerDetector.markTriggerFired();
+      this.triggerDetector.markTriggerFired(gameState, trigger.type);
 
       DebugLogger.info('BanterOrchestrator', 'Trigger added to queue', {
         triggerType: trigger.type,
@@ -62,6 +62,33 @@ export class BanterOrchestrator {
       if (!this.isGenerating) {
         this.processNextTrigger(gameState);
       }
+    }
+  }
+
+  forceTrigger(gameState: GameState): void {
+    if (GAME_CONFIG.BANTER.DISABLE_BANTER) {
+      DebugLogger.warn('BanterOrchestrator', 'Cannot force trigger - banter is disabled');
+      return;
+    }
+
+    const manualTrigger: BanterTrigger = {
+      type: BanterTriggerType.AmbientTime,
+      priority: 10,
+      timestamp: Date.now(),
+      details: 'Manual trigger via B key (bypasses cooldown)'
+    };
+
+    this.generationQueue.push(manualTrigger);
+    this.triggerDetector.markTriggerFired(gameState, manualTrigger.type);
+
+    DebugLogger.info('BanterOrchestrator', 'Manual trigger added to queue (bypassing cooldown)', {
+      triggerType: manualTrigger.type,
+      priority: manualTrigger.priority,
+      queueLength: this.generationQueue.length
+    });
+
+    if (!this.isGenerating) {
+      this.processNextTrigger(gameState);
     }
   }
 
@@ -79,44 +106,63 @@ export class BanterOrchestrator {
       priority: trigger.priority
     });
 
-    try {
-      const context = this.buildContext(trigger, gameState);
+    const maxAttempts = 2;
 
-      const response = await this.generator.generate(context);
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const context = this.buildContext(trigger, gameState);
 
-      const validationResult = this.validator.validate(response, context);
-
-      if (!validationResult.valid) {
-        DebugLogger.warn('BanterOrchestrator', 'Validation failed', {
-          triggerType: trigger.type,
-          errors: validationResult.errors
+        DebugLogger.info('BanterOrchestrator', `Generation attempt ${attempt}/${maxAttempts}`, {
+          triggerType: trigger.type
         });
 
-        this.metrics.recordValidationFailure();
-        this.displayErrorMessage(gameState);
-      } else {
-        this.metrics.recordSuccess(trigger.type as BanterTriggerType);
+        const response = await this.generator.generate(context);
+        const validationResult = this.validator.validate(response, context);
 
-        const messageLog = this.getMessageLog(gameState);
-        const party = gameState.party;
-
-        if (messageLog && party) {
-          this.presenter.display(response, messageLog, party);
-        } else {
-          DebugLogger.warn('BanterOrchestrator', 'MessageLog or Party not available', {
-            hasMessageLog: !!messageLog,
-            hasParty: !!party
+        if (!validationResult.valid) {
+          DebugLogger.warn('BanterOrchestrator', `Validation failed on attempt ${attempt}/${maxAttempts}`, {
+            triggerType: trigger.type,
+            errors: validationResult.errors,
+            willRetry: attempt < maxAttempts
           });
+
+          this.metrics.recordValidationFailure();
+
+          if (attempt < maxAttempts) {
+            continue;
+          } else {
+            this.displayErrorMessage(gameState);
+          }
+        } else {
+          this.metrics.recordSuccess(trigger.type as BanterTriggerType);
+
+          const messageLog = this.getMessageLog(gameState);
+          const party = gameState.party;
+
+          if (messageLog && party) {
+            this.presenter.display(response, messageLog, party);
+          } else {
+            DebugLogger.warn('BanterOrchestrator', 'MessageLog or Party not available', {
+              hasMessageLog: !!messageLog,
+              hasParty: !!party
+            });
+          }
+          break;
+        }
+      } catch (error) {
+        DebugLogger.error('BanterOrchestrator', `Generation failed on attempt ${attempt}/${maxAttempts}`, {
+          triggerType: trigger.type,
+          error: error instanceof Error ? error.message : String(error),
+          willRetry: attempt < maxAttempts
+        });
+
+        if (attempt < maxAttempts) {
+          continue;
+        } else {
+          this.metrics.recordApiFailure();
+          this.displayErrorMessage(gameState);
         }
       }
-    } catch (error) {
-      DebugLogger.error('BanterOrchestrator', 'Generation failed', {
-        triggerType: trigger.type,
-        error: error instanceof Error ? error.message : String(error)
-      });
-
-      this.metrics.recordApiFailure();
-      this.displayErrorMessage(gameState);
     }
 
     this.isGenerating = false;

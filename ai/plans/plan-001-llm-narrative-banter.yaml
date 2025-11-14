@@ -934,8 +934,8 @@ nodes:
       - "register-services"
 
   - id: "register-services"
-    status: "Ready"
-    materialization: 0.7
+    status: "Completed"
+    materialization: 1.0
     description: "Register all banter services in ServiceRegistry"
     detailed_description: |
       Register all banter services as singletons in ServiceRegistry.
@@ -978,8 +978,8 @@ nodes:
       - "integrate-into-dungeon"
 
   - id: "integrate-into-dungeon"
-    status: "Blocked"
-    materialization: 0.7
+    status: "Completed"
+    materialization: 1.0
     description: "Integrate BanterOrchestrator into DungeonScene"
     detailed_description: |
       Hook BanterOrchestrator into DungeonScene game loop.

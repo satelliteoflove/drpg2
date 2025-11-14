@@ -131,11 +131,19 @@ export class BanterGenerator implements IBanterGenerator {
     const participants: Set<string> = new Set();
 
     for (const line of lines) {
-      const match = line.match(/^([^:]+):\s*(.+)$/);
-      if (match) {
-        const characterName = match[1].trim();
-        const dialogueText = match[2].trim();
+      let characterName: string;
+      let dialogueText: string;
 
+      const colonMatch = line.match(/^([^:]+):\s*(.+)$/);
+      if (colonMatch) {
+        characterName = colonMatch[1].trim();
+        dialogueText = colonMatch[2].trim().replace(/^["']|["']$/g, '');
+      } else {
+        characterName = context.speaker.name;
+        dialogueText = line.trim().replace(/^["']|["']$/g, '');
+      }
+
+      if (dialogueText.length > 0) {
         banterLines.push({
           characterName,
           text: dialogueText
@@ -143,7 +151,7 @@ export class BanterGenerator implements IBanterGenerator {
 
         participants.add(characterName);
       } else {
-        DebugLogger.warn('BanterGenerator', 'Failed to parse line', {
+        DebugLogger.warn('BanterGenerator', 'Skipping empty dialogue line', {
           line,
           speaker: context.speaker.name
         });

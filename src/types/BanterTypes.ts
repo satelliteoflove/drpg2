@@ -134,7 +134,7 @@ export interface ValidationResult {
 
 export interface TriggerDetector {
   checkTriggers(gameState: any): BanterTrigger | null;
-  markTriggerFired(): void;
+  markTriggerFired(gameState: any, triggerType?: string): void;
 }
 
 export interface BanterGenerator {

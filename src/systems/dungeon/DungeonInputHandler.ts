@@ -6,7 +6,6 @@ import { DungeonItemPickupUI } from './DungeonItemPickupUI';
 import { SceneManager } from '../../core/Scene';
 import { SaveManager } from '../../utils/SaveManager';
 import { GameServices } from '../../services/GameServices';
-import { BanterTriggerType } from '../../types/BanterTypes';
 
 export interface DungeonInputContext {
   isAwaitingCastleStairsResponse?: boolean;
@@ -144,6 +143,7 @@ export class DungeonInputHandler {
     }
 
     if (key === 'b') {
+      DebugLogger.info('DungeonInputHandler', 'B key pressed - triggering banter');
       this.triggerBanter();
       return true;
     }
@@ -325,8 +325,13 @@ export class DungeonInputHandler {
   }
 
   private triggerBanter(): void {
+    DebugLogger.info('DungeonInputHandler', 'triggerBanter() called');
+
     try {
+      DebugLogger.info('DungeonInputHandler', 'Attempting to get BanterOrchestrator from GameServices');
       const orchestrator = GameServices.getBanterOrchestrator();
+
+      DebugLogger.info('DungeonInputHandler', 'BanterOrchestrator retrieved', { orchestrator: !!orchestrator });
 
       if (!orchestrator) {
         this.messageLog?.addWarningMessage('Banter system not initialized yet');
@@ -334,21 +339,16 @@ export class DungeonInputHandler {
         return;
       }
 
-      const trigger = {
-        type: BanterTriggerType.AmbientTime,
-        priority: 10,
-        timestamp: Date.now(),
-        details: 'Manual trigger via B key'
-      };
+      DebugLogger.info('DungeonInputHandler', 'Calling orchestrator.forceTrigger() to bypass cooldown');
+      orchestrator.forceTrigger(this.gameState);
 
-      orchestrator.update(0, this.gameState);
-
-      this.messageLog?.addSystemMessage('Triggering banter (press B)...');
-      DebugLogger.info('DungeonInputHandler', 'Manual banter trigger initiated', trigger);
+      this.messageLog?.addSystemMessage('Forcing banter generation...');
+      DebugLogger.info('DungeonInputHandler', 'Manual banter trigger forced (bypassing cooldown)');
     } catch (error) {
       this.messageLog?.addWarningMessage('Banter system not available (services not registered yet)');
-      DebugLogger.warn('DungeonInputHandler', 'Failed to trigger banter', {
-        error: error instanceof Error ? error.message : String(error)
+      DebugLogger.error('DungeonInputHandler', 'Failed to trigger banter', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
       });
     }
   }

@@ -38,4 +38,5 @@ export const ServiceIdentifiers = {
   BanterEventTracker: createSimpleIdentifier('BanterEventTracker'),
   BanterMetrics: createSimpleIdentifier('BanterMetrics'),
   CharacterPersonalityService: createSimpleIdentifier('CharacterPersonalityService'),
+  ContextBuilder: createSimpleIdentifier('ContextBuilder'),
 } as const;

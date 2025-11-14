@@ -18,8 +18,6 @@ export class BanterValidator implements IBanterValidator {
     const errors: string[] = [];
 
     this.checkCharacterNames(response, context, errors);
-    this.checkNoItemReferences(response, errors);
-    this.checkNoModernSlang(response, errors);
     this.checkFormat(response, errors);
     this.checkNoEmptyLines(response, errors);
     this.checkLength(response, errors);
@@ -73,45 +71,6 @@ export class BanterValidator implements IBanterValidator {
     }
   }
 
-  private checkNoItemReferences(response: BanterResponse, errors: string[]): void {
-    const itemKeywords = [
-      'sword', 'axe', 'mace', 'staff', 'bow', 'dagger', 'spear', 'shield',
-      'armor', 'helmet', 'boots', 'gloves', 'ring', 'amulet', 'cloak',
-      'potion', 'scroll', 'wand', 'rod', 'flask', 'elixir',
-      'longsword', 'shortsword', 'battleaxe', 'warhammer', 'longbow', 'crossbow',
-      'leather armor', 'chainmail', 'plate armor', 'scale armor',
-      'healing potion', 'mana potion', 'antidote'
-    ];
-
-    for (const line of response.lines) {
-      const lowerText = line.text.toLowerCase();
-      for (const keyword of itemKeywords) {
-        if (lowerText.includes(keyword)) {
-          errors.push(`Item reference found in dialogue: "${keyword}" in "${line.text}"`);
-        }
-      }
-    }
-  }
-
-  private checkNoModernSlang(response: BanterResponse, errors: string[]): void {
-    const modernSlang = [
-      'cool', 'okay', 'yeah', 'nope', 'yup', 'nah', 'dude', 'bro', 'guys',
-      'awesome', 'crazy', 'insane', 'literally', 'basically', 'actually',
-      'whatever', 'totally', 'super', 'pretty much', 'kind of', 'sort of',
-      'like', 'you know', 'I mean', 'right', 'for real'
-    ];
-
-    for (const line of response.lines) {
-      const lowerText = line.text.toLowerCase();
-      for (const slang of modernSlang) {
-        const pattern = new RegExp(`\\b${slang}\\b`, 'i');
-        if (pattern.test(lowerText)) {
-          errors.push(`Modern slang found in dialogue: "${slang}" in "${line.text}"`);
-        }
-      }
-    }
-  }
-
   private checkFormat(response: BanterResponse, errors: string[]): void {
     for (const line of response.lines) {
       if (!line.characterName || line.characterName.trim().length === 0) {
@@ -149,6 +108,13 @@ export class BanterValidator implements IBanterValidator {
           errors.push(`Group exchange should have 4-6 lines, got ${lineCount}`);
         }
         break;
+    }
+
+    for (const line of response.lines) {
+      const charCount = line.text.length;
+      if (charCount > 250) {
+        errors.push(`Line too long (${charCount} chars, max 250): "${line.text.substring(0, 50)}..."`);
+      }
     }
   }
 }

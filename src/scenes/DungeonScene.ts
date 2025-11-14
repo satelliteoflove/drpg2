@@ -8,6 +8,7 @@ import { DungeonStateManager } from '../systems/dungeon/DungeonStateManager';
 import { DungeonUIRenderer } from '../systems/dungeon/DungeonUIRenderer';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
+import { GameServices } from '../services/GameServices';
 
 export class DungeonScene extends Scene {
   protected gameState: GameState;
@@ -21,6 +22,7 @@ export class DungeonScene extends Scene {
   private dungeonInputHandler!: DungeonInputHandler;
 
   private performanceMonitor: PerformanceMonitor;
+  private banterOrchestrator: any;
 
   constructor(gameState: GameState, sceneManager: SceneManager, _inputManager: any) {
     super('Dungeon');
@@ -50,6 +52,16 @@ export class DungeonScene extends Scene {
   public enter(): void {
     this.performanceMonitor.startMonitoring('dungeon');
     this.stateManager.reset();
+
+    try {
+      this.banterOrchestrator = GameServices.getBanterOrchestrator();
+      if (this.banterOrchestrator) {
+        DebugLogger.info('DungeonScene', 'BanterOrchestrator initialized successfully');
+      }
+    } catch (error) {
+      DebugLogger.warn('DungeonScene', 'Failed to initialize BanterOrchestrator', { error });
+      this.banterOrchestrator = null;
+    }
 
     const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
 
@@ -118,6 +130,14 @@ export class DungeonScene extends Scene {
         if (currentAngle !== null) {
           dungeonView.setViewAngle(currentAngle);
         }
+      }
+    }
+
+    if (!GAME_CONFIG.BANTER.DISABLE_BANTER && this.banterOrchestrator) {
+      try {
+        this.banterOrchestrator.update(deltaTime, this.gameState);
+      } catch (error) {
+        DebugLogger.error('DungeonScene', 'Error in BanterOrchestrator.update()', { error });
       }
     }
 

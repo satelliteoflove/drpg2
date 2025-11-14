@@ -404,6 +404,12 @@ export interface GameState {
   characterRoster: ICharacter[];
   dungeonSeed?: string;
   playtimeSeconds?: number;
+  banterState?: {
+    lastTriggerTime: number;
+    lastTimeTrigger: number;
+    lastPosition: { x: number; y: number } | null;
+    stepCount: number;
+  };
 }
 
 export interface Encounter {

@@ -95,10 +95,11 @@ Speech Style (how they talk):
 
 OUTPUT RULES:
 - Match character personality exactly
-- Solo musing: 1-2 sentences max
+- Solo musing: 1-2 brief sentences
 - Two-person exchange: 2-4 lines total
 - Group conversation: 4-6 lines total
 - Format each line as: "Name: dialogue"
+- Output ONLY dialogue, NO narrative descriptions or actions
 - Use medieval fantasy tone (no modern slang)
 - DO NOT mention specific items or equipment
 - DO NOT reference events not provided in context
