@@ -1013,8 +1013,8 @@ nodes:
       - "create-color-picker"
 
   - id: "create-color-picker"
-    status: "Blocked"
-    materialization: 0.6
+    status: "Completed"
+    materialization: 1.0
     description: "Add color picker UI to CharacterSheetScene"
     detailed_description: |
       Implement color picker for character dialogue color customization.
@@ -1055,8 +1055,8 @@ nodes:
       - "update-character-sheet-display"
 
   - id: "update-character-sheet-display"
-    status: "Blocked"
-    materialization: 0.6
+    status: "Completed"
+    materialization: 1.0
     description: "Update character sheet to show personality and color"
     detailed_description: |
       Update character sheet display to show personality traits and dialogue color.
@@ -1093,8 +1093,8 @@ nodes:
       - "run-typecheck"
 
   - id: "run-typecheck"
-    status: "Blocked"
-    materialization: 0.6
+    status: "Completed"
+    materialization: 1.0
     description: "Run typecheck and fix all errors"
     detailed_description: |
       Run npm run typecheck and fix all TypeScript errors.
@@ -1118,7 +1118,7 @@ nodes:
       - "test-all-triggers"
 
   - id: "test-all-triggers"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.5
     description: "Test all trigger types (time/distance/events)"
     detailed_description: |

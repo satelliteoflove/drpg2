@@ -43,5 +43,14 @@
     "identify": "i",
     "use": "u",
     "close": "escape"
+  },
+  "characterSheet": {
+    "changeColor": "c",
+    "colorPickerUp": "k",
+    "colorPickerDown": "j",
+    "colorPickerLeft": "h",
+    "colorPickerRight": "l",
+    "colorPickerConfirm": "enter",
+    "colorPickerCancel": "escape"
   }
 }
