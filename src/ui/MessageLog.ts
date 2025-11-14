@@ -1,4 +1,6 @@
 import { GAME_CONFIG } from '../config/GameConstants';
+import { BanterResponse } from '../types/BanterTypes';
+import { Party } from '../entities/Party';
 
 export class MessageLog {
   private ctx: CanvasRenderingContext2D;
@@ -159,5 +161,18 @@ export class MessageLog {
 
   public addMagicMessage(message: string): void {
     this.addMessage(message, '#aa00ff');
+  }
+
+  public addBanterExchange(exchange: BanterResponse, party: Party): void {
+    this.addMessage('');
+
+    for (const line of exchange.lines) {
+      const character = party.characters.find((c) => c.name === line.characterName);
+      const color = character?.dialogueColor || '#ffffff';
+      const formattedText = `${line.characterName}: ${line.text}`;
+      this.addMessage(formattedText, color);
+    }
+
+    this.addMessage('');
   }
 }

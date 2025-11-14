@@ -793,8 +793,8 @@ nodes:
       - "extend-message-log"
 
   - id: "extend-message-log"
-    status: "Ready"
-    materialization: 0.7
+    status: "Completed"
+    materialization: 1.0
     description: "Extend MessageLog for character-colored banter"
     detailed_description: |
       Extend MessageLog to support character dialogue colors.
@@ -827,8 +827,8 @@ nodes:
       - "create-presenter"
 
   - id: "create-presenter"
-    status: "Blocked"
-    materialization: 0.7
+    status: "Completed"
+    materialization: 1.0
     description: "Create BanterPresenter service"
     detailed_description: |
       Implement service for displaying banter in message log.
@@ -874,8 +874,8 @@ nodes:
       - "create-orchestrator"
 
   - id: "create-orchestrator"
-    status: "Blocked"
-    materialization: 0.7
+    status: "Completed"
+    materialization: 1.0
     description: "Create BanterOrchestrator service"
     detailed_description: |
       Implement main orchestrator service coordinating entire banter flow.
@@ -934,7 +934,7 @@ nodes:
       - "register-services"
 
   - id: "register-services"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.7
     description: "Register all banter services in ServiceRegistry"
     detailed_description: |
