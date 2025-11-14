@@ -172,7 +172,7 @@ export class CharacterSheetScene extends Scene {
     const x = 20;
     const y = 90;
     const width = 240;
-    const height = 320;
+    const height = 540;
 
     UIRenderingUtils.drawPanel(ctx, x, y, width, height);
 
@@ -221,6 +221,51 @@ export class CharacterSheetScene extends Scene {
     ctx.fillText('Gold:', x + 15, statY + stats.length * lineHeight + 81);
     ctx.fillStyle = '#ffa500';
     ctx.fillText(`${character.gold}`, x + 60, statY + stats.length * lineHeight + 81);
+
+    let personalityY = statY + stats.length * lineHeight + 120;
+
+    ctx.fillStyle = '#ffa500';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText('PERSONALITY', x + 10, personalityY);
+    personalityY += 25;
+
+    ctx.font = '12px monospace';
+
+    if (character.personality) {
+      const personalityTraits = [
+        { label: 'Temperament', value: character.personality.temperament },
+        { label: 'Social', value: character.personality.social },
+        { label: 'Outlook', value: character.personality.outlook },
+        { label: 'Speech', value: character.personality.speech },
+      ];
+
+      personalityTraits.forEach((trait) => {
+        ctx.fillStyle = '#aaa';
+        ctx.fillText(`${trait.label}:`, x + 15, personalityY);
+        ctx.fillStyle = '#fff';
+        const displayValue = trait.value.charAt(0).toUpperCase() + trait.value.slice(1);
+        ctx.fillText(displayValue, x + 130, personalityY);
+        personalityY += lineHeight;
+      });
+
+      personalityY += 10;
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('Dialogue Color:', x + 15, personalityY);
+
+      if (character.dialogueColor) {
+        ctx.fillStyle = character.dialogueColor;
+        ctx.fillRect(x + 135, personalityY - 10, 20, 15);
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 135, personalityY - 10, 20, 15);
+      } else {
+        ctx.fillStyle = '#666';
+        ctx.fillText('(none)', x + 135, personalityY);
+      }
+    } else {
+      ctx.fillStyle = '#666';
+      ctx.fillText('(not assigned)', x + 15, personalityY);
+    }
   }
 
   private renderItemsPanel(ctx: CanvasRenderingContext2D, character: Character): void {

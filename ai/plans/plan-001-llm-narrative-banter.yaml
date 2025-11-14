@@ -254,8 +254,8 @@ nodes:
       - "extend-character-entity"
 
   - id: "extend-character-entity"
-    status: "Ready"
-    materialization: 0.9
+    status: "Completed"
+    materialization: 1.0
     description: "Add personality traits and dialogue color fields to Character entity"
     detailed_description: |
       Extend the Character entity with personality and color fields (DATA ONLY).
@@ -299,7 +299,7 @@ nodes:
       - "integrate-personality-service"
 
   - id: "integrate-personality-service"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.85
     description: "Integrate CharacterPersonalityService into character creation flow"
     detailed_description: |

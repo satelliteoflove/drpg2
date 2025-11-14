@@ -28,6 +28,7 @@ import {
 } from '../config/progression/SpellLearningTable';
 import { SpellLearning } from '../systems/magic/SpellLearning';
 import { SpellLearningResult, SpellId } from '../types/SpellTypes';
+import { PersonalityTraits } from '../types/BanterTypes';
 
 export class Character implements ICharacter {
   id: string;
@@ -58,13 +59,17 @@ export class Character implements ICharacter {
   statusEffects: Map<string, any>;
   isDead: boolean;
   deathCount: number;
+  personality?: PersonalityTraits;
+  dialogueColor?: string;
 
   constructor(
     name: string,
     race: CharacterRace,
     charClass: CharacterClass,
     alignment: CharacterAlignment,
-    gender: 'male' | 'female' = 'male'
+    gender: 'male' | 'female' = 'male',
+    personality?: PersonalityTraits,
+    dialogueColor?: string
   ) {
     this.id = TypeValidation.generateSecureId();
     this.name = name;
@@ -91,6 +96,8 @@ export class Character implements ICharacter {
     this.deathCount = 0;
     this.statuses = [];
     this.modifiers = [];
+    this.personality = personality;
+    this.dialogueColor = dialogueColor;
 
     this.baseStats = this.rollStats();
     this.stats = { ...this.baseStats };
