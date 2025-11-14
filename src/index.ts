@@ -60,6 +60,13 @@ document.addEventListener('DOMContentLoaded', () => {
       navigateSpellMenu: (direction: 'up' | 'down' | 'left' | 'right') => aiInterface.navigateSpellMenu(direction),
       testRandomSelector: () => aiInterface.testRandomSelector(),
       testColorPalette: () => aiInterface.testColorPalette(),
+      banter: {
+        getMetrics: () => aiInterface.getBanterMetrics(),
+        getEvents: () => aiInterface.getBanterEvents(),
+        getState: () => aiInterface.getBanterState(),
+        trigger: (type?: any) => aiInterface.forceBanterTrigger(type),
+        test: () => aiInterface.testBanterSystem()
+      }
     };
 
     // Also expose drpg namespace for backward compatibility

@@ -6,6 +6,8 @@ import { EntityUtils } from '../utils/EntityUtils';
 import { RandomSelector } from '../utils/RandomSelector';
 import { ColorPalette } from '../utils/ColorPalette';
 import { DebugLogger } from '../utils/DebugLogger';
+import { GameServices } from '../services/GameServices';
+import { BanterTriggerType } from '../types/BanterTypes';
 
 export class AIInterface {
   private game: Game;
@@ -755,6 +757,126 @@ export class AIInterface {
 
     } catch (error: any) {
       DebugLogger.error('AIInterface', `Error during ColorPalette testing: ${error.message}`);
+    }
+  }
+
+  public getBanterMetrics(): any {
+    try {
+      const services = GameServices.getInstance();
+      const metrics = services.getBanterMetrics();
+      return metrics.getStats();
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error getting banter metrics: ${error.message}`);
+      return null;
+    }
+  }
+
+  public getBanterEvents(): any[] {
+    try {
+      const services = GameServices.getInstance();
+      const eventTracker = services.getBanterEventTracker();
+      return eventTracker.getRecentEvents();
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error getting banter events: ${error.message}`);
+      return [];
+    }
+  }
+
+  public getBanterState(): {
+    isGenerating: boolean;
+    lastTrigger: any;
+    metrics: any;
+    recentEvents: any[];
+  } {
+    try {
+      const services = GameServices.getInstance();
+      const orchestrator = services.getBanterOrchestratorInstance();
+      const triggerDetector = services.getTriggerDetector();
+
+      return {
+        isGenerating: (orchestrator as any).isGenerating || false,
+        lastTrigger: (triggerDetector as any).lastTriggerTime || null,
+        metrics: this.getBanterMetrics(),
+        recentEvents: this.getBanterEvents()
+      };
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error getting banter state: ${error.message}`);
+      return {
+        isGenerating: false,
+        lastTrigger: null,
+        metrics: null,
+        recentEvents: []
+      };
+    }
+  }
+
+  public forceBanterTrigger(triggerType?: BanterTriggerType): void {
+    try {
+      DebugLogger.info('AIInterface', `Forcing banter trigger: ${triggerType || 'any'}`);
+
+      const services = GameServices.getInstance();
+      const eventTracker = services.getBanterEventTracker();
+
+      if (triggerType === BanterTriggerType.CharacterDeath) {
+        const state = this.getGameState();
+        const firstChar = state.party.characters[0];
+        if (firstChar) {
+          eventTracker.recordCharacterDeath(firstChar.name);
+        }
+      } else if (triggerType === BanterTriggerType.DarkZoneEntry) {
+        eventTracker.recordDarkZoneEntry();
+      } else if (triggerType === BanterTriggerType.LowHpWarning) {
+        eventTracker.recordEvent({
+          type: 'LowHp' as any,
+          timestamp: Date.now(),
+          details: 'Forced low HP trigger'
+        });
+      }
+
+      const triggerDetector = services.getTriggerDetector();
+      (triggerDetector as any).lastTriggerTime = 0;
+
+      DebugLogger.info('AIInterface', 'Banter trigger forced - will fire on next update cycle');
+
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error forcing banter trigger: ${error.message}`);
+    }
+  }
+
+  public testBanterSystem(): void {
+    DebugLogger.info('AIInterface', 'Starting banter system tests...');
+
+    try {
+      DebugLogger.info('AIInterface', 'Test 1: Check banter services registered');
+      try {
+        const services = GameServices.getInstance();
+        services.getBanterOrchestratorInstance();
+        services.getTriggerDetector();
+        services.getBanterEventTracker();
+        services.getBanterMetrics();
+        DebugLogger.info('AIInterface', '✓ All core banter services registered');
+      } catch (e: any) {
+        DebugLogger.error('AIInterface', `✗ Banter services not registered: ${e.message}`);
+      }
+
+      DebugLogger.info('AIInterface', 'Test 2: Check banter metrics');
+      const metricsData = this.getBanterMetrics();
+      DebugLogger.info('AIInterface', `Metrics: ${JSON.stringify(metricsData)}`);
+
+      DebugLogger.info('AIInterface', 'Test 3: Check event tracker');
+      const events = this.getBanterEvents();
+      DebugLogger.info('AIInterface', `Recent events: ${events.length}`);
+
+      DebugLogger.info('AIInterface', 'Test 4: Check banter state');
+      const state = this.getBanterState();
+      DebugLogger.info('AIInterface', `Is generating: ${state.isGenerating}`);
+      DebugLogger.info('AIInterface', `Last trigger: ${state.lastTrigger}`);
+
+      DebugLogger.info('AIInterface', '=== Banter system test completed ===');
+      console.log('Banter system test completed! Check debug.log for detailed results.');
+
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error during banter system testing: ${error.message}`);
     }
   }
 }

@@ -1118,8 +1118,8 @@ nodes:
       - "test-all-triggers"
 
   - id: "test-all-triggers"
-    status: "Ready"
-    materialization: 0.5
+    status: "Completed"
+    materialization: 1.0
     description: "Test all trigger types (time/distance/events)"
     detailed_description: |
       Test all banter trigger types through AI Interface and manual gameplay.
@@ -1163,8 +1163,8 @@ nodes:
       - "test-error-scenarios"
 
   - id: "test-error-scenarios"
-    status: "Blocked"
-    materialization: 0.5
+    status: "Completed"
+    materialization: 1.0
     description: "Test error handling (API offline, timeout, bad response)"
     detailed_description: |
       Test comprehensive error handling and recovery.
@@ -1205,8 +1205,8 @@ nodes:
       - "review-debug-log"
 
   - id: "review-debug-log"
-    status: "Blocked"
-    materialization: 0.5
+    status: "Completed"
+    materialization: 1.0
     description: "Review debug.log for issues and verify logging"
     detailed_description: |
       Review debug.log to ensure all logging is working correctly.
@@ -1239,7 +1239,7 @@ nodes:
       - "prompt-tuning"
 
   - id: "prompt-tuning"
-    status: "Blocked"
+    status: "Ready"
     materialization: 0.4
     description: "Test and tune LLM prompts for quality"
     detailed_description: |
