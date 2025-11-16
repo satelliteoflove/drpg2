@@ -3,9 +3,11 @@ import {
   StandardContext,
   RichContext,
   GameEvent,
-  BuiltPrompt
+  BuiltPrompt,
+  PersonalityTraits
 } from '../../types/BanterTypes';
 import { GAME_CONFIG } from '../../config/GameConstants';
+import { DIALOGUE_PROMPTS } from '../../config/DialoguePrompts';
 import { RandomSelector } from '../../utils/RandomSelector';
 import { DebugLogger } from '../../utils/DebugLogger';
 
@@ -65,45 +67,17 @@ export class PromptBuilder {
   }
 
   private static buildSystemPrompt(): string {
-    return `You generate character banter for a medieval fantasy dungeon crawler RPG.
+    const config = DIALOGUE_PROMPTS.BANTER.SYSTEM;
 
-PERSONALITY TRAITS:
+    let prompt = config.INTRO + '\n\n';
+    prompt += config.TRAIT_CONTEXT + '\n\n';
+    prompt += 'OUTPUT RULES:\n';
 
-Temperament (how they react):
-- Brave: Fearless, confident, rushes into danger
-- Cautious: Careful, risk-averse, thinks before acting
-- Reckless: Impulsive, thrill-seeking, disregards safety
-- Calculating: Analytical, strategic, weighs odds
+    for (const rule of config.OUTPUT_RULES) {
+      prompt += `- ${rule}\n`;
+    }
 
-Social (how they interact):
-- Friendly: Warm, approachable, seeks connection
-- Gruff: Rough, brusque, uncomfortable with emotion
-- Sarcastic: Mocking, witty, uses humor as shield
-- Earnest: Sincere, honest, takes things seriously
-
-Outlook (how they view the world):
-- Optimistic: Hopeful, sees the bright side
-- Pessimistic: Expects the worst, sees danger
-- Pragmatic: Practical, focused on what works
-- Idealistic: Guided by principles and values
-
-Speech Style (how they talk):
-- Verbose: Long-winded, elaborate, detailed
-- Taciturn: Few words, terse, economical
-- Poetic: Metaphorical, lyrical, artistic
-- Blunt: Direct, straightforward, no subtlety
-
-OUTPUT RULES:
-- Match character personality exactly
-- Solo musing: 1-2 brief sentences
-- Two-person exchange: 2-4 lines total
-- Group conversation: 4-6 lines total
-- Format each line as: "Name: dialogue"
-- Output ONLY dialogue, NO narrative descriptions or actions
-- Use medieval fantasy tone (no modern slang)
-- DO NOT mention specific items or equipment
-- DO NOT reference events not provided in context
-- Keep responses brief and conversational`;
+    return prompt.trim();
   }
 
   private static buildUserPrompt(
@@ -117,7 +91,7 @@ OUTPUT RULES:
     let prompt = '';
 
     prompt += `Character: ${speaker.name}, ${speaker.race} ${speaker.class}, level ${speaker.level}\n`;
-    prompt += `Personality: ${speaker.personality.temperament}, ${speaker.personality.social}, ${speaker.personality.outlook}, ${speaker.personality.speech}\n`;
+    prompt += this.formatPersonalityInline(speaker.personality);
 
     if (speaker.status && speaker.status.length > 0) {
       prompt += `Status: ${speaker.status.join(', ')}\n`;
@@ -133,13 +107,13 @@ OUTPUT RULES:
 
     if ('party' in context) {
       const party = context.party;
-      prompt += `\nParty:\n`;
+      prompt += `\nParty members:\n`;
       for (const member of party.members) {
         if (member.name === speaker.name) continue;
-        prompt += `- ${member.name}, ${member.race} ${member.class}, level ${member.level}`;
-        prompt += ` (${member.personality.temperament}, ${member.personality.social})`;
+        prompt += `- ${member.name}, ${member.race} ${member.class}, level ${member.level}\n`;
+        prompt += this.formatPersonalityInline(member.personality, '  ');
         if (member.status && member.status.length > 0) {
-          prompt += ` [${member.status.join(', ')}]`;
+          prompt += `  Status: ${member.status.join(', ')}\n`;
         }
         prompt += `\n`;
       }
@@ -164,6 +138,18 @@ OUTPUT RULES:
     prompt += this.getExchangeTypePrompt(exchangeType, speaker.name);
 
     return prompt;
+  }
+
+  private static formatPersonalityInline(personality: PersonalityTraits, indent: string = ''): string {
+    const traits = DIALOGUE_PROMPTS.BANTER.TRAIT_DESCRIPTIONS;
+    let result = '';
+
+    result += `${indent}- Temperament: ${personality.temperament} (${traits.TEMPERAMENT[personality.temperament]})\n`;
+    result += `${indent}- Social: ${personality.social} (${traits.SOCIAL[personality.social]})\n`;
+    result += `${indent}- Outlook: ${personality.outlook} (${traits.OUTLOOK[personality.outlook]})\n`;
+    result += `${indent}- Speech: ${personality.speech} (${traits.SPEECH[personality.speech]})\n`;
+
+    return result;
   }
 
   private static formatTriggerDetails(trigger: any): string {

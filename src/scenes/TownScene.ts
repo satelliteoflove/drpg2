@@ -166,10 +166,20 @@ export class TownScene extends Scene {
     ctx.fillStyle = '#666';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('UP/DOWN: Select | ENTER: Choose', menuX + menuWidth / 2, menuY + menuHeight - 15);
+    ctx.fillText('UP/DOWN: Select | ENTER: Choose', menuX + menuWidth / 2, menuY + menuHeight - 25);
+
+    ctx.fillStyle = '#ff8800';
+    ctx.font = '10px monospace';
+    ctx.fillText('DEV: Ctrl+P = Auto-populate party', menuX + menuWidth / 2, menuY + menuHeight - 10);
   }
 
   public handleInput(key: string): boolean {
+    // DEV SHORTCUT: Ctrl+P to auto-populate party from roster
+    if (key === 'ctrl+p') {
+      this.autoPopulateParty();
+      return true;
+    }
+
     const normalizedKey = key.toLowerCase();
 
     const action = MenuInputHandler.handleMenuInput(
@@ -189,6 +199,23 @@ export class TownScene extends Scene {
     );
 
     return action.type !== 'none';
+  }
+
+  private autoPopulateParty(): void {
+    const roster = this.gameState.characterRoster || [];
+    if (roster.length === 0) {
+      this.messageLog?.add('No characters in roster to add to party.');
+      return;
+    }
+
+    this.gameState.party.characters = [];
+
+    const maxChars = Math.min(6, roster.length);
+    for (let i = 0; i < maxChars; i++) {
+      this.gameState.party.addCharacter(roster[i]);
+    }
+
+    this.messageLog?.add(`Auto-populated party with ${maxChars} character${maxChars > 1 ? 's' : ''} from roster.`);
   }
 
   private selectCurrentOption(): void {
