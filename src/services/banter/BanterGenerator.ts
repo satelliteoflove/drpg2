@@ -33,6 +33,14 @@ export class BanterGenerator implements IBanterGenerator {
         estimatedTokens: builtPrompt.metadata.estimatedTokens
       });
 
+      DebugLogger.debug('BanterGenerator', 'System prompt', {
+        systemPrompt: builtPrompt.systemPrompt
+      });
+
+      DebugLogger.debug('BanterGenerator', 'User prompt', {
+        userPrompt: builtPrompt.userPrompt
+      });
+
       const response = await this.callLLMAPI(builtPrompt.systemPrompt, builtPrompt.userPrompt);
       const parsedResponse = this.parseResponse(response, context);
 
@@ -86,7 +94,8 @@ export class BanterGenerator implements IBanterGenerator {
           temperature: config.TEMPERATURE,
           max_tokens: config.MAX_OUTPUT_TOKENS,
           repetition_penalty: config.REPETITION_PENALTY,
-          min_p: config.MIN_P
+          min_p: config.MIN_P,
+          top_p: config.TOP_P
         }),
         signal: controller.signal
       });

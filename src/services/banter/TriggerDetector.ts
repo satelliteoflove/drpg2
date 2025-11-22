@@ -124,16 +124,22 @@ export class TriggerDetector implements ITriggerDetector {
   }
 
   private checkCharacterDeathTrigger(_gameState: any, triggers: BanterTrigger[]): void {
-    const recentEvents = this.eventTracker.getRecentEvents(60000);
-    const deathEvents = recentEvents.filter(e => e.type === 'character_death');
+    const unacknowledgedDeaths = this.eventTracker.getUnacknowledgedEvents('character_death');
 
-    if (deathEvents.length > 0) {
-      const latestDeath = deathEvents[deathEvents.length - 1];
+    if (unacknowledgedDeaths.length > 0) {
+      const latestDeath = unacknowledgedDeaths[unacknowledgedDeaths.length - 1];
       triggers.push({
         type: BanterTriggerType.CharacterDeath,
         priority: GAME_CONFIG.BANTER.PRIORITIES.CHARACTER_DEATH,
         details: latestDeath.details,
         timestamp: Date.now()
+      });
+      this.eventTracker.markEventAcknowledged(latestDeath);
+
+      DebugLogger.info('TriggerDetector', 'Character death trigger detected and acknowledged', {
+        characterName: latestDeath.characterName,
+        details: latestDeath.details,
+        totalUnacknowledged: unacknowledgedDeaths.length
       });
     }
   }

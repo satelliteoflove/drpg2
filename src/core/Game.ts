@@ -171,9 +171,16 @@ export class Game {
   }
 
   private reconstructParty(partyData: unknown): Party {
+    DebugLogger.debug('Game', 'Reconstructing party', {
+      partyData: partyData
+    });
+
     const validatedParty = TypeValidation.safeValidateParty(partyData, 'Game.reconstructParty');
 
     if (!validatedParty) {
+      DebugLogger.warn('Game', 'Party validation failed, creating new party', {
+        receivedData: partyData
+      });
       ErrorHandler.logError(
         'Invalid party data, creating new party',
         ErrorSeverity.MEDIUM,
@@ -191,9 +198,14 @@ export class Game {
     party.floor = validatedParty.floor;
     party.formation = validatedParty.formation;
 
+    // Convert characters to array if it's an object (happens with some JSON serialization)
+    const charactersArray = Array.isArray(validatedParty.characters)
+      ? validatedParty.characters
+      : Object.values(validatedParty.characters);
+
     // Reconstruct characters - note: we can't fully validate Character class instances
     // from serialized data, so we'll do basic validation and reconstruct
-    validatedParty.characters.forEach((charData: any) => {
+    charactersArray.forEach((charData: any) => {
       if (
         charData &&
         typeof charData === 'object' &&

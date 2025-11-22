@@ -7,6 +7,7 @@ import {
   ValidationResult
 } from '../../types/BanterTypes';
 import { DebugLogger } from '../../utils/DebugLogger';
+import { GAME_CONFIG } from '../../config/GameConstants';
 
 export class BanterValidator implements IBanterValidator {
   private consecutiveFailures: number = 0;
@@ -112,8 +113,9 @@ export class BanterValidator implements IBanterValidator {
 
     for (const line of response.lines) {
       const charCount = line.text.length;
-      if (charCount > 250) {
-        errors.push(`Line too long (${charCount} chars, max 250): "${line.text.substring(0, 50)}..."`);
+      const maxLength = GAME_CONFIG.BANTER.MAX_LINE_LENGTH;
+      if (charCount > maxLength) {
+        errors.push(`Line too long (${charCount} chars, max ${maxLength}): "${line.text.substring(0, 50)}..."`);
       }
     }
   }

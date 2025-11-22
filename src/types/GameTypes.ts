@@ -404,6 +404,7 @@ export interface GameState {
   characterRoster: ICharacter[];
   dungeonSeed?: string;
   playtimeSeconds?: number;
+  dungeonEntryTime?: number;
   banterState?: {
     lastTriggerTime: number;
     lastTimeTrigger: number;

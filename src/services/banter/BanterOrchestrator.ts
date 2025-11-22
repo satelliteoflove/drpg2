@@ -106,7 +106,7 @@ export class BanterOrchestrator {
       priority: trigger.priority
     });
 
-    const maxAttempts = 2;
+    const maxAttempts = GAME_CONFIG.BANTER.MAX_VALIDATION_RETRIES;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -181,14 +181,10 @@ export class BanterOrchestrator {
 
       case BanterTriggerType.LowHpWarning:
       case BanterTriggerType.DarkZoneEntry:
-        return this.contextBuilder.buildStandardContext(trigger, gameState);
-
       case BanterTriggerType.AmbientTime:
       case BanterTriggerType.AmbientDistance:
-        return this.contextBuilder.buildMinimalContext(trigger, gameState);
-
       default:
-        return this.contextBuilder.buildMinimalContext(trigger, gameState);
+        return this.contextBuilder.buildStandardContext(trigger, gameState);
     }
   }
 

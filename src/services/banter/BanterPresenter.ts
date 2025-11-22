@@ -12,6 +12,7 @@ export class BanterPresenter implements IBanterPresenter {
       participants: response.participants,
       lineCount: response.lines.length,
       generatedAt: response.generatedAt,
+      lines: response.lines
     });
   }
 

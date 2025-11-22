@@ -10,7 +10,7 @@ export class BanterEventTracker implements IBanterEventTracker {
   recordEvent(event: GameEvent): void {
     this.cleanupOldEvents();
 
-    this.events.push(event);
+    this.events.push({ ...event, acknowledged: false });
 
     if (this.events.length > MAX_EVENTS) {
       this.events.shift();
@@ -33,6 +33,32 @@ export class BanterEventTracker implements IBanterEventTracker {
 
     const cutoffTime = Date.now() - maxAge;
     return this.events.filter(event => event.timestamp >= cutoffTime);
+  }
+
+  getUnacknowledgedEvents(eventType?: string): GameEvent[] {
+    this.cleanupOldEvents();
+
+    return this.events.filter(event =>
+      !event.acknowledged &&
+      (!eventType || event.type === eventType)
+    );
+  }
+
+  markEventAcknowledged(event: GameEvent): void {
+    const found = this.events.find(e =>
+      e.type === event.type &&
+      e.timestamp === event.timestamp &&
+      e.characterName === event.characterName
+    );
+
+    if (found) {
+      found.acknowledged = true;
+      DebugLogger.debug('BanterEventTracker', `Event marked as acknowledged: ${event.type}`, {
+        type: event.type,
+        characterName: event.characterName,
+        timestamp: event.timestamp
+      });
+    }
   }
 
   clearEvents(): void {

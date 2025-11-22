@@ -71,6 +71,7 @@ export class PromptBuilder {
 
     let prompt = config.INTRO + '\n\n';
     prompt += config.TRAIT_CONTEXT + '\n\n';
+    prompt += config.EXAMPLES + '\n\n';
     prompt += 'OUTPUT RULES:\n';
 
     for (const rule of config.OUTPUT_RULES) {
@@ -103,7 +104,13 @@ export class PromptBuilder {
     }
     prompt += `\n`;
 
-    prompt += `Trigger: ${this.formatTriggerDetails(trigger)}\n`;
+    if (trigger.type !== 'ambient_time' && trigger.type !== 'ambient_distance') {
+      prompt += `Trigger: ${this.formatTriggerDetails(trigger)}\n`;
+    }
+
+    if (location.timeInDungeonMinutes < 20) {
+      prompt += `(Context: Party recently entered - only ${location.timeInDungeonMinutes} minutes in dungeon)\n`;
+    }
 
     if ('party' in context) {
       const party = context.party;
@@ -161,7 +168,7 @@ export class PromptBuilder {
       case 'dark_zone_entry':
         return 'Party entered a dark zone';
       case 'ambient_time':
-        return 'Time passing in dungeon';
+        return 'Moment of quiet in dungeon';
       case 'ambient_distance':
         return 'Exploring deeper into dungeon';
       default:

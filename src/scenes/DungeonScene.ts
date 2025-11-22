@@ -74,6 +74,7 @@ export class DungeonScene extends Scene {
       this.gameState.party.floor = this.gameState.currentFloor;
       this.gameState.party.facing = 'north';
       this.gameState.hasEnteredDungeon = true;
+      this.gameState.dungeonEntryTime = Date.now();
 
       this.movementHandler.updateDiscoveredTiles();
     }

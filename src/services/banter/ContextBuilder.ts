@@ -103,11 +103,10 @@ export class ContextBuilder {
         return 'rich';
       case BanterTriggerType.LowHpWarning:
       case BanterTriggerType.DarkZoneEntry:
-        return 'standard';
       case BanterTriggerType.AmbientTime:
       case BanterTriggerType.AmbientDistance:
       default:
-        return 'minimal';
+        return 'standard';
     }
   }
 
@@ -175,11 +174,25 @@ export class ContextBuilder {
     const currentFloor = gameState.currentFloor;
 
     const isDark = this.checkIsDark(gameState, party.x, party.y);
+    const timeInDungeonMinutes = this.calculateDungeonTime(gameState);
 
     return {
       floor: currentFloor,
-      isDark
+      isDark,
+      timeInDungeonMinutes
     };
+  }
+
+  private calculateDungeonTime(gameState: GameState): number {
+    if (!gameState.dungeonEntryTime) {
+      return 0;
+    }
+
+    const currentTime = Date.now();
+    const elapsedMs = currentTime - gameState.dungeonEntryTime;
+    const elapsedMinutes = Math.floor(elapsedMs / 60000);
+
+    return elapsedMinutes;
   }
 
   private checkIsDark(gameState: GameState, x: number, y: number): boolean {

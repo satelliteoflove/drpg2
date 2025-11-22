@@ -74,6 +74,7 @@ export interface CharacterInfo {
 export interface LocationInfo {
   floor: number;
   isDark: boolean;
+  timeInDungeonMinutes: number;
 }
 
 export interface PartyInfo {
@@ -88,6 +89,7 @@ export interface GameEvent {
   timestamp: number;
   characterName?: string;
   details: string;
+  acknowledged?: boolean;
 }
 
 export interface MinimalContext {
@@ -149,6 +151,8 @@ export interface BanterPresenter {
 export interface BanterEventTracker {
   recordEvent(event: GameEvent): void;
   getRecentEvents(maxAge?: number): GameEvent[];
+  getUnacknowledgedEvents(eventType?: string): GameEvent[];
+  markEventAcknowledged(event: GameEvent): void;
   clearEvents(): void;
   recordCharacterDeath(characterName: string): void;
   recordDarkZoneEntry(): void;
