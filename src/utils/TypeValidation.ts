@@ -105,14 +105,17 @@ export class TypeValidation {
   static isValidPartyData(value: any): value is IParty {
     if (typeof value !== 'object' || value === null) return false;
 
+    const hasCharacters = 'characters' in value &&
+      (Array.isArray(value.characters) ||
+       (typeof value.characters === 'object' && value.characters !== null));
+
     return (
-      'characters' in value &&
+      hasCharacters &&
       'formation' in value &&
       'x' in value &&
       'y' in value &&
       'facing' in value &&
       'floor' in value &&
-      Array.isArray(value.characters) &&
       typeof value.x === 'number' &&
       typeof value.y === 'number' &&
       this.isDirection(value.facing) &&

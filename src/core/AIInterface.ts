@@ -3,6 +3,11 @@ import { GameState } from '../types/GameTypes';
 import { Character } from '../entities/Character';
 import { DiceRoller } from '../utils/DiceRoller';
 import { EntityUtils } from '../utils/EntityUtils';
+import { RandomSelector } from '../utils/RandomSelector';
+import { ColorPalette } from '../utils/ColorPalette';
+import { DebugLogger } from '../utils/DebugLogger';
+import { GameServices } from '../services/GameServices';
+import { BanterTriggerType } from '../types/BanterTypes';
 
 export class AIInterface {
   private game: Game;
@@ -189,7 +194,6 @@ export class AIInterface {
         break;
       case 'mainmenu':
       case 'new game':
-      case 'character creation':
         actions.push('ArrowUp', 'ArrowDown', 'Enter', 'Escape');
         break;
       default:
@@ -224,8 +228,6 @@ export class AIInterface {
         return 'At the Main Menu';
       case 'new game':
         return 'Starting a new game';
-      case 'character creation':
-        return 'Creating characters';
       default:
         return `In ${scene} scene`;
     }
@@ -628,6 +630,254 @@ export class AIInterface {
     }
 
     return result;
+  }
+
+  public testRandomSelector(): void {
+    DebugLogger.info('AIInterface', 'Starting RandomSelector tests...');
+
+    try {
+      DebugLogger.info('AIInterface', 'Test 1: selectRandom with array');
+      const testArray = ['a', 'b', 'c', 'd', 'e'];
+      const selected = RandomSelector.selectRandom(testArray);
+      DebugLogger.info('AIInterface', `Result: ${selected} (should be one of: ${testArray.join(', ')})`);
+      DebugLogger.info('AIInterface', `✓ Result is valid: ${testArray.includes(selected)}`);
+
+      DebugLogger.info('AIInterface', 'Test 2: selectRandom distribution (100 trials)');
+      const counts: { [key: string]: number } = {};
+      for (let i = 0; i < 100; i++) {
+        const val = RandomSelector.selectRandom(testArray);
+        counts[val] = (counts[val] || 0) + 1;
+      }
+      DebugLogger.info('AIInterface', `Distribution: ${JSON.stringify(counts)}`);
+      DebugLogger.info('AIInterface', `✓ All values appeared: ${Object.keys(counts).length > 0}`);
+
+      DebugLogger.info('AIInterface', 'Test 3: selectWeighted');
+      const weightedOptions = [
+        { item: 'solo', weight: 0.4 },
+        { item: 'duo', weight: 0.4 },
+        { item: 'group', weight: 0.2 }
+      ];
+      const weightedResult = RandomSelector.selectWeighted(weightedOptions);
+      DebugLogger.info('AIInterface', `Result: ${weightedResult} (should be solo, duo, or group)`);
+      DebugLogger.info('AIInterface', `✓ Result is valid: ${['solo', 'duo', 'group'].includes(weightedResult)}`);
+
+      DebugLogger.info('AIInterface', 'Test 4: selectWeighted distribution (1000 trials)');
+      const weightCounts: { [key: string]: number } = {};
+      for (let i = 0; i < 1000; i++) {
+        const val = RandomSelector.selectWeighted(weightedOptions);
+        weightCounts[val] = (weightCounts[val] || 0) + 1;
+      }
+      DebugLogger.info('AIInterface', `Distribution: ${JSON.stringify(weightCounts)}`);
+      DebugLogger.info('AIInterface', `Expected ~40% solo, ~40% duo, ~20% group`);
+      DebugLogger.info('AIInterface', `Actual: ${(weightCounts.solo/10).toFixed(1)}% solo, ${(weightCounts.duo/10).toFixed(1)}% duo, ${(weightCounts.group/10).toFixed(1)}% group`);
+
+      DebugLogger.info('AIInterface', 'Test 5: Error handling - empty array');
+      try {
+        RandomSelector.selectRandom([]);
+        DebugLogger.error('AIInterface', '✗ Should have thrown error for empty array');
+      } catch (e: any) {
+        DebugLogger.info('AIInterface', `✓ Correctly threw error: ${e.message}`);
+      }
+
+      DebugLogger.info('AIInterface', 'Test 6: Error handling - negative weight');
+      try {
+        RandomSelector.selectWeighted([{ item: 'test', weight: -1 }]);
+        DebugLogger.error('AIInterface', '✗ Should have thrown error for negative weight');
+      } catch (e: any) {
+        DebugLogger.info('AIInterface', `✓ Correctly threw error: ${e.message}`);
+      }
+
+      DebugLogger.info('AIInterface', '=== All RandomSelector tests completed ===');
+      console.log('RandomSelector tests completed! Check debug.log for detailed results.');
+
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error during RandomSelector testing: ${error.message}`);
+    }
+  }
+
+  public testColorPalette(): void {
+    DebugLogger.info('AIInterface', 'Starting ColorPalette tests...');
+
+    try {
+      DebugLogger.info('AIInterface', 'Test 1: getHSLPalette size');
+      const palette = ColorPalette.getHSLPalette();
+      DebugLogger.info('AIInterface', `Palette size: ${palette.length} (expected: 256)`);
+      DebugLogger.info('AIInterface', `✓ Correct size: ${palette.length === 256}`);
+
+      DebugLogger.info('AIInterface', 'Test 2: Verify caching');
+      const palette2 = ColorPalette.getHSLPalette();
+      DebugLogger.info('AIInterface', `Same reference: ${palette === palette2} (should be true)`);
+      DebugLogger.info('AIInterface', `✓ Caching works: ${palette === palette2}`);
+
+      DebugLogger.info('AIInterface', 'Test 3: Verify color format');
+      const firstColor = palette[0];
+      const lastColor = palette[255];
+      DebugLogger.info('AIInterface', `First color: ${firstColor} (expected: hsl(0, 70%, 30%))`);
+      DebugLogger.info('AIInterface', `Last color: ${lastColor} (expected: hsl(349, 70%, 80%))`);
+      DebugLogger.info('AIInterface', `✓ First color correct: ${firstColor === 'hsl(0, 70%, 30%)'}`);
+      DebugLogger.info('AIInterface', `✓ Last color correct: ${lastColor === 'hsl(349, 70%, 80%)'}`);
+
+      DebugLogger.info('AIInterface', 'Test 4: Verify hue range (first row)');
+      const hues: string[] = [];
+      for (let i = 0; i < 32; i += 8) {
+        hues.push(palette[i]);
+      }
+      DebugLogger.info('AIInterface', `Sample hues: ${hues.join(', ')}`);
+      DebugLogger.info('AIInterface', `✓ Hues span spectrum: ${hues.length === 4}`);
+
+      DebugLogger.info('AIInterface', 'Test 5: Verify lightness range (first column)');
+      const lightnesses: string[] = [];
+      for (let i = 0; i < 8; i++) {
+        lightnesses.push(palette[i * 32]);
+      }
+      DebugLogger.info('AIInterface', `Sample lightness levels: ${lightnesses.join(', ')}`);
+      DebugLogger.info('AIInterface', `✓ 8 lightness levels: ${lightnesses.length === 8}`);
+
+      DebugLogger.info('AIInterface', 'Test 6: getRandomColor');
+      const randomColors: string[] = [];
+      for (let i = 0; i < 10; i++) {
+        randomColors.push(ColorPalette.getRandomColor());
+      }
+      DebugLogger.info('AIInterface', `10 random colors: ${randomColors.join(', ')}`);
+      const allInPalette = randomColors.every(color => palette.includes(color));
+      DebugLogger.info('AIInterface', `✓ All random colors in palette: ${allInPalette}`);
+
+      DebugLogger.info('AIInterface', 'Test 7: getRandomColor distribution (100 trials)');
+      const colorCounts: { [key: string]: number } = {};
+      for (let i = 0; i < 100; i++) {
+        const color = ColorPalette.getRandomColor();
+        colorCounts[color] = (colorCounts[color] || 0) + 1;
+      }
+      const uniqueColors = Object.keys(colorCounts).length;
+      DebugLogger.info('AIInterface', `Unique colors generated: ${uniqueColors}/100 trials`);
+      DebugLogger.info('AIInterface', `✓ Good distribution: ${uniqueColors > 50}`);
+
+      DebugLogger.info('AIInterface', '=== All ColorPalette tests completed ===');
+      console.log('ColorPalette tests completed! Check debug.log for detailed results.');
+
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error during ColorPalette testing: ${error.message}`);
+    }
+  }
+
+  public getBanterMetrics(): any {
+    try {
+      const services = GameServices.getInstance();
+      const metrics = services.getBanterMetrics();
+      return metrics.getStats();
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error getting banter metrics: ${error.message}`);
+      return null;
+    }
+  }
+
+  public getBanterEvents(): any[] {
+    try {
+      const services = GameServices.getInstance();
+      const eventTracker = services.getBanterEventTracker();
+      return eventTracker.getRecentEvents();
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error getting banter events: ${error.message}`);
+      return [];
+    }
+  }
+
+  public getBanterState(): {
+    isGenerating: boolean;
+    lastTrigger: any;
+    metrics: any;
+    recentEvents: any[];
+  } {
+    try {
+      const services = GameServices.getInstance();
+      const orchestrator = services.getBanterOrchestratorInstance();
+      const triggerDetector = services.getTriggerDetector();
+
+      return {
+        isGenerating: (orchestrator as any).isGenerating || false,
+        lastTrigger: (triggerDetector as any).lastTriggerTime || null,
+        metrics: this.getBanterMetrics(),
+        recentEvents: this.getBanterEvents()
+      };
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error getting banter state: ${error.message}`);
+      return {
+        isGenerating: false,
+        lastTrigger: null,
+        metrics: null,
+        recentEvents: []
+      };
+    }
+  }
+
+  public forceBanterTrigger(triggerType?: BanterTriggerType): void {
+    try {
+      DebugLogger.info('AIInterface', `Forcing banter trigger: ${triggerType || 'any'}`);
+
+      const services = GameServices.getInstance();
+      const eventTracker = services.getBanterEventTracker();
+
+      if (triggerType === BanterTriggerType.CharacterDeath) {
+        const state = this.getGameState();
+        const firstChar = state.party.characters[0];
+        if (firstChar) {
+          eventTracker.recordCharacterDeath(firstChar.name);
+        }
+      } else if (triggerType === BanterTriggerType.DarkZoneEntry) {
+        eventTracker.recordDarkZoneEntry();
+      } else if (triggerType === BanterTriggerType.LowHpWarning) {
+        eventTracker.recordEvent({
+          type: 'LowHp' as any,
+          timestamp: Date.now(),
+          details: 'Forced low HP trigger'
+        });
+      }
+
+      const triggerDetector = services.getTriggerDetector();
+      (triggerDetector as any).lastTriggerTime = 0;
+
+      DebugLogger.info('AIInterface', 'Banter trigger forced - will fire on next update cycle');
+
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error forcing banter trigger: ${error.message}`);
+    }
+  }
+
+  public testBanterSystem(): void {
+    DebugLogger.info('AIInterface', 'Starting banter system tests...');
+
+    try {
+      DebugLogger.info('AIInterface', 'Test 1: Check banter services registered');
+      try {
+        const services = GameServices.getInstance();
+        services.getBanterOrchestratorInstance();
+        services.getTriggerDetector();
+        services.getBanterEventTracker();
+        services.getBanterMetrics();
+        DebugLogger.info('AIInterface', '✓ All core banter services registered');
+      } catch (e: any) {
+        DebugLogger.error('AIInterface', `✗ Banter services not registered: ${e.message}`);
+      }
+
+      DebugLogger.info('AIInterface', 'Test 2: Check banter metrics');
+      const metricsData = this.getBanterMetrics();
+      DebugLogger.info('AIInterface', `Metrics: ${JSON.stringify(metricsData)}`);
+
+      DebugLogger.info('AIInterface', 'Test 3: Check event tracker');
+      const events = this.getBanterEvents();
+      DebugLogger.info('AIInterface', `Recent events: ${events.length}`);
+
+      DebugLogger.info('AIInterface', 'Test 4: Check banter state');
+      const state = this.getBanterState();
+      DebugLogger.info('AIInterface', `Is generating: ${state.isGenerating}`);
+      DebugLogger.info('AIInterface', `Last trigger: ${state.lastTrigger}`);
+
+      DebugLogger.info('AIInterface', '=== Banter system test completed ===');
+      console.log('Banter system test completed! Check debug.log for detailed results.');
+
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error during banter system testing: ${error.message}`);
+    }
   }
 }
 

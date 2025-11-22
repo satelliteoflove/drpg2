@@ -4,6 +4,8 @@ import { createAIInterface } from './core/AIInterface';
 import { DiceRoller } from './utils/DiceRoller';
 import { EntityUtils } from './utils/EntityUtils';
 import { SavingThrowCalculator } from './utils/SavingThrowCalculator';
+import { RandomSelector } from './utils/RandomSelector';
+import { ColorPalette } from './utils/ColorPalette';
 import { SpellRegistry } from './systems/magic/SpellRegistry';
 import { SpellCaster } from './systems/magic/SpellCaster';
 import { Character } from './entities/Character';
@@ -56,6 +58,15 @@ document.addEventListener('DOMContentLoaded', () => {
       getSpellMenu: () => aiInterface.getSpellMenuInfo(),
       selectSpell: (index: number) => aiInterface.selectSpellByIndex(index),
       navigateSpellMenu: (direction: 'up' | 'down' | 'left' | 'right') => aiInterface.navigateSpellMenu(direction),
+      testRandomSelector: () => aiInterface.testRandomSelector(),
+      testColorPalette: () => aiInterface.testColorPalette(),
+      banter: {
+        getMetrics: () => aiInterface.getBanterMetrics(),
+        getEvents: () => aiInterface.getBanterEvents(),
+        getState: () => aiInterface.getBanterState(),
+        trigger: (type?: any) => aiInterface.forceBanterTrigger(type),
+        test: () => aiInterface.testBanterSystem()
+      }
     };
 
     // Also expose drpg namespace for backward compatibility
@@ -68,6 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
     (window as any).DiceRoller = DiceRoller;
     (window as any).EntityUtils = EntityUtils;
     (window as any).SavingThrowCalculator = SavingThrowCalculator;
+    (window as any).RandomSelector = RandomSelector;
+    (window as any).ColorPalette = ColorPalette;
     (window as any).SpellRegistry = SpellRegistry;
     (window as any).SpellCaster = SpellCaster;
     (window as any).Character = Character;

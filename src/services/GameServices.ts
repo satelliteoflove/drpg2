@@ -18,6 +18,8 @@ import type { LootGenerator } from '../systems/inventory/LootGenerator';
 import type { ItemIdentifier } from '../systems/inventory/ItemIdentifier';
 import type { EncumbranceCalculator } from '../systems/inventory/EncumbranceCalculator';
 import type { ItemDescriptionFormatter } from '../systems/inventory/ItemDescriptionFormatter';
+import type { CharacterPersonalityService } from './banter/CharacterPersonalityService';
+import type { BanterEventTracker } from '../types/BanterTypes';
 
 export interface GameServiceDependencies {
   canvas: HTMLCanvasElement;
@@ -232,6 +234,105 @@ export class GameServices {
       },
       { singleton: true }
     );
+
+    this.container.register(
+      ServiceIdentifiers.CharacterPersonalityService,
+      () => {
+        const { CharacterPersonalityService } = require('./banter/CharacterPersonalityService');
+        return new CharacterPersonalityService();
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.BanterEventTracker,
+      () => {
+        const { BanterEventTracker } = require('./banter/BanterEventTracker');
+        return new BanterEventTracker();
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.BanterMetrics,
+      () => {
+        const { BanterMetrics } = require('./banter/BanterMetrics');
+        return new BanterMetrics();
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.TriggerDetector,
+      () => {
+        const { TriggerDetector } = require('./banter/TriggerDetector');
+        const eventTracker = this.container.resolve(ServiceIdentifiers.BanterEventTracker);
+        return new TriggerDetector(eventTracker);
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.ContextBuilder,
+      () => {
+        const { ContextBuilder } = require('./banter/ContextBuilder');
+        const eventTracker = this.container.resolve(ServiceIdentifiers.BanterEventTracker);
+        return new ContextBuilder(eventTracker);
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.BanterValidator,
+      () => {
+        const { BanterValidator } = require('./banter/BanterValidator');
+        return new BanterValidator();
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.BanterPresenter,
+      () => {
+        const { BanterPresenter } = require('./banter/BanterPresenter');
+        return new BanterPresenter();
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.BanterGenerator,
+      () => {
+        const { BanterGenerator } = require('./banter/BanterGenerator');
+        const metrics = this.container.resolve(ServiceIdentifiers.BanterMetrics);
+        return new BanterGenerator(metrics);
+      },
+      { singleton: true }
+    );
+
+    this.container.register(
+      ServiceIdentifiers.BanterOrchestrator,
+      () => {
+        const { BanterOrchestrator } = require('./banter/BanterOrchestrator');
+        const triggerDetector = this.container.resolve(ServiceIdentifiers.TriggerDetector);
+        const generator = this.container.resolve(ServiceIdentifiers.BanterGenerator);
+        const validator = this.container.resolve(ServiceIdentifiers.BanterValidator);
+        const presenter = this.container.resolve(ServiceIdentifiers.BanterPresenter);
+        const eventTracker = this.container.resolve(ServiceIdentifiers.BanterEventTracker);
+        const metrics = this.container.resolve(ServiceIdentifiers.BanterMetrics);
+        const contextBuilder = this.container.resolve(ServiceIdentifiers.ContextBuilder);
+        return new BanterOrchestrator(
+          triggerDetector,
+          generator,
+          validator,
+          presenter,
+          eventTracker,
+          metrics,
+          contextBuilder
+        );
+      },
+      { singleton: true }
+    );
   }
 
   public getRenderManager(): RenderManager {
@@ -288,6 +389,15 @@ export class GameServices {
     return this.container.resolve(ServiceIdentifiers.CombatSystem);
   }
 
+  public static getBanterOrchestrator(): any {
+    try {
+      const instance = GameServices.getInstance();
+      return instance.getBanterOrchestratorInstance();
+    } catch (error) {
+      return null;
+    }
+  }
+
   public getEquipmentModifierManager(): EquipmentModifierManager {
     return this.container.resolve(ServiceIdentifiers.EquipmentModifierManager);
   }
@@ -314,6 +424,42 @@ export class GameServices {
 
   public getItemDescriptionFormatter(): ItemDescriptionFormatter {
     return this.container.resolve(ServiceIdentifiers.ItemDescriptionFormatter);
+  }
+
+  public getCharacterPersonalityService(): CharacterPersonalityService {
+    return this.container.resolve(ServiceIdentifiers.CharacterPersonalityService);
+  }
+
+  public getBanterEventTracker(): BanterEventTracker {
+    return this.container.resolve(ServiceIdentifiers.BanterEventTracker);
+  }
+
+  public getBanterMetrics(): any {
+    return this.container.resolve(ServiceIdentifiers.BanterMetrics);
+  }
+
+  public getTriggerDetector(): any {
+    return this.container.resolve(ServiceIdentifiers.TriggerDetector);
+  }
+
+  public getContextBuilder(): any {
+    return this.container.resolve(ServiceIdentifiers.ContextBuilder);
+  }
+
+  public getBanterValidator(): any {
+    return this.container.resolve(ServiceIdentifiers.BanterValidator);
+  }
+
+  public getBanterPresenter(): any {
+    return this.container.resolve(ServiceIdentifiers.BanterPresenter);
+  }
+
+  public getBanterGenerator(): any {
+    return this.container.resolve(ServiceIdentifiers.BanterGenerator);
+  }
+
+  public getBanterOrchestratorInstance(): any {
+    return this.container.resolve(ServiceIdentifiers.BanterOrchestrator);
   }
 
   public dispose(): void {

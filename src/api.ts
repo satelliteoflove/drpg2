@@ -33,7 +33,6 @@ export { ItemDescriptionFormatter } from './systems/inventory/ItemDescriptionFor
 // Scenes
 export { MainMenuScene } from './scenes/MainMenuScene';
 export { NewGameScene } from './scenes/NewGameScene';
-export { CharacterCreationScene } from './scenes/CharacterCreationScene';
 export { DungeonScene } from './scenes/DungeonScene';
 export { CombatScene } from './scenes/CombatScene';
 

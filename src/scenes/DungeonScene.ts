@@ -8,6 +8,7 @@ import { DungeonStateManager } from '../systems/dungeon/DungeonStateManager';
 import { DungeonUIRenderer } from '../systems/dungeon/DungeonUIRenderer';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
+import { GameServices } from '../services/GameServices';
 
 export class DungeonScene extends Scene {
   protected gameState: GameState;
@@ -21,6 +22,7 @@ export class DungeonScene extends Scene {
   private dungeonInputHandler!: DungeonInputHandler;
 
   private performanceMonitor: PerformanceMonitor;
+  private banterOrchestrator: any;
 
   constructor(gameState: GameState, sceneManager: SceneManager, _inputManager: any) {
     super('Dungeon');
@@ -51,6 +53,16 @@ export class DungeonScene extends Scene {
     this.performanceMonitor.startMonitoring('dungeon');
     this.stateManager.reset();
 
+    try {
+      this.banterOrchestrator = GameServices.getBanterOrchestrator();
+      if (this.banterOrchestrator) {
+        DebugLogger.info('DungeonScene', 'BanterOrchestrator initialized successfully');
+      }
+    } catch (error) {
+      DebugLogger.warn('DungeonScene', 'Failed to initialize BanterOrchestrator', { error });
+      this.banterOrchestrator = null;
+    }
+
     const currentDungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
 
     if (!this.gameState.hasEnteredDungeon && currentDungeon) {
@@ -62,6 +74,7 @@ export class DungeonScene extends Scene {
       this.gameState.party.floor = this.gameState.currentFloor;
       this.gameState.party.facing = 'north';
       this.gameState.hasEnteredDungeon = true;
+      this.gameState.dungeonEntryTime = Date.now();
 
       this.movementHandler.updateDiscoveredTiles();
     }
@@ -118,6 +131,14 @@ export class DungeonScene extends Scene {
         if (currentAngle !== null) {
           dungeonView.setViewAngle(currentAngle);
         }
+      }
+    }
+
+    if (!GAME_CONFIG.BANTER.DISABLE_BANTER && this.banterOrchestrator) {
+      try {
+        this.banterOrchestrator.update(deltaTime, this.gameState);
+      } catch (error) {
+        DebugLogger.error('DungeonScene', 'Error in BanterOrchestrator.update()', { error });
       }
     }
 

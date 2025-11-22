@@ -46,6 +46,15 @@ interface KeyBindings {
     use: string;
     close: string;
   };
+  characterSheet: {
+    changeColor: string;
+    colorPickerUp: string;
+    colorPickerDown: string;
+    colorPickerLeft: string;
+    colorPickerRight: string;
+    colorPickerConfirm: string;
+    colorPickerCancel: string;
+  };
 }
 
 export const KEY_BINDINGS: KeyBindings = keyBindingsData;
@@ -96,6 +105,16 @@ export class KeyBindingHelper {
     for (const [action, binding] of Object.entries(inventory)) {
       if (key === binding) {
         return action as keyof typeof KEY_BINDINGS.inventory;
+      }
+    }
+    return null;
+  }
+
+  static isCharacterSheetAction(key: string): keyof typeof KEY_BINDINGS.characterSheet | null {
+    const characterSheet = KEY_BINDINGS.characterSheet;
+    for (const [action, binding] of Object.entries(characterSheet)) {
+      if (key === binding) {
+        return action as keyof typeof KEY_BINDINGS.characterSheet;
       }
     }
     return null;

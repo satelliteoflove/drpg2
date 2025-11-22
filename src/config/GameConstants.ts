@@ -322,6 +322,40 @@ export const GAME_CONFIG = {
   },
 
   DEBUG_MODE: false,
+
+  BANTER: {
+    TRIGGERS: {
+      TIME_INTERVAL_SECONDS: 180,
+      DISTANCE_INTERVAL_STEPS: 20,
+      COOLDOWN_SECONDS: 60,
+    },
+    PRIORITIES: {
+      CHARACTER_DEATH: 100,
+      LOW_HP_WARNING: 75,
+      DARK_ZONE_ENTRY: 50,
+      AMBIENT_TIME: 10,
+      AMBIENT_DISTANCE: 10,
+    },
+    LLM: {
+      ENDPOINT: 'http://192.168.1.82:5000/v1/chat/completions',
+      MODEL: 'cydonia-24b',
+      MAX_INPUT_TOKENS: 2048,
+      MAX_OUTPUT_TOKENS: 200,
+      TEMPERATURE: 0.65,
+      REPETITION_PENALTY: 1.08,
+      MIN_P: 0.1,
+      TOP_P: 0.95,
+      TIMEOUT_MS: 5000,
+    },
+    DISABLE_BANTER: false,
+    MAX_LINE_LENGTH: 256,
+    MAX_VALIDATION_RETRIES: 3,
+    EXCHANGE_DISTRIBUTION: {
+      SOLO_WEIGHT: 0.4,
+      TWO_PERSON_WEIGHT: 0.4,
+      GROUP_WEIGHT: 0.2,
+    },
+  },
 } as const;
 
 export type CharacterClass = (typeof GAME_CONFIG.HP_BONUSES)[keyof typeof GAME_CONFIG.HP_BONUSES];

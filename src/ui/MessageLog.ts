@@ -1,4 +1,6 @@
 import { GAME_CONFIG } from '../config/GameConstants';
+import { BanterResponse } from '../types/BanterTypes';
+import { Party } from '../entities/Party';
 
 export class MessageLog {
   private ctx: CanvasRenderingContext2D;
@@ -65,12 +67,25 @@ export class MessageLog {
 
     const lineHeight = 14;
     const startY = this.y + 30;
-    const visibleLines = Math.floor((this.height - 35) / lineHeight);
+    const maxVisibleHeight = this.height - 35;
 
-    const recentMessages = this.messages.slice(-visibleLines);
+    let currentY = startY;
+    const messagesToRender: Array<{ message: { text: string; timestamp: number; color?: string }; y: number; wrappedLines: string[] }> = [];
 
-    recentMessages.forEach((message, index) => {
-      const messageY = startY + index * lineHeight;
+    for (let i = this.messages.length - 1; i >= 0; i--) {
+      const message = this.messages[i];
+      const wrappedLines = this.wrapText(message.text, this.width - 20);
+      const messageHeight = wrappedLines.length * lineHeight;
+
+      if (currentY + messageHeight > this.y + maxVisibleHeight + lineHeight) {
+        break;
+      }
+
+      messagesToRender.unshift({ message, y: currentY, wrappedLines });
+      currentY += messageHeight;
+    }
+
+    messagesToRender.forEach(({ message, y, wrappedLines }) => {
       let alpha = 1;
 
       if (GAME_CONFIG.UI.MESSAGE_FADE_ENABLED) {
@@ -84,9 +99,8 @@ export class MessageLog {
       this.currentRenderCtx.font = '11px monospace';
       this.currentRenderCtx.textAlign = 'left';
 
-      const wrappedLines = this.wrapText(message.text, this.width - 20);
       wrappedLines.forEach((line, lineIndex) => {
-        this.currentRenderCtx.fillText(line, this.x + 10, messageY + lineIndex * lineHeight);
+        this.currentRenderCtx.fillText(line, this.x + 10, y + lineIndex * lineHeight);
       });
 
       this.currentRenderCtx.restore();
@@ -159,5 +173,18 @@ export class MessageLog {
 
   public addMagicMessage(message: string): void {
     this.addMessage(message, '#aa00ff');
+  }
+
+  public addBanterExchange(exchange: BanterResponse, party: Party): void {
+    this.addMessage('');
+
+    for (const line of exchange.lines) {
+      const character = party.characters.find((c) => c.name === line.characterName);
+      const color = character?.dialogueColor || '#ffffff';
+      const formattedText = `${line.characterName}: ${line.text}`;
+      this.addMessage(formattedText, color);
+    }
+
+    this.addMessage('');
   }
 }

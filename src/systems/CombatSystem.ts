@@ -12,6 +12,7 @@ import { CombatActionRegistry } from './combat/actions/CombatActionRegistry';
 import { CombatActionContext, CombatActionParams } from './combat/actions/CombatAction';
 import { DamageCalculator } from './combat/helpers/DamageCalculator';
 import { WeaponEffectApplicator } from './combat/helpers/WeaponEffectApplicator';
+import { BanterEventTracker } from '../types/BanterTypes';
 
 interface CombatDebugData {
   currentTurn: string;
@@ -37,6 +38,7 @@ export class CombatSystem {
   ) => void;
   private onMessage?: (message: string) => void;
   private isProcessingTurn: boolean = false;
+  private eventTracker: BanterEventTracker | null = null;
 
   private static debugData: CombatDebugData = {
     currentTurn: '',
@@ -57,6 +59,12 @@ export class CombatSystem {
     this.actionRegistry = actionRegistry || new CombatActionRegistry();
     this.damageCalculator = new DamageCalculator();
     this.weaponEffectApplicator = new WeaponEffectApplicator(this.statusEffectSystem);
+
+    try {
+      this.eventTracker = GameServices.getInstance().getBanterEventTracker();
+    } catch (e) {
+      DebugLogger.warn('CombatSystem', 'BanterEventTracker not available');
+    }
   }
 
   public startCombat(
@@ -368,6 +376,12 @@ export class CombatSystem {
 
     this.encounter.turnOrder = this.encounter.turnOrder.filter((unit) => {
       if (EntityUtils.isCharacter(unit as Character | Monster)) {
+        if (unit.isDead && this.eventTracker) {
+          this.eventTracker.recordCharacterDeath(unit.name);
+          DebugLogger.info('CombatSystem', 'Character death detected and recorded', {
+            characterName: unit.name
+          });
+        }
         return !unit.isDead;
       } else {
         return unit.hp > 0;
@@ -418,6 +432,16 @@ export class CombatSystem {
         'CombatSystem',
         `Total rewards: ${totalExp} experience, ${totalGold} gold, ${droppedItems.length} items`
       );
+
+      if (this.eventTracker) {
+        const monsterNames = this.encounter.monsters.map(m => m.name).join(', ');
+        this.eventTracker.recordCombatVictory(`Defeated ${this.encounter.monsters.length} monsters: ${monsterNames}`);
+        DebugLogger.info('CombatSystem', 'Combat victory recorded', {
+          monstersDefeated: this.encounter.monsters.length,
+          monsterNames
+        });
+      }
+
       this.endCombat(true, { experience: totalExp, gold: totalGold, items: droppedItems });
       return true;
     }

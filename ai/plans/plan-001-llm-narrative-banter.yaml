@@ -1,0 +1,1448 @@
+version: "0.5"
+plan_id: "llm-narrative-banter-001"
+project_name: "LLM-Assisted Narrative Banter System"
+agent_profile: "ai-coding-agent-v1"
+
+context:
+  business_goal: "Implement LLM-generated character banter to enhance replayability and character personality expression in the dungeon crawler"
+  non_functional_requirements:
+    - "100% flavor content with no gameplay mechanics impact"
+    - "Local LLM via oobabooga (no internet required)"
+    - "Async generation (2-5s) must not block gameplay"
+    - "Comprehensive error handling with visible user feedback"
+    - "Performance metrics and debug logging"
+    - "SOLID principles: Single Responsibility, Dependency Inversion"
+    - "DRY principles: No duplicated random selection logic"
+  personas:
+    - name: "Player"
+      need: "Fresh character interactions across playthroughs with distinct personalities"
+    - name: "Developer"
+      need: "Clean service architecture with SOLID principles and comprehensive testing"
+
+architecture:
+  overview: |
+    Service-based architecture with 8 core services + utilities:
+    - BanterOrchestrator: Coordinates entire banter flow with async queue
+    - TriggerDetector: Detects time/distance/event-based triggers with priorities
+    - BanterGenerator: Communicates with local LLM (oobabooga/Wayfarer-12B)
+    - BanterValidator: Validates responses to prevent hallucinations
+    - BanterPresenter: Displays banter in message log with character colors
+    - BanterEventTracker: Tracks game events for context
+    - BanterMetrics: Collects performance data
+    - CharacterPersonalityService: Assigns personality traits and colors to characters
+
+    Utilities (following DRY):
+    - RandomSelector: Centralized random selection logic (simple and weighted)
+    - ColorPalette: 256-color HSL palette generation
+    - ContextBuilder: Tiered context building for LLM
+    - PromptBuilder: ChatML prompt formatting
+
+    Integration points:
+    - Character entity extended with personality traits and dialogue color (data only)
+    - DungeonScene integration for trigger updates and event tracking
+    - CombatSystem integration for death/combat events
+    - MessageLog extended for colored character dialogue
+    - AIInterface extended for testing and debugging
+
+    SOLID Principles Applied:
+    - Single Responsibility: Each service has one clear purpose
+    - Dependency Inversion: Services accept interfaces, not concrete implementations
+    - Interface Segregation: Minimal, focused interfaces
+    - DRY: RandomSelector eliminates duplicated random logic
+  constraints:
+    - "Uses existing service architecture (ServiceContainer, ServiceRegistry)"
+    - "No caching in MVP (deferred to post-MVP)"
+    - "Tiered context system to stay within 8k token budget"
+    - "ChatML prompt format for Wayfarer-12B model"
+    - "DebugLogger used as static utility (DebugLogger.info(), etc.)"
+  integration_points:
+    - "Character entity (src/entities/Character.ts)"
+    - "DungeonScene (src/scenes/DungeonScene.ts)"
+    - "CombatSystem (src/systems/CombatSystem.ts)"
+    - "MessageLog (src/ui/MessageLog.ts)"
+    - "ServiceRegistry (src/services/ServiceRegistry.ts)"
+    - "AIInterface (src/core/AIInterface.ts)"
+
+tooling:
+  primary_language: "TypeScript"
+  frameworks:
+    - "Webpack"
+    - "Canvas API"
+  package_manager: "npm"
+  coding_standards:
+    testing: "AI Interface in browser console"
+    logging: "DebugLogger static utility"
+
+entry_node: "create-enums-and-types"
+
+nodes:
+  - id: "create-enums-and-types"
+    status: "Completed"
+    materialization: 1.0
+    description: "Create personality trait enums and banter type definitions"
+    detailed_description: |
+      Create comprehensive type definitions for the banter system.
+
+      Tasks:
+      1. Create src/types/BanterTypes.ts with:
+         - Temperament enum (Brave, Cautious, Reckless, Calculating)
+         - Social enum (Friendly, Gruff, Sarcastic, Earnest)
+         - Outlook enum (Optimistic, Pessimistic, Pragmatic, Idealistic)
+         - SpeechStyle enum (Verbose, Taciturn, Poetic, Blunt)
+         - BanterTriggerType enum (CharacterDeath, LowHpWarning, DarkZoneEntry, AmbientTime, AmbientDistance)
+         - GameEventType enum (CharacterDeath, DarkZoneEntry, CombatVictory, TreasureFound)
+      2. Define interfaces:
+         - PersonalityTraits (temperament, social, outlook, speech)
+         - BanterTrigger (type, priority, details, timestamp)
+         - MinimalContext, StandardContext, RichContext (see note below)
+         - PartyInfo, CharacterInfo, LocationInfo
+         - GameEvent (type, timestamp, characterName?, details)
+         - BanterResponse (exchangeType, participants, lines, generatedAt)
+         - BanterLine (characterName, text)
+         - ValidationResult (valid, errors)
+      3. Define service interfaces:
+         - TriggerDetector, BanterGenerator, BanterPresenter
+         - BanterEventTracker, BanterValidator, BanterMetrics
+         - CharacterPersonalityService
+
+      CRITICAL - Context Interface Design:
+      The context interfaces must be COMPLETE and SUFFICIENT for PromptBuilder.
+      PromptBuilder should ONLY receive context objects, not raw game state.
+      This ensures clean separation: ContextBuilder = data gathering, PromptBuilder = formatting.
+
+      Reference: docs/narrative-llm-system.md Part 5 for complete specifications.
+    outputs:
+      - "src/types/BanterTypes.ts"
+    agent_action: "Create BanterTypes.ts with all enums and interfaces from design document Part 5"
+    role: "agent"
+    downstream:
+      - "create-random-selector"
+      - "create-color-palette"
+      - "create-service-identifiers"
+
+  - id: "create-random-selector"
+    status: "Completed"
+    materialization: 0.95
+    description: "Create RandomSelector utility for DRY random selection"
+    detailed_description: |
+      Create centralized utility for all random selection logic (DRY principle).
+
+      Tasks:
+      1. Create src/utils/RandomSelector.ts
+      2. Implement static methods:
+         - selectRandom<T>(array: T[]): T
+           - Returns random element from array
+           - Used for: trait selection, color selection, speaker selection
+         - selectRandomFromEnum<T extends string>(enumObj: Record<string, T>): T
+           - Returns random value from enum object
+           - Used for: personality trait enums
+         - selectWeighted<T>(options: Array<{item: T, weight: number}>): T
+           - Returns item based on weighted probability
+           - Used for: exchange type distribution (solo/two-person/group)
+      3. All methods use Math.random() internally (single source of randomness)
+      4. Add parameter validation and edge case handling
+      5. Use DebugLogger for any errors
+
+      DRY Benefit: Eliminates Math.random() duplication across:
+      - CharacterPersonalityService (trait assignment)
+      - ColorPalette selection
+      - PromptBuilder (exchange type selection)
+      - ContextBuilder (speaker selection)
+
+      Reference: CLAUDE.md utilities pattern
+    outputs:
+      - "src/utils/RandomSelector.ts"
+    agent_action: "Create RandomSelector utility with selectRandom, selectRandomFromEnum, and selectWeighted methods"
+    role: "agent"
+    acceptance_criteria:
+      - "All three methods implemented"
+      - "Type-safe generic implementations"
+      - "Edge cases handled (empty arrays, etc.)"
+      - "Uses DebugLogger for errors"
+      - "Typecheck passes"
+    downstream:
+      - "create-color-palette"
+      - "create-personality-service"
+
+  - id: "create-color-palette"
+    status: "Completed"
+    materialization: 0.9
+    description: "Create 256-color HSL palette utility"
+    detailed_description: |
+      Create a utility class for generating a 256-color HSL palette.
+
+      Tasks:
+      1. Create src/utils/ColorPalette.ts
+      2. Implement static getHSLPalette() method:
+         - 32 hues (0-360 degrees in 32 steps)
+         - 8 lightness levels (30%-80% range)
+         - 70% saturation (fixed)
+         - Total: 32 × 8 = 256 colors
+      3. Cache palette after first generation (static field)
+      4. Return array of HSL color strings
+      5. Implement static getRandomColor(): string
+         - Uses RandomSelector.selectRandom(getHSLPalette())
+         - DRY: Centralizes color selection logic
+
+      Formula:
+      - hue = (h * 360) / 32, where h in [0, 31]
+      - lightness = 30 + (l * 50) / 7, where l in [0, 7]
+      - saturation = 70 (fixed)
+      - Format: "hsl(${hue}, ${saturation}%, ${lightness}%)"
+
+      Reference: docs/narrative-llm-system.md Section 3.5
+    outputs:
+      - "src/utils/ColorPalette.ts"
+    inputs:
+      - "src/utils/RandomSelector.ts"
+    agent_action: "Create ColorPalette utility with 256-color HSL generation and random selection"
+    role: "agent"
+    acceptance_criteria:
+      - "Returns array of 256 HSL color strings"
+      - "Palette is cached after first generation"
+      - "Colors span full hue range with 8 brightness levels"
+      - "getRandomColor() uses RandomSelector"
+      - "Typecheck passes"
+    downstream:
+      - "create-personality-service"
+
+  - id: "create-personality-service"
+    status: "Completed"
+    materialization: 0.9
+    description: "Create CharacterPersonalityService for personality assignment"
+    detailed_description: |
+      Create service to handle personality trait and color assignment (Single Responsibility Principle).
+
+      Tasks:
+      1. Create src/services/banter/CharacterPersonalityService.ts
+      2. Implement service with methods:
+         - assignRandomPersonality(character: Character): void
+           - Uses RandomSelector.selectRandomFromEnum() for each trait category
+           - Assigns one trait from each of 4 categories
+           - Sets character.personality field
+         - assignRandomDialogueColor(character: Character): void
+           - Uses ColorPalette.getRandomColor()
+           - Sets character.dialogueColor field
+         - initializeCharacterPersonality(character: Character): void
+           - Convenience method that calls both assign methods
+           - This is what CharacterCreation scene should call
+      3. Use DebugLogger to log assignments
+
+      SOLID Benefit: Separates personality assignment logic from Character entity.
+      Character entity only stores data, service handles business logic.
+
+      DRY Benefit: Uses RandomSelector and ColorPalette utilities.
+
+      Reference: docs/narrative-llm-system.md Section 3.2
+    outputs:
+      - "src/services/banter/CharacterPersonalityService.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+      - "src/utils/RandomSelector.ts"
+      - "src/utils/ColorPalette.ts"
+      - "src/entities/Character.ts"
+    agent_action: "Create CharacterPersonalityService with personality and color assignment methods"
+    role: "agent"
+    acceptance_criteria:
+      - "Three methods implemented"
+      - "Uses RandomSelector for trait selection"
+      - "Uses ColorPalette for color selection"
+      - "Character entity remains data-only"
+      - "Uses DebugLogger"
+      - "Typecheck passes"
+    downstream:
+      - "extend-character-entity"
+
+  - id: "extend-character-entity"
+    status: "Completed"
+    materialization: 1.0
+    description: "Add personality traits and dialogue color fields to Character entity"
+    detailed_description: |
+      Extend the Character entity with personality and color fields (DATA ONLY).
+
+      Tasks:
+      1. Add to Character interface:
+         - personality: PersonalityTraits
+         - dialogueColor: string (HSL color from palette)
+      2. Update Character constructor:
+         - Add personality and dialogueColor parameters with default values
+         - DO NOT perform random assignment in constructor
+         - Constructor only stores provided values
+      3. Update save/load to persist personality and color
+      4. Update character sheet display to show personality traits
+
+      CRITICAL - Single Responsibility Principle:
+      Character entity is for DATA STORAGE ONLY.
+      CharacterPersonalityService handles personality ASSIGNMENT.
+      CharacterCreation scene calls personalityService.initializeCharacterPersonality().
+
+      This separation ensures:
+      - Character entity can be tested without randomness
+      - Personality assignment can be changed without modifying Character
+      - Clear separation of concerns (data vs logic)
+
+      Reference: docs/narrative-llm-system.md Section 3.2 & 3.5
+    outputs:
+      - "src/entities/Character.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+    agent_action: "Extend Character entity with personality and dialogueColor fields (data only, no assignment logic)"
+    role: "agent"
+    acceptance_criteria:
+      - "Character has personality field"
+      - "Character has dialogueColor field"
+      - "Constructor accepts values but does NOT generate them"
+      - "Save/load persists fields"
+      - "NO random assignment in constructor"
+      - "Typecheck passes"
+    downstream:
+      - "integrate-personality-service"
+
+  - id: "integrate-personality-service"
+    status: "Completed"
+    materialization: 1.0
+    description: "Integrate CharacterPersonalityService into character creation flow"
+    detailed_description: |
+      Hook CharacterPersonalityService into character creation to assign personality.
+
+      Tasks:
+      1. Update CharacterCreation scene (or equivalent):
+         - Get CharacterPersonalityService from ServiceRegistry
+         - After character is created (before adding to roster)
+         - Call personalityService.initializeCharacterPersonality(character)
+      2. Ensure timing: assignment happens at END of character creation
+      3. Use DebugLogger to log personality assignment
+      4. Verify personality visible on character sheet
+
+      This completes the separation:
+      - Character entity = data storage
+      - CharacterPersonalityService = assignment logic
+      - CharacterCreation scene = orchestration
+
+      Reference: docs/narrative-llm-system.md Section 3.2
+    outputs:
+      - "src/scenes/CharacterCreationScene.ts (or equivalent)"
+    inputs:
+      - "src/services/banter/CharacterPersonalityService.ts"
+      - "src/entities/Character.ts"
+    agent_action: "Integrate CharacterPersonalityService into character creation flow"
+    role: "agent"
+    acceptance_criteria:
+      - "Service called after character created"
+      - "Personality and color assigned correctly"
+      - "Uses ServiceRegistry for DI"
+      - "Uses DebugLogger"
+      - "Typecheck passes"
+    downstream:
+      - "add-banter-config"
+
+  - id: "create-service-identifiers"
+    status: "Completed"
+    materialization: 0.9
+    description: "Add banter service identifiers to ServiceIdentifiers.ts"
+    detailed_description: |
+      Add service identifiers for all banter services.
+
+      Tasks:
+      1. Open src/services/ServiceIdentifiers.ts
+      2. Add identifiers:
+         - BANTER_ORCHESTRATOR
+         - TRIGGER_DETECTOR
+         - BANTER_GENERATOR
+         - BANTER_VALIDATOR
+         - BANTER_PRESENTER
+         - BANTER_EVENT_TRACKER
+         - BANTER_METRICS
+         - CHARACTER_PERSONALITY_SERVICE
+      3. Follow existing naming conventions
+
+      Reference: docs/narrative-llm-system.md Section 4.3
+    outputs:
+      - "src/services/ServiceIdentifiers.ts"
+    agent_action: "Add 8 banter service identifiers to ServiceIdentifiers.ts"
+    role: "agent"
+    acceptance_criteria:
+      - "All 8 service identifiers added"
+      - "Follows existing naming pattern"
+      - "Typecheck passes"
+    downstream:
+      - "create-event-tracker"
+
+  - id: "add-banter-config"
+    status: "Completed"
+    materialization: 0.8
+    description: "Add BANTER configuration section to GameConstants"
+    detailed_description: |
+      Add comprehensive banter configuration to GameConstants.ts.
+
+      Tasks:
+      1. Add BANTER section to GameConstants with:
+         TRIGGERS:
+           TIME_INTERVAL_SECONDS: 180
+           DISTANCE_INTERVAL_STEPS: 20
+           COOLDOWN_SECONDS: 60
+         PRIORITIES:
+           CHARACTER_DEATH: 100
+           LOW_HP_WARNING: 75
+           DARK_ZONE_ENTRY: 50
+           AMBIENT_TIME: 10
+           AMBIENT_DISTANCE: 10
+         LLM:
+           ENDPOINT: 'http://localhost:5000/v1/chat/completions'
+           MODEL: 'wayfarer-12b'
+           MAX_INPUT_TOKENS: 8000
+           MAX_OUTPUT_TOKENS: 256
+           TEMPERATURE: 0.8
+           REPETITION_PENALTY: 1.05
+           MIN_P: 0.025
+           TIMEOUT_MS: 5000
+         DISABLE_BANTER: false
+         EXCHANGE_DISTRIBUTION:
+           SOLO_WEIGHT: 0.4
+           TWO_PERSON_WEIGHT: 0.4
+           GROUP_WEIGHT: 0.2
+
+      Reference: docs/narrative-llm-system.md Section 4.1 & 2.2
+    outputs:
+      - "src/config/GameConstants.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+    agent_action: "Add BANTER configuration section to GameConstants.ts with all trigger, LLM, and distribution settings"
+    role: "agent"
+    acceptance_criteria:
+      - "All configuration values match design document"
+      - "DISABLE_BANTER flag present"
+      - "Distribution values suitable for RandomSelector.selectWeighted()"
+      - "Typecheck passes"
+    downstream:
+      - "create-event-tracker"
+
+  - id: "create-event-tracker"
+    status: "Completed"
+    materialization: 0.8
+    description: "Create BanterEventTracker service"
+    detailed_description: |
+      Implement service for tracking game events for banter context.
+
+      Tasks:
+      1. Create src/services/banter/BanterEventTracker.ts
+      2. Implement BanterEventTracker class:
+         - private events: GameEvent[] (max 10 rolling history)
+         - recordEvent(event: GameEvent): void
+         - getRecentEvents(maxAge?: number): GameEvent[]
+         - clearEvents(): void
+         - recordCharacterDeath(characterName: string): void
+         - recordDarkZoneEntry(): void
+         - recordCombatVictory(details: string): void
+         - recordTreasureFound(details: string): void
+      3. Implement automatic cleanup (remove events older than 5 minutes)
+      4. Use DebugLogger (static: DebugLogger.info()) for event recording
+
+      DRY Note: Convenience methods (recordCharacterDeath, etc.) should only:
+      - Construct appropriate GameEvent object
+      - Call recordEvent()
+      - NO duplicated logic
+
+      Reference: docs/narrative-llm-system.md Section 4.3 & 5.4
+    outputs:
+      - "src/services/banter/BanterEventTracker.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+      - "src/services/ServiceIdentifiers.ts"
+      - "src/config/GameConstants.ts"
+    agent_action: "Create BanterEventTracker service with event recording and retrieval"
+    role: "agent"
+    acceptance_criteria:
+      - "Tracks up to 10 most recent events"
+      - "Convenience methods wrap recordEvent() only"
+      - "Filters by age when requested"
+      - "Uses DebugLogger (static)"
+      - "Typecheck passes"
+    downstream:
+      - "create-trigger-detector"
+      - "integrate-event-tracking"
+
+  - id: "create-trigger-detector"
+    status: "Completed"
+    materialization: 0.8
+    description: "Create TriggerDetector service"
+    detailed_description: |
+      Implement service for detecting when banter should trigger.
+
+      Tasks:
+      1. Create src/services/banter/TriggerDetector.ts
+      2. Implement TriggerDetector class with:
+         - Time-based trigger (180s interval)
+         - Distance-based trigger (20 steps with position tracking)
+         - Event-based triggers (death, low HP, dark zone)
+         - 60-second cooldown enforcement
+         - Priority ordering (highest priority wins)
+      3. Implement checkTriggers(gameState: GameState): BanterTrigger | null
+      4. Implement markTriggerFired(): void (updates cooldown)
+      5. Track last trigger time, last position, step count
+      6. Read priorities from GameConstants.BANTER.PRIORITIES
+      7. Use DebugLogger (static) for logging
+
+      Trigger Logic:
+      - Check cooldown first (return null if < 60s since last)
+      - Check event triggers (highest priority)
+      - Check time trigger (>= 180s)
+      - Check distance trigger (>= 20 steps)
+      - Return highest priority trigger or null
+
+      Reference: docs/narrative-llm-system.md Section 2.2 & 4.3
+    outputs:
+      - "src/services/banter/TriggerDetector.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+      - "src/services/ServiceIdentifiers.ts"
+      - "src/config/GameConstants.ts"
+      - "src/services/banter/BanterEventTracker.ts"
+    agent_action: "Create TriggerDetector service with time/distance/event trigger detection and priority ordering"
+    role: "agent"
+    acceptance_criteria:
+      - "All 5 trigger types implemented"
+      - "Cooldown enforced (60s)"
+      - "Priority ordering works correctly"
+      - "Distance tracking accurate (20 steps)"
+      - "Uses DebugLogger (static)"
+      - "Typecheck passes"
+    downstream:
+      - "create-metrics"
+
+  - id: "create-metrics"
+    status: "Completed"
+    materialization: 0.8
+    description: "Create BanterMetrics service"
+    detailed_description: |
+      Implement service for tracking banter system performance.
+
+      Tasks:
+      1. Create src/services/banter/BanterMetrics.ts
+      2. Track metrics:
+         - Generation timing (average, p95)
+         - Success/failure rates
+         - Validation failures
+         - API failures
+         - Banter by trigger type
+         - Consecutive failure count
+      3. Implement methods:
+         - recordGeneration(timeMs: number, success: boolean): void
+         - recordValidationFailure(): void
+         - recordApiFailure(): void
+         - recordSuccess(triggerType: BanterTriggerType): void
+         - getMetrics(): MetricsData
+         - getStats(): any (human-readable)
+      4. Periodic logging (every 5 minutes) to debug.log
+      5. Use DebugLogger (static) for all logging
+
+      Reference: docs/narrative-llm-system.md Section 4.3
+    outputs:
+      - "src/services/banter/BanterMetrics.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+      - "src/services/ServiceIdentifiers.ts"
+    agent_action: "Create BanterMetrics service with comprehensive performance tracking and periodic logging"
+    role: "agent"
+    acceptance_criteria:
+      - "Tracks all specified metrics"
+      - "Logs to debug.log every 5 minutes"
+      - "getStats() returns human-readable summary"
+      - "Uses DebugLogger (static)"
+      - "Typecheck passes"
+    downstream:
+      - "create-context-builder"
+
+  - id: "integrate-event-tracking"
+    status: "Completed"
+    materialization: 0.7
+    description: "Integrate BanterEventTracker into DungeonScene and CombatSystem"
+    detailed_description: |
+      Hook event tracker into game systems to capture events.
+
+      Tasks:
+      1. Update DungeonScene:
+         - Detect dark zone entry (check tile.isDark)
+         - Call eventTracker.recordDarkZoneEntry()
+         - Track when entering previously unvisited dark tiles
+      2. Update CombatSystem:
+         - Detect character death (HP <= 0)
+         - Call eventTracker.recordCharacterDeath(name)
+         - Detect combat victory/defeat
+         - Call eventTracker.recordCombatVictory(details)
+      3. Inject BanterEventTracker via ServiceRegistry
+      4. Use DebugLogger (static) to log event captures
+
+      Reference: docs/narrative-llm-system.md Section 6.2
+    outputs:
+      - "src/scenes/DungeonScene.ts"
+      - "src/systems/CombatSystem.ts"
+    inputs:
+      - "src/services/banter/BanterEventTracker.ts"
+    agent_action: "Integrate event tracking into DungeonScene and CombatSystem for dark zone entry and character death"
+    role: "agent"
+    acceptance_criteria:
+      - "Dark zone entry detected and recorded"
+      - "Character death detected and recorded"
+      - "Combat victory/defeat recorded"
+      - "Uses ServiceRegistry for DI"
+      - "Uses DebugLogger (static)"
+      - "Typecheck passes"
+    downstream:
+      - "create-context-builder"
+
+  - id: "create-context-builder"
+    status: "Completed"
+    materialization: 0.7
+    description: "Create ContextBuilder utility"
+    detailed_description: |
+      Implement utility for building tiered context for LLM.
+
+      Tasks:
+      1. Create src/services/banter/ContextBuilder.ts
+      2. Implement tiered context building:
+         - buildMinimalContext(trigger, gameState): MinimalContext
+           - Trigger info, speaker, location (~500 tokens)
+         - buildStandardContext(trigger, gameState): StandardContext
+           - Minimal + full party info (~2000 tokens)
+         - buildRichContext(trigger, gameState): RichContext
+           - Standard + recent events (~4000 tokens)
+      3. Implement tier selection:
+         - Character Death → Rich
+         - Low HP, Dark Zone → Standard
+         - Ambient Time/Distance → Minimal
+      4. Implement helper methods:
+         - buildCharacterInfo(character): CharacterInfo
+         - buildPartyInfo(party): PartyInfo
+         - buildLocationInfo(dungeon): LocationInfo
+         - selectSpeaker(party, trigger): Character
+           - Uses RandomSelector.selectRandom() for speaker selection
+      5. Use BanterEventTracker for recent events
+      6. Use DebugLogger (static) for logging
+
+      CRITICAL - Interface Contract with PromptBuilder:
+      The context objects returned must be COMPLETE and SELF-CONTAINED.
+      PromptBuilder should NEVER need to access raw gameState or perform additional queries.
+      Context interfaces are the contract between these two utilities.
+
+      Verify all personality traits, character info, location data needed for prompts
+      are included in the context objects.
+
+      DRY: Uses RandomSelector for speaker selection (no direct Math.random()).
+
+      Reference: docs/narrative-llm-system.md Section 4.4
+    outputs:
+      - "src/services/banter/ContextBuilder.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+      - "src/services/banter/BanterEventTracker.ts"
+      - "src/utils/RandomSelector.ts"
+    agent_action: "Create ContextBuilder utility with tiered context generation and complete context interfaces"
+    role: "agent"
+    acceptance_criteria:
+      - "Three tier levels implemented"
+      - "Tier selection based on trigger type"
+      - "Context objects complete (no additional gameState needed)"
+      - "Uses RandomSelector for speaker selection"
+      - "Token budget estimated and logged"
+      - "Uses DebugLogger (static)"
+      - "Typecheck passes"
+    downstream:
+      - "create-prompt-builder"
+
+  - id: "create-prompt-builder"
+    status: "Completed"
+    materialization: 1.0
+    description: "Create PromptBuilder utility"
+    detailed_description: |
+      Implement utility for building ChatML prompts for Wayfarer-12B.
+
+      Tasks:
+      1. Create src/services/banter/PromptBuilder.ts
+      2. Implement ChatML format builder:
+         - buildPrompt(context: MinimalContext | StandardContext | RichContext): string
+         - Constructs <|im_start|>system...<|im_end|> section
+         - Constructs <|im_start|>user...<|im_end|> section
+         - Adds <|im_start|>assistant at end (for model completion)
+      3. System prompt (comprehensive, sent once):
+         - All trait category descriptions
+         - Output rules (format, length, tone)
+         - Constraints (no items, no modern slang)
+      4. User prompt (minimal, per-generation):
+         - Character info (name, race, class, level)
+         - Personality traits
+         - Location and trigger
+         - Request for specific exchange type
+      5. Implement selectExchangeType() based on trigger and distribution:
+         - Uses RandomSelector.selectWeighted() with weights from GameConstants
+         - DRY: No direct random logic
+      6. Reference docs/narrative-llm-system.md Appendix A for example prompts
+      7. Use DebugLogger (static) to log prompts
+
+      CRITICAL - Dependency Inversion:
+      This utility should ONLY receive context objects from ContextBuilder.
+      It should NOT access game state, party, dungeon, etc. directly.
+      If prompt needs additional data, add it to context interfaces.
+
+      DRY: Uses RandomSelector.selectWeighted() for exchange type selection.
+
+      Reference: docs/narrative-llm-system.md Section 4.5
+    outputs:
+      - "src/services/banter/PromptBuilder.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+      - "src/config/GameConstants.ts"
+      - "src/utils/RandomSelector.ts"
+    agent_action: "Create PromptBuilder utility with ChatML format and weighted exchange type selection"
+    role: "agent"
+    acceptance_criteria:
+      - "ChatML format correct for Wayfarer-12B"
+      - "System prompt comprehensive"
+      - "User prompt minimal and context-aware"
+      - "ONLY receives context objects (no raw gameState)"
+      - "Uses RandomSelector.selectWeighted() for exchange types"
+      - "Uses DebugLogger (static) to log prompts"
+      - "Typecheck passes"
+    downstream:
+      - "create-generator"
+
+  - id: "create-generator"
+    status: "Completed"
+    materialization: 1.0
+    description: "Create BanterGenerator service"
+    detailed_description: |
+      Implement service for communicating with LLM API.
+
+      Tasks:
+      1. Create src/services/banter/BanterGenerator.ts
+      2. Implement async generate(context): Promise<BanterResponse>
+      3. Use PromptBuilder to construct prompts
+      4. Call oobabooga API at localhost:5000/v1/chat/completions:
+         - POST request with JSON body
+         - Include model, temperature, max_tokens, etc. from config
+         - 5-second timeout (from GameConstants)
+      5. Parse response:
+         - Extract completion text
+         - Parse lines as "Name: dialogue"
+         - Build BanterResponse with participants and lines
+      6. Error handling:
+         - Network errors
+         - Timeout (>5s)
+         - Parse errors
+         - Log all errors to debug.log with full details
+      7. Use BanterMetrics to track timing and success
+      8. Use DebugLogger (static) for all logging
+
+      Reference: docs/narrative-llm-system.md Section 4.1, 4.2, 4.6
+    outputs:
+      - "src/services/banter/BanterGenerator.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+      - "src/services/banter/PromptBuilder.ts"
+      - "src/services/banter/ContextBuilder.ts"
+      - "src/services/banter/BanterMetrics.ts"
+      - "src/config/GameConstants.ts"
+    agent_action: "Create BanterGenerator service with LLM API communication, response parsing, and error handling"
+    role: "agent"
+    acceptance_criteria:
+      - "API call works with proper timeout"
+      - "Response parsing extracts dialogue lines"
+      - "Error handling comprehensive"
+      - "Metrics recorded for all attempts"
+      - "All errors logged to debug.log"
+      - "Uses DebugLogger (static)"
+      - "Typecheck passes"
+    downstream:
+      - "create-validator"
+
+  - id: "create-validator"
+    status: "Completed"
+    materialization: 1.0
+    description: "Create BanterValidator service"
+    detailed_description: |
+      Implement service for validating LLM responses.
+
+      Tasks:
+      1. Create src/services/banter/BanterValidator.ts
+      2. Implement validate(response, context): ValidationResult
+      3. Validation rules:
+         - checkCharacterNames(): Only party members can speak
+         - checkNoItemReferences(): No specific item names
+         - checkNoModernSlang(): No "cool", "okay", "yeah", etc.
+         - checkFormat(): Must be "Name: dialogue" format
+         - checkNoEmptyLines(): No blank lines in dialogue
+         - checkLength(): 1-2 lines for solo, 2-4 for two-person, 4-6 for group
+      4. Return ValidationResult with errors array
+      5. Track consecutive failures (log alert at 3+)
+      6. Use DebugLogger (static) to log validation results
+
+      Reference: docs/narrative-llm-system.md Section 5.3 & 4.6
+    outputs:
+      - "src/services/banter/BanterValidator.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+    agent_action: "Create BanterValidator service with comprehensive validation rules and failure tracking"
+    role: "agent"
+    acceptance_criteria:
+      - "All 6 validation rules implemented"
+      - "Returns detailed error messages"
+      - "Tracks consecutive failures"
+      - "Uses DebugLogger (static)"
+      - "Typecheck passes"
+    downstream:
+      - "extend-message-log"
+
+  - id: "extend-message-log"
+    status: "Completed"
+    materialization: 1.0
+    description: "Extend MessageLog for character-colored banter"
+    detailed_description: |
+      Extend MessageLog to support character dialogue colors.
+
+      Tasks:
+      1. Update src/ui/MessageLog.ts
+      2. Add addBanterExchange(exchange: BanterResponse, party: Party): void
+         - Looks up character dialogue color from party
+         - Adds blank line before banter
+         - Adds each line with format "Name: text" in character's color
+         - Adds blank line after banter
+      3. Fallback to white if character not found or no color
+      4. Use existing addMessage() for each line with custom color
+
+      Reference: docs/narrative-llm-system.md Section 2.5
+    outputs:
+      - "src/ui/MessageLog.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+      - "src/entities/Character.ts"
+    agent_action: "Extend MessageLog with addBanterExchange() method for character-colored dialogue display"
+    role: "agent"
+    acceptance_criteria:
+      - "addBanterExchange() method added"
+      - "Character colors applied correctly"
+      - "Blank lines added before/after"
+      - "Fallback to white for missing colors"
+      - "Typecheck passes"
+    downstream:
+      - "create-presenter"
+
+  - id: "create-presenter"
+    status: "Completed"
+    materialization: 1.0
+    description: "Create BanterPresenter service"
+    detailed_description: |
+      Implement service for displaying banter in message log.
+
+      Tasks:
+      1. Create src/services/banter/BanterPresenter.ts
+      2. Implement display(response: BanterResponse, messageLog: MessageLog, party: Party): void
+         - Receives MessageLog as parameter (Dependency Inversion)
+         - Calls messageLog.addBanterExchange(response, party)
+         - Logs display event to debug.log
+      3. Implement displayErrorMessage(messageLog: MessageLog): void
+         - Receives MessageLog as parameter
+         - Displays "Banter system failure." in red (#ff6666)
+         - Visible to player (transparent error reporting)
+      4. Use DebugLogger (static) for logging
+
+      CRITICAL - Dependency Inversion Principle:
+      BanterPresenter does NOT retrieve MessageLog from scene.
+      Caller (BanterOrchestrator) passes MessageLog as parameter.
+      This decouples presenter from scene structure.
+
+      Benefits:
+      - Testable in isolation (mock MessageLog)
+      - No scene coupling
+      - Clear dependencies
+
+      Reference: docs/narrative-llm-system.md Section 4.3 & 4.6
+    outputs:
+      - "src/services/banter/BanterPresenter.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+      - "src/ui/MessageLog.ts"
+    agent_action: "Create BanterPresenter service with display method accepting MessageLog as parameter"
+    role: "agent"
+    acceptance_criteria:
+      - "display() accepts MessageLog and Party as parameters"
+      - "displayErrorMessage() accepts MessageLog as parameter"
+      - "No direct scene access or coupling"
+      - "Error messages visible in red"
+      - "Uses DebugLogger (static)"
+      - "Typecheck passes"
+    downstream:
+      - "create-orchestrator"
+
+  - id: "create-orchestrator"
+    status: "Completed"
+    materialization: 1.0
+    description: "Create BanterOrchestrator service"
+    detailed_description: |
+      Implement main orchestrator service coordinating entire banter flow.
+
+      Tasks:
+      1. Create src/services/banter/BanterOrchestrator.ts
+      2. Inject all services via constructor:
+         - TriggerDetector, BanterGenerator, BanterValidator
+         - BanterPresenter, BanterEventTracker, BanterMetrics
+         - ContextBuilder, PromptBuilder
+      3. Implement update(deltaTime: number, gameState: GameState): void
+         - Check if banter disabled (GameConstants.BANTER.DISABLE_BANTER)
+         - Call triggerDetector.checkTriggers(gameState)
+         - If trigger found, add to generationQueue
+         - Process queue asynchronously (one at a time)
+      4. Implement async processNextTrigger(gameState: GameState): Promise<void>
+         - Build context with ContextBuilder
+         - Generate with BanterGenerator
+         - Validate with BanterValidator
+         - If valid, display with BanterPresenter
+           - Gets MessageLog from gameState/scene
+           - Passes MessageLog and Party to presenter.display()
+         - If invalid/error, display error message
+           - Passes MessageLog to presenter.displayErrorMessage()
+         - Record metrics
+         - Use isGenerating flag to prevent concurrent generation
+      5. Use DebugLogger (static) for all logging
+
+      Note: Orchestrator is responsible for retrieving MessageLog from scene
+      and passing it to BanterPresenter. This keeps presenter decoupled from scenes.
+
+      Reference: docs/narrative-llm-system.md Section 4.2 & 4.3
+    outputs:
+      - "src/services/banter/BanterOrchestrator.ts"
+    inputs:
+      - "src/types/BanterTypes.ts"
+      - "src/services/banter/TriggerDetector.ts"
+      - "src/services/banter/BanterGenerator.ts"
+      - "src/services/banter/BanterValidator.ts"
+      - "src/services/banter/BanterPresenter.ts"
+      - "src/services/banter/BanterEventTracker.ts"
+      - "src/services/banter/BanterMetrics.ts"
+      - "src/services/banter/ContextBuilder.ts"
+      - "src/services/banter/PromptBuilder.ts"
+    agent_action: "Create BanterOrchestrator service coordinating entire async banter generation flow"
+    role: "agent"
+    acceptance_criteria:
+      - "Coordinates all services correctly"
+      - "Async queue prevents concurrent generation"
+      - "Retrieves MessageLog and passes to presenter"
+      - "Error handling comprehensive"
+      - "Respects DISABLE_BANTER flag"
+      - "Uses DebugLogger (static)"
+      - "Typecheck passes"
+    downstream:
+      - "register-services"
+
+  - id: "register-services"
+    status: "Completed"
+    materialization: 1.0
+    description: "Register all banter services in ServiceRegistry"
+    detailed_description: |
+      Register all banter services as singletons in ServiceRegistry.
+
+      Tasks:
+      1. Update src/services/GameServices.ts:
+         - Add getter methods for all 8 banter services
+         - Follow existing pattern (getSpellCaster, getCombatSystem, etc.)
+      2. Update service registration:
+         - Register CharacterPersonalityService
+         - Register BanterEventTracker
+         - Register TriggerDetector
+         - Register BanterMetrics
+         - Register BanterGenerator (with dependencies)
+         - Register BanterValidator
+         - Register BanterPresenter
+         - Register BanterOrchestrator (with all dependencies)
+      3. Wire up dependencies via constructor injection
+      4. Ensure all services are singletons
+
+      Note: RandomSelector, ColorPalette, ContextBuilder, PromptBuilder are
+      utilities with static methods - no service registration needed.
+
+      Reference: docs/narrative-llm-system.md Section 4.3
+    outputs:
+      - "src/services/GameServices.ts"
+      - "src/services/ServiceRegistry.ts"
+    inputs:
+      - "src/services/banter/*.ts"
+      - "src/services/ServiceIdentifiers.ts"
+    agent_action: "Register all 8 banter services in ServiceRegistry with proper dependency injection"
+    role: "agent"
+    acceptance_criteria:
+      - "All services registered as singletons"
+      - "Dependencies wired correctly"
+      - "Getter methods added to GameServices"
+      - "Follows existing patterns"
+      - "Typecheck passes"
+    downstream:
+      - "integrate-into-dungeon"
+
+  - id: "integrate-into-dungeon"
+    status: "Completed"
+    materialization: 1.0
+    description: "Integrate BanterOrchestrator into DungeonScene"
+    detailed_description: |
+      Hook BanterOrchestrator into DungeonScene game loop.
+
+      Tasks:
+      1. Update src/scenes/DungeonScene.ts
+      2. Get BanterOrchestrator from ServiceRegistry in constructor/enter
+      3. Call orchestrator.update(deltaTime, gameState) in update() method
+      4. Pass current game state (party, dungeon, recent actions)
+      5. Check DISABLE_BANTER flag before calling
+      6. Use DebugLogger (static) to log integration
+
+      Integration point: In DungeonScene.update(), after input handling but before rendering.
+
+      Reference: docs/narrative-llm-system.md Section 6.4
+    outputs:
+      - "src/scenes/DungeonScene.ts"
+    inputs:
+      - "src/services/banter/BanterOrchestrator.ts"
+      - "src/services/GameServices.ts"
+    agent_action: "Integrate BanterOrchestrator.update() into DungeonScene game loop"
+    role: "agent"
+    acceptance_criteria:
+      - "update() called on each frame"
+      - "Game state passed correctly"
+      - "DISABLE_BANTER flag respected"
+      - "No performance impact on gameplay"
+      - "Uses DebugLogger (static)"
+      - "Typecheck passes"
+    downstream:
+      - "create-color-picker"
+
+  - id: "create-color-picker"
+    status: "Completed"
+    materialization: 1.0
+    description: "Add color picker UI to CharacterSheetScene"
+    detailed_description: |
+      Implement color picker for character dialogue color customization.
+
+      Tasks:
+      1. Update src/scenes/CharacterSheetScene.ts (or equivalent)
+      2. Add 'colorPicker' mode/state
+      3. Implement 32×8 grid rendering (256 colors):
+         - 32 columns (hues)
+         - 8 rows (lightness levels)
+         - Highlight currently selected color
+         - Show current character's color
+      4. Implement keyboard navigation:
+         - Arrow keys to navigate grid
+         - Enter to select color
+         - Escape to cancel
+         - 'C' key from character sheet to open picker
+      5. Persist color to Character.dialogueColor
+      6. Accessible from both Town and Dungeon character sheets
+      7. Use ColorPalette.getHSLPalette() for colors
+
+      Reference: docs/narrative-llm-system.md Section 3.3 & 6.5
+    outputs:
+      - "src/scenes/CharacterSheetScene.ts"
+    inputs:
+      - "src/utils/ColorPalette.ts"
+      - "src/entities/Character.ts"
+    agent_action: "Add color picker UI to character sheet with 32×8 grid and keyboard navigation"
+    role: "agent"
+    acceptance_criteria:
+      - "Grid renders all 256 colors correctly"
+      - "Keyboard navigation works smoothly"
+      - "Selected color persisted to character"
+      - "Accessible from Town and Dungeon"
+      - "Current color highlighted"
+      - "Typecheck passes"
+    downstream:
+      - "update-character-sheet-display"
+
+  - id: "update-character-sheet-display"
+    status: "Completed"
+    materialization: 1.0
+    description: "Update character sheet to show personality and color"
+    detailed_description: |
+      Update character sheet display to show personality traits and dialogue color.
+
+      Tasks:
+      1. Update character sheet rendering:
+         - Add Personality section showing all 4 traits
+         - Display trait categories and values clearly
+         - Show dialogue color swatch
+         - Add "Press C to change color" hint
+      2. Format personality display:
+         Personality:
+           Temperament: Brave
+           Social: Gruff
+           Outlook: Pessimistic
+           Speech: Blunt
+         Dialogue Color: [color swatch] (Press C to change)
+      3. Ensure visible in both Town and Dungeon character sheets
+
+      Reference: docs/narrative-llm-system.md Section 3.3
+    outputs:
+      - "src/scenes/CharacterSheetScene.ts"
+    inputs:
+      - "src/entities/Character.ts"
+    agent_action: "Update character sheet display to show personality traits and dialogue color with change hint"
+    role: "agent"
+    acceptance_criteria:
+      - "All 4 personality traits displayed"
+      - "Dialogue color shown with swatch"
+      - "Press C hint visible"
+      - "Works in Town and Dungeon"
+      - "Typecheck passes"
+    downstream:
+      - "run-typecheck"
+
+  - id: "run-typecheck"
+    status: "Completed"
+    materialization: 1.0
+    description: "Run typecheck and fix all errors"
+    detailed_description: |
+      Run npm run typecheck and fix all TypeScript errors.
+
+      Tasks:
+      1. Run: npm run typecheck
+      2. Fix all type errors
+      3. Ensure all new files have proper types
+      4. Ensure all interfaces properly typed
+      5. Run again until no errors
+
+      Reference: CLAUDE.md - Always run typecheck before completion
+    outputs:
+      - "All TypeScript files"
+    agent_action: "Run npm run typecheck and fix all errors"
+    role: "agent"
+    acceptance_criteria:
+      - "npm run typecheck passes with no errors"
+      - "All types properly defined"
+    downstream:
+      - "test-all-triggers"
+
+  - id: "test-all-triggers"
+    status: "Completed"
+    materialization: 1.0
+    description: "Test all trigger types (time/distance/events)"
+    detailed_description: |
+      Test all banter trigger types through AI Interface and manual gameplay.
+
+      Tasks:
+      1. Test ambient time trigger:
+         - Wait 3+ minutes in dungeon
+         - Verify banter appears
+         - Check debug.log for timing
+      2. Test ambient distance trigger:
+         - Walk 20+ steps
+         - Verify banter appears
+         - Check debug.log for distance tracking
+      3. Test character death trigger:
+         - Get character killed in combat
+         - Verify high-priority banter
+         - Check debug.log for event recording
+      4. Test low HP trigger:
+         - Get party/character below 30% HP
+         - Verify banter appears
+         - Check debug.log
+      5. Test dark zone entry:
+         - Enter dark zone
+         - Verify banter appears
+         - Check debug.log
+      6. Use AI Interface: AI.banter.trigger() to force triggers
+      7. Verify cooldown (60s) between triggers
+      8. Verify priority ordering (death > low HP > dark > ambient)
+
+      Reference: docs/narrative-llm-system.md Section 6.6 & 7.2
+    outputs:
+      - "debug.log with test results"
+    agent_action: "Test all 5 trigger types and verify correct behavior through AI Interface and debug.log"
+    role: "agent"
+    acceptance_criteria:
+      - "All 5 trigger types fire correctly"
+      - "Cooldown enforced"
+      - "Priority ordering correct"
+      - "Debug.log shows all trigger events"
+    downstream:
+      - "test-error-scenarios"
+
+  - id: "test-error-scenarios"
+    status: "Completed"
+    materialization: 1.0
+    description: "Test error handling (API offline, timeout, bad response)"
+    detailed_description: |
+      Test comprehensive error handling and recovery.
+
+      Tasks:
+      1. Test oobabooga offline:
+         - Stop oobabooga server
+         - Trigger banter
+         - Verify "Banter system failure." message appears (red)
+         - Check debug.log for API error details
+      2. Test timeout (>5s):
+         - Configure slow response or increase delay
+         - Verify timeout error and message
+         - Check debug.log
+      3. Test bad LLM response:
+         - Mock invalid response format
+         - Verify validation fails
+         - Verify error message displayed
+         - Check debug.log for validation errors
+      4. Test multiple consecutive failures (3+):
+         - Trigger failures repeatedly
+         - Verify alert logged to debug.log
+         - Verify system continues trying (doesn't disable)
+      5. Use AI Interface to inspect state during errors
+
+      Reference: docs/narrative-llm-system.md Section 4.6 & 7.2
+    outputs:
+      - "debug.log with error scenarios"
+    agent_action: "Test all error scenarios and verify proper handling, logging, and user feedback"
+    role: "agent"
+    acceptance_criteria:
+      - "All error types handled gracefully"
+      - "Error messages visible to player"
+      - "All errors logged to debug.log with details"
+      - "System continues after errors"
+      - "No gameplay blocking"
+    downstream:
+      - "review-debug-log"
+
+  - id: "review-debug-log"
+    status: "Completed"
+    materialization: 1.0
+    description: "Review debug.log for issues and verify logging"
+    detailed_description: |
+      Review debug.log to ensure all logging is working correctly.
+
+      Tasks:
+      1. Read debug.log file
+      2. Verify all banter events logged:
+         - Trigger detections with context
+         - Generation starts with prompt previews
+         - Generation completions with timing
+         - Validation results (pass/fail with reasons)
+         - Display events
+         - Error details
+      3. Check metrics logging (every 5 minutes)
+      4. Look for unexpected errors or warnings
+      5. Verify DebugLogger used throughout (no console.log)
+
+      Reference: docs/narrative-llm-system.md Section 6.6 & CLAUDE.md logging guidelines
+    outputs:
+      - "debug.log analysis"
+    agent_action: "Review debug.log and verify comprehensive logging of all banter system events"
+    role: "agent"
+    acceptance_criteria:
+      - "All banter events logged"
+      - "Metrics logged every 5 minutes"
+      - "Error details comprehensive"
+      - "No console.log usage"
+      - "Logging format consistent"
+    downstream:
+      - "prompt-tuning"
+
+  - id: "prompt-tuning"
+    status: "Ready"
+    materialization: 0.4
+    description: "Test and tune LLM prompts for quality"
+    detailed_description: |
+      Test various scenarios and tune prompts for best quality.
+
+      Tasks:
+      1. Generate banter in various contexts:
+         - Different personality combinations
+         - Different trigger types
+         - Different party compositions
+         - Different dungeon situations
+      2. Evaluate quality:
+         - Does banter match personality?
+         - Is tone appropriate?
+         - Is length correct?
+         - Are characters distinct?
+         - Is content engaging?
+      3. Tune if needed:
+         - Adjust system prompt wording
+         - Adjust temperature (currently 0.8)
+         - Adjust repetition_penalty (currently 1.05)
+         - Adjust min_p (currently 0.025)
+      4. Test exchange type distribution:
+         - Verify 40% solo, 40% two-person, 20% group
+         - Adjust weights in GameConstants if needed
+      5. Document findings in debug.log
+
+      This is an iterative process - may need human feedback.
+
+      Reference: docs/narrative-llm-system.md Section 6.6 & 7.3
+    outputs:
+      - "Tuned prompts and configuration"
+      - "debug.log with quality assessment"
+    agent_action: "Test banter generation quality and tune prompts/parameters for best results"
+    role: "human"
+    acceptance_criteria:
+      - "Banter quality meets expectations"
+      - "Personalities feel distinct"
+      - "Tone appropriate for medieval fantasy"
+      - "Length distribution correct"
+    downstream:
+      - "add-ai-interface-extensions"
+
+  - id: "add-ai-interface-extensions"
+    status: "Blocked"
+    materialization: 0.4
+    description: "Add banter testing methods to AI Interface"
+    detailed_description: |
+      Extend window.AI with banter-specific testing methods.
+
+      Tasks:
+      1. Update src/core/AIInterface.ts
+      2. Add AI.banter namespace with methods:
+         - trigger(type?: string): void - Force trigger banter
+         - getMetrics(): any - Get performance metrics
+         - getEventHistory(): GameEvent[] - Get recent events
+         - getContext(): any - Get current context
+         - clearCache(): void - Clear any caches (future)
+         - testGeneration(characterName: string): Promise<BanterResponse>
+      3. Wire up to BanterOrchestrator and services
+      4. Use DebugLogger (static) for AI Interface calls
+
+      Reference: docs/narrative-llm-system.md Section 6.6 & 7.4
+    outputs:
+      - "src/core/AIInterface.ts"
+    inputs:
+      - "src/services/banter/BanterOrchestrator.ts"
+      - "src/services/banter/BanterMetrics.ts"
+      - "src/services/banter/BanterEventTracker.ts"
+    agent_action: "Add banter testing and debugging methods to AI Interface"
+    role: "agent"
+    acceptance_criteria:
+      - "All methods implemented and working"
+      - "Methods accessible via window.AI.banter"
+      - "Useful for testing and debugging"
+      - "Uses DebugLogger (static)"
+      - "Typecheck passes"
+    downstream:
+      - "final-integration-test"
+
+  - id: "final-integration-test"
+    status: "Blocked"
+    materialization: 0.3
+    description: "Final end-to-end integration test"
+    detailed_description: |
+      Perform comprehensive end-to-end test of entire banter system.
+
+      Tasks:
+      1. Start fresh game with new party
+      2. Verify characters have personality traits and colors
+      3. Enter dungeon and explore
+      4. Verify ambient triggers fire (time and distance)
+      5. Test color picker (change character colors)
+      6. Trigger event-based banter (death, low HP, dark zone)
+      7. Verify banter displays correctly in message log with colors
+      8. Verify error handling (stop oobabooga mid-game)
+      9. Check debug.log for complete session
+      10. Use AI Interface to verify state throughout
+      11. Verify DISABLE_BANTER flag works
+      12. Verify metrics tracking works
+
+      Success criteria from docs/narrative-llm-system.md Section 6.6:
+      - Characters have random personality traits and colors
+      - Banter triggers fire correctly (time/distance/events)
+      - LLM generates contextually appropriate banter
+      - Banter displays in message log with character colors
+      - Color picker allows player customization
+      - All trigger types tested and working
+      - Error handling tested and logging complete
+      - Typecheck passes with no errors
+
+      SOLID/DRY Verification:
+      - RandomSelector used consistently (no Math.random() elsewhere)
+      - Character entity is data-only (no assignment logic)
+      - BanterPresenter receives MessageLog as parameter (no scene coupling)
+      - ContextBuilder/PromptBuilder interface contract clean
+    outputs:
+      - "Complete test report in debug.log"
+    agent_action: "Perform comprehensive end-to-end integration test of entire banter system"
+    role: "agent"
+    acceptance_criteria:
+      - "All MVP success criteria met"
+      - "No blocking issues found"
+      - "SOLID principles verified"
+      - "DRY principles verified"
+      - "Performance acceptable"
+      - "User experience smooth"
+      - "Debug.log shows clean session"
+    downstream:
+      - "update-docs-index"
+
+  - id: "update-docs-index"
+    status: "Blocked"
+    materialization: 0.2
+    description: "Update DOCS_INDEX.yaml with banter system documentation"
+    detailed_description: |
+      Update documentation index with banter system docs.
+
+      Tasks:
+      1. Open docs/DOCS_INDEX.yaml
+      2. Add entry for docs/narrative-llm-system.md:
+         - Title: "LLM-Assisted Narrative System"
+         - Category: "Features" or "Systems"
+         - Description: "Design specification for character-driven banter and dialogue"
+         - Version: "2.0"
+         - Status: "Implemented"
+      3. Follow existing format in DOCS_INDEX.yaml
+
+      Reference: CLAUDE.md - Maintain docs/DOCS_INDEX.yaml
+    outputs:
+      - "docs/DOCS_INDEX.yaml"
+    agent_action: "Add narrative-llm-system.md to DOCS_INDEX.yaml"
+    role: "agent"
+    acceptance_criteria:
+      - "Entry added to DOCS_INDEX.yaml"
+      - "Format consistent with existing entries"
+    downstream:
+      - "implementation-complete"
+
+  - id: "implementation-complete"
+    status: "Blocked"
+    materialization: 0.1
+    description: "MVP implementation complete - ready for user testing"
+    detailed_description: |
+      All implementation tasks complete. System ready for user testing.
+
+      MVP Deliverables:
+      1. ✅ Personality system (4 traits × 4 categories = 16 total)
+      2. ✅ Character dialogue colors (256-color HSL palette)
+      3. ✅ Color picker UI (32×8 grid)
+      4. ✅ Trigger system (time/distance/5 event types)
+      5. ✅ 8 services (orchestrator, detector, generator, validator, presenter, tracker, metrics, personality)
+      6. ✅ 4 utilities (RandomSelector, ColorPalette, ContextBuilder, PromptBuilder)
+      7. ✅ LLM integration (oobabooga/Wayfarer-12B)
+      8. ✅ Tiered context system (Minimal/Standard/Rich)
+      9. ✅ ChatML prompt format
+      10. ✅ Message log integration with character colors
+      11. ✅ Error handling with visible user feedback
+      12. ✅ Debug logging and metrics tracking
+      13. ✅ AI Interface extensions for testing
+      14. ✅ Typecheck passes
+      15. ✅ All triggers tested
+      16. ✅ Error scenarios tested
+
+      SOLID/DRY Principles Applied:
+      - ✅ Single Responsibility: Character entity = data, CharacterPersonalityService = logic
+      - ✅ DRY: RandomSelector centralizes all random logic
+      - ✅ Dependency Inversion: BanterPresenter accepts MessageLog parameter
+      - ✅ Interface Segregation: ContextBuilder/PromptBuilder clean contract
+
+      Ready for user playtesting!
+
+      User should test by:
+      - Playing the game normally through UI
+      - Creating new characters and observing personality traits
+      - Exploring dungeons and experiencing banter
+      - Customizing character dialogue colors
+      - Observing banter frequency and quality
+      - Reporting any issues found
+
+      Reference: docs/narrative-llm-system.md complete specification
+    outputs:
+      - "Complete LLM narrative banter system"
+    agent_action: "Verify all MVP deliverables complete and document completion"
+    role: "agent"
+    definition_of_done: "All MVP success criteria met, SOLID/DRY principles verified, typecheck passes, comprehensive testing complete, documentation updated, system ready for user playtesting"

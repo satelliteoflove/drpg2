@@ -4,6 +4,8 @@ import { TrainingGroundsState, CharacterCreationData, TrainingGroundsStateContex
 import { RACES } from '../../config/races';
 import { CLASSES_BY_ID } from '../../config/classes';
 import { DiceRoller } from '../../utils/DiceRoller';
+import { GameServices } from '../../services/GameServices';
+import { DebugLogger } from '../../utils/DebugLogger';
 
 export class TrainingGroundsStateManager {
   public currentState: TrainingGroundsState = 'main';
@@ -228,6 +230,13 @@ export class TrainingGroundsStateManager {
       character.maxMp = character.maxMp * 4;
       character.mp = character.maxMp;
     }
+
+    const personalityService = GameServices.getInstance().getCharacterPersonalityService();
+    personalityService.initializeCharacterPersonality(character);
+
+    DebugLogger.info('TrainingGroundsStateManager', `Character personality initialized for ${character.name}`, {
+      characterName: character.name,
+    });
 
     return character;
   }

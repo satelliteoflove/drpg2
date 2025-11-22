@@ -4,7 +4,6 @@ import { RenderManager } from './RenderManager';
 import { MainMenuScene } from '../scenes/MainMenuScene';
 import { NewGameScene } from '../scenes/NewGameScene';
 import { DungeonScene } from '../scenes/DungeonScene';
-import { CharacterCreationScene } from '../scenes/CharacterCreationScene';
 import { CombatScene } from '../scenes/CombatScene';
 import { DebugScene } from '../scenes/DebugScene';
 import { TownScene } from '../scenes/TownScene';
@@ -172,9 +171,16 @@ export class Game {
   }
 
   private reconstructParty(partyData: unknown): Party {
+    DebugLogger.debug('Game', 'Reconstructing party', {
+      partyData: partyData
+    });
+
     const validatedParty = TypeValidation.safeValidateParty(partyData, 'Game.reconstructParty');
 
     if (!validatedParty) {
+      DebugLogger.warn('Game', 'Party validation failed, creating new party', {
+        receivedData: partyData
+      });
       ErrorHandler.logError(
         'Invalid party data, creating new party',
         ErrorSeverity.MEDIUM,
@@ -192,9 +198,14 @@ export class Game {
     party.floor = validatedParty.floor;
     party.formation = validatedParty.formation;
 
+    // Convert characters to array if it's an object (happens with some JSON serialization)
+    const charactersArray = Array.isArray(validatedParty.characters)
+      ? validatedParty.characters
+      : Object.values(validatedParty.characters);
+
     // Reconstruct characters - note: we can't fully validate Character class instances
     // from serialized data, so we'll do basic validation and reconstruct
-    validatedParty.characters.forEach((charData: any) => {
+    charactersArray.forEach((charData: any) => {
       if (
         charData &&
         typeof charData === 'object' &&
@@ -271,10 +282,6 @@ export class Game {
   private setupScenes(): void {
     this.sceneManager.addScene('main_menu', new MainMenuScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('new_game', new NewGameScene(this.gameState, this.sceneManager));
-    this.sceneManager.addScene(
-      'character_creation',
-      new CharacterCreationScene(this.gameState, this.sceneManager)
-    );
     this.sceneManager.addScene(
       'dungeon',
       new DungeonScene(this.gameState, this.sceneManager, this.inputManager)

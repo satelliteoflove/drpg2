@@ -8,8 +8,10 @@ import { GameServices } from '../services/GameServices';
 import type { ItemManager } from '../systems/inventory/ItemManager';
 import type { EncumbranceCalculator } from '../systems/inventory/EncumbranceCalculator';
 import type { ItemDescriptionFormatter } from '../systems/inventory/ItemDescriptionFormatter';
+import { ColorPalette } from '../utils/ColorPalette';
+import { KEY_BINDINGS } from '../config/KeyBindings';
 
-type CharacterSheetMode = 'view' | 'items' | 'itemDetail' | 'spells' | 'spellDetail';
+type CharacterSheetMode = 'view' | 'items' | 'itemDetail' | 'spells' | 'spellDetail' | 'colorPicker';
 type CombinedItem = { item: Item; equipSlot?: keyof Equipment; isEquipped: boolean; originalIndex: number };
 
 export class CharacterSheetScene extends Scene {
@@ -26,6 +28,8 @@ export class CharacterSheetScene extends Scene {
   private itemsPerPage: number = 12;
   private spellsPerPage: number = 12;
   private returnToScene: string = 'town';
+  private colorPickerX: number = 0;
+  private colorPickerY: number = 0;
 
   private itemManager: ItemManager;
   private encumbranceCalculator: EncumbranceCalculator;
@@ -82,6 +86,10 @@ export class CharacterSheetScene extends Scene {
     if (this.mode === 'spellDetail') {
       this.renderSpellDetailModal(ctx, character);
     }
+
+    if (this.mode === 'colorPicker') {
+      this.renderColorPickerModal(ctx, character);
+    }
   }
 
   public renderLayered(renderContext: SceneRenderContext): void {
@@ -113,6 +121,10 @@ export class CharacterSheetScene extends Scene {
 
       if (this.mode === 'spellDetail') {
         this.renderSpellDetailModal(ctx, character);
+      }
+
+      if (this.mode === 'colorPicker') {
+        this.renderColorPickerModal(ctx, character);
       }
     });
   }
@@ -172,7 +184,7 @@ export class CharacterSheetScene extends Scene {
     const x = 20;
     const y = 90;
     const width = 240;
-    const height = 320;
+    const height = 540;
 
     UIRenderingUtils.drawPanel(ctx, x, y, width, height);
 
@@ -221,6 +233,57 @@ export class CharacterSheetScene extends Scene {
     ctx.fillText('Gold:', x + 15, statY + stats.length * lineHeight + 81);
     ctx.fillStyle = '#ffa500';
     ctx.fillText(`${character.gold}`, x + 60, statY + stats.length * lineHeight + 81);
+
+    let personalityY = statY + stats.length * lineHeight + 120;
+
+    ctx.fillStyle = '#ffa500';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText('PERSONALITY', x + 10, personalityY);
+    personalityY += 25;
+
+    ctx.font = '12px monospace';
+
+    if (character.personality) {
+      const personalityTraits = [
+        { label: 'Temperament', value: character.personality.temperament },
+        { label: 'Social', value: character.personality.social },
+        { label: 'Outlook', value: character.personality.outlook },
+        { label: 'Speech', value: character.personality.speech },
+      ];
+
+      personalityTraits.forEach((trait) => {
+        ctx.fillStyle = '#aaa';
+        ctx.fillText(`${trait.label}:`, x + 15, personalityY);
+        ctx.fillStyle = '#fff';
+        const displayValue = trait.value.charAt(0).toUpperCase() + trait.value.slice(1);
+        ctx.fillText(displayValue, x + 130, personalityY);
+        personalityY += lineHeight;
+      });
+
+      personalityY += 10;
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('Dialogue Color:', x + 15, personalityY);
+
+      if (character.dialogueColor) {
+        ctx.fillStyle = character.dialogueColor;
+        ctx.fillRect(x + 135, personalityY - 10, 20, 15);
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 135, personalityY - 10, 20, 15);
+      } else {
+        ctx.fillStyle = '#666';
+        ctx.fillText('(none)', x + 135, personalityY);
+      }
+
+      personalityY += 20;
+      ctx.fillStyle = '#666';
+      ctx.font = '10px monospace';
+      const changeColorKey = KEY_BINDINGS.characterSheet.changeColor.toUpperCase();
+      ctx.fillText(`(Press ${changeColorKey} to change)`, x + 15, personalityY);
+    } else {
+      ctx.fillStyle = '#666';
+      ctx.fillText('(not assigned)', x + 15, personalityY);
+    }
   }
 
   private renderItemsPanel(ctx: CanvasRenderingContext2D, character: Character): void {
@@ -358,9 +421,10 @@ export class CharacterSheetScene extends Scene {
     ctx.textAlign = 'center';
 
     let controlText = '';
+    const changeColorKey = KEY_BINDINGS.characterSheet.changeColor.toUpperCase();
     switch (this.mode) {
       case 'view':
-        controlText = 'I)tems  S)pells  P)rev  N)ext  ESC)Close';
+        controlText = `I)tems  S)pells  ${changeColorKey})olor  P)rev  N)ext  ESC)Close`;
         break;
       case 'items':
         controlText = 'Arrow Keys: Navigate  E)quip/Unequip  Enter/I)nspect  ESC)Back';
@@ -374,6 +438,16 @@ export class CharacterSheetScene extends Scene {
       case 'spellDetail':
         controlText = 'ESC)Back';
         break;
+      case 'colorPicker': {
+        const upKey = KEY_BINDINGS.characterSheet.colorPickerUp.toUpperCase();
+        const downKey = KEY_BINDINGS.characterSheet.colorPickerDown.toUpperCase();
+        const leftKey = KEY_BINDINGS.characterSheet.colorPickerLeft.toUpperCase();
+        const rightKey = KEY_BINDINGS.characterSheet.colorPickerRight.toUpperCase();
+        const confirmKey = KEY_BINDINGS.characterSheet.colorPickerConfirm === 'enter' ? 'Enter' : KEY_BINDINGS.characterSheet.colorPickerConfirm.toUpperCase();
+        const cancelKey = KEY_BINDINGS.characterSheet.colorPickerCancel === 'escape' ? 'ESC' : KEY_BINDINGS.characterSheet.colorPickerCancel.toUpperCase();
+        controlText = `${upKey}${leftKey}${downKey}${rightKey}: Navigate  ${confirmKey}: Select  ${cancelKey})Cancel`;
+        break;
+      }
     }
 
     ctx.fillText(controlText, ctx.canvas.width / 2, y);
@@ -572,6 +646,85 @@ export class CharacterSheetScene extends Scene {
     ctx.fillText('ESC: Back', modalX + modalWidth / 2, modalY + modalHeight - 20);
   }
 
+  private renderColorPickerModal(ctx: CanvasRenderingContext2D, character: Character): void {
+    const cellSize = 20;
+    const cols = 32;
+    const rows = 8;
+    const gridWidth = cols * cellSize;
+    const gridHeight = rows * cellSize;
+    const padding = 40;
+    const modalWidth = gridWidth + padding * 2;
+    const modalHeight = gridHeight + padding * 2 + 80;
+    const modalX = (ctx.canvas.width - modalWidth) / 2;
+    const modalY = (ctx.canvas.height - modalHeight) / 2;
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(modalX, modalY, modalWidth, modalHeight);
+    ctx.strokeStyle = '#ffa500';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(modalX, modalY, modalWidth, modalHeight);
+
+    ctx.fillStyle = '#ffa500';
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SELECT DIALOGUE COLOR', modalX + modalWidth / 2, modalY + 30);
+
+    const gridX = modalX + padding;
+    const gridY = modalY + padding + 20;
+    const palette = ColorPalette.getHSLPalette();
+
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const index = row * cols + col;
+        const color = palette[index];
+        const x = gridX + col * cellSize;
+        const y = gridY + row * cellSize;
+
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, cellSize, cellSize);
+
+        if (col === this.colorPickerX && row === this.colorPickerY) {
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x, y, cellSize, cellSize);
+        } else {
+          ctx.strokeStyle = '#333';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, cellSize, cellSize);
+        }
+      }
+    }
+
+    const currentColorY = gridY + gridHeight + 25;
+    ctx.fillStyle = '#aaa';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Current color:', modalX + padding, currentColorY);
+
+    if (character.dialogueColor) {
+      ctx.fillStyle = character.dialogueColor;
+      ctx.fillRect(modalX + padding + 110, currentColorY - 12, 24, 18);
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(modalX + padding + 110, currentColorY - 12, 24, 18);
+    }
+
+    const upKey = KEY_BINDINGS.characterSheet.colorPickerUp.toUpperCase();
+    const downKey = KEY_BINDINGS.characterSheet.colorPickerDown.toUpperCase();
+    const leftKey = KEY_BINDINGS.characterSheet.colorPickerLeft.toUpperCase();
+    const rightKey = KEY_BINDINGS.characterSheet.colorPickerRight.toUpperCase();
+    const confirmKey = KEY_BINDINGS.characterSheet.colorPickerConfirm === 'enter' ? 'Enter' : KEY_BINDINGS.characterSheet.colorPickerConfirm.toUpperCase();
+    const cancelKey = KEY_BINDINGS.characterSheet.colorPickerCancel === 'escape' ? 'ESC' : KEY_BINDINGS.characterSheet.colorPickerCancel.toUpperCase();
+
+    ctx.fillStyle = '#666';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${upKey}${leftKey}${downKey}${rightKey}: Navigate | ${confirmKey}: Select | ${cancelKey}: Cancel`, modalX + modalWidth / 2, modalY + modalHeight - 20);
+  }
+
   public handleInput(key: string): boolean {
     const normalizedKey = key.toLowerCase();
 
@@ -586,6 +739,8 @@ export class CharacterSheetScene extends Scene {
         return this.handleSpellsInput(normalizedKey);
       case 'spellDetail':
         return this.handleSpellDetailInput(normalizedKey);
+      case 'colorPicker':
+        return this.handleColorPickerInput(normalizedKey);
       default:
         return false;
     }
@@ -623,6 +778,15 @@ export class CharacterSheetScene extends Scene {
       if (character && this.gameState.party.characters.length > 0) {
         this.characterIndex = (this.characterIndex + 1) % this.gameState.party.characters.length;
         this.resetView();
+      }
+      return true;
+    }
+
+    if (key === KEY_BINDINGS.characterSheet.changeColor) {
+      const character = this.getCurrentCharacter();
+      if (character && character.dialogueColor) {
+        this.initializeColorPickerPosition(character);
+        this.mode = 'colorPicker';
       }
       return true;
     }
@@ -723,6 +887,63 @@ export class CharacterSheetScene extends Scene {
     }
 
     return false;
+  }
+
+  private handleColorPickerInput(key: string): boolean {
+    const character = this.getCurrentCharacter();
+    if (!character) return false;
+
+    if (key === KEY_BINDINGS.characterSheet.colorPickerCancel) {
+      this.mode = 'view';
+      return true;
+    }
+
+    if (key === KEY_BINDINGS.characterSheet.colorPickerConfirm) {
+      const palette = ColorPalette.getHSLPalette();
+      const index = this.colorPickerY * 32 + this.colorPickerX;
+      character.dialogueColor = palette[index];
+      this.mode = 'view';
+      return true;
+    }
+
+    if (key === KEY_BINDINGS.characterSheet.colorPickerUp) {
+      this.colorPickerY = (this.colorPickerY - 1 + 8) % 8;
+      return true;
+    }
+
+    if (key === KEY_BINDINGS.characterSheet.colorPickerDown) {
+      this.colorPickerY = (this.colorPickerY + 1) % 8;
+      return true;
+    }
+
+    if (key === KEY_BINDINGS.characterSheet.colorPickerLeft) {
+      this.colorPickerX = (this.colorPickerX - 1 + 32) % 32;
+      return true;
+    }
+
+    if (key === KEY_BINDINGS.characterSheet.colorPickerRight) {
+      this.colorPickerX = (this.colorPickerX + 1) % 32;
+      return true;
+    }
+
+    return false;
+  }
+
+  private initializeColorPickerPosition(character: Character): void {
+    const palette = ColorPalette.getHSLPalette();
+    const currentColor = character.dialogueColor;
+
+    if (currentColor) {
+      const index = palette.indexOf(currentColor);
+      if (index !== -1) {
+        this.colorPickerY = Math.floor(index / 32);
+        this.colorPickerX = index % 32;
+        return;
+      }
+    }
+
+    this.colorPickerX = 0;
+    this.colorPickerY = 0;
   }
 
   private toggleEquipSelectedItem(): void {
