@@ -9,6 +9,7 @@ import { TurnAnimationController, CardinalDirection } from './TurnAnimationContr
 import { LineOfSightCalculator } from '../../utils/LineOfSightCalculator';
 import { GameServices } from '../../services/GameServices';
 import { BanterEventTracker } from '../../types/BanterTypes';
+import { SFX_CATALOG } from '../../config/AudioConstants';
 
 export interface MovementResult {
   moved: boolean;
@@ -91,6 +92,7 @@ export class DungeonMovementHandler {
 
     const oneWayBlocked = this.isBlockedByOneWayDoor(currentTile, absoluteDirection);
     if (oneWayBlocked) {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.DUNGEON.DOOR_LOCKED);
       this.messageLog?.addSystemMessage('The door only opens from the other side.');
       return { moved: false, blocked: true, triggered: null };
     }
@@ -116,6 +118,7 @@ export class DungeonMovementHandler {
     const toPos = { x: newX, y: newY };
 
     this.turnAnimationController.startMove(fromPos, toPos, () => {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.DUNGEON.FOOTSTEP);
       party.x = newX;
       party.y = newY;
 
@@ -281,6 +284,7 @@ export class DungeonMovementHandler {
         if (tile.special.properties?.opened) {
           this.messageLog?.addSystemMessage('The chest has already been opened.');
         } else {
+          GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.DUNGEON.CHEST_OPEN);
           this.handleChest(tile);
           return 'chest';
         }
@@ -288,6 +292,7 @@ export class DungeonMovementHandler {
 
       case 'treasure':
         if (!tile.special.properties?.opened) {
+          GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.DUNGEON.ITEM_PICKUP);
           this.handleTreasure(tile);
           return 'treasure';
         }
@@ -295,6 +300,7 @@ export class DungeonMovementHandler {
 
       case 'trap':
         if (!isSamePosition) {
+          GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.DUNGEON.TRAP_TRIGGER);
           this.handleTrap(tile);
           this.lastTileEventPosition = currentPosition;
           return 'trap';

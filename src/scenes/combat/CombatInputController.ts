@@ -9,6 +9,8 @@ import { DebugLogger } from '../../utils/DebugLogger';
 import { EntityUtils } from '../../utils/EntityUtils';
 import { SpellRegistry } from '../../systems/magic/SpellRegistry';
 import { SpellId } from '../../types/SpellTypes';
+import { GameServices } from '../../services/GameServices';
+import { SFX_CATALOG } from '../../config/AudioConstants';
 
 export class CombatInputController {
   private gameState: GameState;
@@ -76,12 +78,15 @@ export class CombatInputController {
     const currentSelection = this.stateManager.getSelectedAction();
 
     if (key === KEY_BINDINGS.combat.selectUp) {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CURSOR);
       this.stateManager.setSelectedAction(Math.max(0, currentSelection - 1));
       return true;
     } else if (key === KEY_BINDINGS.combat.selectDown) {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CURSOR);
       this.stateManager.setSelectedAction(Math.min(actions.length - 1, currentSelection + 1));
       return true;
     } else if (key === KEY_BINDINGS.combat.confirm) {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CONFIRM);
       const selectedActionText = actions[currentSelection];
 
       if (selectedActionText === 'Attack') {
@@ -109,12 +114,15 @@ export class CombatInputController {
     const currentTarget = this.stateManager.getSelectedTarget();
 
     if (key === KEY_BINDINGS.combat.selectLeft) {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CURSOR);
       this.stateManager.setSelectedTarget(Math.max(0, currentTarget - 1));
       return true;
     } else if (key === KEY_BINDINGS.combat.selectRight) {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CURSOR);
       this.stateManager.setSelectedTarget(Math.min(aliveMonsters.length - 1, currentTarget + 1));
       return true;
     } else if (key === KEY_BINDINGS.combat.confirm) {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CONFIRM);
       const pendingSpellId = this.stateManager.getPendingSpellId();
       if (pendingSpellId) {
         this.executeAction('Cast Spell', currentTarget, pendingSpellId);
@@ -124,6 +132,7 @@ export class CombatInputController {
       }
       return true;
     } else if (key === KEY_BINDINGS.combat.cancel) {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CANCEL);
       this.stateManager.setActionState('select_action');
       return true;
     }

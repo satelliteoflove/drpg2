@@ -128,6 +128,10 @@ development:
     topics: [utilities, DRY, code reuse, dice roller, entity utils, saving throws]
     summary: Reference documentation for core utility classes (DiceRoller, EntityUtils, SavingThrowCalculator)
 
+  - file: audio-system.md
+    topics: [audio, sound, music, sfx, sound effects, web audio api, background music, crossfade, polyphonic, audio manager, audio registry, preloading]
+    summary: Complete audio system documentation including folder structure, asset management, AudioRegistry, preloading, and usage patterns
+
 # API Documentation Root
 api_root:
   - file: api/README.md
@@ -464,6 +468,10 @@ search_hints:
   utilities: [utilities-reference.md, src/utils/DiceRoller.ts, src/utils/EntityUtils.ts, src/utils/SavingThrowCalculator.ts]
   magic: [sources/wizardry_gaiden_4_spells.md, src/systems/magic/, src/data/spells/]
   ai_testing: [ai-interface.md, src/core/AIInterface.ts]
+  audio: [audio-system.md, src/services/audio/, src/config/AudioRegistry.ts, src/config/AudioConstants.ts]
+  sound: [audio-system.md, src/services/audio/, src/config/AudioRegistry.ts]
+  music: [audio-system.md, src/services/audio/MusicPlayer.ts, src/config/AudioRegistry.ts]
+  sfx: [audio-system.md, src/services/audio/SoundEffectPlayer.ts, src/config/AudioRegistry.ts]
   temple: [temple-mechanics.md, archive/temple-requirements-archived-2025-11-05.md, src/systems/temple/, src/scenes/TempleScene.ts]
   tavern: [tavern-mechanics.md, src/scenes/TavernScene.ts]
   party_management: [tavern-mechanics.md, api/classes/Party.md]

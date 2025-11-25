@@ -7,6 +7,7 @@ import { SpellCaster } from '../systems/magic/SpellCaster';
 import { SpellRegistry } from '../systems/magic/SpellRegistry';
 import { SpellValidation } from '../systems/magic/SpellValidation';
 import { StatusEffectSystem } from '../systems/StatusEffectSystem';
+import { AudioManager } from './audio/AudioManager';
 import { GAME_CONFIG } from '../config/GameConstants';
 import type { CombatSystem } from '../systems/CombatSystem';
 import type { ModifierSystem } from '../systems/ModifierSystem';
@@ -76,6 +77,16 @@ export class GameServices {
     }, {
       singleton: true,
     });
+
+    // Register AudioManager
+    this.container.register(
+      ServiceIdentifiers.AudioManager,
+      () => {
+        const { AudioManager } = require('./audio/AudioManager');
+        return new AudioManager();
+      },
+      { singleton: true }
+    );
 
     // SaveManager and ErrorHandler are static utilities, handled directly in getters
 
@@ -345,6 +356,10 @@ export class GameServices {
 
   public getSceneManager(): SceneManager {
     return this.container.resolve(ServiceIdentifiers.SceneManager);
+  }
+
+  public getAudioManager(): AudioManager {
+    return this.container.resolve(ServiceIdentifiers.AudioManager);
   }
 
   public getSaveManager() {

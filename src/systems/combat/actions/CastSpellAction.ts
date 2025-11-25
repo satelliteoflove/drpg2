@@ -3,6 +3,8 @@ import { Monster } from '../../../types/GameTypes';
 import { Character } from '../../../entities/Character';
 import { EntityUtils } from '../../../utils/EntityUtils';
 import { SpellCastingContext, SpellId } from '../../../types/SpellTypes';
+import { GameServices } from '../../../services/GameServices';
+import { SFX_CATALOG } from '../../../config/AudioConstants';
 
 export class CastSpellAction implements CombatAction {
   readonly name = 'Cast Spell';
@@ -68,6 +70,7 @@ export class CastSpellAction implements CombatAction {
     context.cleanupDeadUnits();
 
     if (result.success) {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.COMBAT.SPELL_CAST);
       return {
         success: true,
         message: result.messages.join(' ')

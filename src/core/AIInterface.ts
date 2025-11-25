@@ -879,6 +879,123 @@ export class AIInterface {
       DebugLogger.error('AIInterface', `Error during banter system testing: ${error.message}`);
     }
   }
+
+  public getAudioState(): {
+    masterVolume: number;
+    musicVolume: number;
+    sfxVolume: number;
+    voiceVolume: number;
+    currentMusic: string | null;
+    activeSfx: string[];
+    isMuted: boolean;
+  } {
+    try {
+      const services = GameServices.getInstance();
+      const audioManager = services.getAudioManager();
+      return audioManager.getState();
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error getting audio state: ${error.message}`);
+      return {
+        masterVolume: 1.0,
+        musicVolume: 0.7,
+        sfxVolume: 0.8,
+        voiceVolume: 0.9,
+        currentMusic: null,
+        activeSfx: [],
+        isMuted: false,
+      };
+    }
+  }
+
+  public playMusic(clipId: string, options?: { volumeMultiplier?: number; fadeInDuration?: number }): void {
+    try {
+      const services = GameServices.getInstance();
+      const audioManager = services.getAudioManager();
+      audioManager.playMusic(clipId, options);
+      DebugLogger.info('AIInterface', `Playing music: ${clipId}`, options);
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error playing music: ${error.message}`);
+    }
+  }
+
+  public stopMusic(fadeOutDuration?: number): void {
+    try {
+      const services = GameServices.getInstance();
+      const audioManager = services.getAudioManager();
+      audioManager.stopMusic({ fadeOutDuration });
+      DebugLogger.info('AIInterface', 'Stopping music', { fadeOutDuration });
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error stopping music: ${error.message}`);
+    }
+  }
+
+  public playSfx(clipId: string, volumeMultiplier?: number): void {
+    try {
+      const services = GameServices.getInstance();
+      const audioManager = services.getAudioManager();
+      audioManager.playSfx(clipId, { volumeMultiplier });
+      DebugLogger.info('AIInterface', `Playing SFX: ${clipId}`, { volumeMultiplier });
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error playing SFX: ${error.message}`);
+    }
+  }
+
+  public stopAllSfx(): void {
+    try {
+      const services = GameServices.getInstance();
+      const audioManager = services.getAudioManager();
+      audioManager.stopAllSfx();
+      DebugLogger.info('AIInterface', 'Stopped all SFX');
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error stopping SFX: ${error.message}`);
+    }
+  }
+
+  public setMasterVolume(volume: number): void {
+    try {
+      const services = GameServices.getInstance();
+      const audioManager = services.getAudioManager();
+      audioManager.setMasterVolume(volume);
+      DebugLogger.info('AIInterface', `Set master volume: ${volume}`);
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error setting master volume: ${error.message}`);
+    }
+  }
+
+  public setMusicVolume(volume: number): void {
+    try {
+      const services = GameServices.getInstance();
+      const audioManager = services.getAudioManager();
+      audioManager.setMusicVolume(volume);
+      DebugLogger.info('AIInterface', `Set music volume: ${volume}`);
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error setting music volume: ${error.message}`);
+    }
+  }
+
+  public setSfxVolume(volume: number): void {
+    try {
+      const services = GameServices.getInstance();
+      const audioManager = services.getAudioManager();
+      audioManager.setSfxVolume(volume);
+      DebugLogger.info('AIInterface', `Set SFX volume: ${volume}`);
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error setting SFX volume: ${error.message}`);
+    }
+  }
+
+  public toggleMute(): boolean {
+    try {
+      const services = GameServices.getInstance();
+      const audioManager = services.getAudioManager();
+      const isMuted = audioManager.toggleMute();
+      DebugLogger.info('AIInterface', `Toggled mute: ${isMuted ? 'muted' : 'unmuted'}`);
+      return isMuted;
+    } catch (error: any) {
+      DebugLogger.error('AIInterface', `Error toggling mute: ${error.message}`);
+      return false;
+    }
+  }
 }
 
 export function createAIInterface(game: Game): AIInterface {

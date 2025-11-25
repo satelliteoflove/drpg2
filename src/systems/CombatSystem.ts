@@ -13,6 +13,7 @@ import { CombatActionContext, CombatActionParams } from './combat/actions/Combat
 import { DamageCalculator } from './combat/helpers/DamageCalculator';
 import { WeaponEffectApplicator } from './combat/helpers/WeaponEffectApplicator';
 import { BanterEventTracker } from '../types/BanterTypes';
+import { SFX_CATALOG } from '../config/AudioConstants';
 
 interface CombatDebugData {
   currentTurn: string;
@@ -260,6 +261,7 @@ export class CombatSystem {
     if (Math.random() < attack.chance) {
       const damage = this.rollDamage(attack.damage);
       target.takeDamage(damage);
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.COMBAT.PARTY_DAMAGE);
 
       let message = `${monster.name} uses ${attack.name} on ${target.name} for ${damage} damage!`;
 

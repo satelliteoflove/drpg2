@@ -9,6 +9,7 @@ import { DungeonUIRenderer } from '../systems/dungeon/DungeonUIRenderer';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
 import { GameServices } from '../services/GameServices';
+import { SCENE_AUDIO } from '../config/AudioConstants';
 
 export class DungeonScene extends Scene {
   protected gameState: GameState;
@@ -89,6 +90,13 @@ export class DungeonScene extends Scene {
       DebugLogger.debug('DungeonScene', `Starting item pickup for ${this.gameState.pendingLoot.length} items`);
       this.itemPickupUI.startItemPickup(this.gameState.pendingLoot);
       this.gameState.pendingLoot = undefined;
+    }
+
+    const config = SCENE_AUDIO['dungeon'];
+    if (config?.music) {
+      GameServices.getInstance().getAudioManager().playMusic(config.music, {
+        volumeMultiplier: config.musicVolume
+      });
     }
 
     DebugLogger.info('DungeonScene', 'Entered dungeon scene');

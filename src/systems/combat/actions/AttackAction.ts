@@ -1,5 +1,7 @@
 import { CombatAction, CombatActionContext, CombatActionParams, CombatActionResult } from './CombatAction';
 import { EntityUtils } from '../../../utils/EntityUtils';
+import { GameServices } from '../../../services/GameServices';
+import { SFX_CATALOG } from '../../../config/AudioConstants';
 
 export class AttackAction implements CombatAction {
   readonly name = 'Attack';
@@ -28,6 +30,12 @@ export class AttackAction implements CombatAction {
     const damage = context.damageCalculator.calculateDamage(currentUnit, target);
     target.hp = Math.max(0, target.hp - damage);
 
+    if (damage > 0) {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.COMBAT.SWORD_HIT);
+    } else {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.COMBAT.SWORD_MISS);
+    }
+
     let message = `${currentUnit.name} attacks ${target.name} for ${damage} damage!`;
 
     const weapon = currentUnit.equipment.weapon;
@@ -47,6 +55,7 @@ export class AttackAction implements CombatAction {
 
     if (target.hp === 0) {
       target.isDead = true;
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.COMBAT.ENEMY_DEATH);
       message += ` ${target.name} is defeated!`;
       context.cleanupDeadUnits();
     }

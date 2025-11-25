@@ -13,11 +13,17 @@ import { Party } from './entities/Party';
 import { GameServices } from './services/GameServices';
 import { GAME_CONFIG } from './config/GameConstants';
 import { DebugLogger } from './utils/DebugLogger';
+import { getAllAudioClips } from './config/AudioRegistry';
 
 document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
   const game = new Game(canvas);
   game.start();
+
+  const audioManager = GameServices.getInstance().getAudioManager();
+  const allClips = getAllAudioClips();
+  audioManager.preloadAudio(allClips);
+  DebugLogger.info('AudioManager', `Preloading ${allClips.length} audio clips at startup`);
 
   // Expose game and feature flags to window for testing
   if (typeof window !== 'undefined') {

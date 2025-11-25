@@ -1,6 +1,8 @@
 import { Scene, SceneManager, SceneRenderContext } from '../../core/Scene';
 import { GameState } from '../../types/GameTypes';
 import { DebugLogger } from '../../utils/DebugLogger';
+import { GameServices } from '../../services/GameServices';
+import { SCENE_AUDIO } from '../../config/AudioConstants';
 
 export interface IUIRenderer<TStateContext> {
   render(ctx: CanvasRenderingContext2D, stateContext: TStateContext): void;
@@ -60,6 +62,13 @@ export abstract class ServiceBasedScene<
   public enter(): void {
     this.stateManager.reset();
     this.onEnter();
+    const sceneName = this.name.charAt(0).toLowerCase() + this.name.slice(1);
+    const config = SCENE_AUDIO[sceneName];
+    if (config?.music) {
+      GameServices.getInstance().getAudioManager().playMusic(config.music, {
+        volumeMultiplier: config.musicVolume
+      });
+    }
     DebugLogger.info(this.name, `Entered ${this.name.toLowerCase()} scene`);
   }
 

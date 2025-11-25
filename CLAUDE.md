@@ -110,6 +110,7 @@ When implementation is complete, inform the user that the feature is ready for t
 - camelCase for functions/variables
 - Avoid async functionality
 - Maintain docs/DOCS_INDEX.yaml for all doc changes
+- **All tunable/adjustable values go in constants files** (volumes, durations, thresholds, etc.)
 
 ## Logging and Debugging
 

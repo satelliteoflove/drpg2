@@ -6,6 +6,7 @@ import { CombatUIManager } from './combat/CombatUIManager';
 import { CombatInputController } from './combat/CombatInputController';
 import { GameServices } from '../services/GameServices';
 import { EntityUtils } from '../utils/EntityUtils';
+import { SCENE_AUDIO } from '../config/AudioConstants';
 
 export class CombatScene extends Scene {
   private gameState: GameState;
@@ -45,6 +46,13 @@ export class CombatScene extends Scene {
     this.uiManager.getSpellMenu().close();
 
     this.stateManager.processInitialMonsterTurns();
+
+    const config = SCENE_AUDIO['combat'];
+    if (config?.music) {
+      GameServices.getInstance().getAudioManager().playMusic(config.music, {
+        volumeMultiplier: config.musicVolume
+      });
+    }
   }
 
   public exit(): void {

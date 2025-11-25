@@ -1,5 +1,7 @@
 import { GameUtilities } from '../../utils/GameUtilities';
 import { KEY_BINDINGS } from '../../config/KeyBindings';
+import { GameServices } from '../../services/GameServices';
+import { SFX_CATALOG } from '../../config/AudioConstants';
 
 export interface MenuState {
   selectedIndex: number;
@@ -33,11 +35,13 @@ export class MenuInputHandler {
 
     const actionType = GameUtilities.isActionKey(key);
     if (actionType === 'confirm') {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CONFIRM);
       onConfirm?.();
       return { type: 'confirm' };
     }
 
     if (actionType === 'cancel') {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CANCEL);
       onCancel?.();
       return { type: 'cancel' };
     }
@@ -50,6 +54,7 @@ export class MenuInputHandler {
     );
 
     if (navigationResult.handled) {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CURSOR);
       onNavigate?.(navigationResult.newIndex);
       return { type: 'navigate', newIndex: navigationResult.newIndex };
     }
@@ -57,11 +62,13 @@ export class MenuInputHandler {
     if (allowHorizontal) {
       if (this.LEFT_KEYS.includes(key)) {
         const newIndex = wrapAround && selectedIndex === 0 ? maxIndex : Math.max(0, selectedIndex - 1);
+        GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CURSOR);
         onNavigate?.(newIndex);
         return { type: 'navigate', newIndex };
       }
       if (this.RIGHT_KEYS.includes(key)) {
         const newIndex = wrapAround && selectedIndex === maxIndex ? 0 : Math.min(maxIndex, selectedIndex + 1);
+        GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CURSOR);
         onNavigate?.(newIndex);
         return { type: 'navigate', newIndex };
       }
@@ -86,11 +93,13 @@ export class MenuInputHandler {
 
     const actionType = GameUtilities.isActionKey(key);
     if (actionType === 'confirm') {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CONFIRM);
       onConfirm?.();
       return { type: 'confirm' };
     }
 
     if (actionType === 'cancel') {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CANCEL);
       onCancel?.();
       return { type: 'cancel' };
     }
@@ -130,6 +139,7 @@ export class MenuInputHandler {
     }
 
     if (newIndex !== currentIndex) {
+      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CURSOR);
       onNavigate?.(newIndex);
       return { type: 'navigate', newIndex };
     }

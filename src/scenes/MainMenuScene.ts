@@ -3,6 +3,8 @@ import { GameState } from '../types/GameTypes';
 import { SaveManager } from '../utils/SaveManager';
 import { MenuInputHandler } from '../ui/components/MenuInputHandler';
 import { DebugLogger } from '../utils/DebugLogger';
+import { GameServices } from '../services/GameServices';
+import { SCENE_AUDIO } from '../config/AudioConstants';
 
 export class MainMenuScene extends Scene {
   private sceneManager: SceneManager;
@@ -18,6 +20,12 @@ export class MainMenuScene extends Scene {
   public enter(): void {
     this.updateMenuOptions();
     this.selectedOption = 0;
+    const config = SCENE_AUDIO['mainMenu'];
+    if (config?.music) {
+      GameServices.getInstance().getAudioManager().playMusic(config.music, {
+        volumeMultiplier: config.musicVolume
+      });
+    }
   }
 
   public exit(): void {}

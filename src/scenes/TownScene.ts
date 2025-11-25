@@ -5,6 +5,8 @@ import { Character } from '../entities/Character';
 import { StatusPanel } from '../ui/StatusPanel';
 import { UIRenderingUtils } from '../utils/UIRenderingUtils';
 import { UI_CONSTANTS } from '../config/UIConstants';
+import { GameServices } from '../services/GameServices';
+import { SCENE_AUDIO } from '../config/AudioConstants';
 
 export class TownScene extends Scene {
   private sceneManager: SceneManager;
@@ -24,6 +26,12 @@ export class TownScene extends Scene {
   public enter(): void {
     this.selectedOption = 0;
     this.gameState.hasEnteredDungeon = false;
+    const config = SCENE_AUDIO['town'];
+    if (config?.music) {
+      GameServices.getInstance().getAudioManager().playMusic(config.music, {
+        volumeMultiplier: config.musicVolume
+      });
+    }
   }
 
   public exit(): void {
