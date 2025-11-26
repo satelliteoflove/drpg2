@@ -119,4 +119,50 @@ export class KeyBindingHelper {
     }
     return null;
   }
+
+  static formatKeyForDisplay(key: string): string {
+    const lower = key.toLowerCase();
+    const specialKeys: Record<string, string> = {
+      'arrowup': '\u2191',
+      'arrowdown': '\u2193',
+      'arrowleft': '\u2190',
+      'arrowright': '\u2192',
+      'enter': 'ENTER',
+      'escape': 'ESC',
+      'tab': 'TAB',
+      'space': 'SPACE',
+      'pageup': 'PgUp',
+      'pagedown': 'PgDn',
+      'backspace': 'BKSP',
+      'delete': 'DEL',
+      'home': 'HOME',
+      'end': 'END',
+      'insert': 'INS',
+    };
+    if (specialKeys[lower]) {
+      return specialKeys[lower];
+    }
+    if (lower.includes('+')) {
+      const parts = lower.split('+');
+      const modifier = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+      const mainKey = this.formatKeyForDisplay(parts.slice(1).join('+'));
+      return `${modifier}+${mainKey}`;
+    }
+    return key.toUpperCase();
+  }
+
+  static getMovementKeysDisplay(): string {
+    const m = KEY_BINDINGS.movement;
+    const primary = `${this.formatKeyForDisplay(m.up)}${this.formatKeyForDisplay(m.left)}${this.formatKeyForDisplay(m.down)}${this.formatKeyForDisplay(m.right)}`;
+    const alternate = `${this.formatKeyForDisplay(m.alternateUp)}${this.formatKeyForDisplay(m.alternateLeft)}${this.formatKeyForDisplay(m.alternateDown)}${this.formatKeyForDisplay(m.alternateRight)}`;
+    return `${primary}/${alternate}`;
+  }
+
+  static getDungeonControlsDisplay(): string {
+    const actions = KEY_BINDINGS.dungeonActions;
+    const movement = this.getMovementKeysDisplay();
+    const map = this.formatKeyForDisplay(actions.map);
+    const camp = this.formatKeyForDisplay(actions.camp);
+    return `${movement}: Move | ENTER: Interact | ${map}: Map | ${camp}: Camp`;
+  }
 }

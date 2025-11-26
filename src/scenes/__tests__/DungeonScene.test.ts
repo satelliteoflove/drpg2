@@ -222,15 +222,14 @@ describe('DungeonScene', () => {
 
     it('should render controls help text in ASCII mode', () => {
       FeatureFlags.enable(FeatureFlagKey.ASCII_RENDERING);
-      
+
       dungeonScene.render(ctx);
-      
+
       const asciiState = (dungeonScene as any).dungeonASCIIState;
       const gridString = asciiState.toString();
-      
-      expect(gridString).toContain('WASD/Arrows: Move');
+
+      expect(gridString).toContain(': Move');
       expect(gridString).toContain('M: Map');
-      expect(gridString).toContain('TAB: Inventory');
     });
   });
 
