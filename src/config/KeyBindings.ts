@@ -119,4 +119,121 @@ export class KeyBindingHelper {
     }
     return null;
   }
+
+  static formatKeyForDisplay(key: string): string {
+    const lower = key.toLowerCase();
+    const specialKeys: Record<string, string> = {
+      'arrowup': '\u2191',
+      'arrowdown': '\u2193',
+      'arrowleft': '\u2190',
+      'arrowright': '\u2192',
+      'enter': 'ENTER',
+      'escape': 'ESC',
+      'tab': 'TAB',
+      'space': 'SPACE',
+      'pageup': 'PgUp',
+      'pagedown': 'PgDn',
+      'backspace': 'BKSP',
+      'delete': 'DEL',
+      'home': 'HOME',
+      'end': 'END',
+      'insert': 'INS',
+    };
+    if (specialKeys[lower]) {
+      return specialKeys[lower];
+    }
+    if (lower.includes('+')) {
+      const parts = lower.split('+');
+      const modifier = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+      const mainKey = this.formatKeyForDisplay(parts.slice(1).join('+'));
+      return `${modifier}+${mainKey}`;
+    }
+    return key.toUpperCase();
+  }
+
+  static getConfirmKeyDisplay(): string {
+    return this.formatKeyForDisplay(KEY_BINDINGS.combat.confirm);
+  }
+
+  static getCancelKeyDisplay(): string {
+    return this.formatKeyForDisplay(KEY_BINDINGS.combat.cancel);
+  }
+
+  static getMovementKeysDisplay(): string {
+    const m = KEY_BINDINGS.movement;
+    const primary = `${this.formatKeyForDisplay(m.up)}${this.formatKeyForDisplay(m.left)}${this.formatKeyForDisplay(m.down)}${this.formatKeyForDisplay(m.right)}`;
+    const alternate = `${this.formatKeyForDisplay(m.alternateUp)}${this.formatKeyForDisplay(m.alternateLeft)}${this.formatKeyForDisplay(m.alternateDown)}${this.formatKeyForDisplay(m.alternateRight)}`;
+    return `${primary}/${alternate}`;
+  }
+
+  static getMenuNavigationDisplay(): string {
+    const m = KEY_BINDINGS.menu;
+    return `${this.formatKeyForDisplay(m.up)}/${this.formatKeyForDisplay(m.down)}`;
+  }
+
+  static buildControlLine(...parts: string[]): string {
+    return parts.join(' | ');
+  }
+
+  static buildMultiLineControls(...parts: string[]): string {
+    return parts.join('\n');
+  }
+
+  static getDungeonControlsDisplay(): string {
+    const actions = KEY_BINDINGS.dungeonActions;
+    const movement = this.getMovementKeysDisplay();
+    const confirm = this.getConfirmKeyDisplay();
+    const map = this.formatKeyForDisplay(actions.map);
+    const camp = this.formatKeyForDisplay(actions.camp);
+    return this.buildControlLine(
+      `${movement}: Move`,
+      `${confirm}: Interact`,
+      `${map}: Map`,
+      `${camp}: Camp`
+    );
+  }
+
+  static getMenuControlsDisplay(escAction: string = ''): string {
+    const nav = this.getMenuNavigationDisplay();
+    const confirm = this.getConfirmKeyDisplay();
+    const esc = this.getCancelKeyDisplay();
+    const parts = [`${nav}: Select`, `${confirm}: Choose`];
+    if (escAction) {
+      parts.push(`${esc}: ${escAction}`);
+    }
+    return this.buildControlLine(...parts);
+  }
+
+  static getSelectConfirmEscDisplay(escAction: string): string {
+    const nav = this.getMenuNavigationDisplay();
+    const confirm = this.getConfirmKeyDisplay();
+    const esc = this.getCancelKeyDisplay();
+    return this.buildControlLine(
+      `${nav}: Select`,
+      `${confirm}: Confirm`,
+      `${esc}: ${escAction}`
+    );
+  }
+
+  static getNavigateSelectEscDisplay(escAction: string): string {
+    const nav = this.getMenuNavigationDisplay();
+    const confirm = this.getConfirmKeyDisplay();
+    const esc = this.getCancelKeyDisplay();
+    return this.buildControlLine(
+      `${nav}: Navigate`,
+      `${confirm}: Select`,
+      `${esc}: ${escAction}`
+    );
+  }
+
+  static getMultiLineSelectControls(action: string, escAction: string): string {
+    const nav = this.getMenuNavigationDisplay();
+    const confirm = this.getConfirmKeyDisplay();
+    const esc = this.getCancelKeyDisplay();
+    return this.buildMultiLineControls(
+      `${nav}: Select`,
+      `${confirm}: ${action}`,
+      `${esc}: ${escAction}`
+    );
+  }
 }

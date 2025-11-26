@@ -9,6 +9,7 @@ import { SpellTargetSelector } from '../../ui/SpellTargetSelector';
 import { EntityUtils } from '../../utils/EntityUtils';
 import { UI_CONSTANTS } from '../../config/UIConstants';
 import { SceneRenderContext } from '../../core/Scene';
+import { KeyBindingHelper } from '../../config/KeyBindings';
 
 export class CombatUIManager {
   private gameState: GameState;
@@ -337,11 +338,11 @@ export class CombatUIManager {
     const selectedAction = this.stateManager.getSelectedAction();
 
     if (actionState === 'select_action' && this.combatSystem.canPlayerAct()) {
-      let controls = 'UP/DOWN: Select Action | ENTER: Confirm';
+      const parts = [`${KeyBindingHelper.getMenuNavigationDisplay()}: Select Action`, `${KeyBindingHelper.getConfirmKeyDisplay()}: Confirm`];
       if (selectedAction === 0) {
-        controls += ' | LEFT/RIGHT: Select Target';
+        parts.push('LEFT/RIGHT: Select Target');
       }
-      ctx.fillText(controls, 10, y);
+      ctx.fillText(KeyBindingHelper.buildControlLine(...parts), 10, y);
       ctx.fillText('1: Attack | 2: Defend | 3: Run | K: Instant Kill (debug)', 10, y + 12);
     } else {
       ctx.fillText('Processing turn... please wait', 10, y);

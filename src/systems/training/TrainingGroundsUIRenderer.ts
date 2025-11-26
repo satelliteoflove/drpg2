@@ -7,6 +7,7 @@ import { SpellRegistry } from '../magic/SpellRegistry';
 import { SpellData, SpellId } from '../../types/SpellTypes';
 import { UIRenderingUtils } from '../../utils/UIRenderingUtils';
 import { UI_CONSTANTS } from '../../config/UIConstants';
+import { KeyBindingHelper } from '../../config/KeyBindings';
 
 export class TrainingGroundsUIRenderer {
   private gameState: GameState;
@@ -914,20 +915,23 @@ export class TrainingGroundsUIRenderer {
   }
 
   private getControlText(state: string): string {
+    const nav = KeyBindingHelper.getMenuNavigationDisplay();
+    const confirm = KeyBindingHelper.getConfirmKeyDisplay();
+    const esc = KeyBindingHelper.getCancelKeyDisplay();
     switch (state) {
       case 'main':
-        return 'UP/DOWN: Select\nENTER: Choose\nESC: Leave';
+        return KeyBindingHelper.getMultiLineSelectControls('Choose', 'Leave');
       case 'createName':
       case 'inspectRename':
-        return 'Type to enter name\nENTER: Confirm\nBACKSPACE: Delete\nESC: Cancel';
+        return KeyBindingHelper.buildMultiLineControls('Type to enter name', `${confirm}: Confirm`, 'BKSP: Delete', `${esc}: Cancel`);
       case 'createBonusPoints':
-        return 'UP/DOWN: Select stat\nLEFT/RIGHT: Adjust\nENTER: Continue\nESC: Back';
+        return KeyBindingHelper.buildMultiLineControls(`${nav}: Select stat`, 'LEFT/RIGHT: Adjust', `${confirm}: Continue`, `${esc}: Back`);
       case 'createConfirm':
       case 'inspectDeleteConfirm':
       case 'inspectClassChangeConfirm':
         return 'Y: Confirm\nN: Cancel';
       default:
-        return 'UP/DOWN: Select\nENTER: Confirm\nESC: Back';
+        return KeyBindingHelper.getMultiLineSelectControls('Confirm', 'Back');
     }
   }
 

@@ -7,6 +7,7 @@ import { UIRenderingUtils } from '../utils/UIRenderingUtils';
 import { UI_CONSTANTS } from '../config/UIConstants';
 import { GameServices } from '../services/GameServices';
 import { SCENE_AUDIO } from '../config/AudioConstants';
+import { KeyBindingHelper } from '../config/KeyBindings';
 
 export class TownScene extends Scene {
   private sceneManager: SceneManager;
@@ -174,7 +175,7 @@ export class TownScene extends Scene {
     ctx.fillStyle = '#666';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('UP/DOWN: Select | ENTER: Choose', menuX + menuWidth / 2, menuY + menuHeight - 25);
+    ctx.fillText(KeyBindingHelper.getMenuControlsDisplay(), menuX + menuWidth / 2, menuY + menuHeight - 25);
 
     ctx.fillStyle = '#ff8800';
     ctx.font = '10px monospace';

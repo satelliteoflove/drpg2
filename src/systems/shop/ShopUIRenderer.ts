@@ -5,6 +5,7 @@ import { StatusPanel } from '../../ui/StatusPanel';
 import { GAME_CONFIG } from '../../config/GameConstants';
 import { UIRenderingUtils } from '../../utils/UIRenderingUtils';
 import { UI_CONSTANTS } from '../../config/UIConstants';
+import { KeyBindingHelper } from '../../config/KeyBindings';
 
 export type ShopState =
   | 'main_menu'
@@ -775,31 +776,25 @@ export class ShopUIRenderer {
   private getControlText(state: ShopState): string {
     switch (state) {
       case 'main_menu':
-        return 'UP/DOWN: Select\nENTER: Choose\nESC: Leave Shop';
+        return KeyBindingHelper.getMultiLineSelectControls('Choose', 'Leave Shop');
       case 'buying_category':
-        return 'UP/DOWN: Select\nENTER: Choose\nESC: Back';
-      case 'buying_items':
-        return 'UP/DOWN: Select\nENTER: Buy Item\nESC: Back';
-      case 'buying_character_select':
-        return 'UP/DOWN: Select\nENTER: Confirm\nESC: Cancel';
       case 'selling_character_select':
-        return 'UP/DOWN: Select\nENTER: Choose\nESC: Back';
-      case 'selling_items':
-        return 'UP/DOWN: Select\nENTER: Sell Item\nESC: Back';
-      case 'selling_confirmation':
-        return 'UP/DOWN: Select\nENTER: Confirm\nESC: Cancel';
       case 'identifying_character_select':
-        return 'UP/DOWN: Select\nENTER: Choose\nESC: Back';
-      case 'identifying_items':
-        return 'UP/DOWN: Select\nENTER: Identify\nESC: Back';
       case 'identifying_payer_select':
-        return 'UP/DOWN: Select\nENTER: Choose\nESC: Back';
+        return KeyBindingHelper.getMultiLineSelectControls('Choose', 'Back');
+      case 'buying_items':
+        return KeyBindingHelper.getMultiLineSelectControls('Buy Item', 'Back');
+      case 'buying_character_select':
+      case 'selling_confirmation':
       case 'identifying_confirmation':
-        return 'UP/DOWN: Select\nENTER: Confirm\nESC: Cancel';
       case 'pooling_gold':
-        return 'UP/DOWN: Select\nENTER: Confirm\nESC: Cancel';
+        return KeyBindingHelper.getMultiLineSelectControls('Confirm', 'Cancel');
+      case 'selling_items':
+        return KeyBindingHelper.getMultiLineSelectControls('Sell Item', 'Back');
+      case 'identifying_items':
+        return KeyBindingHelper.getMultiLineSelectControls('Identify', 'Back');
       default:
-        return 'ESC: Back';
+        return `${KeyBindingHelper.getCancelKeyDisplay()}: Back`;
     }
   }
 

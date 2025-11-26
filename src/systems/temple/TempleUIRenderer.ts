@@ -5,6 +5,7 @@ import { TempleStateContext, TempleService } from '../../types/TempleTypes';
 import { TempleStateManager } from './TempleStateManager';
 import { UIRenderingUtils } from '../../utils/UIRenderingUtils';
 import { UI_CONSTANTS } from '../../config/UIConstants';
+import { KeyBindingHelper } from '../../config/KeyBindings';
 
 export class TempleUIRenderer {
   private gameState: GameState;
@@ -414,26 +415,20 @@ export class TempleUIRenderer {
       ctx.fillStyle = '#aaa';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('UP/DOWN: Select', infoX + infoWidth / 2, infoY + infoHeight - 30);
-      ctx.fillText('ENTER: Choose', infoX + infoWidth / 2, infoY + infoHeight - 15);
+      ctx.fillText(KeyBindingHelper.getMenuControlsDisplay(), infoX + infoWidth / 2, infoY + infoHeight - 15);
     } else {
       ctx.fillStyle = '#aaa';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
 
       if (stateContext.currentState === 'selectService') {
-        ctx.fillText('UP/DOWN: Select', infoX + infoWidth / 2, infoY + infoHeight - 45);
-        ctx.fillText('ENTER: Choose', infoX + infoWidth / 2, infoY + infoHeight - 30);
-        ctx.fillText('ESC: Back to Main', infoX + infoWidth / 2, infoY + infoHeight - 15);
+        ctx.fillText(KeyBindingHelper.getMenuControlsDisplay('Back'), infoX + infoWidth / 2, infoY + infoHeight - 15);
       } else if (stateContext.currentState === 'selectCharacter') {
-        ctx.fillText('UP/DOWN: Select', infoX + infoWidth / 2, infoY + infoHeight - 45);
-        ctx.fillText('ENTER: Choose', infoX + infoWidth / 2, infoY + infoHeight - 30);
-        ctx.fillText('ESC: Back to Services', infoX + infoWidth / 2, infoY + infoHeight - 15);
+        ctx.fillText(KeyBindingHelper.getMenuControlsDisplay('Back'), infoX + infoWidth / 2, infoY + infoHeight - 15);
       } else if (stateContext.currentState === 'confirmService') {
-        ctx.fillText('Y: Confirm', infoX + infoWidth / 2, infoY + infoHeight - 30);
-        ctx.fillText('N: Cancel', infoX + infoWidth / 2, infoY + infoHeight - 15);
+        ctx.fillText('Y: Confirm | N: Cancel', infoX + infoWidth / 2, infoY + infoHeight - 15);
       } else if (stateContext.currentState === 'serviceResult') {
-        ctx.fillText('ENTER: Continue', infoX + infoWidth / 2, infoY + infoHeight - 15);
+        ctx.fillText(`${KeyBindingHelper.getConfirmKeyDisplay()}: Continue`, infoX + infoWidth / 2, infoY + infoHeight - 15);
       }
     }
 

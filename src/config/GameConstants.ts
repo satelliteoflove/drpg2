@@ -303,7 +303,7 @@ export const GAME_CONFIG = {
   UI: {
     MESSAGE_FADE_TIME: 10000,
     MESSAGE_FADE_ENABLED: false,
-    DEBUG_INFO_OFFSET: 10,
+    DEBUG_INFO_OFFSET: 5,
   },
 
   RENDERING: {

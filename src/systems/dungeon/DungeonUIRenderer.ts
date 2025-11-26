@@ -8,6 +8,7 @@ import { DungeonItemPickupUI } from './DungeonItemPickupUI';
 import { DungeonStateContext } from './DungeonStateManager';
 import { UI_CONSTANTS } from '../../config/UIConstants';
 import { DebugLogger } from '../../utils/DebugLogger';
+import { KeyBindingHelper } from '../../config/KeyBindings';
 
 export class DungeonUIRenderer {
   private gameState: GameState;
@@ -247,7 +248,7 @@ export class DungeonUIRenderer {
     ctx.font = '12px monospace';
     ctx.textAlign = 'center';
 
-    const controls = 'WASD/Arrows: Move | ENTER: Interact | TAB: Inventory | M: Map | Shift+P: Perf | Shift+R: Reset';
+    const controls = KeyBindingHelper.getDungeonControlsDisplay();
     ctx.fillText(controls, ctx.canvas.width / 2, ctx.canvas.height - 20);
   }
 
