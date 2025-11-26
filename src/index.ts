@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
       getCurrentScene: () => aiInterface.getCurrentScene(),
       getParty: () => aiInterface.getPartyInfo(),
       getDungeon: () => aiInterface.getDungeonInfo(),
+      getZones: () => aiInterface.getZoneInfo(),
       getCombat: () => aiInterface.getCombatInfo(),
       getShop: () => aiInterface.getShopInfo(),
       getTrainingGroundsInfo: () => aiInterface.getTrainingGroundsInfo(),

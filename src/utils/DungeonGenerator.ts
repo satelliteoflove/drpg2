@@ -1,4 +1,4 @@
-import { DungeonLevel, DungeonTile, Wall, Room, Connector } from '../types/GameTypes';
+import { DungeonLevel, DungeonTile, Wall, Room, Connector, OverrideZone } from '../types/GameTypes';
 import { GAME_CONFIG } from '../config/GameConstants';
 import { SeededRandom } from './SeededRandom';
 import { DebugLogger } from './DebugLogger';
@@ -43,12 +43,15 @@ export class DungeonGenerator {
     const stairsPositions = this.placeStairs();
     const startPosition = this.findStartPosition();
 
+    const overrideZones = this.generateOverrideZones(startPosition, stairsPositions.down);
+    this.applyZonesToTiles(overrideZones);
+
     return {
       level,
       width: this.width,
       height: this.height,
       tiles: this.tiles,
-      overrideZones: [],
+      overrideZones,
       events: [],
       startX: startPosition.x,
       startY: startPosition.y,
@@ -502,5 +505,208 @@ export class DungeonGenerator {
       }
     }
     return count;
+  }
+
+  private generateOverrideZones(
+    startPosition: { x: number; y: number },
+    stairsDown?: { x: number; y: number }
+  ): OverrideZone[] {
+    const zones: OverrideZone[] = [];
+    const config = GAME_CONFIG.ENCOUNTER.ZONE_GENERATION;
+
+    if (config.ENABLE_SAFE_ZONES) {
+      const safeZone = this.generateSafeZone(startPosition);
+      if (safeZone) zones.push(safeZone);
+    }
+
+    if (config.ENABLE_BOSS_ZONES && stairsDown) {
+      const bossZone = this.generateBossZone(stairsDown);
+      if (bossZone) zones.push(bossZone);
+    }
+
+    if (config.ENABLE_SPECIAL_MOB_ZONES) {
+      const specialZones = this.generateSpecialMobZones(zones);
+      zones.push(...specialZones);
+    }
+
+    if (config.ENABLE_HIGH_FREQUENCY_ZONES) {
+      const highFreqZones = this.generateHighFrequencyZones(zones);
+      zones.push(...highFreqZones);
+    }
+
+    DebugLogger.info('DungeonGenerator', `Generated ${zones.length} override zones`, {
+      safe: zones.filter(z => z.type === 'safe').length,
+      boss: zones.filter(z => z.type === 'boss').length,
+      special_mobs: zones.filter(z => z.type === 'special_mobs').length,
+      high_frequency: zones.filter(z => z.type === 'high_frequency').length,
+    });
+
+    return zones;
+  }
+
+  private generateSafeZone(startPosition: { x: number; y: number }): OverrideZone | null {
+    const radius = GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.SAFE_ZONE_RADIUS || 3;
+
+    const x1 = Math.max(0, startPosition.x - radius);
+    const y1 = Math.max(0, startPosition.y - radius);
+    const x2 = Math.min(this.width - 1, startPosition.x + radius);
+    const y2 = Math.min(this.height - 1, startPosition.y + radius);
+
+    return {
+      x1, y1, x2, y2,
+      type: 'safe',
+      data: {
+        encounterRate: 0,
+        description: 'Safe zone near entrance',
+      },
+    };
+  }
+
+  private generateBossZone(stairsDown: { x: number; y: number }): OverrideZone | null {
+    const radius = 2;
+
+    const x1 = Math.max(0, stairsDown.x - radius);
+    const y1 = Math.max(0, stairsDown.y - radius);
+    const x2 = Math.min(this.width - 1, stairsDown.x + radius);
+    const y2 = Math.min(this.height - 1, stairsDown.y + radius);
+
+    return {
+      x1, y1, x2, y2,
+      type: 'boss',
+      data: {
+        encounterRate: GAME_CONFIG.ENCOUNTER.OVERRIDE_ZONE_RATES.boss,
+        description: 'Dangerous area near stairs down',
+        monsterGroups: ['boss_guardian'],
+      },
+    };
+  }
+
+  private generateSpecialMobZones(existingZones: OverrideZone[]): OverrideZone[] {
+    const zones: OverrideZone[] = [];
+    const config = GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.SPECIAL_MOB_ZONES_PER_FLOOR || { min: 1, max: 2 };
+    const count = config.min + Math.floor(this.rng.random() * (config.max - config.min + 1));
+
+    const availableRooms = this.rooms.filter(room => !this.roomOverlapsZones(room, existingZones));
+
+    for (let i = 0; i < count && availableRooms.length > 0; i++) {
+      const roomIndex = Math.floor(this.rng.random() * availableRooms.length);
+      const room = availableRooms.splice(roomIndex, 1)[0];
+
+      zones.push({
+        x1: room.x,
+        y1: room.y,
+        x2: room.x + room.width - 1,
+        y2: room.y + room.height - 1,
+        type: 'special_mobs',
+        data: {
+          encounterRate: GAME_CONFIG.ENCOUNTER.OVERRIDE_ZONE_RATES.special_mobs,
+          description: 'Monster lair',
+          monsterGroups: ['special_' + (i + 1)],
+        },
+      });
+    }
+
+    return zones;
+  }
+
+  private generateHighFrequencyZones(existingZones: OverrideZone[]): OverrideZone[] {
+    const zones: OverrideZone[] = [];
+    const config = GAME_CONFIG.ENCOUNTER.ZONE_GENERATION.HIGH_FREQUENCY_ZONES_PER_FLOOR || { min: 2, max: 4 };
+    const count = config.min + Math.floor(this.rng.random() * (config.max - config.min + 1));
+
+    const corridorTiles = this.getCorridorTiles();
+
+    for (let i = 0; i < count && corridorTiles.length > 0; i++) {
+      const startIndex = Math.floor(this.rng.random() * corridorTiles.length);
+      const startTile = corridorTiles[startIndex];
+
+      const zoneSize = 3 + Math.floor(this.rng.random() * 3);
+      const x1 = Math.max(0, startTile.x - Math.floor(zoneSize / 2));
+      const y1 = Math.max(0, startTile.y - Math.floor(zoneSize / 2));
+      const x2 = Math.min(this.width - 1, x1 + zoneSize);
+      const y2 = Math.min(this.height - 1, y1 + zoneSize);
+
+      const proposedZone: OverrideZone = {
+        x1, y1, x2, y2,
+        type: 'high_frequency',
+        data: {
+          encounterRate: GAME_CONFIG.ENCOUNTER.OVERRIDE_ZONE_RATES.high_frequency,
+          description: 'Dangerous corridor',
+        },
+      };
+
+      if (!this.zoneOverlapsZones(proposedZone, [...existingZones, ...zones])) {
+        zones.push(proposedZone);
+      }
+
+      corridorTiles.splice(startIndex, 1);
+    }
+
+    return zones;
+  }
+
+  private getCorridorTiles(): DungeonTile[] {
+    const corridorTiles: DungeonTile[] = [];
+
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const tile = this.tiles[y][x];
+        if (tile.type === 'floor' && !this.isInRoom(x, y)) {
+          corridorTiles.push(tile);
+        }
+      }
+    }
+
+    return corridorTiles;
+  }
+
+  private isInRoom(x: number, y: number): boolean {
+    for (const room of this.rooms) {
+      if (x >= room.x && x < room.x + room.width &&
+          y >= room.y && y < room.y + room.height) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private roomOverlapsZones(room: Room, zones: OverrideZone[]): boolean {
+    for (const zone of zones) {
+      if (room.x < zone.x2 && room.x + room.width > zone.x1 &&
+          room.y < zone.y2 && room.y + room.height > zone.y1) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private zoneOverlapsZones(zone: OverrideZone, existingZones: OverrideZone[]): boolean {
+    for (const existing of existingZones) {
+      if (zone.x1 <= existing.x2 && zone.x2 >= existing.x1 &&
+          zone.y1 <= existing.y2 && zone.y2 >= existing.y1) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private applyZonesToTiles(zones: OverrideZone[]): void {
+    for (let i = 0; i < zones.length; i++) {
+      const zone = zones[i];
+      const zoneId = `zone_${i}_${zone.type}`;
+
+      for (let y = zone.y1; y <= zone.y2; y++) {
+        for (let x = zone.x1; x <= zone.x2; x++) {
+          if (y >= 0 && y < this.height && x >= 0 && x < this.width) {
+            const tile = this.tiles[y][x];
+            if (tile.type === 'floor') {
+              tile.encounterZoneId = zoneId;
+            }
+          }
+        }
+      }
+    }
+
+    DebugLogger.debug('DungeonGenerator', 'Applied zone IDs to tiles');
   }
 }

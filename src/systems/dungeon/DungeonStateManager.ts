@@ -24,6 +24,7 @@ export interface DungeonStateContext {
   turnCount: number;
   combatEnabled: boolean;
   dungeonSeed: string;
+  currentZone: string | null;
 }
 
 export class DungeonStateManager {
@@ -49,6 +50,7 @@ export class DungeonStateManager {
     const partyGold = this.gameState.party.characters?.reduce((sum: number, char: any) => sum + char.gold, 0) || 0;
     const alive = this.gameState.party.characters.filter((c: any) => !c.isDead).length;
     const total = this.gameState.party.characters.length;
+    const currentZone = this.getCurrentZone();
 
     return {
       currentState: this.currentState,
@@ -71,8 +73,25 @@ export class DungeonStateManager {
       partyTotal: total,
       turnCount: this.gameState.turnCount || 0,
       combatEnabled: this.gameState.combatEnabled,
-      dungeonSeed: this.gameState.dungeonSeed || ''
+      dungeonSeed: this.gameState.dungeonSeed || '',
+      currentZone
     };
+  }
+
+  private getCurrentZone(): string | null {
+    const dungeon = this.gameState.dungeon[this.gameState.currentFloor - 1];
+    if (!dungeon || !dungeon.overrideZones) return null;
+
+    const partyX = this.gameState.party.x;
+    const partyY = this.gameState.party.y;
+
+    for (const zone of dungeon.overrideZones) {
+      if (partyX >= zone.x1 && partyX <= zone.x2 && partyY >= zone.y1 && partyY <= zone.y2) {
+        return zone.type;
+      }
+    }
+
+    return null;
   }
 
   public transitionTo(newState: DungeonState): void {

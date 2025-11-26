@@ -217,6 +217,29 @@ export class DungeonUIRenderer {
         ctx.fillText(line2, infoX + 10, infoY + 275);
       }
     }
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText('ZONE', infoX + 10, infoY + 300);
+
+    ctx.font = '11px monospace';
+    const zoneType = stateContext.currentZone;
+    if (zoneType) {
+      const zoneColors: Record<string, string> = {
+        safe: '#4a4',
+        boss: '#f44',
+        special_mobs: '#f94',
+        high_frequency: '#fa4',
+        low_frequency: '#8af',
+        treasure: '#ff4',
+        ambush: '#f4f',
+      };
+      ctx.fillStyle = zoneColors[zoneType] || '#aaa';
+      ctx.fillText(zoneType.replace('_', ' ').toUpperCase(), infoX + 10, infoY + 320);
+    } else {
+      ctx.fillStyle = '#666';
+      ctx.fillText('Normal', infoX + 10, infoY + 320);
+    }
   }
 
   private renderControls(ctx: CanvasRenderingContext2D): void {

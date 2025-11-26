@@ -1,4 +1,4 @@
-import { GameState, DungeonTile, Direction } from '../../types/GameTypes';
+import { GameState, DungeonTile, Direction, OverrideZone } from '../../types/GameTypes';
 import { GameUtilities } from '../../utils/GameUtilities';
 import { DebugLogger } from '../../utils/DebugLogger';
 import { SceneManager } from '../../core/Scene';
@@ -600,11 +600,23 @@ export class DungeonMovementHandler {
   }
 
   private checkRandomEncounter(): boolean {
-    const chance = DungeonMovementHandler.ENCOUNTER_CHANCE_BASE +
-                  (this.gameState.currentFloor - 1) * DungeonMovementHandler.ENCOUNTER_CHANCE_SCALING;
+    const zone = this.findZoneAtPosition(this.gameState.party.x, this.gameState.party.y);
+
+    let chance: number;
+    if (zone) {
+      const zoneRate = GAME_CONFIG.ENCOUNTER.OVERRIDE_ZONE_RATES[zone.type];
+      if (zoneRate === 0) {
+        return false;
+      }
+      chance = zoneRate;
+      DebugLogger.debug('DungeonMovementHandler', `Zone encounter check: ${zone.type} (rate: ${chance})`);
+    } else {
+      chance = DungeonMovementHandler.ENCOUNTER_CHANCE_BASE +
+               (this.gameState.currentFloor - 1) * DungeonMovementHandler.ENCOUNTER_CHANCE_SCALING;
+    }
 
     if (Math.random() < chance) {
-      this.triggerCombat();
+      this.triggerCombat(undefined, zone);
       this.lastEncounterPosition = {
         x: this.gameState.party.x,
         y: this.gameState.party.y,
@@ -614,16 +626,42 @@ export class DungeonMovementHandler {
     }
 
     return false;
+  }
+
+  private findZoneAtPosition(x: number, y: number): OverrideZone | null {
+    const currentFloor = this.gameState.dungeon[this.gameState.currentFloor - 1];
+    if (!currentFloor || !currentFloor.overrideZones) return null;
+
+    for (const zone of currentFloor.overrideZones) {
+      if (x >= zone.x1 && x <= zone.x2 && y >= zone.y1 && y <= zone.y2) {
+        return zone;
+      }
+    }
+
+    return null;
   }
 
   private checkForEncounterWithMultiplier(multiplier: number): boolean {
     if (!this.gameState.combatEnabled) return false;
 
-    const chance = (DungeonMovementHandler.ENCOUNTER_CHANCE_BASE +
-                   (this.gameState.currentFloor - 1) * DungeonMovementHandler.ENCOUNTER_CHANCE_SCALING) * multiplier;
+    const zone = this.findZoneAtPosition(this.gameState.party.x, this.gameState.party.y);
+
+    if (zone) {
+      const zoneRate = GAME_CONFIG.ENCOUNTER.OVERRIDE_ZONE_RATES[zone.type];
+      if (zoneRate === 0) {
+        return false;
+      }
+    }
+
+    const baseChance = zone
+      ? GAME_CONFIG.ENCOUNTER.OVERRIDE_ZONE_RATES[zone.type]
+      : DungeonMovementHandler.ENCOUNTER_CHANCE_BASE +
+        (this.gameState.currentFloor - 1) * DungeonMovementHandler.ENCOUNTER_CHANCE_SCALING;
+
+    const chance = baseChance * multiplier;
 
     if (Math.random() < chance) {
-      this.triggerCombat();
+      this.triggerCombat(undefined, zone);
       this.lastEncounterPosition = {
         x: this.gameState.party.x,
         y: this.gameState.party.y,
@@ -635,35 +673,85 @@ export class DungeonMovementHandler {
     return false;
   }
 
-  private triggerCombat(specificMonsters?: any[]): void {
-    DebugLogger.debug('DungeonMovementHandler', 'Triggering combat encounter');
+  private triggerCombat(specificMonsters?: any[], zone?: OverrideZone | null): void {
+    DebugLogger.debug('DungeonMovementHandler', 'Triggering combat encounter', {
+      zoneType: zone?.type,
+      zoneDescription: zone?.data?.description,
+    });
 
-    const monsters = specificMonsters || this.generateRandomMonsters();
+    const monsters = specificMonsters || this.generateRandomMonsters(zone);
 
-    if (!this.gameState.combatContext) {
-      this.gameState.combatContext = {
-        monsters: monsters,
-        floor: this.gameState.currentFloor,
-        surprised: Math.random() < 0.1,
-      };
-    }
+    this.gameState.combatContext = {
+      monsters: monsters,
+      floor: this.gameState.currentFloor,
+      surprised: Math.random() < GAME_CONFIG.ENCOUNTER.SURPRISE_CHANCE,
+      zoneType: zone?.type,
+      monsterGroups: zone?.data?.monsterGroups,
+      description: zone?.data?.description,
+    };
 
     this.gameState.inCombat = true;
     this.sceneManager.switchTo('combat');
   }
 
-  private generateRandomMonsters(): any[] {
-    const monsterCount = Math.floor(Math.random() * 3) + 1;
+  private generateRandomMonsters(zone?: OverrideZone | null): any[] {
+    const floor = this.gameState.currentFloor;
+
+    if (zone?.type === 'boss') {
+      return this.generateBossMonsters(floor);
+    }
+
+    if (zone?.type === 'special_mobs') {
+      return this.generateSpecialMonsters(floor, zone);
+    }
+
+    const baseCount = zone?.type === 'high_frequency' ? 2 : 1;
+    const monsterCount = baseCount + Math.floor(Math.random() * 3);
     const monsters = [];
 
     for (let i = 0; i < monsterCount; i++) {
       monsters.push({
         name: `Monster ${i + 1}`,
-        hp: 10 + this.gameState.currentFloor * 5,
-        maxHp: 10 + this.gameState.currentFloor * 5,
-        ac: 10 + Math.floor(this.gameState.currentFloor / 2),
-        attacks: [{ damage: `1d${4 + this.gameState.currentFloor}` }],
-        xpValue: 10 * this.gameState.currentFloor,
+        hp: 10 + floor * 5,
+        maxHp: 10 + floor * 5,
+        ac: 10 + Math.floor(floor / 2),
+        attacks: [{ damage: `1d${4 + floor}` }],
+        xpValue: 10 * floor,
+      });
+    }
+
+    return monsters;
+  }
+
+  private generateBossMonsters(floor: number): any[] {
+    const bossHp = 30 + floor * 15;
+    return [{
+      name: `Floor ${floor} Guardian`,
+      hp: bossHp,
+      maxHp: bossHp,
+      ac: 12 + floor,
+      attacks: [
+        { damage: `2d${4 + floor}` },
+        { damage: `1d${6 + floor}` },
+      ],
+      xpValue: 50 * floor,
+      isBoss: true,
+    }];
+  }
+
+  private generateSpecialMonsters(floor: number, _zone: OverrideZone): any[] {
+    const monsterCount = 2 + Math.floor(Math.random() * 2);
+    const monsters = [];
+    const specialHpBonus = 5;
+
+    for (let i = 0; i < monsterCount; i++) {
+      monsters.push({
+        name: `Lair Dweller ${i + 1}`,
+        hp: 15 + floor * 5 + specialHpBonus,
+        maxHp: 15 + floor * 5 + specialHpBonus,
+        ac: 11 + Math.floor(floor / 2),
+        attacks: [{ damage: `1d${5 + floor}` }],
+        xpValue: 15 * floor,
       });
     }
 
