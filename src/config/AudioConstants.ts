@@ -56,6 +56,11 @@ export const SCENE_AUDIO: Record<string, SceneAudioConfig> = {
     musicVolume: 0.9,
     autoPlay: true,
   },
+  combatResults: {
+    music: 'victory_theme',
+    musicVolume: 0.8,
+    autoPlay: true,
+  },
   shop: {
     music: 'shop_theme',
     musicVolume: 0.5,

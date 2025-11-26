@@ -4,6 +4,7 @@ import type { CombatSystem } from '../systems/CombatSystem';
 import { CombatStateManager } from './combat/CombatStateManager';
 import { CombatUIManager } from './combat/CombatUIManager';
 import { CombatInputController } from './combat/CombatInputController';
+import { CombatResultsScene } from './CombatResultsScene';
 import { GameServices } from '../services/GameServices';
 import { EntityUtils } from '../utils/EntityUtils';
 import { SCENE_AUDIO } from '../config/AudioConstants';
@@ -32,8 +33,21 @@ export class CombatScene extends Scene {
       this.sceneManager
     );
 
-    this.stateManager.setOnCombatEnd((_victory, _rewards, _escaped) => {
-      this.sceneManager.switchTo('dungeon');
+    this.stateManager.setOnCombatEnd((victory, rewards, escaped) => {
+      if (victory && rewards) {
+        const monsters = this.combatSystem.getMonsters();
+        const resultsScene = this.sceneManager.getScene('combatResults') as CombatResultsScene;
+        if (resultsScene) {
+          resultsScene.setResults(rewards, monsters);
+          this.sceneManager.switchTo('combatResults');
+        } else {
+          this.sceneManager.switchTo('dungeon');
+        }
+      } else if (escaped) {
+        this.sceneManager.switchTo('dungeon');
+      } else {
+        this.sceneManager.switchTo('dungeon');
+      }
     });
   }
 

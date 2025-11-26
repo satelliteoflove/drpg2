@@ -5,6 +5,7 @@ import { MainMenuScene } from '../scenes/MainMenuScene';
 import { NewGameScene } from '../scenes/NewGameScene';
 import { DungeonScene } from '../scenes/DungeonScene';
 import { CombatScene } from '../scenes/CombatScene';
+import { CombatResultsScene } from '../scenes/CombatResultsScene';
 import { DebugScene } from '../scenes/DebugScene';
 import { TownScene } from '../scenes/TownScene';
 import { ShopScene } from '../scenes/ShopScene';
@@ -287,6 +288,7 @@ export class Game {
       new DungeonScene(this.gameState, this.sceneManager, this.inputManager)
     );
     this.sceneManager.addScene('combat', new CombatScene(this.gameState, this.sceneManager));
+    this.sceneManager.addScene('combatResults', new CombatResultsScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('debug', new DebugScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('town', new TownScene(this.gameState, this.sceneManager));
     this.sceneManager.addScene('shop', new ShopScene(this.gameState, this.sceneManager));
