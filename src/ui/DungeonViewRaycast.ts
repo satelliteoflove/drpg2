@@ -6,6 +6,8 @@ import { DebugLogger } from '../utils/DebugLogger';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
 import { GAME_CONFIG } from '../config/GameConstants';
 
+type RgbColor = { r: number; g: number; b: number };
+
 export class DungeonViewRaycast {
   private ctx: CanvasRenderingContext2D;
   private currentRenderCtx: CanvasRenderingContext2D;
@@ -36,6 +38,11 @@ export class DungeonViewRaycast {
   private tempImageData: ImageData | null = null;
   private maxWallHeight: number = 0;
   private dungeonScene: any = null;
+  private encounterRiskPercent: number = 0;
+
+  private currentRiskColor: RgbColor = { r: 68, g: 136, b: 255 };
+  private targetRiskColor: RgbColor = { r: 68, g: 136, b: 255 };
+  private lastRenderTime: number = 0;
 
   constructor(canvas: HTMLCanvasElement, dungeonScene?: any) {
     this.ctx = canvas.getContext('2d')!;
@@ -71,6 +78,13 @@ export class DungeonViewRaycast {
 
   public setViewAngle(angleDegrees: number | null): void {
     this.viewAngleOverride = angleDegrees;
+  }
+
+  public setEncounterRiskPercent(percent: number): void {
+    this.encounterRiskPercent = Math.max(0, Math.min(100, percent));
+    const riskColors = GAME_CONFIG.COLORS.RISK_INDICATOR;
+    const dangerThreshold = riskColors.DANGER_THRESHOLD;
+    this.targetRiskColor = this.getRiskColorRgb(this.encounterRiskPercent, dangerThreshold);
   }
 
   public render(ctx?: CanvasRenderingContext2D): void {
@@ -423,6 +437,8 @@ export class DungeonViewRaycast {
       }
     }
 
+    this.renderRiskIndicator();
+
     const compassSize = 40;
     const compassX = this.VIEW_WIDTH - compassSize - 10;
     const compassY = this.VIEW_HEIGHT - compassSize - 10;
@@ -451,6 +467,79 @@ export class DungeonViewRaycast {
     this.currentRenderCtx.stroke();
 
     this.currentRenderCtx.textAlign = 'start';
+  }
+
+  private renderRiskIndicator(): void {
+    const now = performance.now();
+    const deltaTime = this.lastRenderTime > 0 ? (now - this.lastRenderTime) / 1000 : 0;
+    this.lastRenderTime = now;
+
+    const transitionSpeed = GAME_CONFIG.COLORS.RISK_INDICATOR.TRANSITION_SPEED;
+    const lerpFactor = Math.min(1.0, deltaTime * transitionSpeed);
+    this.currentRiskColor.r += (this.targetRiskColor.r - this.currentRiskColor.r) * lerpFactor;
+    this.currentRiskColor.g += (this.targetRiskColor.g - this.currentRiskColor.g) * lerpFactor;
+    this.currentRiskColor.b += (this.targetRiskColor.b - this.currentRiskColor.b) * lerpFactor;
+
+    const indicatorRadius = 12;
+    const indicatorX = 340;
+    const indicatorY = this.VIEW_HEIGHT - 30;
+
+    const color = `rgb(${Math.round(this.currentRiskColor.r)}, ${Math.round(this.currentRiskColor.g)}, ${Math.round(this.currentRiskColor.b)})`;
+
+    this.currentRenderCtx.beginPath();
+    this.currentRenderCtx.arc(indicatorX, indicatorY, indicatorRadius, 0, Math.PI * 2);
+    this.currentRenderCtx.fillStyle = color;
+    this.currentRenderCtx.fill();
+
+    this.currentRenderCtx.strokeStyle = '#666';
+    this.currentRenderCtx.lineWidth = 2;
+    this.currentRenderCtx.stroke();
+
+    this.currentRenderCtx.fillStyle = '#fff';
+    this.currentRenderCtx.font = '10px monospace';
+    this.currentRenderCtx.textAlign = 'center';
+    this.currentRenderCtx.textBaseline = 'middle';
+    this.currentRenderCtx.fillText('RISK', indicatorX, indicatorY - indicatorRadius - 8);
+    this.currentRenderCtx.textBaseline = 'alphabetic';
+    this.currentRenderCtx.textAlign = 'start';
+  }
+
+  private getRiskColorRgb(percent: number, dangerThreshold: number): RgbColor {
+    const riskColors = GAME_CONFIG.COLORS.RISK_INDICATOR;
+
+    if (percent <= 0) {
+      return this.hexToRgb(riskColors.SAFE);
+    } else if (percent < 25) {
+      return this.interpolateColorRgb(riskColors.SAFE, riskColors.LOW, percent / 25);
+    } else if (percent < 50) {
+      return this.interpolateColorRgb(riskColors.LOW, riskColors.MEDIUM, (percent - 25) / 25);
+    } else if (percent < dangerThreshold) {
+      return this.interpolateColorRgb(riskColors.MEDIUM, riskColors.HIGH, (percent - 50) / (dangerThreshold - 50));
+    } else {
+      return this.interpolateColorRgb(riskColors.HIGH, riskColors.DANGER, (percent - dangerThreshold) / (100 - dangerThreshold));
+    }
+  }
+
+  private interpolateColorRgb(color1: string, color2: string, factor: number): RgbColor {
+    const c1 = this.hexToRgb(color1);
+    const c2 = this.hexToRgb(color2);
+
+    return {
+      r: Math.round(c1.r + (c2.r - c1.r) * factor),
+      g: Math.round(c1.g + (c2.g - c1.g) * factor),
+      b: Math.round(c1.b + (c2.b - c1.b) * factor),
+    };
+  }
+
+  private hexToRgb(hex: string): RgbColor {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : { r: 0, g: 0, b: 0 };
   }
 
   private getTileAt(x: number, y: number) {
