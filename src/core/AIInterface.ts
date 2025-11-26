@@ -78,6 +78,47 @@ export class AIInterface {
     return { currentFloor: state.currentFloor, tile, hasMonsters, hasItems };
   }
 
+  public getZoneInfo(): {
+    currentZone: {
+      type: string;
+      encounterRate: number;
+      description?: string;
+    } | null;
+    floorZones: Array<{
+      type: string;
+      bounds: { x1: number; y1: number; x2: number; y2: number };
+    }>;
+  } {
+    const state = this.getGameState();
+    const dungeon = state.dungeon[state.currentFloor - 1];
+    if (!dungeon) return { currentZone: null, floorZones: [] };
+
+    const overrideZones = dungeon.overrideZones || [];
+    const partyX = state.party.x;
+    const partyY = state.party.y;
+
+    let currentZone: { type: string; encounterRate: number; description?: string } | null = null;
+
+    for (const zone of overrideZones) {
+      if (partyX >= zone.x1 && partyX <= zone.x2 && partyY >= zone.y1 && partyY <= zone.y2) {
+        currentZone = {
+          type: zone.type,
+          encounterRate: zone.data?.encounterRate || 0,
+          description: zone.data?.description,
+        };
+        break;
+      }
+    }
+
+    return {
+      currentZone,
+      floorZones: overrideZones.map(z => ({
+        type: z.type,
+        bounds: { x1: z.x1, y1: z.y1, x2: z.x2, y2: z.y2 },
+      })),
+    };
+  }
+
   public getCombatInfo(): {
     inCombat: boolean;
     enemies?: Array<{ name: string; hp: number; status: string }>;

@@ -400,6 +400,9 @@ export interface GameState {
     monsters: any[];
     floor: number;
     surprised: boolean;
+    zoneType?: string;
+    monsterGroups?: string[];
+    description?: string;
   };
   characterRoster: ICharacter[];
   dungeonSeed?: string;
