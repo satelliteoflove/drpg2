@@ -33,6 +33,7 @@ export class DungeonMovementHandler {
   private lastEncounterPosition: { x: number; y: number; floor: number } | null = null;
   private turnAnimationController: TurnAnimationController;
   private eventTracker: BanterEventTracker | null = null;
+  private stepsSinceLastEncounter: number = GAME_CONFIG.ENCOUNTER.COOLDOWN_MIN_STEPS;
 
   constructor(gameState: GameState, messageLog: any, sceneManager: SceneManager) {
     this.gameState = gameState;
@@ -132,6 +133,7 @@ export class DungeonMovementHandler {
 
       this.gameState.turnCount++;
       this.lastMoveTime = Date.now();
+      this.stepsSinceLastEncounter++;
       this.tickAllPartyMembers();
       this.updateDiscoveredTiles();
 
@@ -599,21 +601,48 @@ export class DungeonMovementHandler {
     return true;
   }
 
-  private checkRandomEncounter(): boolean {
-    const zone = this.findZoneAtPosition(this.gameState.party.x, this.gameState.party.y);
+  private calculateEncounterRampMultiplier(): number {
+    const cooldownMin = GAME_CONFIG.ENCOUNTER.COOLDOWN_MIN_STEPS;
+    const rampPercentPerStep = GAME_CONFIG.ENCOUNTER.COOLDOWN_RAMP_PERCENT_PER_STEP;
 
-    let chance: number;
-    if (zone) {
-      const zoneRate = GAME_CONFIG.ENCOUNTER.OVERRIDE_ZONE_RATES[zone.type];
-      if (zoneRate === 0) {
-        return false;
-      }
-      chance = zoneRate;
-      DebugLogger.debug('DungeonMovementHandler', `Zone encounter check: ${zone.type} (rate: ${chance})`);
-    } else {
-      chance = DungeonMovementHandler.ENCOUNTER_CHANCE_BASE +
-               (this.gameState.currentFloor - 1) * DungeonMovementHandler.ENCOUNTER_CHANCE_SCALING;
+    if (this.stepsSinceLastEncounter < cooldownMin) {
+      return 0;
     }
+
+    const stepsOverCooldown = this.stepsSinceLastEncounter - cooldownMin;
+    return Math.min(1.0, (stepsOverCooldown * rampPercentPerStep) / 100);
+  }
+
+  private getBaseEncounterChance(zone: OverrideZone | null): number {
+    if (zone) {
+      return GAME_CONFIG.ENCOUNTER.OVERRIDE_ZONE_RATES[zone.type];
+    }
+    return DungeonMovementHandler.ENCOUNTER_CHANCE_BASE +
+           (this.gameState.currentFloor - 1) * DungeonMovementHandler.ENCOUNTER_CHANCE_SCALING;
+  }
+
+  private checkRandomEncounter(): boolean {
+    const rampMultiplier = this.calculateEncounterRampMultiplier();
+
+    if (rampMultiplier === 0) {
+      DebugLogger.debug('DungeonMovementHandler', `Encounter cooldown active: ${this.stepsSinceLastEncounter}/${GAME_CONFIG.ENCOUNTER.COOLDOWN_MIN_STEPS} steps`);
+      return false;
+    }
+
+    const zone = this.findZoneAtPosition(this.gameState.party.x, this.gameState.party.y);
+    const baseChance = this.getBaseEncounterChance(zone);
+
+    if (baseChance === 0) {
+      return false;
+    }
+
+    if (zone) {
+      DebugLogger.debug('DungeonMovementHandler', `Zone encounter check: ${zone.type} (rate: ${baseChance})`);
+    }
+
+    const chance = baseChance * rampMultiplier;
+
+    DebugLogger.debug('DungeonMovementHandler', `Encounter check: steps=${this.stepsSinceLastEncounter}, ramp=${(rampMultiplier * 100).toFixed(0)}%, chance=${(chance * 100).toFixed(1)}%`);
 
     if (Math.random() < chance) {
       this.triggerCombat(undefined, zone);
@@ -622,6 +651,7 @@ export class DungeonMovementHandler {
         y: this.gameState.party.y,
         floor: this.gameState.currentFloor,
       };
+      this.stepsSinceLastEncounter = 0;
       return true;
     }
 
@@ -644,21 +674,21 @@ export class DungeonMovementHandler {
   private checkForEncounterWithMultiplier(multiplier: number): boolean {
     if (!this.gameState.combatEnabled) return false;
 
-    const zone = this.findZoneAtPosition(this.gameState.party.x, this.gameState.party.y);
+    const rampMultiplier = this.calculateEncounterRampMultiplier();
 
-    if (zone) {
-      const zoneRate = GAME_CONFIG.ENCOUNTER.OVERRIDE_ZONE_RATES[zone.type];
-      if (zoneRate === 0) {
-        return false;
-      }
+    if (rampMultiplier === 0) {
+      DebugLogger.debug('DungeonMovementHandler', `Encounter cooldown active (with multiplier): ${this.stepsSinceLastEncounter}/${GAME_CONFIG.ENCOUNTER.COOLDOWN_MIN_STEPS} steps`);
+      return false;
     }
 
-    const baseChance = zone
-      ? GAME_CONFIG.ENCOUNTER.OVERRIDE_ZONE_RATES[zone.type]
-      : DungeonMovementHandler.ENCOUNTER_CHANCE_BASE +
-        (this.gameState.currentFloor - 1) * DungeonMovementHandler.ENCOUNTER_CHANCE_SCALING;
+    const zone = this.findZoneAtPosition(this.gameState.party.x, this.gameState.party.y);
+    const baseChance = this.getBaseEncounterChance(zone);
 
-    const chance = baseChance * multiplier;
+    if (baseChance === 0) {
+      return false;
+    }
+
+    const chance = baseChance * rampMultiplier * multiplier;
 
     if (Math.random() < chance) {
       this.triggerCombat(undefined, zone);
@@ -667,6 +697,7 @@ export class DungeonMovementHandler {
         y: this.gameState.party.y,
         floor: this.gameState.currentFloor,
       };
+      this.stepsSinceLastEncounter = 0;
       return true;
     }
 
@@ -796,5 +827,35 @@ export class DungeonMovementHandler {
 
   public resetLastTileEventPosition(): void {
     this.lastTileEventPosition = null;
+  }
+
+  public getEncounterCooldownState(): {
+    stepsSinceLastEncounter: number;
+    cooldownMin: number;
+    rampPercentPerStep: number;
+    currentRampPercent: number;
+    actualDangerPercent: number;
+    encounterReady: boolean;
+  } {
+    const rampMultiplier = this.calculateEncounterRampMultiplier();
+    const zone = this.findZoneAtPosition(this.gameState.party.x, this.gameState.party.y);
+    const baseChance = this.getBaseEncounterChance(zone);
+    const actualChance = baseChance * rampMultiplier;
+    const dangerMax = GAME_CONFIG.ENCOUNTER.DANGER_INDICATOR_MAX;
+    const actualDangerPercent = Math.min(100, (actualChance / dangerMax) * 100);
+
+    return {
+      stepsSinceLastEncounter: this.stepsSinceLastEncounter,
+      cooldownMin: GAME_CONFIG.ENCOUNTER.COOLDOWN_MIN_STEPS,
+      rampPercentPerStep: GAME_CONFIG.ENCOUNTER.COOLDOWN_RAMP_PERCENT_PER_STEP,
+      currentRampPercent: rampMultiplier * 100,
+      actualDangerPercent,
+      encounterReady: rampMultiplier > 0,
+    };
+  }
+
+  public resetEncounterCooldown(): void {
+    this.stepsSinceLastEncounter = 0;
+    DebugLogger.debug('DungeonMovementHandler', 'Encounter cooldown reset');
   }
 }

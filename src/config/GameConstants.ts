@@ -9,6 +9,9 @@ export const GAME_CONFIG = {
     BASE_ZONE_RATE: 0.1,
     SURPRISE_CHANCE: 0.1,
     LEVEL_RATE_MULTIPLIER: 0.02,
+    COOLDOWN_MIN_STEPS: 3,
+    COOLDOWN_RAMP_PERCENT_PER_STEP: 5,
+    DANGER_INDICATOR_MAX: 0.10,
     OVERRIDE_ZONE_RATES: {
       high_frequency: 0.08,
       low_frequency: 0.01,
@@ -322,6 +325,15 @@ export const GAME_CONFIG = {
     PERFORMANCE_GOOD: '#0f0',
     PERFORMANCE_MODERATE: '#ff0',
     PERFORMANCE_POOR: '#f00',
+    RISK_INDICATOR: {
+      SAFE: '#4488FF',
+      LOW: '#44DD44',
+      MEDIUM: '#DDDD00',
+      HIGH: '#FF8800',
+      DANGER: '#FF2222',
+      DANGER_THRESHOLD: 80,
+      TRANSITION_SPEED: 3.0,
+    },
   },
 
   DEBUG_MODE: false,

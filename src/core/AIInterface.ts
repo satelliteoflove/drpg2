@@ -119,6 +119,27 @@ export class AIInterface {
     };
   }
 
+  public getEncounterCooldownInfo(): {
+    stepsSinceLastEncounter: number;
+    cooldownMin: number;
+    rampPercentPerStep: number;
+    currentRampPercent: number;
+    actualDangerPercent: number;
+    encounterReady: boolean;
+  } | null {
+    const scene = this.game.getSceneManager().getCurrentScene();
+    if (scene?.getName().toLowerCase() !== 'dungeon') {
+      return null;
+    }
+
+    const dungeonScene = scene as any;
+    if (typeof dungeonScene.getEncounterCooldownState === 'function') {
+      return dungeonScene.getEncounterCooldownState();
+    }
+
+    return null;
+  }
+
   public getCombatInfo(): {
     inCombat: boolean;
     enemies?: Array<{ name: string; hp: number; status: string }>;

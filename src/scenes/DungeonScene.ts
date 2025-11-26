@@ -245,6 +245,9 @@ export class DungeonScene extends Scene {
     }
 
     dungeonView.setPlayerPosition(visualX, visualY, this.gameState.party.facing);
+
+    const cooldownState = this.movementHandler.getEncounterCooldownState();
+    dungeonView.setEncounterRiskPercent(cooldownState.actualDangerPercent);
   }
 
   public handleInput(key: string): boolean {
@@ -289,5 +292,16 @@ export class DungeonScene extends Scene {
 
   public getDoorPassageState(): { x: number; y: number; direction: 'north' | 'south' | 'east' | 'west' } | null {
     return this.stateManager.getDoorPassageState();
+  }
+
+  public getEncounterCooldownState(): {
+    stepsSinceLastEncounter: number;
+    cooldownMin: number;
+    rampPercentPerStep: number;
+    currentRampPercent: number;
+    actualDangerPercent: number;
+    encounterReady: boolean;
+  } {
+    return this.movementHandler.getEncounterCooldownState();
   }
 }
