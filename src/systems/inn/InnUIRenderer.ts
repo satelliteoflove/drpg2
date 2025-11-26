@@ -4,6 +4,7 @@ import { Character } from '../../entities/Character';
 import { StatusPanel } from '../../ui/StatusPanel';
 import { UIRenderingUtils } from '../../utils/UIRenderingUtils';
 import { UI_CONSTANTS } from '../../config/UIConstants';
+import { KeyBindingHelper } from '../../config/KeyBindings';
 
 export class InnUIRenderer {
   private gameState: GameState;
@@ -413,15 +414,13 @@ export class InnUIRenderer {
       ctx.fillStyle = '#aaa';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('UP/DOWN: Select | ENTER: Choose', menuX + menuWidth / 2, menuY + menuHeight - 15);
-      ctx.fillText('ESC: Back to Main', menuX + menuWidth / 2, menuY + menuHeight - 30);
+      ctx.fillText(KeyBindingHelper.getMenuControlsDisplay('Back'), menuX + menuWidth / 2, menuY + menuHeight - 15);
       return;
     } else if (stateContext.currentState === 'selectRoom') {
       ctx.fillStyle = '#aaa';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('UP/DOWN: Select | ENTER: Choose', menuX + menuWidth / 2, menuY + menuHeight - 15);
-      ctx.fillText('ESC: Back to Character', menuX + menuWidth / 2, menuY + menuHeight - 30);
+      ctx.fillText(KeyBindingHelper.getMenuControlsDisplay('Back'), menuX + menuWidth / 2, menuY + menuHeight - 15);
       return;
     } else if (stateContext.currentState === 'poolGold') {
       const options = ['Proceed', 'Cancel'];
@@ -443,15 +442,13 @@ export class InnUIRenderer {
       ctx.fillStyle = '#aaa';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('UP/DOWN: Select | ENTER: Choose', menuX + menuWidth / 2, menuY + menuHeight - 15);
-      ctx.fillText('ESC: Cancel', menuX + menuWidth / 2, menuY + menuHeight - 30);
+      ctx.fillText(KeyBindingHelper.getMenuControlsDisplay('Cancel'), menuX + menuWidth / 2, menuY + menuHeight - 15);
       return;
     } else if (stateContext.currentState === 'selectPoolTarget') {
       ctx.fillStyle = '#aaa';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('UP/DOWN: Select Character', menuX + menuWidth / 2, menuY + menuHeight - 15);
-      ctx.fillText('ENTER: Confirm | ESC: Back', menuX + menuWidth / 2, menuY + menuHeight - 30);
+      ctx.fillText(KeyBindingHelper.getSelectConfirmEscDisplay('Back'), menuX + menuWidth / 2, menuY + menuHeight - 15);
       return;
     }
 
@@ -473,13 +470,13 @@ export class InnUIRenderer {
     ctx.fillStyle = '#666';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
-    let controlText = 'UP/DOWN: Select | ENTER: Choose';
+    let controlText = KeyBindingHelper.getMenuControlsDisplay();
     if (stateContext.currentState === 'confirmRest') {
       controlText = 'Y: Confirm | N: Cancel';
     } else if (stateContext.currentState === 'levelupResult') {
-      controlText = 'ENTER: Continue';
+      controlText = `${KeyBindingHelper.getConfirmKeyDisplay()}: Continue`;
     } else if (stateContext.currentState !== 'main') {
-      controlText = 'ESC: Back';
+      controlText = `${KeyBindingHelper.getCancelKeyDisplay()}: Back`;
     }
     ctx.fillText(controlText, menuX + menuWidth / 2, menuY + menuHeight - 15);
   }

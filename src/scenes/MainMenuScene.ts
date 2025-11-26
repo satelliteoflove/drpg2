@@ -5,6 +5,7 @@ import { MenuInputHandler } from '../ui/components/MenuInputHandler';
 import { DebugLogger } from '../utils/DebugLogger';
 import { GameServices } from '../services/GameServices';
 import { SCENE_AUDIO } from '../config/AudioConstants';
+import { KeyBindingHelper } from '../config/KeyBindings';
 
 export class MainMenuScene extends Scene {
   private sceneManager: SceneManager;
@@ -106,11 +107,10 @@ export class MainMenuScene extends Scene {
     ctx.font = '14px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(
-      'Use UP/DOWN arrows to navigate, ENTER to select',
+      KeyBindingHelper.getNavigateSelectEscDisplay('Quit'),
       ctx.canvas.width / 2,
-      ctx.canvas.height - 50
+      ctx.canvas.height - 40
     );
-    ctx.fillText('ESC to quit game', ctx.canvas.width / 2, ctx.canvas.height - 30);
   }
 
   private updateMenuOptions(): void {

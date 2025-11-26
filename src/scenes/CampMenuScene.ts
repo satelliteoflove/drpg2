@@ -4,6 +4,7 @@ import { Character } from '../entities/Character';
 import { MenuInputHandler } from '../ui/components/MenuInputHandler';
 import { DungeonMovementHandler } from '../systems/dungeon/DungeonMovementHandler';
 import { UIRenderingUtils } from '../utils/UIRenderingUtils';
+import { KeyBindingHelper } from '../config/KeyBindings';
 
 type CampState = 'menu' | 'selectCharacter';
 
@@ -113,7 +114,7 @@ export class CampMenuScene extends Scene {
     ctx.fillStyle = '#666';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Arrow Keys: Navigate | Enter: Select | ESC: Return to Dungeon', panelX + panelWidth / 2, panelY + panelHeight - 20);
+    ctx.fillText(KeyBindingHelper.getNavigateSelectEscDisplay('Return to Dungeon'), panelX + panelWidth / 2, panelY + panelHeight - 20);
   }
 
   private renderCharacterSelection(ctx: CanvasRenderingContext2D): void {
@@ -171,7 +172,7 @@ export class CampMenuScene extends Scene {
     ctx.fillStyle = '#666';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Arrow Keys: Select | Enter: Confirm | ESC: Cancel', panelX + panelWidth / 2, panelY + panelHeight - 20);
+    ctx.fillText(KeyBindingHelper.getSelectConfirmEscDisplay('Cancel'), panelX + panelWidth / 2, panelY + panelHeight - 20);
   }
 
   public handleInput(key: string): boolean {

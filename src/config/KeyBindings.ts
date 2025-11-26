@@ -151,6 +151,14 @@ export class KeyBindingHelper {
     return key.toUpperCase();
   }
 
+  static getConfirmKeyDisplay(): string {
+    return this.formatKeyForDisplay(KEY_BINDINGS.combat.confirm);
+  }
+
+  static getCancelKeyDisplay(): string {
+    return this.formatKeyForDisplay(KEY_BINDINGS.combat.cancel);
+  }
+
   static getMovementKeysDisplay(): string {
     const m = KEY_BINDINGS.movement;
     const primary = `${this.formatKeyForDisplay(m.up)}${this.formatKeyForDisplay(m.left)}${this.formatKeyForDisplay(m.down)}${this.formatKeyForDisplay(m.right)}`;
@@ -158,11 +166,74 @@ export class KeyBindingHelper {
     return `${primary}/${alternate}`;
   }
 
+  static getMenuNavigationDisplay(): string {
+    const m = KEY_BINDINGS.menu;
+    return `${this.formatKeyForDisplay(m.up)}/${this.formatKeyForDisplay(m.down)}`;
+  }
+
+  static buildControlLine(...parts: string[]): string {
+    return parts.join(' | ');
+  }
+
+  static buildMultiLineControls(...parts: string[]): string {
+    return parts.join('\n');
+  }
+
   static getDungeonControlsDisplay(): string {
     const actions = KEY_BINDINGS.dungeonActions;
     const movement = this.getMovementKeysDisplay();
+    const confirm = this.getConfirmKeyDisplay();
     const map = this.formatKeyForDisplay(actions.map);
     const camp = this.formatKeyForDisplay(actions.camp);
-    return `${movement}: Move | ENTER: Interact | ${map}: Map | ${camp}: Camp`;
+    return this.buildControlLine(
+      `${movement}: Move`,
+      `${confirm}: Interact`,
+      `${map}: Map`,
+      `${camp}: Camp`
+    );
+  }
+
+  static getMenuControlsDisplay(escAction: string = ''): string {
+    const nav = this.getMenuNavigationDisplay();
+    const confirm = this.getConfirmKeyDisplay();
+    const esc = this.getCancelKeyDisplay();
+    const parts = [`${nav}: Select`, `${confirm}: Choose`];
+    if (escAction) {
+      parts.push(`${esc}: ${escAction}`);
+    }
+    return this.buildControlLine(...parts);
+  }
+
+  static getSelectConfirmEscDisplay(escAction: string): string {
+    const nav = this.getMenuNavigationDisplay();
+    const confirm = this.getConfirmKeyDisplay();
+    const esc = this.getCancelKeyDisplay();
+    return this.buildControlLine(
+      `${nav}: Select`,
+      `${confirm}: Confirm`,
+      `${esc}: ${escAction}`
+    );
+  }
+
+  static getNavigateSelectEscDisplay(escAction: string): string {
+    const nav = this.getMenuNavigationDisplay();
+    const confirm = this.getConfirmKeyDisplay();
+    const esc = this.getCancelKeyDisplay();
+    return this.buildControlLine(
+      `${nav}: Navigate`,
+      `${confirm}: Select`,
+      `${esc}: ${escAction}`
+    );
+  }
+
+  static getMultiLineSelectControls(action: string, escAction: string): string {
+    const nav = this.getMenuNavigationDisplay();
+    const confirm = this.getConfirmKeyDisplay();
+    const esc = this.getCancelKeyDisplay();
+    return this.buildMultiLineControls(
+      `${nav}: Select`,
+      `${confirm}: ${action}`,
+      `${esc}: ${escAction}`
+    );
   }
 }

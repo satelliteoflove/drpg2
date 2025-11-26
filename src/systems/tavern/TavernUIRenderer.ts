@@ -4,6 +4,7 @@ import { Character } from '../../entities/Character';
 import { StatusPanel } from '../../ui/StatusPanel';
 import { UIRenderingUtils } from '../../utils/UIRenderingUtils';
 import { UI_CONSTANTS } from '../../config/UIConstants';
+import { KeyBindingHelper } from '../../config/KeyBindings';
 
 export class TavernUIRenderer {
   private gameState: GameState;
@@ -111,7 +112,7 @@ export class TavernUIRenderer {
 
     ctx.font = '14px monospace';
     ctx.fillStyle = '#aaa';
-    ctx.fillText('UP/DOWN to select, ENTER to confirm, ESC to cancel', x + width / 2, y + 70);
+    ctx.fillText(KeyBindingHelper.getSelectConfirmEscDisplay('Cancel'), x + width / 2, y + 70);
 
     const roster = this.gameState.characterRoster as Character[];
     const party = this.gameState.party.characters;
@@ -177,7 +178,7 @@ export class TavernUIRenderer {
 
     ctx.font = '14px monospace';
     ctx.fillStyle = '#aaa';
-    ctx.fillText('UP/DOWN to select, ENTER to confirm, ESC to cancel', x + width / 2, y + 70);
+    ctx.fillText(KeyBindingHelper.getSelectConfirmEscDisplay('Cancel'), x + width / 2, y + 70);
 
     const party = this.gameState.party.characters;
 
@@ -273,7 +274,7 @@ export class TavernUIRenderer {
 
     ctx.font = '14px monospace';
     ctx.fillStyle = '#aaa';
-    ctx.fillText('LEFT/RIGHT to move | UP/DOWN to select | ENTER/ESC to finish', x + width / 2, y + 70);
+    ctx.fillText(KeyBindingHelper.buildControlLine('LEFT/RIGHT: Move', `${KeyBindingHelper.getMenuNavigationDisplay()}: Select`, `${KeyBindingHelper.getConfirmKeyDisplay()}/${KeyBindingHelper.getCancelKeyDisplay()}: Finish`), x + width / 2, y + 70);
 
     const party = this.gameState.party.characters;
 
@@ -360,7 +361,7 @@ export class TavernUIRenderer {
     ctx.fillStyle = '#666';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Arrow Keys: Select | Enter: Confirm | ESC: Cancel', x + width / 2, y + 450);
+    ctx.fillText(KeyBindingHelper.getSelectConfirmEscDisplay('Cancel'), x + width / 2, y + 450);
   }
 
   private renderActionMenu(ctx: CanvasRenderingContext2D, stateContext: TavernStateContext): void {
@@ -407,7 +408,7 @@ export class TavernUIRenderer {
       ctx.fillStyle = '#666';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('UP/DOWN: Select | ENTER: Choose', menuX + menuWidth / 2, menuY + menuHeight - 15);
+      ctx.fillText(KeyBindingHelper.getMenuControlsDisplay(), menuX + menuWidth / 2, menuY + menuHeight - 15);
     } else {
       ctx.fillStyle = '#aaa';
       ctx.font = '11px monospace';

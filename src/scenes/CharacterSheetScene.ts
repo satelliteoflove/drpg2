@@ -9,7 +9,7 @@ import type { ItemManager } from '../systems/inventory/ItemManager';
 import type { EncumbranceCalculator } from '../systems/inventory/EncumbranceCalculator';
 import type { ItemDescriptionFormatter } from '../systems/inventory/ItemDescriptionFormatter';
 import { ColorPalette } from '../utils/ColorPalette';
-import { KEY_BINDINGS } from '../config/KeyBindings';
+import { KEY_BINDINGS, KeyBindingHelper } from '../config/KeyBindings';
 
 type CharacterSheetMode = 'view' | 'items' | 'itemDetail' | 'spells' | 'spellDetail' | 'colorPicker';
 type CombinedItem = { item: Item; equipSlot?: keyof Equipment; isEquipped: boolean; originalIndex: number };
@@ -421,31 +421,34 @@ export class CharacterSheetScene extends Scene {
     ctx.textAlign = 'center';
 
     let controlText = '';
-    const changeColorKey = KEY_BINDINGS.characterSheet.changeColor.toUpperCase();
+    const changeColorKey = KeyBindingHelper.formatKeyForDisplay(KEY_BINDINGS.characterSheet.changeColor);
+    const nav = KeyBindingHelper.getMenuNavigationDisplay();
+    const confirm = KeyBindingHelper.getConfirmKeyDisplay();
+    const esc = KeyBindingHelper.getCancelKeyDisplay();
     switch (this.mode) {
       case 'view':
-        controlText = `I)tems  S)pells  ${changeColorKey})olor  P)rev  N)ext  ESC)Close`;
+        controlText = `I)tems  S)pells  ${changeColorKey})olor  P)rev  N)ext  ${esc})Close`;
         break;
       case 'items':
-        controlText = 'Arrow Keys: Navigate  E)quip/Unequip  Enter/I)nspect  ESC)Back';
+        controlText = `${nav}: Navigate  E)quip/Unequip  ${confirm}/I)nspect  ${esc})Back`;
         break;
       case 'itemDetail':
-        controlText = 'E)quip/Unequip  ESC)Back';
+        controlText = `E)quip/Unequip  ${esc})Back`;
         break;
       case 'spells':
-        controlText = 'Arrow Keys: Navigate  Enter/I)nspect  ESC)Back';
+        controlText = `${nav}: Navigate  ${confirm}/I)nspect  ${esc})Back`;
         break;
       case 'spellDetail':
-        controlText = 'ESC)Back';
+        controlText = `${esc})Back`;
         break;
       case 'colorPicker': {
-        const upKey = KEY_BINDINGS.characterSheet.colorPickerUp.toUpperCase();
-        const downKey = KEY_BINDINGS.characterSheet.colorPickerDown.toUpperCase();
-        const leftKey = KEY_BINDINGS.characterSheet.colorPickerLeft.toUpperCase();
-        const rightKey = KEY_BINDINGS.characterSheet.colorPickerRight.toUpperCase();
-        const confirmKey = KEY_BINDINGS.characterSheet.colorPickerConfirm === 'enter' ? 'Enter' : KEY_BINDINGS.characterSheet.colorPickerConfirm.toUpperCase();
-        const cancelKey = KEY_BINDINGS.characterSheet.colorPickerCancel === 'escape' ? 'ESC' : KEY_BINDINGS.characterSheet.colorPickerCancel.toUpperCase();
-        controlText = `${upKey}${leftKey}${downKey}${rightKey}: Navigate  ${confirmKey}: Select  ${cancelKey})Cancel`;
+        const cpUp = KeyBindingHelper.formatKeyForDisplay(KEY_BINDINGS.characterSheet.colorPickerUp);
+        const cpDown = KeyBindingHelper.formatKeyForDisplay(KEY_BINDINGS.characterSheet.colorPickerDown);
+        const cpLeft = KeyBindingHelper.formatKeyForDisplay(KEY_BINDINGS.characterSheet.colorPickerLeft);
+        const cpRight = KeyBindingHelper.formatKeyForDisplay(KEY_BINDINGS.characterSheet.colorPickerRight);
+        const cpConfirm = KeyBindingHelper.formatKeyForDisplay(KEY_BINDINGS.characterSheet.colorPickerConfirm);
+        const cpCancel = KeyBindingHelper.formatKeyForDisplay(KEY_BINDINGS.characterSheet.colorPickerCancel);
+        controlText = `${cpUp}${cpLeft}${cpDown}${cpRight}: Navigate  ${cpConfirm}: Select  ${cpCancel})Cancel`;
         break;
       }
     }
