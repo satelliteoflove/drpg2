@@ -92,7 +92,8 @@ export class TypeValidation {
       typeof value.maxHp === 'number' &&
       typeof value.mp === 'number' &&
       typeof value.maxMp === 'number' &&
-      typeof value.ac === 'number' &&
+      typeof value.evasion === 'number' &&
+      typeof value.damageReduction === 'number' &&
       typeof value.age === 'number' &&
       typeof value.gold === 'number' &&
       typeof value.isDead === 'boolean' &&

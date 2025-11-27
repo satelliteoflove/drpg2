@@ -36,6 +36,9 @@ export class AIInterface {
       statuses: any[];
       isDead: boolean;
       knownSpells?: string[];
+      evasion: number;
+      damageReduction: number;
+      accuracy: number;
     }>;
   } {
     const state = this.getGameState();
@@ -57,6 +60,9 @@ export class AIInterface {
         statuses: char.statuses,
         isDead: char.isDead,
         knownSpells: char.knownSpells || [],
+        evasion: char.effectiveEvasion,
+        damageReduction: char.effectiveDamageReduction,
+        accuracy: char.accuracy,
       })),
     };
   }
@@ -142,7 +148,7 @@ export class AIInterface {
 
   public getCombatInfo(): {
     inCombat: boolean;
-    enemies?: Array<{ name: string; hp: number; status: string }>;
+    enemies?: Array<{ name: string; hp: number; status: string; evasion: number; damageReduction: number }>;
     currentTurn?: string;
     spellMenuOpen?: boolean;
     selectedSpell?: string;
@@ -163,6 +169,8 @@ export class AIInterface {
         name: e.name,
         hp: e.hp,
         status: e.status || 'OK',
+        evasion: e.evasion || 0,
+        damageReduction: e.damageReduction || 0,
       })) || [],
       currentTurn: 'player', // Combat system doesn't expose turn info yet
       spellMenuOpen: testState?.spellMenuOpen || false,

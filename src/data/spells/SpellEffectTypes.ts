@@ -43,7 +43,7 @@ export interface BuffEffectConfig {
 
 export interface ModifierEffectConfig {
   type: 'modifier';
-  stat: 'ac' | 'attack' | 'damage' | 'speed';
+  stat: 'evasion' | 'damageReduction' | 'attack' | 'damage' | 'speed';
   value: number;
   duration?: string;
   countsOnlyInCombat?: boolean;

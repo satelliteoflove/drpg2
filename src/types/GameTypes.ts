@@ -63,7 +63,8 @@ export interface ICharacter {
   maxHp: number;
   mp: number;
   maxMp: number;
-  ac: number;
+  evasion: number;
+  damageReduction: number;
   statuses: ActiveStatusEffect[];
   modifiers?: ActiveModifier[];
   age: number;
@@ -128,7 +129,7 @@ export interface Item {
 
 export type ItemEffect =
   | {
-      type: 'damage' | 'ac' | 'heal' | 'cure' | 'special';
+      type: 'damage' | 'evasion' | 'damageReduction' | 'heal' | 'cure' | 'special';
       value: number;
       target?: never;
     }
@@ -155,7 +156,8 @@ export interface Monster {
   maxHp: number;
   currentHp?: number;
   isDead?: boolean;
-  ac: number;
+  evasion: number;
+  damageReduction: number;
   attacks: Attack[];
   experience: number;
   gold: number;

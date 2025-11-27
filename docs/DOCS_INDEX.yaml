@@ -26,6 +26,10 @@ performance:
     summary: Performance baseline snapshot from September 4, 2025 (archived)
 
 game_mechanics:
+  - file: combat-system.md
+    topics: [combat, hit roll, evasion, damage reduction, DR, attack, defense, formulas, accuracy]
+    summary: Combat system with hybrid hit roll + damage reduction mechanics for attacks and defense
+
   - file: wizardry-item-system.md
     topics: [items, equipment, inventory, wizardry mechanics, bishop, identification, curse risk, authentic mechanics]
     summary: Complete item system documentation based on Wizardry, including authentic Bishop identification mechanics
@@ -457,7 +461,7 @@ search_hints:
   bishop: [wizardry-item-system.md]
   setup: [README.md, USAGE.md]
   api: [api/README.md, api/globals.md]
-  combat: [api/classes/CombatScene.md, api/classes/CombatSystem.md, api/interfaces/Attack.md]
+  combat: [combat-system.md, api/classes/CombatScene.md, api/classes/CombatSystem.md, api/interfaces/Attack.md]
   dungeon: [api/classes/DungeonGenerator.md, api/classes/DungeonScene.md, api/interfaces/DungeonLevel.md, wizardry-dungeon-architecture.md]
   services: [api/classes/GameServices.md, api/classes/ServiceContainer.md, api/classes/ServiceRegistry.md]
   scenes: [api/classes/Scene.md, api/classes/SceneManager.md, api/interfaces/SceneRenderContext.md]
@@ -501,3 +505,7 @@ search_hints:
   gap_analysis: [dungeon-implementation-gap-analysis.md]
   implementation_status: [dungeon-implementation-gap-analysis.md]
   missing_features: [dungeon-implementation-gap-analysis.md]
+  evasion: [combat-system.md, utilities-reference.md]
+  damage_reduction: [combat-system.md, utilities-reference.md]
+  hit_roll: [combat-system.md]
+  accuracy: [combat-system.md]

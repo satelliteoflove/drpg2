@@ -138,8 +138,10 @@ export class DebuffEffect extends SpellEffectProcessor {
     const sign = value > 0 ? '+' : '';
 
     switch (stat) {
-      case 'ac':
-        return `${sign}${value} AC penalty`;
+      case 'evasion':
+        return `${sign}${value} evasion penalty`;
+      case 'damageReduction':
+        return `${sign}${value} DR penalty`;
       case 'attack':
         return `${sign}${value} attack penalty`;
       case 'damage':

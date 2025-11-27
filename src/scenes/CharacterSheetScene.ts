@@ -215,9 +215,9 @@ export class CharacterSheetScene extends Scene {
     });
 
     ctx.fillStyle = '#aaa';
-    ctx.fillText('AC:', x + 15, statY + stats.length * lineHeight + 15);
+    ctx.fillText('EVA:', x + 15, statY + stats.length * lineHeight + 15);
     ctx.fillStyle = '#fff';
-    ctx.fillText(`${character.effectiveAC}`, x + 60, statY + stats.length * lineHeight + 15);
+    ctx.fillText(`${character.effectiveEvasion}`, x + 60, statY + stats.length * lineHeight + 15);
 
     ctx.fillStyle = '#aaa';
     ctx.fillText('HP:', x + 15, statY + stats.length * lineHeight + 37);
@@ -494,8 +494,10 @@ export class CharacterSheetScene extends Scene {
 
       const damageEffect = item.effects?.find(e => e.type === 'damage');
       const damage = damageEffect && damageEffect.type === 'damage' ? damageEffect.value : 0;
-      const acEffect = item.effects?.find(e => e.type === 'ac');
-      const ac = acEffect && acEffect.type === 'ac' ? acEffect.value : 0;
+      const evasionEffect = item.effects?.find(e => e.type === 'evasion');
+      const evasion = evasionEffect && evasionEffect.type === 'evasion' ? evasionEffect.value : 0;
+      const drEffect = item.effects?.find(e => e.type === 'damageReduction');
+      const dr = drEffect && drEffect.type === 'damageReduction' ? drEffect.value : 0;
 
       let yOffset = 100;
       ctx.fillStyle = '#aaa';
@@ -508,8 +510,13 @@ export class CharacterSheetScene extends Scene {
         yOffset += 20;
       }
 
-      if (ac !== 0) {
-        ctx.fillText(`AC: ${ac > 0 ? '+' : ''}${ac}`, modalX + 30, modalY + yOffset);
+      if (evasion !== 0) {
+        ctx.fillText(`Evasion: ${evasion > 0 ? '+' : ''}${evasion}`, modalX + 30, modalY + yOffset);
+        yOffset += 20;
+      }
+
+      if (dr !== 0) {
+        ctx.fillText(`DR: ${dr > 0 ? '+' : ''}${dr}`, modalX + 30, modalY + yOffset);
         yOffset += 20;
       }
 
@@ -525,7 +532,7 @@ export class CharacterSheetScene extends Scene {
         yOffset += 20;
       }
 
-      const otherEffects = item.effects?.filter(e => e.type !== 'damage' && e.type !== 'ac') || [];
+      const otherEffects = item.effects?.filter(e => e.type !== 'damage' && e.type !== 'evasion' && e.type !== 'damageReduction') || [];
       if (otherEffects.length > 0) {
         yOffset += 5;
         ctx.fillStyle = '#8af';

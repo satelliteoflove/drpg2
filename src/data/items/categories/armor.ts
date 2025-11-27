@@ -6,7 +6,10 @@ export const armor = {
     type: 'armor',
     value: 20,
     weight: 8,
-    effects: [{ type: 'ac', value: 2 }],
+    effects: [
+      { type: 'evasion', value: 2 },
+      { type: 'damageReduction', value: 1 }
+    ],
     classRestrictions: [
       'Fighter',
       'Priest',
@@ -29,7 +32,7 @@ export const armor = {
     type: 'armor',
     value: 15,
     weight: 2,
-    effects: [{ type: 'ac', value: 1 }],
+    effects: [{ type: 'evasion', value: 1 }],
     classRestrictions: ['Mage', 'Priest', 'Bishop', 'Alchemist'],
     identified: true,
     cursed: false,
@@ -43,7 +46,10 @@ export const armor = {
     type: 'armor',
     value: 10000,
     weight: 2,
-    effects: [{ type: 'ac', value: 4 }],
+    effects: [
+      { type: 'evasion', value: 3 },
+      { type: 'damageReduction', value: 2 }
+    ],
     classRestrictions: ['Mage', 'Bishop', 'Priest', 'Thief', 'Ninja'],
     alignmentRestrictions: ['Evil'],
     identified: false,
@@ -59,7 +65,10 @@ export const armor = {
     type: 'armor',
     value: 8000,
     weight: 10,
-    effects: [{ type: 'ac', value: 5 }],
+    effects: [
+      { type: 'evasion', value: 1 },
+      { type: 'damageReduction', value: 5 }
+    ],
     classRestrictions: ['Fighter', 'Priest', 'Lord', 'Samurai', 'Ranger'],
     alignmentRestrictions: ['Good'],
     identified: false,

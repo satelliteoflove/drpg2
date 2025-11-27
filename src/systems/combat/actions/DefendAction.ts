@@ -15,7 +15,7 @@ export class DefendAction implements CombatAction {
       return { success: false, message: 'Invalid defender' };
     }
 
-    context.modifierSystem.applyModifier(currentUnit, 'ac', 2, {
+    context.modifierSystem.applyModifier(currentUnit, 'evasion', 2, {
       duration: 1,
       source: 'Defend',
       countsOnlyInCombat: true
@@ -23,7 +23,7 @@ export class DefendAction implements CombatAction {
 
     return {
       success: true,
-      message: `${currentUnit.name} defends! (AC +2 for 1 turn)`
+      message: `${currentUnit.name} defends! (Evasion +2 for 1 turn)`
     };
   }
 }

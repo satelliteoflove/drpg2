@@ -1,7 +1,7 @@
 import { ICharacter } from '../types/GameTypes';
 import { DebugLogger } from '../utils/DebugLogger';
 
-export type ModifierStat = 'ac' | 'attack' | 'damage' | 'speed';
+export type ModifierStat = 'evasion' | 'damageReduction' | 'attack' | 'damage' | 'speed';
 
 export interface ActiveModifier {
   stat: ModifierStat;

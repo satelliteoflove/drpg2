@@ -141,8 +141,10 @@ export class ModifierEffect extends SpellEffectProcessor {
     const sign = value > 0 ? '+' : '';
 
     switch (stat) {
-      case 'ac':
-        return `${sign}${value} AC`;
+      case 'evasion':
+        return `${sign}${value} evasion`;
+      case 'damageReduction':
+        return `${sign}${value} DR`;
       case 'attack':
         return `${sign}${value} attack`;
       case 'damage':

@@ -535,7 +535,7 @@ export class TrainingGroundsUIRenderer {
 
     ctx.fillStyle = '#aaa';
     ctx.font = '12px monospace';
-    ctx.fillText(`HP: ${character.hp}/${character.maxHp}  MP: ${character.mp}/${character.maxMp}  AC: ${character.ac}`, x + width / 2, yPos);
+    ctx.fillText(`HP: ${character.hp}/${character.maxHp}  MP: ${character.mp}/${character.maxMp}  EVA: ${character.effectiveEvasion}  DR: ${character.effectiveDamageReduction}`, x + width / 2, yPos);
     yPos += lineHeight;
     ctx.fillText(`ST: ${character.stats.strength}  IQ: ${character.stats.intelligence}  PI: ${character.stats.piety}`, x + width / 2, yPos);
     yPos += 16;

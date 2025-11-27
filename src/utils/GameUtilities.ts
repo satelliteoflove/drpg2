@@ -58,7 +58,9 @@ export class GameUtilities {
     switch (effect.type) {
       case 'damage':
         return baseValue + enchantmentBonus;
-      case 'ac':
+      case 'evasion':
+        return baseValue + enchantmentBonus;
+      case 'damageReduction':
         return baseValue + enchantmentBonus;
       case 'heal':
         return baseValue + Math.floor(enchantmentBonus * 0.5);

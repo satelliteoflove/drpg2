@@ -47,7 +47,8 @@ export class Character implements ICharacter {
   maxHp: number;
   mp: number;
   maxMp: number;
-  ac: number;
+  evasion: number;
+  damageReduction: number;
   statuses: ActiveStatusEffect[];
   modifiers?: ActiveModifier[];
   age: number;
@@ -106,7 +107,8 @@ export class Character implements ICharacter {
     this.hp = this.maxHp;
     this.maxMp = this.calculateMaxMp();
     this.mp = this.maxMp;
-    this.ac = 10;
+    this.evasion = Math.floor(this.stats.agility / GAME_CONFIG.COMBAT.HIT_ROLL.EVASION_AGILITY_DIVISOR);
+    this.damageReduction = 0;
 
     this.learnStartingSpells();
   }
@@ -509,9 +511,21 @@ export class Character implements ICharacter {
     this.age++;
   }
 
-  get effectiveAC(): number {
+  get effectiveEvasion(): number {
     const modifierSystem = ModifierSystem.getInstance();
-    return this.ac + modifierSystem.getTotalModifier(this, 'ac');
+    const baseEvasion = Math.floor(this.stats.agility / GAME_CONFIG.COMBAT.HIT_ROLL.EVASION_AGILITY_DIVISOR);
+    return baseEvasion + modifierSystem.getTotalModifier(this, 'evasion');
+  }
+
+  get effectiveDamageReduction(): number {
+    const modifierSystem = ModifierSystem.getInstance();
+    return this.damageReduction + modifierSystem.getTotalModifier(this, 'damageReduction');
+  }
+
+  get accuracy(): number {
+    const levelBonus = this.level * GAME_CONFIG.COMBAT.HIT_ROLL.ACCURACY_LEVEL_BONUS;
+    const agilityBonus = Math.floor(this.stats.agility / GAME_CONFIG.COMBAT.HIT_ROLL.ACCURACY_AGILITY_DIVISOR);
+    return levelBonus + agilityBonus;
   }
 
   get effectiveAttack(): number {

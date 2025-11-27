@@ -64,7 +64,7 @@ export class StatusPanel {
     ctx.fillStyle = '#aaa';
     ctx.font = '10px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`AC: ${char.effectiveAC}`, x + width - 5, y + 14);
+    ctx.fillText(`EVA: ${char.effectiveEvasion}`, x + width - 5, y + 14);
     ctx.fillText(`Gold: ${char.gold}`, x + width - 5, y + 28);
     ctx.textAlign = 'left';
 

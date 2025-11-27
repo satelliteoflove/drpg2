@@ -69,11 +69,17 @@ export type CombatEntity = Character | Monster;
 - `static getHP(entity: CombatEntity): number` - Returns current HP
 - `static getMaxHP(entity: CombatEntity): number` - Returns maximum HP
 - `static getLevel(entity: CombatEntity): number`
-- `static getAC(entity: CombatEntity): number`
 - `static getAgility(entity: CombatEntity): number`
 - `static getIntelligence(entity: CombatEntity): number`
 - `static getVitality(entity: CombatEntity): number`
 - `static getLuck(entity: CombatEntity): number`
+
+#### Combat Stats (see combat-system.md for formulas)
+- `static getEvasion(entity: CombatEntity): number` - Returns base evasion value
+- `static getEffectiveEvasion(entity: CombatEntity): number` - Returns evasion with all modifiers
+- `static getDamageReduction(entity: CombatEntity): number` - Returns base DR value
+- `static getEffectiveDamageReduction(entity: CombatEntity): number` - Returns DR with all modifiers
+- `static getAccuracy(entity: CombatEntity): number` - Returns accuracy for hit rolls
 
 #### HP Manipulation
 - `static setHP(entity: CombatEntity, hp: number): void`

@@ -329,9 +329,9 @@ The system includes 15 diverse test items based on Wizardry Gaiden IV:
 - **Muramasa** - Cursed legendary sword (+5 damage, cannot unequip)
 
 ### Armor & Protection
-- **Leather Armor** - Basic protection (+2 AC)
-- **Chain Mail** - Medium protection (+4 AC)
-- **Shadow Cape** - Stealth cloak (+1 AC, special properties)
+- **Leather Armor** - Basic protection (+2 evasion, +1 DR)
+- **Chain Mail** - Medium protection (+2 evasion, +3 DR)
+- **Shadow Cape** - Stealth cloak (+2 evasion, special properties)
 
 ### Magical Accessories  
 - **Ring of Healing** - Invokable healing ring (3 charges of healing spell)

@@ -44,8 +44,10 @@ export class ItemDescriptionFormatter {
         switch (effect.type) {
           case 'damage':
             return `+${effect.value} damage`;
-          case 'ac':
-            return `+${effect.value} AC`;
+          case 'evasion':
+            return `+${effect.value} evasion`;
+          case 'damageReduction':
+            return `+${effect.value} DR`;
           case 'stat':
             return `+${effect.value} ${effect.target}`;
           case 'heal':
