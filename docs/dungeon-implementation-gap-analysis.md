@@ -16,33 +16,30 @@ The current dungeon generation system has a solid foundation with room/corridor 
 - ❌ **Not Implemented:** ~30%
 
 **Critical Path for MVP:**
-1. Fix room count/sizing parameters (30-40 rooms, shared walls)
-2. Implement key placement and lock system on stairs
-3. Implement one-way doors (both complexity and shortcut types)
-4. Implement save system triggers (pre-combat, pre-event)
-5. Add basic NPC placement
-6. Create tunable constants file
+1. Implement key placement and lock system on stairs
+2. Implement one-way doors (both complexity and shortcut types)
+3. Implement save system triggers (pre-combat, pre-event)
+4. Add basic NPC placement
+5. Create tunable constants file
 
 ---
 
 ## PART 1: GRID & SPATIAL LAYOUT
 
 ### Room Count
-**Status:** ⚠️ **DIVERGES**
+**Status:** ✅ **ALIGNED**
 
-**Documentation Says:** 30-40 rooms per floor
+**Documentation Says:** 16-30 rooms per floor (balanced for Rooms & Mazes algorithm)
 **Code Does:** 16-30 rooms per floor
 ```typescript
 // Current code:
 const largeRooms = 3 + Math.floor(rng.random() * 6);    // 3-8
 const mediumRooms = 5 + Math.floor(rng.random() * 5);   // 5-9
 const smallRooms = 8 + Math.floor(rng.random() * 6);    // 8-13
-// Total: 16-30 rooms (too few)
+// Total: 16-30 rooms
 ```
 
-**Action Required:**
-- Adjust room counts to: 8-10 large, 12-15 medium, 10-15 small
-- Total should be 30-40 rooms
+**No action required** - room count is appropriate for the Rooms & Mazes generation algorithm.
 
 ### Room Size Distribution
 **Status:** ⚠️ **DIVERGES**
@@ -55,21 +52,19 @@ const smallRooms = 8 + Math.floor(rng.random() * 6);    // 8-13
 - Use documented distribution: 40/40/20
 
 ### Room Spacing
-**Status:** ⚠️ **DIVERGES**
+**Status:** ✅ **ALIGNED**
 
-**Documentation Says:** `ROOM_PLACEMENT_COLLISION_SPACING: 0` (rooms can share walls)
+**Documentation Says:** 2-tile spacing between rooms (required by Rooms & Mazes algorithm)
 **Code Does:** `minSpacing: 2` (2-tile gap between rooms)
 
 ```typescript
 // Current code:
 if (!this.canPlaceRoom(x, y, width, height, 2)) {
-  // Uses 2-tile spacing
+  // Uses 2-tile spacing for maze corridor generation
 }
 ```
 
-**Action Required:**
-- Change `minSpacing` from 2 to 0
-- Allow rooms to share walls directly (Wizardry-style)
+**No action required** - 2-tile spacing is necessary for the Rooms & Mazes algorithm to generate proper maze corridors between rooms.
 
 ### Floor Coverage
 **Status:** ✅ **MATCHES**
@@ -671,35 +666,30 @@ These are documented but explicitly marked as post-MVP:
 ### CRITICAL (MVP Blockers)
 **Must implement for playable MVP:**
 
-1. **Fix Room Generation Parameters** (2 hours)
-   - Adjust room counts to 30-40
-   - Fix room size distribution to 40/40/20
-   - Change spacing to 0 (shared walls)
-
-2. **Implement Key/Lock System** (8 hours)
+1. **Implement Key/Lock System** (8 hours)
    - Create Key item type
    - Implement key placement algorithm
    - Lock stairs_down with gate
    - Add unlock interaction
    - Add key discovery feedback
 
-3. **Implement One-Way Doors** (6 hours)
+2. **Implement One-Way Doors** (6 hours)
    - Add one-way door placement logic
    - Implement movement blocking
    - Add visual indicators
    - Validate solvability
 
-4. **Fix Save System Triggers** (4 hours)
+3. **Fix Save System Triggers** (4 hours)
    - Save before combat
    - Save before events
    - Save after event resolution
 
-5. **Create Tunable Constants File** (2 hours)
+4. **Create Tunable Constants File** (2 hours)
    - Consolidate all constants
    - Document tuning process
    - Update all references
 
-**Total MVP Critical Path: ~22 hours**
+**Total MVP Critical Path: ~20 hours**
 
 ### HIGH PRIORITY (MVP Polish)
 **Should implement for good MVP experience:**
@@ -764,12 +754,12 @@ These are documented but explicitly marked as post-MVP:
 
 ## ESTIMATED TOTAL IMPLEMENTATION TIME
 
-- **Critical MVP:** 22 hours
+- **Critical MVP:** 20 hours
 - **High Priority:** 16 hours
 - **Medium Priority:** 34 hours
 - **Low Priority:** 24 hours
 
-**Total:** ~96 hours (~12 working days)
+**Total:** ~94 hours (~12 working days)
 
 **Recommended Phasing:**
 1. **Week 1:** Complete Critical MVP (playable dungeon with progression)

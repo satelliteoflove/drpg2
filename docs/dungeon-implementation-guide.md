@@ -19,8 +19,8 @@
 export const GENERATION_CONSTANTS = {
   // Grid & Spatial
   GRID_SIZE: 20,
-  TARGET_ROOM_COUNT_MIN: 30,
-  TARGET_ROOM_COUNT_MAX: 40,
+  TARGET_ROOM_COUNT_MIN: 16,
+  TARGET_ROOM_COUNT_MAX: 30,
   TARGET_COVERAGE_MIN: 75,  // % of tiles as floor
   TARGET_COVERAGE_MAX: 85,
 
@@ -43,7 +43,7 @@ export const GENERATION_CONSTANTS = {
 
   // Placement Retries
   ROOM_PLACEMENT_MAX_RETRIES: 100,
-  ROOM_PLACEMENT_COLLISION_SPACING: 0,  // Allow shared walls
+  ROOM_PLACEMENT_COLLISION_SPACING: 2,  // Required for Rooms & Mazes algorithm
 };
 ```
 
@@ -395,8 +395,8 @@ export const VALIDATION_CONSTANTS = {
 
 **What Needs Modification:**
 1. **Room size distribution:** Currently 2×2, 3×3 small rooms → Change to 2×2 through 6×6 distribution
-2. **Room count target:** Currently 49-65 rooms → Change to 30-40 rooms
-3. **Spacing:** Currently minSpacing=0 (good, keep this)
+2. **Room count target:** Currently 16-30 rooms (appropriate for Rooms & Mazes algorithm)
+3. **Spacing:** Currently minSpacing=2 (required for maze corridor generation)
 4. **Grid size:** Currently 24×24 → Change to 20×20
 5. **Trap placement:** Currently avoids doors → Allow traps adjacent to doors (or disable traps for MVP)
 6. **Chest system:** Currently placing chests → Remove or repurpose for event modules
@@ -471,7 +471,7 @@ export const VALIDATION_CONSTANTS = {
 
 **Step-by-step Implementation:**
 1. Start with Phase 1 (MVP) systems
-2. Modify existing room generation to new parameters (30-40 rooms, 20×20 grid)
+2. Verify room generation parameters (16-30 rooms, 20×20 grid)
 3. Implement key/lock system
 4. Implement one-way door system (both types)
 5. Implement save system changes (critical for game identity)
@@ -507,7 +507,7 @@ export const VALIDATION_CONSTANTS = {
 1. **Update grid parameters:**
    ```typescript
    const GRID_SIZE = 20;  // Was: 24
-   const TARGET_ROOMS = { min: 30, max: 40 };  // Was: 49-65
+   const TARGET_ROOMS = { min: 16, max: 30 };  // Balanced for Rooms & Mazes
    ```
 
 2. **Update room size distribution:**
@@ -568,8 +568,8 @@ export const VALIDATION_CONSTANTS = {
 ### 5.1 Phase 1 (MVP) Checklist
 
 **Generation System:**
-- [ ] Update GRID_SIZE to 20×20
-- [ ] Update room count target to 30-40
+- [x] Room count target verified at 16-30 (balanced for Rooms & Mazes algorithm)
+- [x] Room spacing at 2 tiles (required for maze corridor generation)
 - [ ] Update room size distribution (40% small, 40% medium, 20% large)
 - [ ] Verify MST corridor connectivity works with new parameters
 - [ ] Add loop creation (2-3 additional connections)
