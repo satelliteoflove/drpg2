@@ -83,6 +83,20 @@ export class EntityUtils {
     }
   }
 
+  static getEffectiveAC(entity: CombatEntity): number {
+    if (this.isCharacter(entity)) {
+      return entity.effectiveAC;
+    }
+    const baseAC = entity.ac || 10;
+    if (!entity.modifiers || entity.modifiers.length === 0) {
+      return baseAC;
+    }
+    const acModifier = entity.modifiers
+      .filter(m => m.stat === 'ac')
+      .reduce((sum, m) => sum + m.value, 0);
+    return baseAC + acModifier;
+  }
+
   static getResistance(entity: CombatEntity, element: string): number {
     if (this.isCharacter(entity)) {
       return 0;
