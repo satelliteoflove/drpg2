@@ -2,6 +2,7 @@ import { SpellEffectProcessor, EffectTarget, EffectResult } from '../SpellEffect
 import { Character } from '../../../entities/Character';
 import { SpellData, SpellCastingContext } from '../../../types/SpellTypes';
 import { DamageEffectConfig, ELEMENTAL_OPPOSITES, SpellEffectConfig } from '../../../data/spells/SpellEffectTypes';
+import { EntityUtils, CombatEntity } from '../../../utils/EntityUtils';
 
 export class DamageEffect extends SpellEffectProcessor {
   processEffect(
@@ -76,13 +77,8 @@ export class DamageEffect extends SpellEffectProcessor {
     return result;
   }
 
-  private getDefenseValue(entity: any): number {
-    if (this.isCharacter(entity)) {
-      const char = entity as Character;
-      return Math.floor(char.ac / 2);
-    } else {
-      return Math.floor((entity.ac || 0) / 2);
-    }
+  private getDefenseValue(entity: CombatEntity): number {
+    return Math.floor(EntityUtils.getEffectiveAC(entity) / 2);
   }
 
   private getCriticalChance(caster: Character): number {

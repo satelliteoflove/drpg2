@@ -2,7 +2,7 @@ import { SpellEffectProcessor, EffectTarget, EffectResult } from '../SpellEffect
 import { Character } from '../../../entities/Character';
 import { SpellData, SpellCastingContext } from '../../../types/SpellTypes';
 import { ModifierEffectConfig, SpellEffectConfig } from '../../../data/spells/SpellEffectTypes';
-import { ModifierSystem, ModifierStat } from '../../ModifierSystem';
+import { ModifierSystem, ModifierStat, ActiveModifier } from '../../ModifierSystem';
 
 export class ModifierEffect extends SpellEffectProcessor {
   private modifierSystem: ModifierSystem;
@@ -51,7 +51,8 @@ export class ModifierEffect extends SpellEffectProcessor {
 
     if (config.affectsEnemies && context.enemies) {
       for (const enemy of context.enemies) {
-        if (this.isMonster(enemy) && enemy.hp <= 0) continue;
+        if (enemy.hp <= 0) continue;
+        if (this.isMonster(enemy) && enemy.isDead) continue;
 
         if (this.isCharacter(enemy)) {
           this.modifierSystem.applyModifier(enemy, stat, value, {
@@ -60,11 +61,24 @@ export class ModifierEffect extends SpellEffectProcessor {
             casterLevel: caster.level,
             countsOnlyInCombat: config.countsOnlyInCombat
           });
-
-          result.targets.push({
-            target: { entity: enemy, isAlly: false }
-          });
+        } else if (this.isMonster(enemy)) {
+          if (!enemy.modifiers) {
+            enemy.modifiers = [];
+          }
+          const modifier: ActiveModifier = {
+            stat,
+            value,
+            source: spell.name,
+            turnsRemaining: duration,
+            casterLevel: caster.level,
+            countsOnlyInCombat: config.countsOnlyInCombat
+          };
+          enemy.modifiers.push(modifier);
         }
+
+        result.targets.push({
+          target: { entity: enemy, isAlly: false }
+        });
       }
 
       result.messages.push(this.getModifierMessage(spell.name, stat, value, false));

@@ -1,6 +1,7 @@
 import { Character } from '../../../entities/Character';
 import { Monster } from '../../../types/GameTypes';
 import { DebugLogger } from '../../../utils/DebugLogger';
+import { EntityUtils } from '../../../utils/EntityUtils';
 
 export class DamageCalculator {
   calculateDamage(attacker: Character, target: Monster): number {
@@ -22,7 +23,7 @@ export class DamageCalculator {
     const damageBonus = attacker.effectiveDamage;
     baseDamage += attackBonus + damageBonus;
 
-    const defense = Math.floor(target.ac / 2);
+    const defense = Math.floor(EntityUtils.getEffectiveAC(target) / 2);
     return Math.max(1, baseDamage - defense);
   }
 }
