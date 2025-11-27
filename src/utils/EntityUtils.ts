@@ -75,26 +75,57 @@ export class EntityUtils {
     }
   }
 
-  static getAC(entity: CombatEntity): number {
+  static getEvasion(entity: CombatEntity): number {
     if (this.isCharacter(entity)) {
-      return entity.ac;
+      return entity.evasion;
     } else {
-      return entity.ac || 10;
+      return entity.evasion || 0;
     }
   }
 
-  static getEffectiveAC(entity: CombatEntity): number {
+  static getEffectiveEvasion(entity: CombatEntity): number {
     if (this.isCharacter(entity)) {
-      return entity.effectiveAC;
+      return entity.effectiveEvasion;
     }
-    const baseAC = entity.ac || 10;
+    const baseEvasion = entity.evasion || 0;
     if (!entity.modifiers || entity.modifiers.length === 0) {
-      return baseAC;
+      return baseEvasion;
     }
-    const acModifier = entity.modifiers
-      .filter(m => m.stat === 'ac')
+    const evasionModifier = entity.modifiers
+      .filter(m => m.stat === 'evasion')
       .reduce((sum, m) => sum + m.value, 0);
-    return baseAC + acModifier;
+    return baseEvasion + evasionModifier;
+  }
+
+  static getDamageReduction(entity: CombatEntity): number {
+    if (this.isCharacter(entity)) {
+      return entity.damageReduction;
+    } else {
+      return entity.damageReduction || 0;
+    }
+  }
+
+  static getEffectiveDamageReduction(entity: CombatEntity): number {
+    if (this.isCharacter(entity)) {
+      return entity.effectiveDamageReduction;
+    }
+    const baseDR = entity.damageReduction || 0;
+    if (!entity.modifiers || entity.modifiers.length === 0) {
+      return baseDR;
+    }
+    const drModifier = entity.modifiers
+      .filter(m => m.stat === 'damageReduction')
+      .reduce((sum, m) => sum + m.value, 0);
+    return baseDR + drModifier;
+  }
+
+  static getAccuracy(entity: CombatEntity): number {
+    if (this.isCharacter(entity)) {
+      return entity.accuracy;
+    }
+    const level = entity.level || 1;
+    const agility = 10;
+    return level + Math.floor(agility / 4);
   }
 
   static getResistance(entity: CombatEntity, element: string): number {

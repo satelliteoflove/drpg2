@@ -722,7 +722,7 @@ effects:
   combat:
     - Varies by cursed item
     - May reduce stats (ST, IQ, AG, etc.)
-    - May reduce AC effectiveness
+    - May reduce evasion or damage reduction
   exploration:
     - Cursed items remain equipped
     - Inventory slot occupied
@@ -760,7 +760,7 @@ implementation_notes: |
 
   Curse mechanics:
   - Items auto-equip and cannot be removed
-  - Usually have negative effects (stat penalties, worse AC)
+  - Usually have negative effects (stat penalties, reduced evasion)
   - Must be identified or removed via temple/spell
   - Bishop's ZILFIS destroys the item (not just uncurses)
 ```
@@ -893,7 +893,7 @@ effects:
   combat:
     - 25% chance per round to gag helplessly (lose turn)
     - -25% miss chance (increased miss rate)
-    - -4 evasion AC
+    - -4 evasion
     - Can still defend but not as effectively
   exploration:
     - May randomly skip actions

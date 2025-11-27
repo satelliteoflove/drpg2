@@ -123,16 +123,16 @@ export class BuffEffect extends SpellEffectProcessor {
 
   private mapBuffToStat(buffType: string): ModifierStat {
     const mapping: Record<string, ModifierStat> = {
-      'ac_bonus': 'ac',
-      'defense_bonus': 'ac',
+      'ac_bonus': 'evasion',
+      'defense_bonus': 'evasion',
       'attack_bonus': 'attack',
       'damage_bonus': 'damage',
       'speed_bonus': 'speed',
-      'shield': 'ac',
-      'protection': 'ac'
+      'shield': 'damageReduction',
+      'protection': 'evasion'
     };
 
-    return mapping[buffType] || 'ac';
+    return mapping[buffType] || 'evasion';
   }
 
   private getBuffMessage(spellName: string, buffType: string, value: number, isParty: boolean): string {
@@ -147,9 +147,10 @@ export class BuffEffect extends SpellEffectProcessor {
     switch (buffType) {
       case 'ac_bonus':
       case 'defense_bonus':
-      case 'shield':
       case 'protection':
-        return `${sign}${value} AC`;
+        return `${sign}${value} evasion`;
+      case 'shield':
+        return `${sign}${value} damage reduction`;
       case 'attack_bonus':
         return `${sign}${value} attack`;
       case 'damage_bonus':

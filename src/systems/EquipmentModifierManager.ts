@@ -33,9 +33,17 @@ export class EquipmentModifierManager {
           }
           break;
 
-        case 'ac':
-          character.ac += effect.value * multiplier;
-          DebugLogger.info('EquipmentModifierManager', `${isEquipping ? 'Applied' : 'Removed'} ${effect.value} AC ${isEquipping ? 'from' : 'to'} ${item.name}`, {
+        case 'evasion':
+          character.evasion += effect.value * multiplier;
+          DebugLogger.info('EquipmentModifierManager', `${isEquipping ? 'Applied' : 'Removed'} ${effect.value} evasion ${isEquipping ? 'from' : 'to'} ${item.name}`, {
+            character: character.name,
+            item: item.name
+          });
+          break;
+
+        case 'damageReduction':
+          character.damageReduction += effect.value * multiplier;
+          DebugLogger.info('EquipmentModifierManager', `${isEquipping ? 'Applied' : 'Removed'} ${effect.value} damage reduction ${isEquipping ? 'from' : 'to'} ${item.name}`, {
             character: character.name,
             item: item.name
           });

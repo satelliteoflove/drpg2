@@ -81,9 +81,65 @@ export const GAME_CONFIG = {
     },
   },
 
+  /**
+   * Combat System Configuration
+   *
+   * Hit Formula: d20 + accuracy >= BASE_THRESHOLD + evasion
+   * Damage Formula: weaponDice + (STR / STRENGTH_DIVISOR) + damageBonus - damageReduction (min 1)
+   *
+   * Design Notes:
+   * - Evasion uses /3 divisor (more impactful) because it's the primary defensive stat
+   * - Accuracy uses /4 divisor (less impactful) to keep hit rates reasonable
+   * - This asymmetry ensures high-agility defenders have meaningful evasion advantage
+   */
   COMBAT: {
+    /** Delay in ms between monster actions for visual pacing */
     MONSTER_TURN_DELAY: 800,
+    /** Safety limit for recursive combat calculations */
     MAX_RECURSION_DEPTH: 100,
+
+    /**
+     * Hit Roll Constants
+     * Formula: d20 + (level * LEVEL_BONUS) + (agility / ACCURACY_DIVISOR) >= BASE_THRESHOLD + evasion
+     */
+    HIT_ROLL: {
+      /** Base target number to hit (before evasion) - d20 roll must meet or exceed this */
+      BASE_THRESHOLD: 10,
+      /** Accuracy bonus per character level */
+      ACCURACY_LEVEL_BONUS: 1,
+      /** Divisor for agility->accuracy conversion (higher = less impact) */
+      ACCURACY_AGILITY_DIVISOR: 4,
+      /** Divisor for agility->evasion conversion (lower = more impact, favors defenders) */
+      EVASION_AGILITY_DIVISOR: 3,
+      /** Standard d20 for hit rolls */
+      D20_SIDES: 20,
+    },
+
+    /**
+     * Damage Constants
+     * Formula: weaponDice + (STR / STRENGTH_DIVISOR) + bonuses - damageReduction (min MIN_DAMAGE)
+     */
+    DAMAGE: {
+      /** Divisor for strength->damage bonus conversion */
+      STRENGTH_DIVISOR: 4,
+      /** Minimum damage dealt on a successful hit (prevents 0-damage hits) */
+      MIN_DAMAGE: 1,
+      /** Dice notation for unarmed attacks */
+      UNARMED_DICE: '1d2',
+    },
+
+    /**
+     * Monster Accuracy Constants
+     * Monsters lack individual stats, so we use standardized values
+     */
+    MONSTER_ACCURACY: {
+      /** Accuracy bonus per monster level */
+      LEVEL_BONUS: 1,
+      /** Assumed agility for all monsters (limitation: no per-monster stats) */
+      BASE_AGILITY: 10,
+      /** Divisor for monster agility->accuracy (matches player ACCURACY_AGILITY_DIVISOR) */
+      AGILITY_DIVISOR: 4,
+    },
   },
 
   DEATH_SYSTEM: {

@@ -107,7 +107,7 @@ export interface SpellEffect {
   percentHeal?: number;
   canOverheal?: boolean;
   resistanceCheck?: boolean;
-  stat?: 'ac' | 'attack' | 'damage' | 'speed' | 'resistance' | 'levitation';
+  stat?: 'evasion' | 'damageReduction' | 'attack' | 'damage' | 'speed' | 'resistance' | 'levitation';
   affectsAllies?: boolean;
   affectsEnemies?: boolean;
   countsOnlyInCombat?: boolean;

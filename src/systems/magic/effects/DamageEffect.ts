@@ -78,7 +78,7 @@ export class DamageEffect extends SpellEffectProcessor {
   }
 
   private getDefenseValue(entity: CombatEntity): number {
-    return Math.floor(EntityUtils.getEffectiveAC(entity) / 2);
+    return EntityUtils.getEffectiveDamageReduction(entity);
   }
 
   private getCriticalChance(caster: Character): number {

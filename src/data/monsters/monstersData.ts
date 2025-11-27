@@ -3,7 +3,8 @@ export const monstersData = {
     id: 'slime',
     name: 'Slime',
     baseHp: 15,
-    baseAc: 8,
+    baseEvasion: 2,
+    baseDamageReduction: 0,
     attacks: [
       {
         name: 'Slime Attack',
@@ -29,7 +30,8 @@ export const monstersData = {
     id: 'goblin',
     name: 'Goblin',
     baseHp: 20,
-    baseAc: 6,
+    baseEvasion: 5,
+    baseDamageReduction: 1,
     attacks: [
       {
         name: 'Club',
@@ -59,7 +61,8 @@ export const monstersData = {
     id: 'orc',
     name: 'Orc',
     baseHp: 35,
-    baseAc: 4,
+    baseEvasion: 2,
+    baseDamageReduction: 4,
     attacks: [
       {
         name: 'Sword',
@@ -100,7 +103,8 @@ export const monstersData = {
     id: 'giant_spider',
     name: 'Giant Spider',
     baseHp: 45,
-    baseAc: 5,
+    baseEvasion: 4,
+    baseDamageReduction: 1,
     attacks: [
       {
         name: 'Bite',
@@ -132,7 +136,8 @@ export const monstersData = {
     id: 'medusa',
     name: 'Medusa',
     baseHp: 60,
-    baseAc: 3,
+    baseEvasion: 3,
+    baseDamageReduction: 3,
     attacks: [
       {
         name: 'Petrifying Gaze',
@@ -161,7 +166,8 @@ export const monstersData = {
     id: 'vampire',
     name: 'Vampire',
     baseHp: 70,
-    baseAc: 2,
+    baseEvasion: 5,
+    baseDamageReduction: 3,
     attacks: [
       {
         name: 'Bite',
@@ -190,7 +196,8 @@ export const monstersData = {
     id: 'banshee',
     name: 'Banshee',
     baseHp: 50,
-    baseAc: 4,
+    baseEvasion: 6,
+    baseDamageReduction: 0,
     attacks: [
       {
         name: 'Wail',
@@ -219,7 +226,8 @@ export const monstersData = {
     id: 'basilisk',
     name: 'Basilisk',
     baseHp: 65,
-    baseAc: 3,
+    baseEvasion: 2,
+    baseDamageReduction: 5,
     attacks: [
       {
         name: 'Petrifying Gaze',
@@ -248,7 +256,8 @@ export const monstersData = {
     id: 'wraith',
     name: 'Wraith',
     baseHp: 55,
-    baseAc: 2,
+    baseEvasion: 6,
+    baseDamageReduction: 2,
     attacks: [
       {
         name: 'Life Drain',

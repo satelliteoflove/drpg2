@@ -270,7 +270,7 @@ export class DebugScene extends Scene {
 
       const equipCount = Object.values(char.equipment).filter((item) => item !== undefined).length;
       ctx.fillText(
-        `  HP:${char.hp}/${char.maxHp} MP:${char.mp}/${char.maxMp} AC:${char.effectiveAC} Equipment:${equipCount}/7 Items:${char.inventory.length}/20`,
+        `  HP:${char.hp}/${char.maxHp} MP:${char.mp}/${char.maxMp} EVA:${char.effectiveEvasion} DR:${char.effectiveDamageReduction} Equipment:${equipCount}/7 Items:${char.inventory.length}/20`,
         x,
         y
       );
