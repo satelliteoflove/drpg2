@@ -23,7 +23,7 @@
 - Dense packing with minimal wasted space
 
 **Room Count and Sizes:**
-- 30-40 rooms per floor
+- 16-30 rooms per floor (balanced for Rooms & Mazes algorithm)
 - Room size distribution:
   - 40% small rooms (2×2, 3×2 = 4-6 tiles)
   - 40% medium rooms (3×3, 3×4, 4×4 = 9-16 tiles)
@@ -40,7 +40,7 @@
 
 **Architecture:**
 - Wall-on-edge system (all tiles are floors, walls are edge properties)
-- Rooms can share walls (zero spacing between rooms)
+- Rooms have 2-tile spacing (required by Rooms & Mazes algorithm for maze corridors)
 - Doors placed on room boundaries
 
 ### 1.2 Navigation Features
@@ -130,7 +130,7 @@ Phase 6: Validation & Testing (Ensure solvability)
 
 **Step 1.1: Room Generation**
 ```
-Input: Floor number, theme, target room count (30-40)
+Input: Floor number, theme, target room count (16-30)
 
 Process:
 1. Generate room sizes from distribution:
@@ -141,8 +141,8 @@ Process:
    - Start with largest rooms first
    - Place in random positions
    - Check for collisions with existing rooms
-   - Allow rooms to share walls (zero spacing)
-   - Retry if collision with 1-tile gap
+   - Maintain 2-tile spacing between rooms (for maze corridor generation)
+   - Retry if collision within spacing requirement
    - Max retries: 100 per room
 
 3. Continue until:
@@ -644,7 +644,7 @@ interface DarkZone {
 ```typescript
 interface GenerationConfig {
   gridSize: number;  // Default: 20
-  targetRoomCount: { min: number; max: number };  // Default: 30-40
+  targetRoomCount: { min: number; max: number };  // Default: 16-30
   targetCoverage: { min: number; max: number };  // Default: 75-85%
   roomSizeDistribution: {
     small: number;   // Default: 40%
