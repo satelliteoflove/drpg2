@@ -5,6 +5,7 @@ export const monstersData = {
     baseHp: 15,
     baseEvasion: 2,
     baseDamageReduction: 0,
+    baseAgility: 5,
     attacks: [
       {
         name: 'Slime Attack',
@@ -32,6 +33,7 @@ export const monstersData = {
     baseHp: 20,
     baseEvasion: 5,
     baseDamageReduction: 1,
+    baseAgility: 14,
     attacks: [
       {
         name: 'Club',
@@ -63,6 +65,7 @@ export const monstersData = {
     baseHp: 35,
     baseEvasion: 2,
     baseDamageReduction: 4,
+    baseAgility: 10,
     attacks: [
       {
         name: 'Sword',
@@ -105,6 +108,7 @@ export const monstersData = {
     baseHp: 45,
     baseEvasion: 4,
     baseDamageReduction: 1,
+    baseAgility: 16,
     attacks: [
       {
         name: 'Bite',
@@ -138,6 +142,7 @@ export const monstersData = {
     baseHp: 60,
     baseEvasion: 3,
     baseDamageReduction: 3,
+    baseAgility: 12,
     attacks: [
       {
         name: 'Petrifying Gaze',
@@ -168,6 +173,7 @@ export const monstersData = {
     baseHp: 70,
     baseEvasion: 5,
     baseDamageReduction: 3,
+    baseAgility: 15,
     attacks: [
       {
         name: 'Bite',
@@ -198,6 +204,7 @@ export const monstersData = {
     baseHp: 50,
     baseEvasion: 6,
     baseDamageReduction: 0,
+    baseAgility: 18,
     attacks: [
       {
         name: 'Wail',
@@ -228,6 +235,7 @@ export const monstersData = {
     baseHp: 65,
     baseEvasion: 2,
     baseDamageReduction: 5,
+    baseAgility: 8,
     attacks: [
       {
         name: 'Petrifying Gaze',
@@ -258,6 +266,7 @@ export const monstersData = {
     baseHp: 55,
     baseEvasion: 6,
     baseDamageReduction: 2,
+    baseAgility: 17,
     attacks: [
       {
         name: 'Life Drain',

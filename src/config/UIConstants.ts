@@ -158,6 +158,35 @@ export const UI_CONSTANTS = {
     ACTION_MENU_WIDTH: 200,
   },
 
+  // Turn Order List (vertical list showing turn order, FFX-style)
+  TURN_ORDER_LIST: {
+    X: 770,
+    Y: 80,
+    WIDTH: 240,
+    HEIGHT: 480,
+    ENTRY_HEIGHT: 28,
+    MAX_ENTRIES: 16,
+    PADDING: 10,
+    ENEMY_COLOR: '#cc4444',
+    PLAYER_COLOR: '#88ff88',
+    CURRENT_ACTOR_BG: '#444400',
+    GHOST_OPACITY: 0.5,
+    GHOST_BG: '#333333',
+    BORDER_COLOR: '#666',
+    TEXT_COLOR: '#fff',
+    TITLE_HEIGHT: 30,
+  },
+
+  // Combat Options (two-column layout below combat area)
+  COMBAT_OPTIONS: {
+    X: 260,
+    Y: 490,
+    WIDTH: 500,
+    HEIGHT: 80,
+    COLUMN_WIDTH: 240,
+    COLUMN_GAP: 20,
+  },
+
   // Inventory & Items
   INVENTORY: {
     GRID_COLUMNS: 5,

@@ -148,8 +148,19 @@ export class AIInterface {
 
   public getCombatInfo(): {
     inCombat: boolean;
-    enemies?: Array<{ name: string; hp: number; status: string; evasion: number; damageReduction: number }>;
+    enemies?: Array<{ name: string; hp: number; status: string; evasion: number; damageReduction: number; agility: number }>;
     currentTurn?: string;
+    currentActorId?: string;
+    initiative?: {
+      currentTick: number;
+      queue: Array<{
+        entityId: string;
+        entityName: string;
+        isPlayer: boolean;
+        ticksUntilAction: number;
+        isCurrentActor: boolean;
+      }>;
+    };
     spellMenuOpen?: boolean;
     selectedSpell?: string;
     availableSpells?: string[];
@@ -163,6 +174,10 @@ export class AIInterface {
     const combatScene = scene?.getName().toLowerCase() === 'combat' ? (scene as any) : null;
     const testState = combatScene?.getTestState ? combatScene.getTestState() : null;
 
+    const combatSystem = combatScene?.combatSystem;
+    const initiativeSnapshot = combatSystem?.getInitiativeSnapshot?.();
+    const currentUnit = combatSystem?.getCurrentUnit?.();
+
     return {
       inCombat: true,
       enemies: state.combatContext.monsters?.map((e: any) => ({
@@ -171,8 +186,14 @@ export class AIInterface {
         status: e.status || 'OK',
         evasion: e.evasion || 0,
         damageReduction: e.damageReduction || 0,
+        agility: e.agility || 10,
       })) || [],
-      currentTurn: 'player', // Combat system doesn't expose turn info yet
+      currentTurn: currentUnit ? (EntityUtils.isCharacter(currentUnit) ? 'player' : 'monster') : 'unknown',
+      currentActorId: currentUnit?.id,
+      initiative: initiativeSnapshot ? {
+        currentTick: initiativeSnapshot.currentTick,
+        queue: initiativeSnapshot.queue,
+      } : undefined,
       spellMenuOpen: testState?.spellMenuOpen || false,
       selectedSpell: testState?.pendingSpellId || undefined,
       availableSpells: testState?.availableSpells || []

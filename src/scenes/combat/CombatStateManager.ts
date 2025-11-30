@@ -8,6 +8,12 @@ import { GAME_CONFIG } from '../../config/GameConstants';
 import { StatusEffectSystem } from '../../systems/StatusEffectSystem';
 import { EntityUtils } from '../../utils/EntityUtils';
 import { GameServices } from '../../services/GameServices';
+import { CombatActionRegistry } from '../../systems/combat/actions/CombatActionRegistry';
+import { CombatActionContext } from '../../systems/combat/actions/CombatAction';
+import { DamageCalculator } from '../../systems/combat/helpers/DamageCalculator';
+import { WeaponEffectApplicator } from '../../systems/combat/helpers/WeaponEffectApplicator';
+import { SpellCaster } from '../../systems/magic/SpellCaster';
+import { ModifierSystem } from '../../systems/ModifierSystem';
 
 export type ActionState = 'select_action' | 'select_target' | 'select_spell' | 'spell_target' | 'waiting';
 
@@ -196,6 +202,7 @@ export class CombatStateManager {
       if (this.messageLog) {
         this.messageLog.addCombatMessage(`${monster.name} is ${status} and cannot act!`);
       }
+      this.combatSystem.applySkipTurnDelay(monster.id);
     } else {
       DebugLogger.debug('CombatStateManager', `${monster.name} is executing turn`);
       const result = this.combatSystem.executeMonsterTurn();
@@ -396,5 +403,52 @@ export class CombatStateManager {
       isProcessingAction: this.isProcessingAction,
       pendingSpellId: this.pendingSpellId
     };
+  }
+
+  public getActionDelays(): Map<string, number> {
+    const delays = new Map<string, number>();
+    const actionRegistry = new CombatActionRegistry();
+    const encounter = this.combatSystem.getEncounter();
+
+    if (!encounter) return delays;
+
+    const context: CombatActionContext = {
+      encounter,
+      party: this.combatSystem.getParty(),
+      spellCaster: SpellCaster.getInstance(),
+      statusEffectSystem: StatusEffectSystem.getInstance(),
+      modifierSystem: ModifierSystem.getInstance(),
+      damageCalculator: new DamageCalculator(),
+      weaponEffectApplicator: new WeaponEffectApplicator(StatusEffectSystem.getInstance()),
+      getCurrentUnit: () => this.combatSystem.getCurrentUnit(),
+      cleanupDeadUnits: () => {},
+      endCombat: () => {}
+    };
+
+    const actionNames = ['Attack', 'Defend', 'Use Item', 'Escape', 'Cast Spell'];
+    for (const name of actionNames) {
+      const action = actionRegistry.get(name);
+      if (action) {
+        delays.set(name, action.getDelay(context, {}));
+      }
+    }
+
+    return delays;
+  }
+
+  public getSelectedActionDelay(): number {
+    const options = this.combatSystem.getPlayerOptions();
+    if (this.selectedAction >= options.length) return 0;
+
+    const actionName = options[this.selectedAction];
+    const delays = this.getActionDelays();
+    const delay = delays.get(actionName) || 0;
+    DebugLogger.debug('CombatStateManager', 'getSelectedActionDelay', {
+      selectedAction: this.selectedAction,
+      actionName,
+      delay,
+      allDelays: Object.fromEntries(delays)
+    });
+    return delay;
   }
 }
