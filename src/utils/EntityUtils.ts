@@ -154,7 +154,7 @@ export class EntityUtils {
     if (this.isCharacter(entity)) {
       return entity.stats.agility;
     } else {
-      return 10;
+      return entity.agility ?? 10;
     }
   }
 

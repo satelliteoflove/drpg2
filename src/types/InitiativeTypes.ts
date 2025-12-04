@@ -1,5 +1,6 @@
 import { Character } from '../entities/Character';
 import { Monster } from './GameTypes';
+import { EntityUtils } from '../utils/EntityUtils';
 
 export type CombatEntity = Character | Monster;
 
@@ -59,11 +60,11 @@ export interface CursorMemoryEntry {
 }
 
 export function isCharacter(entity: CombatEntity): entity is Character {
-  return 'stats' in entity && 'class' in entity;
+  return EntityUtils.isCharacter(entity);
 }
 
 export function isMonster(entity: CombatEntity): entity is Monster {
-  return 'attacks' in entity && !('class' in entity);
+  return EntityUtils.isMonster(entity);
 }
 
 export function getEntityId(entity: CombatEntity): string {
@@ -75,10 +76,7 @@ export function getEntityName(entity: CombatEntity): string {
 }
 
 export function getEntityAgility(entity: CombatEntity): number {
-  if (isCharacter(entity)) {
-    return entity.stats.agility;
-  }
-  return (entity as Monster).agility ?? 10;
+  return EntityUtils.getAgility(entity);
 }
 
 export function getEntityLevel(entity: CombatEntity): number {

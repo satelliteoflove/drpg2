@@ -129,6 +129,13 @@ export class CombatSystem {
     return entity as Character | Monster || null;
   }
 
+  private updateInitiative(entityId: string, chargeTime: number): void {
+    this.initiativeTracker.assignChargeTime(entityId, chargeTime);
+    if (this.encounter) {
+      this.encounter.initiative = this.initiativeTracker.getSnapshot();
+    }
+  }
+
   public getMonsters(): Monster[] {
     return this.encounter?.monsters || [];
   }
@@ -207,11 +214,7 @@ export class CombatSystem {
     const result = combatAction.execute(context, params);
 
     if (result.delay > 0) {
-      this.initiativeTracker.assignChargeTime(currentUnit.id, result.delay);
-    }
-
-    if (this.encounter) {
-      this.encounter.initiative = this.initiativeTracker.getSnapshot();
+      this.updateInitiative(currentUnit.id, result.delay);
     }
 
     this.isProcessingTurn = false;
@@ -258,10 +261,7 @@ export class CombatSystem {
                      this.statusEffectSystem.hasStatus(monster, 'Paralyzed') ? 'paralyzed' :
                      this.statusEffectSystem.hasStatus(monster, 'Stoned') ? 'petrified' : 'disabled';
       DebugLogger.info('CombatSystem', `${monster.name} is ${status}, cannot act`);
-      this.initiativeTracker.assignChargeTime(monster.id, INITIATIVE.BASE_CHARGE_TIMES.SKIP_TURN);
-      if (this.encounter) {
-        this.encounter.initiative = this.initiativeTracker.getSnapshot();
-      }
+      this.updateInitiative(monster.id, INITIATIVE.BASE_CHARGE_TIMES.SKIP_TURN);
       this.isProcessingTurn = false;
       return `${monster.name} is ${status} and cannot act!`;
     }
@@ -302,17 +302,11 @@ export class CombatSystem {
         }
       }
 
-      this.initiativeTracker.assignChargeTime(monster.id, monsterChargeTime);
-      if (this.encounter) {
-        this.encounter.initiative = this.initiativeTracker.getSnapshot();
-      }
+      this.updateInitiative(monster.id, monsterChargeTime);
 
       return message;
     } else {
-      this.initiativeTracker.assignChargeTime(monster.id, monsterChargeTime);
-      if (this.encounter) {
-        this.encounter.initiative = this.initiativeTracker.getSnapshot();
-      }
+      this.updateInitiative(monster.id, monsterChargeTime);
       return `${monster.name} attacks ${target.name} but misses!`;
     }
   }
@@ -574,10 +568,35 @@ export class CombatSystem {
   }
 
   public applySkipTurnDelay(entityId: string): void {
-    this.initiativeTracker.assignChargeTime(entityId, INITIATIVE.BASE_CHARGE_TIMES.SKIP_TURN);
-    if (this.encounter) {
-      this.encounter.initiative = this.initiativeTracker.getSnapshot();
+    this.updateInitiative(entityId, INITIATIVE.BASE_CHARGE_TIMES.SKIP_TURN);
+  }
+
+  public getActionDelays(): Map<string, number> {
+    const delays = new Map<string, number>();
+    if (!this.encounter) return delays;
+
+    const context: CombatActionContext = {
+      encounter: this.encounter,
+      party: this.party,
+      spellCaster: this.spellCaster,
+      statusEffectSystem: this.statusEffectSystem,
+      modifierSystem: this.modifierSystem,
+      damageCalculator: this.damageCalculator,
+      weaponEffectApplicator: this.weaponEffectApplicator,
+      getCurrentUnit: () => this.getCurrentUnit(),
+      cleanupDeadUnits: () => this.cleanupDeadUnits(),
+      endCombat: (victory, rewards, escaped) => this.endCombat(victory, rewards, escaped)
+    };
+
+    const actionNames = ['Attack', 'Defend', 'Use Item', 'Escape', 'Cast Spell'];
+    for (const name of actionNames) {
+      const action = this.actionRegistry.get(name);
+      if (action) {
+        delays.set(name, action.getDelay(context, {}));
+      }
     }
+
+    return delays;
   }
 
   private updateCombatDebugData(): void {

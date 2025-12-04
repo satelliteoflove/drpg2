@@ -1,4 +1,5 @@
 import { SpellEffectCategory, SpellTargetScope, WeaponSpeedCategory } from '../types/InitiativeTypes';
+import { SpellEffectType, SpellTargetType } from '../types/SpellTypes';
 
 export const INITIATIVE = {
   QUEUE_DISPLAY_COUNT: 12,
@@ -53,6 +54,36 @@ export const INITIATIVE = {
 
   DEFAULT_MONSTER_AGILITY: 10,
 } as const;
+
+export const EFFECT_TYPE_TO_CATEGORY: Record<SpellEffectType, SpellEffectCategory> = {
+  damage: 'damage',
+  heal: 'healing',
+  buff: 'buff',
+  debuff: 'debuff',
+  cure: 'status_cure',
+  status: 'status_inflict',
+  modifier: 'buff',
+  instant_death: 'instant_death',
+  resurrection: 'resurrection',
+  teleport: 'utility',
+  utility: 'utility',
+  summon: 'utility',
+  dispel: 'status_cure',
+  special: 'utility',
+};
+
+export const TARGET_TYPE_TO_SCOPE: Record<SpellTargetType, SpellTargetScope> = {
+  self: 'self',
+  ally: 'single_ally',
+  enemy: 'single_enemy',
+  row: 'row',
+  group: 'group',
+  allAllies: 'all_allies',
+  allEnemies: 'all_enemies',
+  any: 'single_ally',
+  location: 'single_ally',
+  dead: 'single_ally',
+};
 
 export function calculateAgiMultiplier(agility: number): number {
   const { BASE, CONSTANT } = INITIATIVE.AGI_FORMULA;

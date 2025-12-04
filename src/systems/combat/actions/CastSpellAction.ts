@@ -2,11 +2,10 @@ import { CombatAction, CombatActionContext, CombatActionParams, CombatActionResu
 import { Monster } from '../../../types/GameTypes';
 import { Character } from '../../../entities/Character';
 import { EntityUtils } from '../../../utils/EntityUtils';
-import { SpellCastingContext, SpellId, SpellData, SpellEffectType, SpellTargetType } from '../../../types/SpellTypes';
+import { SpellCastingContext, SpellId, SpellData } from '../../../types/SpellTypes';
 import { GameServices } from '../../../services/GameServices';
 import { SFX_CATALOG } from '../../../config/AudioConstants';
-import { calculateSpellChargeTime, INITIATIVE } from '../../../config/InitiativeConstants';
-import { SpellEffectCategory, SpellTargetScope } from '../../../types/InitiativeTypes';
+import { calculateSpellChargeTime, INITIATIVE, EFFECT_TYPE_TO_CATEGORY, TARGET_TYPE_TO_SCOPE } from '../../../config/InitiativeConstants';
 
 export class CastSpellAction implements CombatAction {
   readonly name = 'Cast Spell';
@@ -103,48 +102,9 @@ export class CastSpellAction implements CombatAction {
   }
 
   private calculateSpellChargeTimeFromData(spellData: SpellData): number {
-    const effectCategory = this.mapEffectTypeToCategory(spellData.effects[0]?.type);
-    const targetScope = this.mapTargetTypeToScope(spellData.targetType);
+    const effectType = spellData.effects[0]?.type;
+    const effectCategory = effectType ? EFFECT_TYPE_TO_CATEGORY[effectType] ?? 'utility' : 'utility';
+    const targetScope = TARGET_TYPE_TO_SCOPE[spellData.targetType] ?? 'single_ally';
     return calculateSpellChargeTime(effectCategory, targetScope);
-  }
-
-  private mapEffectTypeToCategory(effectType: SpellEffectType | undefined): SpellEffectCategory {
-    if (!effectType) return 'utility';
-
-    const mapping: Record<SpellEffectType, SpellEffectCategory> = {
-      damage: 'damage',
-      heal: 'healing',
-      buff: 'buff',
-      debuff: 'debuff',
-      cure: 'status_cure',
-      status: 'status_inflict',
-      modifier: 'buff',
-      instant_death: 'instant_death',
-      resurrection: 'resurrection',
-      teleport: 'utility',
-      utility: 'utility',
-      summon: 'utility',
-      dispel: 'status_cure',
-      special: 'utility'
-    };
-
-    return mapping[effectType] ?? 'utility';
-  }
-
-  private mapTargetTypeToScope(targetType: SpellTargetType): SpellTargetScope {
-    const mapping: Record<SpellTargetType, SpellTargetScope> = {
-      self: 'self',
-      ally: 'single_ally',
-      enemy: 'single_enemy',
-      row: 'row',
-      group: 'group',
-      allAllies: 'all_allies',
-      allEnemies: 'all_enemies',
-      any: 'single_ally',
-      location: 'single_ally',
-      dead: 'single_ally'
-    };
-
-    return mapping[targetType] ?? 'single_ally';
   }
 }

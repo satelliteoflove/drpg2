@@ -8,8 +8,7 @@ import { SpellMenu } from '../../ui/SpellMenu';
 import { SpellTargetSelector } from '../../ui/SpellTargetSelector';
 import { SpellRegistry } from '../../systems/magic/SpellRegistry';
 import { UI_CONSTANTS } from '../../config/UIConstants';
-import { calculateSpellChargeTime, INITIATIVE } from '../../config/InitiativeConstants';
-import { SpellEffectCategory, SpellTargetScope } from '../../types/InitiativeTypes';
+import { calculateSpellChargeTime, INITIATIVE, EFFECT_TYPE_TO_CATEGORY, TARGET_TYPE_TO_SCOPE } from '../../config/InitiativeConstants';
 import { SceneRenderContext } from '../../core/Scene';
 import { KeyBindingHelper } from '../../config/KeyBindings';
 
@@ -372,7 +371,7 @@ export class CombatUIManager {
       ctx.fillStyle = TOL.CURRENT_ACTOR_BG;
       ctx.fillRect(x + 2, y, width - 4, height - 2);
     } else if (isHighlighted) {
-      ctx.fillStyle = '#444400';
+      ctx.fillStyle = TOL.TARGET_HIGHLIGHT_BG;
       ctx.fillRect(x + 2, y, width - 4, height - 2);
     }
 
@@ -465,34 +464,9 @@ export class CombatUIManager {
     const spellData = spellRegistry.getSpellById(spellId as any);
     if (!spellData) return INITIATIVE.SPELL_CHARGE_TIMES.utility;
 
-    const firstEffect = spellData.effects?.[0];
-    const effectType = firstEffect?.type || 'utility';
-
-    const effectMapping: Record<string, SpellEffectCategory> = {
-      damage: 'damage',
-      heal: 'healing',
-      buff: 'buff',
-      debuff: 'debuff',
-      cure: 'status_cure',
-      inflict: 'status_inflict',
-      summon: 'utility',
-      teleport: 'utility',
-      identify: 'utility',
-      special: 'utility'
-    };
-    const effectCategory = effectMapping[effectType] || 'utility';
-
-    const targetType = spellData.targetType || 'single_enemy';
-    const scopeMapping: Record<string, SpellTargetScope> = {
-      self: 'self',
-      single_ally: 'single_ally',
-      all_allies: 'all_allies',
-      single_enemy: 'single_enemy',
-      all_enemies: 'all_enemies',
-      group: 'group',
-      row: 'row'
-    };
-    const targetScope = scopeMapping[targetType] || 'single_enemy';
+    const effectType = spellData.effects?.[0]?.type;
+    const effectCategory = effectType ? EFFECT_TYPE_TO_CATEGORY[effectType] ?? 'utility' : 'utility';
+    const targetScope = TARGET_TYPE_TO_SCOPE[spellData.targetType] ?? 'single_enemy';
 
     return calculateSpellChargeTime(effectCategory, targetScope);
   }

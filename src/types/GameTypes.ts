@@ -426,5 +426,5 @@ export interface Encounter {
   surprise: boolean;
   turnOrder: (ICharacter | Monster)[];
   currentTurn: number;
-  initiative?: InitiativeSnapshot;
+  initiative: InitiativeSnapshot;
 }
