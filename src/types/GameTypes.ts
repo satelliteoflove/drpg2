@@ -1,6 +1,7 @@
 import { SpellData } from './SpellTypes';
 import { ActiveStatusEffect } from './StatusEffectTypes';
 import { ActiveModifier } from '../systems/ModifierSystem';
+import { InitiativeSnapshot, WeaponSpeedCategory } from './InitiativeTypes';
 
 export type CharacterClass =
   | 'Fighter'
@@ -125,6 +126,7 @@ export interface Item {
     chance: number;
     duration?: number;
   };
+  speedCategory?: WeaponSpeedCategory;
 }
 
 export type ItemEffect =
@@ -158,6 +160,7 @@ export interface Monster {
   isDead?: boolean;
   evasion: number;
   damageReduction: number;
+  agility: number;
   attacks: Attack[];
   experience: number;
   gold: number;
@@ -423,4 +426,5 @@ export interface Encounter {
   surprise: boolean;
   turnOrder: (ICharacter | Monster)[];
   currentTurn: number;
+  initiative: InitiativeSnapshot;
 }

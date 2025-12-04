@@ -12,6 +12,7 @@ export const weapons = {
     cursed: false,
     blessed: false,
     enchantment: 0,
+    speedCategory: 'light',
   },
   dagger: {
     id: 'dagger',
@@ -26,6 +27,7 @@ export const weapons = {
     cursed: false,
     blessed: false,
     enchantment: 0,
+    speedCategory: 'light',
   },
   poison_dagger: {
     id: 'poison_dagger',
@@ -43,6 +45,7 @@ export const weapons = {
     cursed: false,
     blessed: false,
     enchantment: 0,
+    speedCategory: 'light',
     description: 'A wickedly sharp dagger coated with poison',
   },
   cursed_blade: {
@@ -61,6 +64,7 @@ export const weapons = {
     cursed: true,
     blessed: false,
     enchantment: 0,
+    speedCategory: 'standard',
     description: 'A blade that brings misfortune to its wielder',
   },
   frost_blade: {
@@ -79,6 +83,7 @@ export const weapons = {
     cursed: false,
     blessed: false,
     enchantment: 1,
+    speedCategory: 'standard',
     description: 'A blade infused with freezing magic',
   },
   sleep_blade: {
@@ -97,6 +102,7 @@ export const weapons = {
     cursed: false,
     blessed: false,
     enchantment: 0,
+    speedCategory: 'standard',
     description: 'An enchanted blade that lulls enemies to sleep',
   },
   staff: {
@@ -112,6 +118,7 @@ export const weapons = {
     cursed: false,
     blessed: false,
     enchantment: 0,
+    speedCategory: 'standard',
   },
   mace: {
     id: 'mace',
@@ -126,6 +133,7 @@ export const weapons = {
     cursed: false,
     blessed: false,
     enchantment: 0,
+    speedCategory: 'standard',
   },
   paralyzing_mace: {
     id: 'paralyzing_mace',
@@ -143,6 +151,7 @@ export const weapons = {
     cursed: false,
     blessed: false,
     enchantment: 0,
+    speedCategory: 'heavy',
     description: 'A heavy mace that can stun enemies',
   },
   muramasa: {
@@ -158,6 +167,7 @@ export const weapons = {
     cursed: true,
     blessed: false,
     enchantment: 3,
+    speedCategory: 'heavy',
     description: 'A legendary cursed katana that thirsts for blood',
   },
   staff_of_mogref: {
@@ -173,6 +183,7 @@ export const weapons = {
     cursed: false,
     blessed: false,
     enchantment: 2,
+    speedCategory: 'standard',
     invokable: true,
     charges: 30,
     maxCharges: 30,

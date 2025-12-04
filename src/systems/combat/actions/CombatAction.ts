@@ -29,6 +29,7 @@ export interface CombatActionParams {
 export interface CombatActionResult {
   success: boolean;
   message: string;
+  delay: number;
   shouldEndCombat?: {
     victory: boolean;
     escaped?: boolean;
@@ -40,4 +41,5 @@ export interface CombatAction {
   readonly name: string;
   canExecute(context: CombatActionContext, params: CombatActionParams): boolean;
   execute(context: CombatActionContext, params: CombatActionParams): CombatActionResult;
+  getDelay(context: CombatActionContext, params: CombatActionParams): number;
 }

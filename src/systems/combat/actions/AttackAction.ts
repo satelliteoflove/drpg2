@@ -2,6 +2,8 @@ import { CombatAction, CombatActionContext, CombatActionParams, CombatActionResu
 import { EntityUtils } from '../../../utils/EntityUtils';
 import { GameServices } from '../../../services/GameServices';
 import { SFX_CATALOG } from '../../../config/AudioConstants';
+import { calculateAttackChargeTime } from '../../../config/InitiativeConstants';
+import { WeaponSpeedCategory } from '../../../types/InitiativeTypes';
 
 export class AttackAction implements CombatAction {
   readonly name = 'Attack';
@@ -14,12 +16,12 @@ export class AttackAction implements CombatAction {
   execute(context: CombatActionContext, params: CombatActionParams): CombatActionResult {
     const currentUnit = context.getCurrentUnit();
     if (!currentUnit || !EntityUtils.isCharacter(currentUnit)) {
-      return { success: false, message: 'Invalid attacker' };
+      return { success: false, message: 'Invalid attacker', delay: 0 };
     }
 
     const aliveMonsters = context.encounter.monsters.filter((m) => m.hp > 0);
     if (aliveMonsters.length === 0) {
-      return { success: false, message: 'No targets available' };
+      return { success: false, message: 'No targets available', delay: 0 };
     }
 
     const target =
@@ -62,7 +64,20 @@ export class AttackAction implements CombatAction {
 
     return {
       success: true,
-      message
+      message,
+      delay: this.getDelay(context, params)
     };
+  }
+
+  getDelay(context: CombatActionContext, _params: CombatActionParams): number {
+    const currentUnit = context.getCurrentUnit();
+    if (!currentUnit || !EntityUtils.isCharacter(currentUnit)) {
+      return calculateAttackChargeTime(10, 'unarmed');
+    }
+
+    const weapon = currentUnit.equipment.weapon;
+    const speedCategory: WeaponSpeedCategory = weapon?.speedCategory || 'unarmed';
+    const agility = currentUnit.stats.agility;
+    return calculateAttackChargeTime(agility, speedCategory);
   }
 }

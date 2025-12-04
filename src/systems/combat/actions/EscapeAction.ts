@@ -1,6 +1,7 @@
 import { CombatAction, CombatActionContext, CombatActionParams, CombatActionResult } from './CombatAction';
 import { EntityUtils } from '../../../utils/EntityUtils';
 import { DebugLogger } from '../../../utils/DebugLogger';
+import { INITIATIVE } from '../../../config/InitiativeConstants';
 
 export class EscapeAction implements CombatAction {
   readonly name = 'Escape';
@@ -9,10 +10,10 @@ export class EscapeAction implements CombatAction {
     return context.encounter !== null;
   }
 
-  execute(context: CombatActionContext, _params: CombatActionParams): CombatActionResult {
+  execute(context: CombatActionContext, params: CombatActionParams): CombatActionResult {
     const currentUnit = context.getCurrentUnit();
     if (!currentUnit || !EntityUtils.isCharacter(currentUnit)) {
-      return { success: false, message: 'Invalid escaper' };
+      return { success: false, message: 'Invalid escaper', delay: 0 };
     }
 
     let escapeChance = 0.5;
@@ -31,6 +32,7 @@ export class EscapeAction implements CombatAction {
       return {
         success: true,
         message: `${currentUnit.name} successfully leads the party to safety!`,
+        delay: this.getDelay(context, params),
         shouldEndCombat: {
           victory: false,
           escaped: true
@@ -39,8 +41,13 @@ export class EscapeAction implements CombatAction {
     } else {
       return {
         success: false,
-        message: `${currentUnit.name} could not escape!`
+        message: `${currentUnit.name} could not escape!`,
+        delay: this.getDelay(context, params)
       };
     }
+  }
+
+  getDelay(_context: CombatActionContext, _params: CombatActionParams): number {
+    return INITIATIVE.BASE_CHARGE_TIMES.ESCAPE;
   }
 }

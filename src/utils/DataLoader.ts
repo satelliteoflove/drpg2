@@ -120,6 +120,7 @@ export class DataLoader {
         maxHp: scaledHp,
         evasion: monsterTemplate.baseEvasion + Math.floor(monsterLevel / 4),
         damageReduction: monsterTemplate.baseDamageReduction + Math.floor(monsterLevel / 5),
+        agility: (monsterTemplate as any).baseAgility ?? 10,
         attacks: [],
         experience: 0,
         gold: 0,

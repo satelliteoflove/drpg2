@@ -14,6 +14,9 @@ import { DamageCalculator } from './combat/helpers/DamageCalculator';
 import { WeaponEffectApplicator } from './combat/helpers/WeaponEffectApplicator';
 import { BanterEventTracker } from '../types/BanterTypes';
 import { SFX_CATALOG } from '../config/AudioConstants';
+import { InitiativeTracker } from './InitiativeTracker';
+import { InitiativeSnapshot, GhostSimulationResult } from '../types/InitiativeTypes';
+import { INITIATIVE, calculateAttackChargeTime } from '../config/InitiativeConstants';
 
 interface CombatDebugData {
   currentTurn: string;
@@ -32,6 +35,7 @@ export class CombatSystem {
   private actionRegistry: CombatActionRegistry;
   private damageCalculator: DamageCalculator;
   private weaponEffectApplicator: WeaponEffectApplicator;
+  private initiativeTracker: InitiativeTracker;
   private onCombatEnd?: (
     victory: boolean,
     rewards?: { experience: number; gold: number; items: Item[] },
@@ -60,6 +64,7 @@ export class CombatSystem {
     this.actionRegistry = actionRegistry || new CombatActionRegistry();
     this.damageCalculator = new DamageCalculator();
     this.weaponEffectApplicator = new WeaponEffectApplicator(this.statusEffectSystem);
+    this.initiativeTracker = new InitiativeTracker();
 
     try {
       this.eventTracker = GameServices.getInstance().getBanterEventTracker();
@@ -85,18 +90,21 @@ export class CombatSystem {
     this.party = party;
     this.resetTurnState();
 
+    const surprised = Math.random() < GAME_CONFIG.ENCOUNTER.SURPRISE_CHANCE;
+
+    const activeCharacters = party.filter(c => !c.isDead);
+    const activeMonsters = monsters.filter(m => m.hp > 0);
+
+    this.initiativeTracker.initialize(activeCharacters, activeMonsters, surprised);
+
     this.encounter = {
       monsters: monsters,
-      surprise: Math.random() < GAME_CONFIG.ENCOUNTER.SURPRISE_CHANCE,
+      surprise: surprised,
       turnOrder: this.calculateTurnOrder(party, monsters),
       currentTurn: 0,
+      initiative: this.initiativeTracker.getSnapshot(),
     };
 
-    if (this.encounter.surprise) {
-      this.encounter.turnOrder = this.encounter.turnOrder.filter((unit) => EntityUtils.isCharacter(unit as Character | Monster));
-    }
-
-    // Update debug data
     this.updateCombatDebugData();
   }
 
@@ -117,7 +125,15 @@ export class CombatSystem {
 
   public getCurrentUnit(): Character | Monster | null {
     if (!this.encounter) return null;
-    return this.encounter.turnOrder[this.encounter.currentTurn] as Character | Monster || null;
+    const entity = this.initiativeTracker.getChoosingEntity();
+    return entity as Character | Monster || null;
+  }
+
+  private updateInitiative(entityId: string, chargeTime: number): void {
+    this.initiativeTracker.assignChargeTime(entityId, chargeTime);
+    if (this.encounter) {
+      this.encounter.initiative = this.initiativeTracker.getSnapshot();
+    }
   }
 
   public getMonsters(): Monster[] {
@@ -197,6 +213,10 @@ export class CombatSystem {
 
     const result = combatAction.execute(context, params);
 
+    if (result.delay > 0) {
+      this.updateInitiative(currentUnit.id, result.delay);
+    }
+
     this.isProcessingTurn = false;
 
     if (result.shouldEndCombat) {
@@ -241,6 +261,7 @@ export class CombatSystem {
                      this.statusEffectSystem.hasStatus(monster, 'Paralyzed') ? 'paralyzed' :
                      this.statusEffectSystem.hasStatus(monster, 'Stoned') ? 'petrified' : 'disabled';
       DebugLogger.info('CombatSystem', `${monster.name} is ${status}, cannot act`);
+      this.updateInitiative(monster.id, INITIATIVE.BASE_CHARGE_TIMES.SKIP_TURN);
       this.isProcessingTurn = false;
       return `${monster.name} is ${status} and cannot act!`;
     }
@@ -257,6 +278,9 @@ export class CombatSystem {
 
     const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
     const attack = monster.attacks[Math.floor(Math.random() * monster.attacks.length)];
+
+    const monsterAgility = monster.agility ?? INITIATIVE.DEFAULT_MONSTER_AGILITY;
+    const monsterChargeTime = calculateAttackChargeTime(monsterAgility, 'standard');
 
     if (Math.random() < attack.chance) {
       const damage = this.rollDamage(attack.damage);
@@ -278,8 +302,11 @@ export class CombatSystem {
         }
       }
 
+      this.updateInitiative(monster.id, monsterChargeTime);
+
       return message;
     } else {
+      this.updateInitiative(monster.id, monsterChargeTime);
       return `${monster.name} attacks ${target.name} but misses!`;
     }
   }
@@ -316,26 +343,27 @@ export class CombatSystem {
       return;
     }
 
-    // Advance to next turn
-    const previousTurn = this.encounter.currentTurn;
-    this.encounter.currentTurn = (this.encounter.currentTurn + 1) % this.encounter.turnOrder.length;
-
-    const nextUnit = this.encounter.turnOrder[this.encounter.currentTurn];
-    DebugLogger.debug('CombatSystem', 'Turn advanced', {
-      previousTurn,
-      newTurn: this.encounter.currentTurn,
-      nextUnit: nextUnit ? EntityUtils.getName(nextUnit as Character | Monster) : 'none',
-      nextUnitId: nextUnit ? nextUnit.id || 'no-id' : 'none'
-    });
-
-    // Remove dead units from turn order
     this.cleanupDeadUnits();
 
-    // Check if combat should end
     if (this.checkCombatEnd()) {
       this.resetTurnState();
       return;
     }
+
+    const nextActor = this.initiativeTracker.advanceUntilChoice();
+
+    if (!nextActor) {
+      DebugLogger.warn('CombatSystem', 'No next actor found in initiative tracker');
+      this.resetTurnState();
+      return;
+    }
+
+    DebugLogger.debug('CombatSystem', 'Turn advanced via initiative', {
+      nextActorId: nextActor.id,
+      nextActorName: EntityUtils.getName(nextActor as Character | Monster),
+    });
+
+    this.encounter.initiative = this.initiativeTracker.getSnapshot();
 
     const currentUnit = this.getCurrentUnit();
 
@@ -377,22 +405,29 @@ export class CombatSystem {
     if (!this.encounter) return;
 
     this.encounter.turnOrder = this.encounter.turnOrder.filter((unit) => {
-      if (EntityUtils.isCharacter(unit as Character | Monster)) {
-        if (unit.isDead && this.eventTracker) {
+      const isDead = EntityUtils.isCharacter(unit as Character | Monster)
+        ? unit.isDead
+        : unit.hp <= 0;
+
+      if (isDead) {
+        this.initiativeTracker.removeEntity(unit.id);
+
+        if (EntityUtils.isCharacter(unit as Character | Monster) && this.eventTracker) {
           this.eventTracker.recordCharacterDeath(unit.name);
           DebugLogger.info('CombatSystem', 'Character death detected and recorded', {
             characterName: unit.name
           });
         }
-        return !unit.isDead;
-      } else {
-        return unit.hp > 0;
+        return false;
       }
+      return true;
     });
 
     if (this.encounter.currentTurn >= this.encounter.turnOrder.length) {
       this.encounter.currentTurn = 0;
     }
+
+    this.encounter.initiative = this.initiativeTracker.getSnapshot();
   }
 
   private checkCombatEnd(): boolean {
@@ -471,8 +506,8 @@ export class CombatSystem {
     }
     this.encounter = null;
     this.isProcessingTurn = false;
+    this.initiativeTracker.reset();
 
-    // Update debug data to reflect combat ended
     CombatSystem.debugData = {
       currentTurn: '',
       turnOrder: [],
@@ -483,6 +518,15 @@ export class CombatSystem {
 
   public getEncounter(): Encounter | null {
     return this.encounter;
+  }
+
+  public getInitiativeSnapshot(): InitiativeSnapshot | null {
+    if (!this.encounter) return null;
+    return this.initiativeTracker.getSnapshot();
+  }
+
+  public simulateGhostPosition(chargeTime: number): GhostSimulationResult {
+    return this.initiativeTracker.simulateGhostPosition(chargeTime);
   }
 
   public getCombatStatus(): string {
@@ -521,6 +565,38 @@ export class CombatSystem {
   public processNextTurn(): void {
     if (!this.encounter) return;
     this.nextTurn();
+  }
+
+  public applySkipTurnDelay(entityId: string): void {
+    this.updateInitiative(entityId, INITIATIVE.BASE_CHARGE_TIMES.SKIP_TURN);
+  }
+
+  public getActionDelays(): Map<string, number> {
+    const delays = new Map<string, number>();
+    if (!this.encounter) return delays;
+
+    const context: CombatActionContext = {
+      encounter: this.encounter,
+      party: this.party,
+      spellCaster: this.spellCaster,
+      statusEffectSystem: this.statusEffectSystem,
+      modifierSystem: this.modifierSystem,
+      damageCalculator: this.damageCalculator,
+      weaponEffectApplicator: this.weaponEffectApplicator,
+      getCurrentUnit: () => this.getCurrentUnit(),
+      cleanupDeadUnits: () => this.cleanupDeadUnits(),
+      endCombat: (victory, rewards, escaped) => this.endCombat(victory, rewards, escaped)
+    };
+
+    const actionNames = ['Attack', 'Defend', 'Use Item', 'Escape', 'Cast Spell'];
+    for (const name of actionNames) {
+      const action = this.actionRegistry.get(name);
+      if (action) {
+        delays.set(name, action.getDelay(context, {}));
+      }
+    }
+
+    return delays;
   }
 
   private updateCombatDebugData(): void {

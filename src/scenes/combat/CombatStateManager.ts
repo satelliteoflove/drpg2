@@ -196,6 +196,7 @@ export class CombatStateManager {
       if (this.messageLog) {
         this.messageLog.addCombatMessage(`${monster.name} is ${status} and cannot act!`);
       }
+      this.combatSystem.applySkipTurnDelay(monster.id);
     } else {
       DebugLogger.debug('CombatStateManager', `${monster.name} is executing turn`);
       const result = this.combatSystem.executeMonsterTurn();
@@ -396,5 +397,21 @@ export class CombatStateManager {
       isProcessingAction: this.isProcessingAction,
       pendingSpellId: this.pendingSpellId
     };
+  }
+
+  public getSelectedActionDelay(): number {
+    const options = this.combatSystem.getPlayerOptions();
+    if (this.selectedAction >= options.length) return 0;
+
+    const actionName = options[this.selectedAction];
+    const delays = this.combatSystem.getActionDelays();
+    const delay = delays.get(actionName) || 0;
+    DebugLogger.debug('CombatStateManager', 'getSelectedActionDelay', {
+      selectedAction: this.selectedAction,
+      actionName,
+      delay,
+      allDelays: Object.fromEntries(delays)
+    });
+    return delay;
   }
 }
