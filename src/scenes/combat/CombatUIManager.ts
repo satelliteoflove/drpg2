@@ -305,6 +305,18 @@ export class CombatUIManager {
     const selectedChargeTime = this.getPreviewChargeTime(actionState);
     const showPreview = actionState === 'select_action' || actionState === 'select_spell' || actionState === 'spell_target';
 
+    let highlightedEntityId: string | null = null;
+    if (actionState === 'select_target' || actionState === 'spell_target') {
+      const encounter = this.combatSystem.getEncounter();
+      if (encounter) {
+        const aliveMonsters = encounter.monsters.filter(m => m.hp > 0);
+        const targetIndex = this.stateManager.getSelectedTarget();
+        if (targetIndex >= 0 && targetIndex < aliveMonsters.length) {
+          highlightedEntityId = aliveMonsters[targetIndex].id;
+        }
+      }
+    }
+
     let ghostFinalTicks = 0;
     if (showPreview && selectedChargeTime > 0) {
       const ghostResult = this.combatSystem.simulateGhostPosition(selectedChargeTime);
@@ -337,7 +349,7 @@ export class CombatUIManager {
       if (item.type === 'ghost') {
         this.renderGhostEntry(ctx, TOL.X, entryY, TOL.WIDTH, TOL.ENTRY_HEIGHT, snapshot, ghostFinalTicks);
       } else if (item.entry) {
-        this.renderTurnEntry(ctx, TOL.X, entryY, TOL.WIDTH, TOL.ENTRY_HEIGHT, item.entry, item.entry.isChoosing);
+        this.renderTurnEntry(ctx, TOL.X, entryY, TOL.WIDTH, TOL.ENTRY_HEIGHT, item.entry, item.entry.isChoosing, highlightedEntityId);
       }
     }
   }
@@ -349,13 +361,18 @@ export class CombatUIManager {
     width: number,
     height: number,
     entry: { entityId: string; entityName: string; isPlayer: boolean; isChoosing: boolean; ticksRemaining: number },
-    isChoosing: boolean
+    isChoosing: boolean,
+    highlightedEntityId: string | null = null
   ): void {
     const TOL = UI_CONSTANTS.TURN_ORDER_LIST;
     const padding = TOL.PADDING;
+    const isHighlighted = entry.entityId === highlightedEntityId;
 
     if (isChoosing) {
       ctx.fillStyle = TOL.CURRENT_ACTOR_BG;
+      ctx.fillRect(x + 2, y, width - 4, height - 2);
+    } else if (isHighlighted) {
+      ctx.fillStyle = '#444400';
       ctx.fillRect(x + 2, y, width - 4, height - 2);
     }
 
