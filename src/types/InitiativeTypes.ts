@@ -3,24 +3,30 @@ import { Monster } from './GameTypes';
 
 export type CombatEntity = Character | Monster;
 
-export interface ReadinessState {
+export type EntityState = 'choosing' | 'charging';
+
+export interface ChargeState {
   entityId: string;
-  readiness: number;
-  baseSpeed: number;
+  ticksRemaining: number;
+  state: EntityState;
 }
 
 export interface TurnQueueEntry {
   entityId: string;
   entityName: string;
   isPlayer: boolean;
-  queuePosition: number;
-  isCurrentActor: boolean;
+  ticksRemaining: number;
+  isChoosing: boolean;
 }
 
 export interface InitiativeSnapshot {
-  currentTick: number;
   queue: TurnQueueEntry[];
-  activeEntityId: string | null;
+  choosingEntityId: string | null;
+}
+
+export interface GhostSimulationResult {
+  position: number;
+  finalTicksRemaining: number;
 }
 
 export type WeaponSpeedCategory = 'unarmed' | 'light' | 'standard' | 'heavy';

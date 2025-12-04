@@ -1,55 +1,50 @@
 import { Character } from '../entities/Character';
 import { Monster } from '../types/GameTypes';
 import {
-  ReadinessState,
+  ChargeState,
   TurnQueueEntry,
   InitiativeSnapshot,
+  GhostSimulationResult,
   CombatEntity,
   isCharacter,
   getEntityId,
   getEntityName,
   getEntityAgility,
-  getEntityLevel,
 } from '../types/InitiativeTypes';
-import { INITIATIVE, calculateBaseSpeed } from '../config/InitiativeConstants';
+import { calculateInitialDelay } from '../config/InitiativeConstants';
 import { DebugLogger } from '../utils/DebugLogger';
 
 export class InitiativeTracker {
-  private readinessStates: Map<string, ReadinessState> = new Map();
+  private chargeStates: Map<string, ChargeState> = new Map();
   private entities: Map<string, CombatEntity> = new Map();
-  private currentTick: number = 0;
-  private activeEntityId: string | null = null;
+  private choosingEntityId: string | null = null;
 
   public initialize(characters: Character[], monsters: Monster[], partySurprised: boolean = false): void {
-    this.readinessStates.clear();
+    this.chargeStates.clear();
     this.entities.clear();
-    this.currentTick = 0;
-    this.activeEntityId = null;
+    this.choosingEntityId = null;
 
     const allEntities: CombatEntity[] = [
       ...characters.filter(c => !c.isDead),
       ...monsters.filter(m => m.hp > 0)
     ];
 
+    const usedTicks = new Set<number>();
+
     for (const entity of allEntities) {
       const id = getEntityId(entity);
       const agility = getEntityAgility(entity);
-      const level = getEntityLevel(entity);
-      const baseSpeed = calculateBaseSpeed(agility, level);
       const isPlayer = isCharacter(entity);
+      const surprised = partySurprised && isPlayer;
 
-      let initialReadiness = Math.floor(Math.random() * 4);
+      let initialDelay = calculateInitialDelay(agility, surprised);
+      initialDelay = this.findNextEmptySlot(initialDelay, usedTicks);
+      usedTicks.add(initialDelay);
 
-      if (partySurprised && isPlayer) {
-        initialReadiness = -10;
-      } else if (partySurprised && !isPlayer) {
-        initialReadiness = 16 + Math.floor(Math.random() * 4);
-      }
-
-      this.readinessStates.set(id, {
+      this.chargeStates.set(id, {
         entityId: id,
-        readiness: initialReadiness,
-        baseSpeed,
+        ticksRemaining: initialDelay,
+        state: 'charging',
       });
 
       this.entities.set(id, entity);
@@ -58,16 +53,24 @@ export class InitiativeTracker {
         id,
         name: getEntityName(entity),
         agility,
-        level,
-        baseSpeed,
-        initialReadiness,
-        partySurprised
+        initialDelay,
+        surprised
       });
     }
+
+    this.advanceUntilChoice();
   }
 
-  public advanceToNextActor(): CombatEntity | null {
-    if (this.readinessStates.size === 0) {
+  private findNextEmptySlot(desiredTick: number, usedTicks: Set<number>): number {
+    let tick = desiredTick;
+    while (usedTicks.has(tick)) {
+      tick++;
+    }
+    return tick;
+  }
+
+  public advanceUntilChoice(): CombatEntity | null {
+    if (this.chargeStates.size === 0) {
       return null;
     }
 
@@ -75,242 +78,181 @@ export class InitiativeTracker {
     const maxIterations = 1000;
 
     while (iterations < maxIterations) {
-      let highestReadiness = -Infinity;
-      let readyEntityId: string | null = null;
+      let lowestTicks = Infinity;
+      let highestAgilityAtLowest = -Infinity;
+      let nextEntityId: string | null = null;
 
-      for (const [id, state] of this.readinessStates) {
-        if (state.readiness >= INITIATIVE.READINESS_THRESHOLD && state.readiness > highestReadiness) {
-          highestReadiness = state.readiness;
-          readyEntityId = id;
+      for (const [id, state] of this.chargeStates) {
+        if (state.state === 'charging') {
+          const entity = this.entities.get(id);
+          const agility = entity ? getEntityAgility(entity) : 0;
+
+          if (state.ticksRemaining < lowestTicks ||
+              (state.ticksRemaining === lowestTicks && agility > highestAgilityAtLowest)) {
+            lowestTicks = state.ticksRemaining;
+            highestAgilityAtLowest = agility;
+            nextEntityId = id;
+          }
         }
       }
 
-      if (readyEntityId) {
-        this.activeEntityId = readyEntityId;
-        const entity = this.entities.get(readyEntityId);
+      if (nextEntityId === null) {
+        DebugLogger.warn('InitiativeTracker', 'No charging entities found');
+        return null;
+      }
 
-        DebugLogger.info('InitiativeTracker', 'Actor ready', {
-          entityId: readyEntityId,
+      if (lowestTicks <= 0) {
+        const state = this.chargeStates.get(nextEntityId)!;
+        state.state = 'choosing';
+        state.ticksRemaining = 0;
+        this.choosingEntityId = nextEntityId;
+
+        const entity = this.entities.get(nextEntityId);
+        DebugLogger.info('InitiativeTracker', 'Entity ready to choose', {
+          entityId: nextEntityId,
           entityName: entity ? getEntityName(entity) : 'unknown',
-          readiness: highestReadiness,
-          tick: this.currentTick
         });
 
         return entity || null;
       }
 
-      this.currentTick++;
-      for (const [_id, state] of this.readinessStates) {
-        state.readiness += state.baseSpeed;
+      for (const state of this.chargeStates.values()) {
+        if (state.state === 'charging') {
+          state.ticksRemaining -= lowestTicks;
+        }
       }
 
       iterations++;
     }
 
-    DebugLogger.error('InitiativeTracker', 'Max iterations reached in advanceToNextActor');
+    DebugLogger.error('InitiativeTracker', 'Max iterations reached in advanceUntilChoice');
     return null;
   }
 
-  public applyActionDelay(entityId: string, delay: number): void {
-    const state = this.readinessStates.get(entityId);
+  public assignChargeTime(entityId: string, chargeTime: number): void {
+    const state = this.chargeStates.get(entityId);
     if (!state) {
-      DebugLogger.warn('InitiativeTracker', 'Cannot apply delay - entity not found', { entityId });
+      DebugLogger.warn('InitiativeTracker', 'Cannot assign charge time - entity not found', { entityId });
       return;
     }
 
-    state.readiness = -delay;
+    state.ticksRemaining = chargeTime;
+    state.state = 'charging';
 
-    DebugLogger.debug('InitiativeTracker', 'Action delay applied', {
+    DebugLogger.debug('InitiativeTracker', 'Charge time assigned', {
       entityId,
-      delay,
-      newReadiness: state.readiness
+      chargeTime,
     });
 
-    if (this.activeEntityId === entityId) {
-      this.activeEntityId = null;
+    if (this.choosingEntityId === entityId) {
+      this.choosingEntityId = null;
     }
   }
 
+  public executeAction(entityId: string): void {
+    const state = this.chargeStates.get(entityId);
+    if (!state) {
+      DebugLogger.warn('InitiativeTracker', 'Cannot execute action - entity not found', { entityId });
+      return;
+    }
+
+    state.state = 'choosing';
+    state.ticksRemaining = 0;
+    this.choosingEntityId = entityId;
+
+    DebugLogger.debug('InitiativeTracker', 'Action executed, ready to choose next', { entityId });
+  }
+
   public removeEntity(entityId: string): void {
-    this.readinessStates.delete(entityId);
+    this.chargeStates.delete(entityId);
     this.entities.delete(entityId);
 
-    if (this.activeEntityId === entityId) {
-      this.activeEntityId = null;
+    if (this.choosingEntityId === entityId) {
+      this.choosingEntityId = null;
     }
 
     DebugLogger.debug('InitiativeTracker', 'Entity removed', { entityId });
   }
 
   public getSnapshot(): InitiativeSnapshot {
+    const queue: (TurnQueueEntry & { agility: number })[] = [];
+
+    for (const [id, state] of this.chargeStates) {
+      const entity = this.entities.get(id);
+      if (!entity) continue;
+
+      queue.push({
+        entityId: id,
+        entityName: getEntityName(entity),
+        isPlayer: isCharacter(entity),
+        ticksRemaining: state.ticksRemaining,
+        isChoosing: state.state === 'choosing',
+        agility: getEntityAgility(entity),
+      });
+    }
+
+    queue.sort((a, b) => {
+      if (a.ticksRemaining !== b.ticksRemaining) return a.ticksRemaining - b.ticksRemaining;
+      return b.agility - a.agility;
+    });
+
     return {
-      currentTick: this.currentTick,
-      queue: this.projectTurnQueue(),
-      activeEntityId: this.activeEntityId,
+      queue: queue.map(({ agility, ...rest }) => rest),
+      choosingEntityId: this.choosingEntityId,
     };
   }
 
-  private projectTurnQueue(): TurnQueueEntry[] {
-    const queue: TurnQueueEntry[] = [];
-    const simulatedStates = new Map<string, { readiness: number; baseSpeed: number }>();
-    const addedEntityIds = new Set<string>();
-
-    for (const [id, state] of this.readinessStates) {
-      simulatedStates.set(id, {
-        readiness: state.readiness,
-        baseSpeed: state.baseSpeed
-      });
+  public simulateGhostPosition(chargeTime: number): GhostSimulationResult {
+    if (!this.choosingEntityId) {
+      return { position: 0, finalTicksRemaining: chargeTime };
     }
 
-    if (this.activeEntityId && simulatedStates.has(this.activeEntityId)) {
-      const entity = this.entities.get(this.activeEntityId);
+    const queue: { entityId: string; ticks: number; agility: number }[] = [];
 
-      queue.push({
-        entityId: this.activeEntityId,
-        entityName: entity ? getEntityName(entity) : 'Unknown',
-        isPlayer: entity ? isCharacter(entity) : false,
-        queuePosition: 0,
-        isCurrentActor: true
-      });
-
-      addedEntityIds.add(this.activeEntityId);
+    for (const [id, state] of this.chargeStates) {
+      const entity = this.entities.get(id);
+      const agility = entity ? getEntityAgility(entity) : 0;
+      queue.push({ entityId: id, ticks: state.ticksRemaining, agility });
     }
 
-    let simTick = 0;
-    const maxSimTicks = 500;
-
-    while (queue.length < INITIATIVE.QUEUE_DISPLAY_COUNT && simTick < maxSimTicks) {
-      let highestReadiness = -Infinity;
-      let nextActorId: string | null = null;
-
-      for (const [id, state] of simulatedStates) {
-        if (addedEntityIds.has(id)) continue;
-        if (state.readiness >= INITIATIVE.READINESS_THRESHOLD && state.readiness > highestReadiness) {
-          highestReadiness = state.readiness;
-          nextActorId = id;
-        }
-      }
-
-      if (nextActorId) {
-        const entity = this.entities.get(nextActorId);
-        const state = simulatedStates.get(nextActorId)!;
-
-        queue.push({
-          entityId: nextActorId,
-          entityName: entity ? getEntityName(entity) : 'Unknown',
-          isPlayer: entity ? isCharacter(entity) : false,
-          queuePosition: queue.length,
-          isCurrentActor: false
-        });
-
-        addedEntityIds.add(nextActorId);
-        state.readiness = -INITIATIVE.ACTION_DELAYS.DEFEND;
-      } else {
-        simTick++;
-        for (const [_id, state] of simulatedStates) {
-          state.readiness += state.baseSpeed;
-        }
-      }
+    const existingIndex = queue.findIndex(e => e.entityId === this.choosingEntityId);
+    if (existingIndex >= 0) {
+      queue[existingIndex].ticks = chargeTime;
     }
 
-    return queue;
-  }
-
-  public simulateGhostPosition(actionDelay: number): number {
-    if (!this.activeEntityId) return 0;
-
-    const simulatedStates = new Map<string, { readiness: number; baseSpeed: number }>();
-
-    for (const [id, state] of this.readinessStates) {
-      simulatedStates.set(id, {
-        readiness: state.readiness,
-        baseSpeed: state.baseSpeed
-      });
-    }
-
-    const actorState = simulatedStates.get(this.activeEntityId);
-    const actorEntity = this.entities.get(this.activeEntityId);
-    const actorName = actorEntity ? getEntityName(actorEntity) : 'Unknown';
-    if (actorState) {
-      const originalReadiness = actorState.readiness;
-      actorState.readiness = -actionDelay;
-      DebugLogger.debug('InitiativeTracker', 'simulateGhostPosition START', {
-        actorName,
-        actionDelay,
-        originalReadiness,
-        newReadiness: -actionDelay,
-        baseSpeed: actorState.baseSpeed
-      });
-    }
-
-    let queuePosition = 0;
-    let simTick = 0;
-    const maxSimTicks = 500;
-    const addedEntities = new Set<string>();
-
-    while (queuePosition < INITIATIVE.QUEUE_DISPLAY_COUNT && simTick < maxSimTicks) {
-      let highestReadiness = -Infinity;
-      let nextActorId: string | null = null;
-
-      for (const [id, state] of simulatedStates) {
-        if (addedEntities.has(id)) continue;
-        if (state.readiness >= INITIATIVE.READINESS_THRESHOLD && state.readiness > highestReadiness) {
-          highestReadiness = state.readiness;
-          nextActorId = id;
-        }
-      }
-
-      if (nextActorId) {
-        if (nextActorId === this.activeEntityId) {
-          DebugLogger.debug('InitiativeTracker', 'simulateGhostPosition RESULT', {
-            actorName,
-            actionDelay,
-            queuePosition,
-            foundAt: 'loop'
-          });
-          return queuePosition;
-        }
-        addedEntities.add(nextActorId);
-        const state = simulatedStates.get(nextActorId)!;
-        state.readiness = -INITIATIVE.ACTION_DELAYS.DEFEND;
-        queuePosition++;
-      } else {
-        simTick++;
-        for (const [_id, state] of simulatedStates) {
-          state.readiness += state.baseSpeed;
-        }
-      }
-    }
-
-    DebugLogger.debug('InitiativeTracker', 'simulateGhostPosition RESULT', {
-      actorName,
-      actionDelay,
-      queuePosition,
-      foundAt: 'end'
+    queue.sort((a, b) => {
+      if (a.ticks !== b.ticks) return a.ticks - b.ticks;
+      return b.agility - a.agility;
     });
-    return queuePosition;
+
+    const position = queue.findIndex(e => e.entityId === this.choosingEntityId);
+
+    DebugLogger.debug('InitiativeTracker', 'simulateGhostPosition', {
+      choosingEntityId: this.choosingEntityId,
+      chargeTime,
+      position,
+      queueLength: queue.length,
+    });
+
+    return { position, finalTicksRemaining: chargeTime };
   }
 
-  public getActiveEntity(): CombatEntity | null {
-    if (!this.activeEntityId) return null;
-    return this.entities.get(this.activeEntityId) || null;
+  public getChoosingEntity(): CombatEntity | null {
+    if (!this.choosingEntityId) return null;
+    return this.entities.get(this.choosingEntityId) || null;
   }
 
-  public getActiveEntityId(): string | null {
-    return this.activeEntityId;
-  }
-
-  public getCurrentTick(): number {
-    return this.currentTick;
+  public getChoosingEntityId(): string | null {
+    return this.choosingEntityId;
   }
 
   public hasEntity(entityId: string): boolean {
     return this.entities.has(entityId);
   }
 
-  public getEntityReadiness(entityId: string): number | null {
-    const state = this.readinessStates.get(entityId);
-    return state ? state.readiness : null;
+  public getEntityTicksRemaining(entityId: string): number | null {
+    const state = this.chargeStates.get(entityId);
+    return state ? state.ticksRemaining : null;
   }
 
   public getEntityCount(): number {
@@ -318,9 +260,8 @@ export class InitiativeTracker {
   }
 
   public reset(): void {
-    this.readinessStates.clear();
+    this.chargeStates.clear();
     this.entities.clear();
-    this.currentTick = 0;
-    this.activeEntityId = null;
+    this.choosingEntityId = null;
   }
 }

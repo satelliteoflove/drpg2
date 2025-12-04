@@ -2,7 +2,7 @@ import { CombatAction, CombatActionContext, CombatActionParams, CombatActionResu
 import { EntityUtils } from '../../../utils/EntityUtils';
 import { GameServices } from '../../../services/GameServices';
 import { SFX_CATALOG } from '../../../config/AudioConstants';
-import { calculateAttackDelay } from '../../../config/InitiativeConstants';
+import { calculateAttackChargeTime } from '../../../config/InitiativeConstants';
 import { WeaponSpeedCategory } from '../../../types/InitiativeTypes';
 
 export class AttackAction implements CombatAction {
@@ -72,12 +72,12 @@ export class AttackAction implements CombatAction {
   getDelay(context: CombatActionContext, _params: CombatActionParams): number {
     const currentUnit = context.getCurrentUnit();
     if (!currentUnit || !EntityUtils.isCharacter(currentUnit)) {
-      return calculateAttackDelay('unarmed');
+      return calculateAttackChargeTime(10, 'unarmed');
     }
 
     const weapon = currentUnit.equipment.weapon;
     const speedCategory: WeaponSpeedCategory = weapon?.speedCategory || 'unarmed';
     const agility = currentUnit.stats.agility;
-    return calculateAttackDelay(speedCategory, agility);
+    return calculateAttackChargeTime(agility, speedCategory);
   }
 }

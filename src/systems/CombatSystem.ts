@@ -15,8 +15,8 @@ import { WeaponEffectApplicator } from './combat/helpers/WeaponEffectApplicator'
 import { BanterEventTracker } from '../types/BanterTypes';
 import { SFX_CATALOG } from '../config/AudioConstants';
 import { InitiativeTracker } from './InitiativeTracker';
-import { InitiativeSnapshot } from '../types/InitiativeTypes';
-import { INITIATIVE } from '../config/InitiativeConstants';
+import { InitiativeSnapshot, GhostSimulationResult } from '../types/InitiativeTypes';
+import { INITIATIVE, calculateAttackChargeTime } from '../config/InitiativeConstants';
 
 interface CombatDebugData {
   currentTurn: string;
@@ -97,8 +97,6 @@ export class CombatSystem {
 
     this.initiativeTracker.initialize(activeCharacters, activeMonsters, surprised);
 
-    this.initiativeTracker.advanceToNextActor();
-
     this.encounter = {
       monsters: monsters,
       surprise: surprised,
@@ -127,7 +125,7 @@ export class CombatSystem {
 
   public getCurrentUnit(): Character | Monster | null {
     if (!this.encounter) return null;
-    const entity = this.initiativeTracker.getActiveEntity();
+    const entity = this.initiativeTracker.getChoosingEntity();
     return entity as Character | Monster || null;
   }
 
@@ -209,7 +207,7 @@ export class CombatSystem {
     const result = combatAction.execute(context, params);
 
     if (result.delay > 0) {
-      this.initiativeTracker.applyActionDelay(currentUnit.id, result.delay);
+      this.initiativeTracker.assignChargeTime(currentUnit.id, result.delay);
     }
 
     if (this.encounter) {
@@ -260,7 +258,7 @@ export class CombatSystem {
                      this.statusEffectSystem.hasStatus(monster, 'Paralyzed') ? 'paralyzed' :
                      this.statusEffectSystem.hasStatus(monster, 'Stoned') ? 'petrified' : 'disabled';
       DebugLogger.info('CombatSystem', `${monster.name} is ${status}, cannot act`);
-      this.initiativeTracker.applyActionDelay(monster.id, INITIATIVE.ACTION_DELAYS.SKIP_TURN);
+      this.initiativeTracker.assignChargeTime(monster.id, INITIATIVE.BASE_CHARGE_TIMES.SKIP_TURN);
       if (this.encounter) {
         this.encounter.initiative = this.initiativeTracker.getSnapshot();
       }
@@ -281,7 +279,8 @@ export class CombatSystem {
     const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
     const attack = monster.attacks[Math.floor(Math.random() * monster.attacks.length)];
 
-    const monsterDelay = Math.max(INITIATIVE.MONSTER_MIN_DELAY, INITIATIVE.ATTACK_DELAYS.standard);
+    const monsterAgility = monster.agility ?? INITIATIVE.DEFAULT_MONSTER_AGILITY;
+    const monsterChargeTime = calculateAttackChargeTime(monsterAgility, 'standard');
 
     if (Math.random() < attack.chance) {
       const damage = this.rollDamage(attack.damage);
@@ -303,14 +302,14 @@ export class CombatSystem {
         }
       }
 
-      this.initiativeTracker.applyActionDelay(monster.id, monsterDelay);
+      this.initiativeTracker.assignChargeTime(monster.id, monsterChargeTime);
       if (this.encounter) {
         this.encounter.initiative = this.initiativeTracker.getSnapshot();
       }
 
       return message;
     } else {
-      this.initiativeTracker.applyActionDelay(monster.id, monsterDelay);
+      this.initiativeTracker.assignChargeTime(monster.id, monsterChargeTime);
       if (this.encounter) {
         this.encounter.initiative = this.initiativeTracker.getSnapshot();
       }
@@ -357,7 +356,7 @@ export class CombatSystem {
       return;
     }
 
-    const nextActor = this.initiativeTracker.advanceToNextActor();
+    const nextActor = this.initiativeTracker.advanceUntilChoice();
 
     if (!nextActor) {
       DebugLogger.warn('CombatSystem', 'No next actor found in initiative tracker');
@@ -368,7 +367,6 @@ export class CombatSystem {
     DebugLogger.debug('CombatSystem', 'Turn advanced via initiative', {
       nextActorId: nextActor.id,
       nextActorName: EntityUtils.getName(nextActor as Character | Monster),
-      tick: this.initiativeTracker.getCurrentTick()
     });
 
     this.encounter.initiative = this.initiativeTracker.getSnapshot();
@@ -533,8 +531,8 @@ export class CombatSystem {
     return this.initiativeTracker.getSnapshot();
   }
 
-  public simulateGhostPosition(actionDelay: number): number {
-    return this.initiativeTracker.simulateGhostPosition(actionDelay);
+  public simulateGhostPosition(chargeTime: number): GhostSimulationResult {
+    return this.initiativeTracker.simulateGhostPosition(chargeTime);
   }
 
   public getCombatStatus(): string {
@@ -576,7 +574,7 @@ export class CombatSystem {
   }
 
   public applySkipTurnDelay(entityId: string): void {
-    this.initiativeTracker.applyActionDelay(entityId, INITIATIVE.ACTION_DELAYS.SKIP_TURN);
+    this.initiativeTracker.assignChargeTime(entityId, INITIATIVE.BASE_CHARGE_TIMES.SKIP_TURN);
     if (this.encounter) {
       this.encounter.initiative = this.initiativeTracker.getSnapshot();
     }

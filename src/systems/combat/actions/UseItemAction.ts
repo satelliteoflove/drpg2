@@ -23,13 +23,7 @@ export class UseItemAction implements CombatAction {
     };
   }
 
-  getDelay(context: CombatActionContext, _params: CombatActionParams): number {
-    const currentUnit = context.getCurrentUnit();
-    const baseDelay = INITIATIVE.ACTION_DELAYS.USE_ITEM;
-    if (!currentUnit || !EntityUtils.isCharacter(currentUnit)) {
-      return baseDelay;
-    }
-    const agilityModifier = Math.floor((currentUnit.stats.agility - 10) / 4);
-    return Math.max(6, baseDelay - agilityModifier);
+  getDelay(_context: CombatActionContext, _params: CombatActionParams): number {
+    return INITIATIVE.BASE_CHARGE_TIMES.USE_ITEM;
   }
 }

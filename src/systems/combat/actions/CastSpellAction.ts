@@ -5,7 +5,7 @@ import { EntityUtils } from '../../../utils/EntityUtils';
 import { SpellCastingContext, SpellId, SpellData, SpellEffectType, SpellTargetType } from '../../../types/SpellTypes';
 import { GameServices } from '../../../services/GameServices';
 import { SFX_CATALOG } from '../../../config/AudioConstants';
-import { calculateSpellDelay, INITIATIVE } from '../../../config/InitiativeConstants';
+import { calculateSpellChargeTime, INITIATIVE } from '../../../config/InitiativeConstants';
 import { SpellEffectCategory, SpellTargetScope } from '../../../types/InitiativeTypes';
 
 export class CastSpellAction implements CombatAction {
@@ -71,7 +71,7 @@ export class CastSpellAction implements CombatAction {
 
     context.cleanupDeadUnits();
 
-    const delay = this.calculateSpellDelayFromData(spellData);
+    const delay = this.calculateSpellChargeTimeFromData(spellData);
 
     if (result.success) {
       GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.COMBAT.SPELL_CAST);
@@ -91,21 +91,21 @@ export class CastSpellAction implements CombatAction {
 
   getDelay(context: CombatActionContext, params: CombatActionParams): number {
     if (!params.spellId) {
-      return INITIATIVE.SPELL_EFFECT_DELAYS.utility;
+      return INITIATIVE.SPELL_CHARGE_TIMES.utility;
     }
 
     const spellData = context.spellCaster['registry'].getSpellById(params.spellId as SpellId);
     if (!spellData) {
-      return INITIATIVE.SPELL_EFFECT_DELAYS.utility;
+      return INITIATIVE.SPELL_CHARGE_TIMES.utility;
     }
 
-    return this.calculateSpellDelayFromData(spellData);
+    return this.calculateSpellChargeTimeFromData(spellData);
   }
 
-  private calculateSpellDelayFromData(spellData: SpellData): number {
+  private calculateSpellChargeTimeFromData(spellData: SpellData): number {
     const effectCategory = this.mapEffectTypeToCategory(spellData.effects[0]?.type);
     const targetScope = this.mapTargetTypeToScope(spellData.targetType);
-    return calculateSpellDelay(effectCategory, targetScope);
+    return calculateSpellChargeTime(effectCategory, targetScope);
   }
 
   private mapEffectTypeToCategory(effectType: SpellEffectType | undefined): SpellEffectCategory {

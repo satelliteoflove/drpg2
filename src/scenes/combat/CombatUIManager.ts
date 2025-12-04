@@ -8,7 +8,7 @@ import { SpellMenu } from '../../ui/SpellMenu';
 import { SpellTargetSelector } from '../../ui/SpellTargetSelector';
 import { SpellRegistry } from '../../systems/magic/SpellRegistry';
 import { UI_CONSTANTS } from '../../config/UIConstants';
-import { calculateSpellDelay, INITIATIVE } from '../../config/InitiativeConstants';
+import { calculateSpellChargeTime, INITIATIVE } from '../../config/InitiativeConstants';
 import { SpellEffectCategory, SpellTargetScope } from '../../types/InitiativeTypes';
 import { SceneRenderContext } from '../../core/Scene';
 import { KeyBindingHelper } from '../../config/KeyBindings';
@@ -302,39 +302,43 @@ export class CombatUIManager {
     if (!snapshot || snapshot.queue.length === 0) return;
 
     const actionState = this.stateManager.getActionState();
-    const selectedDelay = this.getPreviewDelay(actionState);
+    const selectedChargeTime = this.getPreviewChargeTime(actionState);
     const showPreview = actionState === 'select_action' || actionState === 'select_spell' || actionState === 'spell_target';
 
-    let ghostPosition = -1;
-    if (showPreview && selectedDelay > 0) {
-      ghostPosition = this.combatSystem.simulateGhostPosition(selectedDelay);
+    let ghostFinalTicks = 0;
+    if (showPreview && selectedChargeTime > 0) {
+      const ghostResult = this.combatSystem.simulateGhostPosition(selectedChargeTime);
+      ghostFinalTicks = ghostResult.finalTicksRemaining;
     }
 
-    const listStartY = TOL.Y + TOL.TITLE_HEIGHT + 5;
-    const maxVisibleEntries = Math.min(snapshot.queue.length, TOL.MAX_ENTRIES);
+    const entriesToRender: Array<{ type: 'entry' | 'ghost'; entry?: typeof snapshot.queue[0]; ticks: number }> = [];
 
-    let renderIndex = 0;
-    for (let i = 0; i < maxVisibleEntries && renderIndex < TOL.MAX_ENTRIES; i++) {
-      const entry = snapshot.queue[i];
-      const entryY = listStartY + renderIndex * TOL.ENTRY_HEIGHT;
-
-      if (showPreview && ghostPosition === i && !entry.isCurrentActor) {
-        this.renderGhostEntry(ctx, TOL.X, entryY, TOL.WIDTH, TOL.ENTRY_HEIGHT, snapshot, selectedDelay);
-        renderIndex++;
-
-        if (renderIndex >= TOL.MAX_ENTRIES) break;
-        const nextEntryY = listStartY + renderIndex * TOL.ENTRY_HEIGHT;
-        this.renderTurnEntry(ctx, TOL.X, nextEntryY, TOL.WIDTH, TOL.ENTRY_HEIGHT, entry, false);
-        renderIndex++;
+    for (const entry of snapshot.queue) {
+      if (entry.isChoosing) {
+        entriesToRender.push({ type: 'entry', entry, ticks: -1 });
       } else {
-        this.renderTurnEntry(ctx, TOL.X, entryY, TOL.WIDTH, TOL.ENTRY_HEIGHT, entry, entry.isCurrentActor);
-        renderIndex++;
+        entriesToRender.push({ type: 'entry', entry, ticks: entry.ticksRemaining });
       }
     }
 
-    if (showPreview && ghostPosition >= maxVisibleEntries && renderIndex < TOL.MAX_ENTRIES) {
-      const entryY = listStartY + renderIndex * TOL.ENTRY_HEIGHT;
-      this.renderGhostEntry(ctx, TOL.X, entryY, TOL.WIDTH, TOL.ENTRY_HEIGHT, snapshot, selectedDelay);
+    if (showPreview && ghostFinalTicks > 0) {
+      entriesToRender.push({ type: 'ghost', ticks: ghostFinalTicks });
+    }
+
+    entriesToRender.sort((a, b) => a.ticks - b.ticks);
+
+    const listStartY = TOL.Y + TOL.TITLE_HEIGHT + 5;
+    const maxVisibleEntries = Math.min(entriesToRender.length, TOL.MAX_ENTRIES);
+
+    for (let i = 0; i < maxVisibleEntries; i++) {
+      const item = entriesToRender[i];
+      const entryY = listStartY + i * TOL.ENTRY_HEIGHT;
+
+      if (item.type === 'ghost') {
+        this.renderGhostEntry(ctx, TOL.X, entryY, TOL.WIDTH, TOL.ENTRY_HEIGHT, snapshot, ghostFinalTicks);
+      } else if (item.entry) {
+        this.renderTurnEntry(ctx, TOL.X, entryY, TOL.WIDTH, TOL.ENTRY_HEIGHT, item.entry, item.entry.isChoosing);
+      }
     }
   }
 
@@ -344,13 +348,13 @@ export class CombatUIManager {
     y: number,
     width: number,
     height: number,
-    entry: { entityId: string; entityName: string; isPlayer: boolean; isCurrentActor: boolean },
-    isCurrentActor: boolean
+    entry: { entityId: string; entityName: string; isPlayer: boolean; isChoosing: boolean; ticksRemaining: number },
+    isChoosing: boolean
   ): void {
     const TOL = UI_CONSTANTS.TURN_ORDER_LIST;
     const padding = TOL.PADDING;
 
-    if (isCurrentActor) {
+    if (isChoosing) {
       ctx.fillStyle = TOL.CURRENT_ACTOR_BG;
       ctx.fillRect(x + 2, y, width - 4, height - 2);
     }
@@ -364,18 +368,20 @@ export class CombatUIManager {
     }
 
     ctx.fillStyle = color;
-    ctx.font = isCurrentActor ? 'bold 12px monospace' : '12px monospace';
+    ctx.font = isChoosing ? 'bold 12px monospace' : '12px monospace';
     ctx.textAlign = 'left';
 
-    const indicator = isCurrentActor ? '>' : ' ';
-    const displayName = entry.entityName.length > 18 ? entry.entityName.substring(0, 16) + '..' : entry.entityName;
+    const indicator = isChoosing ? '>' : ' ';
+    const displayName = entry.entityName.length > 14 ? entry.entityName.substring(0, 12) + '..' : entry.entityName;
     ctx.fillText(`${indicator} ${displayName}`, x + padding, y + height / 2 + 4);
 
-    if (!entry.isPlayer) {
-      ctx.fillStyle = '#666';
-      ctx.font = '10px monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText('(enemy)', x + width - padding, y + height / 2 + 3);
+    ctx.fillStyle = '#666';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    if (entry.isPlayer) {
+      ctx.fillText(`t:${entry.ticksRemaining}`, x + width - padding, y + height / 2 + 3);
+    } else {
+      ctx.fillText(`(enemy) t:${entry.ticksRemaining}`, x + width - padding, y + height / 2 + 3);
     }
   }
 
@@ -385,14 +391,14 @@ export class CombatUIManager {
     y: number,
     width: number,
     height: number,
-    snapshot: { queue: Array<{ entityId: string; entityName: string; isPlayer: boolean; isCurrentActor: boolean }>; activeEntityId: string | null },
-    delay: number
+    snapshot: { queue: Array<{ entityId: string; entityName: string; isPlayer: boolean; isChoosing: boolean }>; choosingEntityId: string | null },
+    chargeTime: number
   ): void {
     const TOL = UI_CONSTANTS.TURN_ORDER_LIST;
     const padding = TOL.PADDING;
 
-    const currentActor = snapshot.queue.find(e => e.isCurrentActor);
-    if (!currentActor) return;
+    const choosingEntity = snapshot.queue.find(e => e.isChoosing);
+    if (!choosingEntity) return;
 
     ctx.save();
     ctx.globalAlpha = TOL.GHOST_OPACITY;
@@ -401,8 +407,8 @@ export class CombatUIManager {
     ctx.fillRect(x + 2, y, width - 4, height - 2);
 
     let color: string;
-    if (currentActor.isPlayer) {
-      const character = this.gameState.party.characters.find((c: Character) => c.id === currentActor.entityId);
+    if (choosingEntity.isPlayer) {
+      const character = this.gameState.party.characters.find((c: Character) => c.id === choosingEntity.entityId);
       color = character?.dialogueColor || TOL.PLAYER_COLOR;
     } else {
       color = TOL.ENEMY_COLOR;
@@ -412,35 +418,35 @@ export class CombatUIManager {
     ctx.font = 'italic 12px monospace';
     ctx.textAlign = 'left';
 
-    const displayName = currentActor.entityName.length > 14 ? currentActor.entityName.substring(0, 12) + '..' : currentActor.entityName;
+    const displayName = choosingEntity.entityName.length > 14 ? choosingEntity.entityName.substring(0, 12) + '..' : choosingEntity.entityName;
     ctx.fillText(`  [${displayName}]`, x + padding, y + height / 2 + 4);
 
     ctx.fillStyle = '#aaa';
     ctx.font = '10px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`d:${delay}`, x + width - padding, y + height / 2 + 3);
+    ctx.fillText(`t:${chargeTime}`, x + width - padding, y + height / 2 + 3);
 
     ctx.restore();
   }
 
-  private getPreviewDelay(actionState: string): number {
+  private getPreviewChargeTime(actionState: string): number {
     if (actionState === 'select_action') {
       return this.stateManager.getSelectedActionDelay();
     }
     if (actionState === 'select_spell' || actionState === 'spell_target') {
       const pendingSpellId = this.stateManager.getPendingSpellId();
       if (pendingSpellId) {
-        return this.getSpellDelay(pendingSpellId);
+        return this.getSpellChargeTime(pendingSpellId);
       }
-      return INITIATIVE.SPELL_EFFECT_DELAYS.utility;
+      return INITIATIVE.SPELL_CHARGE_TIMES.utility;
     }
     return 0;
   }
 
-  private getSpellDelay(spellId: string): number {
+  private getSpellChargeTime(spellId: string): number {
     const spellRegistry = SpellRegistry.getInstance();
     const spellData = spellRegistry.getSpellById(spellId as any);
-    if (!spellData) return INITIATIVE.SPELL_EFFECT_DELAYS.utility;
+    if (!spellData) return INITIATIVE.SPELL_CHARGE_TIMES.utility;
 
     const firstEffect = spellData.effects?.[0];
     const effectType = firstEffect?.type || 'utility';
@@ -471,7 +477,7 @@ export class CombatUIManager {
     };
     const targetScope = scopeMapping[targetType] || 'single_enemy';
 
-    return calculateSpellDelay(effectCategory, targetScope);
+    return calculateSpellChargeTime(effectCategory, targetScope);
   }
 
   private renderCombatInfo(ctx: CanvasRenderingContext2D): void {
