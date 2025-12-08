@@ -7,6 +7,7 @@ import { SceneManager } from '../../core/Scene';
 import { KEY_BINDINGS } from '../../config/KeyBindings';
 import { DebugLogger } from '../../utils/DebugLogger';
 import { EntityUtils } from '../../utils/EntityUtils';
+import { FormationUtils } from '../../utils/FormationUtils';
 import { SpellRegistry } from '../../systems/magic/SpellRegistry';
 import { SpellId } from '../../types/SpellTypes';
 import { GameServices } from '../../services/GameServices';
@@ -110,25 +111,42 @@ export class CombatInputController {
     const encounter = this.combatSystem.getEncounter();
     if (!encounter) return false;
 
+    const currentUnit = this.combatSystem.getCurrentUnit();
+    const pendingSpellId = this.stateManager.getPendingSpellId();
     const aliveMonsters = encounter.monsters.filter((m) => m.hp > 0);
+
+    let validTargets: Monster[];
+    if (pendingSpellId) {
+      validTargets = aliveMonsters;
+    } else if (currentUnit && EntityUtils.isCharacter(currentUnit)) {
+      validTargets = FormationUtils.getValidTargetsForAttacker(currentUnit, encounter.monsters);
+    } else {
+      validTargets = aliveMonsters;
+    }
+
     const currentTarget = this.stateManager.getSelectedTarget();
+    const clampedTarget = Math.min(currentTarget, validTargets.length - 1);
+    if (clampedTarget !== currentTarget) {
+      this.stateManager.setSelectedTarget(Math.max(0, clampedTarget));
+    }
 
     if (key === KEY_BINDINGS.combat.selectLeft) {
       GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CURSOR);
-      this.stateManager.setSelectedTarget(Math.max(0, currentTarget - 1));
+      this.stateManager.setSelectedTarget(Math.max(0, clampedTarget - 1));
       return true;
     } else if (key === KEY_BINDINGS.combat.selectRight) {
       GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CURSOR);
-      this.stateManager.setSelectedTarget(Math.min(aliveMonsters.length - 1, currentTarget + 1));
+      this.stateManager.setSelectedTarget(Math.min(validTargets.length - 1, clampedTarget + 1));
       return true;
     } else if (key === KEY_BINDINGS.combat.confirm) {
       GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CONFIRM);
-      const pendingSpellId = this.stateManager.getPendingSpellId();
+      const selectedMonster = validTargets[Math.max(0, clampedTarget)];
+      const aliveMonsterIndex = aliveMonsters.findIndex(m => m.id === selectedMonster.id);
       if (pendingSpellId) {
-        this.executeAction('Cast Spell', currentTarget, pendingSpellId);
+        this.executeAction('Cast Spell', aliveMonsterIndex, pendingSpellId);
         this.stateManager.setPendingSpellId(null);
       } else {
-        this.executeAction('Attack', currentTarget);
+        this.executeAction('Attack', aliveMonsterIndex);
       }
       return true;
     } else if (key === KEY_BINDINGS.combat.cancel) {

@@ -61,6 +61,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
+    range: 'melee',
   },
   {
     id: 'dagger',
@@ -75,6 +76,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
+    range: 'melee',
   },
   {
     id: 'poison_dagger',
@@ -89,6 +91,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
+    range: 'melee',
     onHitEffect: {
       statusType: 'Poisoned',
       chance: 0.10,
@@ -109,6 +112,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 1,
+    range: 'melee',
     onHitEffect: {
       statusType: 'Paralyzed',
       chance: 0.15,
@@ -129,6 +133,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
+    range: 'melee',
     onHitEffect: {
       statusType: 'Sleeping',
       chance: 0.08,
@@ -149,6 +154,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
+    range: 'reach',
   },
   {
     id: 'mace',
@@ -163,6 +169,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
+    range: 'melee',
   },
   {
     id: 'muramasa',
@@ -177,6 +184,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: true, // Always cursed - cannot unequip
     blessed: false,
     enchantment: 3,
+    range: 'melee',
     description: 'A legendary cursed katana that thirsts for blood',
   },
   {
@@ -192,6 +200,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 2,
+    range: 'reach',
     invokable: true,
     charges: 30,
     maxCharges: 30,

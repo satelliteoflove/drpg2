@@ -64,6 +64,34 @@ export class Party implements IParty {
     return this.characters.filter((c) => !c.isDead);
   }
 
+  public checkAndPromoteBackRow(): boolean {
+    const frontAlive = this.getFrontRow();
+    if (frontAlive.length > 0) {
+      return false;
+    }
+
+    const backAlive = this.getBackRow();
+    if (backAlive.length === 0) {
+      return false;
+    }
+
+    const aliveChars = this.characters.filter(c => c && !c.isDead);
+    const deadChars = this.characters.filter(c => c && c.isDead);
+    const originalLength = this.characters.length;
+
+    const newOrder = [...aliveChars, ...deadChars];
+    while (newOrder.length < originalLength) {
+      newOrder.push(undefined as unknown as Character);
+    }
+
+    this.characters.length = 0;
+    for (let i = 0; i < originalLength; i++) {
+      this.characters.push(newOrder[i]);
+    }
+
+    return true;
+  }
+
   public isWiped(): boolean {
     return this.getAliveCharacters().length === 0;
   }

@@ -145,6 +145,13 @@ export class CombatUIManager {
     const actionState = this.stateManager.getActionState();
     const selectedTarget = this.stateManager.getSelectedTarget();
 
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#666666';
+    ctx.fillText('- BACK ROW -', 460, 150);
+    ctx.fillStyle = '#44ff44';
+    ctx.fillText('- FRONT ROW -', 460, 250);
+
     monsters.forEach((monster, index) => {
       if (monster.hp <= 0) return;
 
