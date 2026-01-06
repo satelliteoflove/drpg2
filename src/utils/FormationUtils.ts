@@ -13,14 +13,18 @@ export class FormationUtils {
     return index !== -1 && GAME_CONFIG.PARTY.BACK_ROW_INDICES.includes(index);
   }
 
-  static isMonsterInFrontRow(monster: Monster, monsters: Monster[]): boolean {
+  static isMonsterInFrontColumn(monster: Monster, monsters: Monster[]): boolean {
     const index = monsters.findIndex(m => m.id === monster.id);
-    return index !== -1 && GAME_CONFIG.MONSTER_FORMATION.FRONT_ROW_INDICES.includes(index);
+    return index !== -1 && GAME_CONFIG.MONSTER_FORMATION.FRONT_COLUMN_INDICES.includes(index);
   }
 
-  static isMonsterInBackRow(monster: Monster, monsters: Monster[]): boolean {
+  static isMonsterInBackColumn(monster: Monster, monsters: Monster[]): boolean {
     const index = monsters.findIndex(m => m.id === monster.id);
-    return index !== -1 && GAME_CONFIG.MONSTER_FORMATION.BACK_ROW_INDICES.includes(index);
+    const backIndices = [
+      ...GAME_CONFIG.MONSTER_FORMATION.BACK_COLUMN_INDICES,
+      ...GAME_CONFIG.MONSTER_FORMATION.OVERFLOW_COLUMN_INDICES
+    ];
+    return index !== -1 && backIndices.includes(index);
   }
 
   static getFrontRowCharacters(party: Character[]): Character[] {
@@ -35,14 +39,18 @@ export class FormationUtils {
       .filter((c): c is Character => c !== undefined && !c.isDead);
   }
 
-  static getFrontRowMonsters(monsters: Monster[]): Monster[] {
-    return GAME_CONFIG.MONSTER_FORMATION.FRONT_ROW_INDICES
+  static getFrontColumnMonsters(monsters: Monster[]): Monster[] {
+    return GAME_CONFIG.MONSTER_FORMATION.FRONT_COLUMN_INDICES
       .map(i => monsters[i])
       .filter((m): m is Monster => m !== undefined && m.hp > 0 && !m.isDead);
   }
 
-  static getBackRowMonsters(monsters: Monster[]): Monster[] {
-    return GAME_CONFIG.MONSTER_FORMATION.BACK_ROW_INDICES
+  static getBackColumnMonsters(monsters: Monster[]): Monster[] {
+    const backIndices = [
+      ...GAME_CONFIG.MONSTER_FORMATION.BACK_COLUMN_INDICES,
+      ...GAME_CONFIG.MONSTER_FORMATION.OVERFLOW_COLUMN_INDICES
+    ];
+    return backIndices
       .map(i => monsters[i])
       .filter((m): m is Monster => m !== undefined && m.hp > 0 && !m.isDead);
   }
@@ -60,11 +68,11 @@ export class FormationUtils {
   }
 
   static getValidMeleeTargets(monsters: Monster[]): Monster[] {
-    const frontRow = this.getFrontRowMonsters(monsters);
-    if (frontRow.length > 0) {
-      return frontRow;
+    const frontColumn = this.getFrontColumnMonsters(monsters);
+    if (frontColumn.length > 0) {
+      return frontColumn;
     }
-    return this.getBackRowMonsters(monsters);
+    return this.getBackColumnMonsters(monsters);
   }
 
   static getValidTargetsForAttacker(
@@ -74,7 +82,7 @@ export class FormationUtils {
     const range = this.getCharacterWeaponRange(attacker);
     const aliveMonsters = monsters.filter(m => m.hp > 0 && !m.isDead);
 
-    if (range === 'ranged' || range === 'reach') {
+    if (range === 'ranged') {
       return aliveMonsters;
     }
 
@@ -93,7 +101,7 @@ export class FormationUtils {
     return party.findIndex(c => c.id === character.id);
   }
 
-  static getMonsterRowIndex(monster: Monster, monsters: Monster[]): number {
+  static getMonsterColumnIndex(monster: Monster, monsters: Monster[]): number {
     return monsters.findIndex(m => m.id === monster.id);
   }
 
@@ -101,8 +109,89 @@ export class FormationUtils {
     return GAME_CONFIG.PARTY.FRONT_ROW_INDICES.includes(index) ? 'front' : 'back';
   }
 
-  static isMonsterRow(index: number): 'front' | 'back' {
-    return GAME_CONFIG.MONSTER_FORMATION.FRONT_ROW_INDICES.includes(index) ? 'front' : 'back';
+  static getMonsterColumn(index: number): 'front' | 'back' | 'overflow' {
+    if (GAME_CONFIG.MONSTER_FORMATION.FRONT_COLUMN_INDICES.includes(index)) {
+      return 'front';
+    }
+    if (GAME_CONFIG.MONSTER_FORMATION.BACK_COLUMN_INDICES.includes(index)) {
+      return 'back';
+    }
+    return 'overflow';
+  }
+
+  static navigateTargetGrid(
+    currentIndex: number,
+    direction: 'up' | 'down' | 'left' | 'right',
+    validTargets: Monster[],
+    allMonsters: Monster[]
+  ): number {
+    if (validTargets.length === 0) return currentIndex;
+
+    const currentMonster = allMonsters[currentIndex];
+    const currentValidIdx = validTargets.findIndex(m => m === currentMonster);
+    if (currentValidIdx === -1) return currentIndex;
+
+    const currentCol = Math.floor(currentIndex / 3);
+    const currentRow = currentIndex % 3;
+
+    const getValidInColumn = (col: number): Monster[] => {
+      return validTargets.filter(m => {
+        const idx = allMonsters.findIndex(mon => mon === m);
+        return Math.floor(idx / 3) === col;
+      });
+    };
+
+    const getMonsterIndex = (monster: Monster): number => {
+      return allMonsters.findIndex(m => m === monster);
+    };
+
+    if (direction === 'up' || direction === 'down') {
+      const colMonsters = getValidInColumn(currentCol);
+      if (colMonsters.length <= 1) {
+        const newValidIdx = direction === 'up'
+          ? (currentValidIdx > 0 ? currentValidIdx - 1 : validTargets.length - 1)
+          : (currentValidIdx < validTargets.length - 1 ? currentValidIdx + 1 : 0);
+        return getMonsterIndex(validTargets[newValidIdx]);
+      }
+
+      const currentPosInCol = colMonsters.findIndex(m => m === currentMonster);
+      const newPosInCol = direction === 'up'
+        ? (currentPosInCol > 0 ? currentPosInCol - 1 : colMonsters.length - 1)
+        : (currentPosInCol < colMonsters.length - 1 ? currentPosInCol + 1 : 0);
+      return getMonsterIndex(colMonsters[newPosInCol]);
+    }
+
+    if (direction === 'left' || direction === 'right') {
+      const maxCol = Math.max(...validTargets.map(m => Math.floor(getMonsterIndex(m) / 3)));
+      const minCol = Math.min(...validTargets.map(m => Math.floor(getMonsterIndex(m) / 3)));
+
+      let targetCol = direction === 'left' ? currentCol - 1 : currentCol + 1;
+
+      if (targetCol < minCol) targetCol = maxCol;
+      if (targetCol > maxCol) targetCol = minCol;
+
+      const targetColMonsters = getValidInColumn(targetCol);
+      if (targetColMonsters.length === 0) {
+        const newValidIdx = direction === 'left'
+          ? (currentValidIdx > 0 ? currentValidIdx - 1 : validTargets.length - 1)
+          : (currentValidIdx < validTargets.length - 1 ? currentValidIdx + 1 : 0);
+        return getMonsterIndex(validTargets[newValidIdx]);
+      }
+
+      let bestMatch = targetColMonsters[0];
+      let bestDiff = Infinity;
+      for (const m of targetColMonsters) {
+        const mRow = getMonsterIndex(m) % 3;
+        const diff = Math.abs(mRow - currentRow);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestMatch = m;
+        }
+      }
+      return getMonsterIndex(bestMatch);
+    }
+
+    return currentIndex;
   }
 
   static promoteBackRowIfNeeded(party: Character[]): boolean {

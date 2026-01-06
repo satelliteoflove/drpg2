@@ -60,6 +60,8 @@ export class DataLoader {
       invokable: (itemTemplate as any).invokable,
       spellId: (itemTemplate as any).spellId,
       description: (itemTemplate as any).description,
+      range: (itemTemplate as any).range,
+      speedCategory: (itemTemplate as any).speedCategory,
     };
 
     return item;

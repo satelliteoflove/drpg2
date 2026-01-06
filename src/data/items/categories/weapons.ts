@@ -13,6 +13,7 @@ export const weapons = {
     blessed: false,
     enchantment: 0,
     speedCategory: 'light',
+    range: 'melee',
   },
   dagger: {
     id: 'dagger',
@@ -28,6 +29,7 @@ export const weapons = {
     blessed: false,
     enchantment: 0,
     speedCategory: 'light',
+    range: 'melee',
   },
   poison_dagger: {
     id: 'poison_dagger',
@@ -46,6 +48,7 @@ export const weapons = {
     blessed: false,
     enchantment: 0,
     speedCategory: 'light',
+    range: 'melee',
     description: 'A wickedly sharp dagger coated with poison',
   },
   cursed_blade: {
@@ -65,6 +68,7 @@ export const weapons = {
     blessed: false,
     enchantment: 0,
     speedCategory: 'standard',
+    range: 'melee',
     description: 'A blade that brings misfortune to its wielder',
   },
   frost_blade: {
@@ -84,6 +88,7 @@ export const weapons = {
     blessed: false,
     enchantment: 1,
     speedCategory: 'standard',
+    range: 'melee',
     description: 'A blade infused with freezing magic',
   },
   sleep_blade: {
@@ -103,6 +108,7 @@ export const weapons = {
     blessed: false,
     enchantment: 0,
     speedCategory: 'standard',
+    range: 'melee',
     description: 'An enchanted blade that lulls enemies to sleep',
   },
   staff: {
@@ -119,6 +125,7 @@ export const weapons = {
     blessed: false,
     enchantment: 0,
     speedCategory: 'standard',
+    range: 'reach',
   },
   mace: {
     id: 'mace',
@@ -134,6 +141,7 @@ export const weapons = {
     blessed: false,
     enchantment: 0,
     speedCategory: 'standard',
+    range: 'melee',
   },
   paralyzing_mace: {
     id: 'paralyzing_mace',
@@ -152,6 +160,7 @@ export const weapons = {
     blessed: false,
     enchantment: 0,
     speedCategory: 'heavy',
+    range: 'melee',
     description: 'A heavy mace that can stun enemies',
   },
   muramasa: {
@@ -168,6 +177,7 @@ export const weapons = {
     blessed: false,
     enchantment: 3,
     speedCategory: 'heavy',
+    range: 'melee',
     description: 'A legendary cursed katana that thirsts for blood',
   },
   staff_of_mogref: {
@@ -184,10 +194,43 @@ export const weapons = {
     blessed: false,
     enchantment: 2,
     speedCategory: 'standard',
+    range: 'reach',
     invokable: true,
     charges: 30,
     maxCharges: 30,
     spellId: 'POWER_STRIKE',
     description: 'A magical staff imbued with a powerful offensive spell',
+  },
+  short_bow: {
+    id: 'short_bow',
+    name: 'Short Bow',
+    unidentifiedName: '?Bow',
+    type: 'weapon',
+    value: 15,
+    weight: 2,
+    effects: [{ type: 'damage', value: 5 }],
+    classRestrictions: ['Thief', 'Ranger', 'Ninja'],
+    identified: true,
+    cursed: false,
+    blessed: false,
+    enchantment: 0,
+    speedCategory: 'standard',
+    range: 'ranged',
+  },
+  long_bow: {
+    id: 'long_bow',
+    name: 'Long Bow',
+    unidentifiedName: '?Bow',
+    type: 'weapon',
+    value: 50,
+    weight: 3,
+    effects: [{ type: 'damage', value: 7 }],
+    classRestrictions: ['Ranger', 'Ninja'],
+    identified: true,
+    cursed: false,
+    blessed: false,
+    enchantment: 0,
+    speedCategory: 'standard',
+    range: 'ranged',
   },
 };

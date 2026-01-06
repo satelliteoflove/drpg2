@@ -14,7 +14,7 @@ export const CLASS_EQUIPMENT_RESTRICTIONS = {
     shields: ['none'],
   },
   Priest: {
-    weapons: ['mace', 'staff', 'flail'], // No edged weapons
+    weapons: ['mace', 'staff', 'flail'],
     armor: ['robe', 'leather', 'chain'],
     shields: ['small', 'medium'],
   },
@@ -41,6 +41,36 @@ export const CLASS_EQUIPMENT_RESTRICTIONS = {
   Ninja: {
     weapons: ['all'],
     armor: ['all'],
+    shields: ['all'],
+  },
+  Ranger: {
+    weapons: ['sword', 'bow', 'dagger'],
+    armor: ['leather', 'studded', 'chain'],
+    shields: ['small'],
+  },
+  Monk: {
+    weapons: ['staff', 'mace'],
+    armor: ['robe'],
+    shields: ['none'],
+  },
+  Alchemist: {
+    weapons: ['dagger', 'staff'],
+    armor: ['robe', 'leather'],
+    shields: ['none'],
+  },
+  Psionic: {
+    weapons: ['dagger', 'staff'],
+    armor: ['robe'],
+    shields: ['none'],
+  },
+  Bard: {
+    weapons: ['sword', 'dagger', 'bow'],
+    armor: ['leather', 'studded'],
+    shields: ['small'],
+  },
+  Valkyrie: {
+    weapons: ['sword', 'spear', 'mace'],
+    armor: ['chain', 'plate'],
     shields: ['all'],
   },
 };
@@ -194,7 +224,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     type: 'weapon',
     value: 5000,
     weight: 2,
-    effects: [{ type: 'damage', value: 6 }], // 1d4+2 average
+    effects: [{ type: 'damage', value: 6 }],
     classRestrictions: ['Mage', 'Bishop'],
     identified: false,
     cursed: false,
@@ -206,6 +236,36 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     maxCharges: 30,
     spellId: 'POWER_STRIKE',
     description: 'A magical staff imbued with a powerful offensive spell',
+  },
+  {
+    id: 'short_bow',
+    name: 'Short Bow',
+    unidentifiedName: '?Bow',
+    type: 'weapon',
+    value: 15,
+    weight: 2,
+    effects: [{ type: 'damage', value: 5 }],
+    classRestrictions: ['Thief', 'Ranger', 'Ninja'],
+    identified: true,
+    cursed: false,
+    blessed: false,
+    enchantment: 0,
+    range: 'ranged',
+  },
+  {
+    id: 'long_bow',
+    name: 'Long Bow',
+    unidentifiedName: '?Bow',
+    type: 'weapon',
+    value: 50,
+    weight: 3,
+    effects: [{ type: 'damage', value: 7 }],
+    classRestrictions: ['Ranger', 'Ninja'],
+    identified: true,
+    cursed: false,
+    blessed: false,
+    enchantment: 0,
+    range: 'ranged',
   },
 
   // === ARMOR ===
