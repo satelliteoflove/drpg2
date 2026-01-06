@@ -3,11 +3,13 @@ import { Monster } from '../types/GameTypes';
 import { SpellData, SpellTargetType } from '../types/SpellTypes';
 import { EntityUtils } from '../utils/EntityUtils';
 import { KEY_BINDINGS } from '../config/KeyBindings';
+import { FormationUtils } from '../utils/FormationUtils';
 
 export interface SpellTargetState {
   spell: SpellData | null;
   targetType: SpellTargetType | null;
   validTargets: (Character | Monster)[];
+  allMonsters: Monster[];
   selectedTargetIndex: number;
   isSelectingTarget: boolean;
   requiresTargetSelection: boolean;
@@ -23,6 +25,7 @@ export class SpellTargetSelector {
       spell: null,
       targetType: null,
       validTargets: [],
+      allMonsters: [],
       selectedTargetIndex: 0,
       isSelectingTarget: false,
       requiresTargetSelection: false
@@ -38,6 +41,7 @@ export class SpellTargetSelector {
   ): void {
     this.state.spell = spell;
     this.state.targetType = spell.targetType;
+    this.state.allMonsters = enemies;
     this.onTargetSelected = onTargetSelected;
     this.onCancel = onCancel;
 
@@ -93,15 +97,41 @@ export class SpellTargetSelector {
     } else if (key === 'enter') {
       this.confirmTarget();
       return true;
-    } else if (key === KEY_BINDINGS.movement.left || key === KEY_BINDINGS.movement.alternateLeft ||
-               key === KEY_BINDINGS.menu.up || key === KEY_BINDINGS.menu.alternateUp) {
-      this.selectPreviousTarget();
-      return true;
-    } else if (key === KEY_BINDINGS.movement.right || key === KEY_BINDINGS.movement.alternateRight ||
-               key === KEY_BINDINGS.menu.down || key === KEY_BINDINGS.menu.alternateDown) {
-      this.selectNextTarget();
-      return true;
-    } else if (key >= '1' && key <= '9') {
+    }
+
+    const isEnemyTarget = this.state.targetType === 'enemy' || this.state.targetType === 'group' || this.state.targetType === 'allEnemies';
+
+    if (isEnemyTarget && this.state.allMonsters.length > 0) {
+      const direction = this.getNavigationDirection(key);
+      if (direction) {
+        const currentTarget = this.state.validTargets[this.state.selectedTargetIndex] as Monster;
+        const currentMonsterIndex = this.state.allMonsters.findIndex(m => m === currentTarget);
+        const newMonsterIndex = FormationUtils.navigateTargetGrid(
+          currentMonsterIndex,
+          direction,
+          this.state.validTargets as Monster[],
+          this.state.allMonsters
+        );
+        const newMonster = this.state.allMonsters[newMonsterIndex];
+        const newValidIndex = this.state.validTargets.findIndex(t => t === newMonster);
+        if (newValidIndex !== -1) {
+          this.state.selectedTargetIndex = newValidIndex;
+        }
+        return true;
+      }
+    } else {
+      if (key === KEY_BINDINGS.movement.left || key === KEY_BINDINGS.movement.alternateLeft ||
+          key === KEY_BINDINGS.menu.up || key === KEY_BINDINGS.menu.alternateUp) {
+        this.selectPreviousTarget();
+        return true;
+      } else if (key === KEY_BINDINGS.movement.right || key === KEY_BINDINGS.movement.alternateRight ||
+                 key === KEY_BINDINGS.menu.down || key === KEY_BINDINGS.menu.alternateDown) {
+        this.selectNextTarget();
+        return true;
+      }
+    }
+
+    if (key >= '1' && key <= '9') {
       const index = parseInt(key) - 1;
       if (index < this.state.validTargets.length) {
         this.state.selectedTargetIndex = index;
@@ -111,6 +141,14 @@ export class SpellTargetSelector {
     }
 
     return false;
+  }
+
+  private getNavigationDirection(key: string): 'up' | 'down' | 'left' | 'right' | null {
+    if (key === KEY_BINDINGS.combat.selectUp || key === KEY_BINDINGS.menu.up || key === KEY_BINDINGS.menu.alternateUp) return 'up';
+    if (key === KEY_BINDINGS.combat.selectDown || key === KEY_BINDINGS.menu.down || key === KEY_BINDINGS.menu.alternateDown) return 'down';
+    if (key === KEY_BINDINGS.combat.selectLeft || key === KEY_BINDINGS.movement.alternateLeft) return 'left';
+    if (key === KEY_BINDINGS.combat.selectRight || key === KEY_BINDINGS.movement.alternateRight) return 'right';
+    return null;
   }
 
   private selectPreviousTarget(): void {
@@ -146,6 +184,7 @@ export class SpellTargetSelector {
     this.state.isSelectingTarget = false;
     this.state.spell = null;
     this.state.validTargets = [];
+    this.state.allMonsters = [];
     this.state.selectedTargetIndex = 0;
   }
 

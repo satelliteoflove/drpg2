@@ -145,46 +145,69 @@ export class CombatUIManager {
     const actionState = this.stateManager.getActionState();
     const selectedTarget = this.stateManager.getSelectedTarget();
 
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#666666';
-    ctx.fillText('- BACK ROW -', 460, 150);
-    ctx.fillStyle = '#44ff44';
-    ctx.fillText('- FRONT ROW -', 460, 250);
+    let spellTargetMonsterIndex = -1;
+    if (actionState === 'spell_target') {
+      const spellTargetState = this.spellTargetSelector.getState();
+      const selectedSpellTarget = spellTargetState.validTargets[spellTargetState.selectedTargetIndex];
+      if (selectedSpellTarget && 'hp' in selectedSpellTarget) {
+        spellTargetMonsterIndex = monsters.findIndex(m => m.id === (selectedSpellTarget as Monster).id);
+      }
+    }
+
+    const columnX = [290, 430, 570];
+    const columnLabels = ['FRONT', 'BACK', 'OVERFLOW'];
+    const columnColors = ['#44ff44', '#666666', '#444444'];
+
+    columnLabels.forEach((label, col) => {
+      const hasMonsters = monsters.some((m, i) => {
+        const monsterCol = Math.floor(i / 3);
+        return monsterCol === col && m.hp > 0;
+      });
+      if (hasMonsters || col < 2) {
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = columnColors[col];
+        ctx.fillText(label, columnX[col] + 50, 95);
+      }
+    });
 
     monsters.forEach((monster, index) => {
       if (monster.hp <= 0) return;
 
-      const x = 320 + (index % 3) * 140;
-      const y = 160 + Math.floor(index / 3) * 100;
+      const col = Math.floor(index / 3);
+      const row = index % 3;
+      const x = columnX[col];
+      const y = 110 + row * 95;
 
-      if (actionState === 'select_target' && index === selectedTarget) {
+      const isAttackTarget = actionState === 'select_target' && index === selectedTarget;
+      const isSpellTarget = actionState === 'spell_target' && index === spellTargetMonsterIndex;
+      if (isAttackTarget || isSpellTarget) {
         ctx.fillStyle = '#ffff00';
-        ctx.fillRect(x - 5, y - 5, 110, 110);
+        ctx.fillRect(x - 5, y - 5, 110, 95);
       }
 
       ctx.fillStyle = '#800000';
-      ctx.fillRect(x, y, 100, 100);
+      ctx.fillRect(x, y, 100, 85);
 
       ctx.strokeStyle = '#ff0000';
       ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, 100, 100);
+      ctx.strokeRect(x, y, 100, 85);
 
       ctx.fillStyle = '#fff';
       ctx.font = '12px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(monster.name, x + 50, y + 20);
+      ctx.fillText(monster.name, x + 50, y + 18);
 
       const hpPercent = monster.hp / monster.maxHp;
       ctx.fillStyle = '#333';
-      ctx.fillRect(x + 10, y + 30, 80, 8);
+      ctx.fillRect(x + 10, y + 28, 80, 8);
 
       ctx.fillStyle = hpPercent > 0.5 ? '#00ff00' : hpPercent > 0.25 ? '#ffaa00' : '#ff0000';
-      ctx.fillRect(x + 10, y + 30, 80 * hpPercent, 8);
+      ctx.fillRect(x + 10, y + 28, 80 * hpPercent, 8);
 
       ctx.fillStyle = '#fff';
       ctx.font = '10px monospace';
-      ctx.fillText(`${monster.hp}/${monster.maxHp}`, x + 50, y + 50);
+      ctx.fillText(`${monster.hp}/${monster.maxHp}`, x + 50, y + 48);
 
       if (monster.statuses && monster.statuses.length > 0) {
         ctx.fillStyle = '#ffaa00';
@@ -312,14 +335,19 @@ export class CombatUIManager {
     const showPreview = actionState === 'select_action' || actionState === 'select_spell' || actionState === 'spell_target';
 
     let highlightedEntityId: string | null = null;
-    if (actionState === 'select_target' || actionState === 'spell_target') {
+    if (actionState === 'select_target') {
       const encounter = this.combatSystem.getEncounter();
       if (encounter) {
-        const aliveMonsters = encounter.monsters.filter(m => m.hp > 0);
         const targetIndex = this.stateManager.getSelectedTarget();
-        if (targetIndex >= 0 && targetIndex < aliveMonsters.length) {
-          highlightedEntityId = aliveMonsters[targetIndex].id;
+        if (targetIndex >= 0 && targetIndex < encounter.monsters.length) {
+          highlightedEntityId = encounter.monsters[targetIndex].id;
         }
+      }
+    } else if (actionState === 'spell_target') {
+      const spellTargetState = this.spellTargetSelector.getState();
+      const selectedTarget = spellTargetState.validTargets[spellTargetState.selectedTargetIndex];
+      if (selectedTarget && 'id' in selectedTarget) {
+        highlightedEntityId = selectedTarget.id;
       }
     }
 
