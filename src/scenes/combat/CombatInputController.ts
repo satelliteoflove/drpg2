@@ -7,6 +7,7 @@ import { SceneManager } from '../../core/Scene';
 import { KEY_BINDINGS } from '../../config/KeyBindings';
 import { DebugLogger } from '../../utils/DebugLogger';
 import { EntityUtils } from '../../utils/EntityUtils';
+import { FormationUtils } from '../../utils/FormationUtils';
 import { SpellRegistry } from '../../systems/magic/SpellRegistry';
 import { SpellId } from '../../types/SpellTypes';
 import { GameServices } from '../../services/GameServices';
@@ -91,7 +92,15 @@ export class CombatInputController {
 
       if (selectedActionText === 'Attack') {
         this.stateManager.setActionState('select_target');
-        this.stateManager.setSelectedTarget(0);
+        const currentUnit = this.combatSystem.getCurrentUnit();
+        const encounter = this.combatSystem.getEncounter();
+        if (encounter && currentUnit && EntityUtils.isCharacter(currentUnit)) {
+          const validTargets = FormationUtils.getValidTargetsForAttacker(currentUnit, encounter.monsters);
+          const firstValidIndex = encounter.monsters.findIndex(m => validTargets.includes(m));
+          this.stateManager.setSelectedTarget(Math.max(0, firstValidIndex));
+        } else {
+          this.stateManager.setSelectedTarget(0);
+        }
       } else if (selectedActionText === 'Cast Spell') {
         const currentUnit = this.combatSystem.getCurrentUnit();
         if (currentUnit && EntityUtils.isCharacter(currentUnit)) {
@@ -110,25 +119,53 @@ export class CombatInputController {
     const encounter = this.combatSystem.getEncounter();
     if (!encounter) return false;
 
+    const currentUnit = this.combatSystem.getCurrentUnit();
+    const pendingSpellId = this.stateManager.getPendingSpellId();
     const aliveMonsters = encounter.monsters.filter((m) => m.hp > 0);
-    const currentTarget = this.stateManager.getSelectedTarget();
 
-    if (key === KEY_BINDINGS.combat.selectLeft) {
+    let validTargets: Monster[];
+    if (pendingSpellId) {
+      validTargets = aliveMonsters;
+    } else if (currentUnit && EntityUtils.isCharacter(currentUnit)) {
+      validTargets = FormationUtils.getValidTargetsForAttacker(currentUnit, encounter.monsters);
+    } else {
+      validTargets = aliveMonsters;
+    }
+
+    const currentTargetIndex = this.stateManager.getSelectedTarget();
+    const currentMonster = encounter.monsters[currentTargetIndex];
+    let validIndex = validTargets.findIndex(m => m === currentMonster);
+    if (validIndex === -1) {
+      validIndex = 0;
+      const firstValid = validTargets[0];
+      if (firstValid) {
+        const actualIndex = encounter.monsters.findIndex(m => m === firstValid);
+        this.stateManager.setSelectedTarget(actualIndex);
+      }
+    }
+
+    const navDirection = this.getNavigationDirection(key);
+    if (navDirection) {
       GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CURSOR);
-      this.stateManager.setSelectedTarget(Math.max(0, currentTarget - 1));
+      const newIndex = FormationUtils.navigateTargetGrid(
+        currentTargetIndex,
+        navDirection,
+        validTargets,
+        encounter.monsters
+      );
+      this.stateManager.setSelectedTarget(newIndex);
       return true;
-    } else if (key === KEY_BINDINGS.combat.selectRight) {
-      GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CURSOR);
-      this.stateManager.setSelectedTarget(Math.min(aliveMonsters.length - 1, currentTarget + 1));
-      return true;
-    } else if (key === KEY_BINDINGS.combat.confirm) {
+    }
+
+    if (key === KEY_BINDINGS.combat.confirm) {
       GameServices.getInstance().getAudioManager().playSfx(SFX_CATALOG.MENU.CONFIRM);
-      const pendingSpellId = this.stateManager.getPendingSpellId();
+      const selectedMonster = encounter.monsters[currentTargetIndex];
+      const aliveMonsterIndex = aliveMonsters.findIndex(m => m.id === selectedMonster.id);
       if (pendingSpellId) {
-        this.executeAction('Cast Spell', currentTarget, pendingSpellId);
+        this.executeAction('Cast Spell', aliveMonsterIndex, pendingSpellId);
         this.stateManager.setPendingSpellId(null);
       } else {
-        this.executeAction('Attack', currentTarget);
+        this.executeAction('Attack', aliveMonsterIndex);
       }
       return true;
     } else if (key === KEY_BINDINGS.combat.cancel) {
@@ -295,5 +332,13 @@ export class CombatInputController {
     });
 
     this.combatSystem.forceCheckCombatEnd();
+  }
+
+  private getNavigationDirection(key: string): 'up' | 'down' | 'left' | 'right' | null {
+    if (key === KEY_BINDINGS.combat.selectUp) return 'up';
+    if (key === KEY_BINDINGS.combat.selectDown) return 'down';
+    if (key === KEY_BINDINGS.combat.selectLeft) return 'left';
+    if (key === KEY_BINDINGS.combat.selectRight) return 'right';
+    return null;
   }
 }

@@ -114,7 +114,7 @@ export const STARTER_CHARACTER_TEMPLATES: StarterCharacterTemplate[] = [
       luck: 3
     },
     equipmentIds: {
-      weapon: 'dagger',
+      weapon: 'short_bow',
       armor: 'leather_armor'
     }
   },

@@ -5,6 +5,7 @@ import { DebugLogger } from '../utils/DebugLogger';
 import { SpellCaster } from './magic/SpellCaster';
 import { DiceRoller } from '../utils/DiceRoller';
 import { EntityUtils } from '../utils/EntityUtils';
+import { FormationUtils } from '../utils/FormationUtils';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { ModifierSystem } from './ModifierSystem';
 import { GameServices } from '../services/GameServices';
@@ -153,7 +154,13 @@ export class CombatSystem {
     const currentUnit = this.getCurrentUnit();
     if (!currentUnit || !EntityUtils.isCharacter(currentUnit)) return [];
 
-    const options = ['Attack', 'Defend', 'Use Item', 'Escape'];
+    const options: string[] = [];
+
+    if (FormationUtils.canMeleeAttackFromPosition(currentUnit, this.party)) {
+      options.push('Attack');
+    }
+
+    options.push('Defend', 'Use Item', 'Escape');
 
     if (currentUnit.spells.length > 0 && currentUnit.mp > 0) {
       options.push('Cast Spell');
@@ -276,8 +283,20 @@ export class CombatSystem {
       return 'Party defeated!';
     }
 
-    const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
     const attack = monster.attacks[Math.floor(Math.random() * monster.attacks.length)];
+    const attackType = attack.attackType || 'melee';
+
+    let targetPool: Character[];
+    if (attackType === 'aoe' || attackType === 'ranged' || attackType === 'special') {
+      targetPool = alivePlayers;
+    } else {
+      targetPool = FormationUtils.getMonsterMeleeTargets(this.party);
+      if (targetPool.length === 0) {
+        targetPool = alivePlayers;
+      }
+    }
+
+    const target = targetPool[Math.floor(Math.random() * targetPool.length)];
 
     const monsterAgility = monster.agility ?? INITIATIVE.DEFAULT_MONSTER_AGILITY;
     const monsterChargeTime = calculateAttackChargeTime(monsterAgility, 'standard');
@@ -428,6 +447,10 @@ export class CombatSystem {
     }
 
     this.encounter.initiative = this.initiativeTracker.getSnapshot();
+
+    if (FormationUtils.promoteBackRowIfNeeded(this.party)) {
+      DebugLogger.info('CombatSystem', 'Back row promoted to front row after front row eliminated');
+    }
   }
 
   private checkCombatEnd(): boolean {

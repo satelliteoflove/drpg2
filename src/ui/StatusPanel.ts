@@ -2,6 +2,7 @@ import { Character } from '../entities/Character';
 import { Party } from '../entities/Party';
 import { StatusEffectSystem } from '../systems/StatusEffectSystem';
 import { CharacterStatus } from '../types/GameTypes';
+import { FormationUtils } from '../utils/FormationUtils';
 
 export class StatusPanel {
   private x: number;
@@ -33,7 +34,7 @@ export class StatusPanel {
 
     party.characters.slice(0, maxChars).forEach((char, index) => {
       const charY = startY + index * charHeight;
-      this.renderCharacterStatus(char, this.x + 10, charY, this.width - 20, charHeight - 5, ctx);
+      this.renderCharacterStatus(char, this.x + 10, charY, this.width - 20, charHeight - 5, ctx, index);
     });
   }
 
@@ -43,7 +44,8 @@ export class StatusPanel {
     y: number,
     width: number,
     height: number,
-    ctx: CanvasRenderingContext2D
+    ctx: CanvasRenderingContext2D,
+    partyIndex: number
   ): void {
     const statusColor = char.isDead ? '#ff0000' : char.statuses.length > 0 ? '#ffaa00' : '#00ff00';
 
@@ -51,10 +53,18 @@ export class StatusPanel {
     ctx.lineWidth = 1;
     ctx.strokeRect(x, y, width, height);
 
+    const row = FormationUtils.isCharacterRow(partyIndex);
+    const rowIndicator = row === 'front' ? '[F]' : '[B]';
+    const rowColor = row === 'front' ? '#44ff44' : '#4488ff';
+
     ctx.textAlign = 'left';
+    ctx.fillStyle = rowColor;
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(rowIndicator, x + 5, y + 14);
+
     ctx.fillStyle = '#fff';
     ctx.font = '12px monospace';
-    ctx.fillText(`${char.name} (${char.class})`, x + 5, y + 14);
+    ctx.fillText(`${char.name} (${char.class})`, x + 28, y + 14);
 
     ctx.font = '11px monospace';
     ctx.fillText(`Lv.${char.level}`, x + 5, y + 28);

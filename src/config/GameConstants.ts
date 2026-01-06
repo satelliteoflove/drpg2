@@ -180,8 +180,17 @@ export const GAME_CONFIG = {
   PARTY: {
     FORMATION_FRONT_SIZE: 3,
     FORMATION_BACK_SIZE: 3,
+    FRONT_ROW_INDICES: [0, 1, 2] as readonly number[],
+    BACK_ROW_INDICES: [3, 4, 5] as readonly number[],
     REST_HP_HEAL_PERCENT: 0.1,
     REST_MP_HEAL_PERCENT: 0.2,
+  },
+
+  MONSTER_FORMATION: {
+    FRONT_COLUMN_INDICES: [0, 1, 2] as readonly number[],
+    BACK_COLUMN_INDICES: [3, 4, 5] as readonly number[],
+    OVERFLOW_COLUMN_INDICES: [6, 7, 8] as readonly number[],
+    MAX_PER_COLUMN: 3,
   },
 
   HP_BONUSES: {

@@ -127,6 +127,7 @@ export interface Item {
     duration?: number;
   };
   speedCategory?: WeaponSpeedCategory;
+  range?: WeaponRange;
 }
 
 export type ItemEffect =
@@ -177,11 +178,16 @@ export interface Monster {
   modifiers?: ActiveModifier[];
 }
 
+export type WeaponRange = 'melee' | 'ranged' | 'reach';
+
+export type AttackType = 'melee' | 'ranged' | 'aoe' | 'special';
+
 export interface Attack {
   name: string;
   damage: string;
   effect?: string;
   chance: number;
+  attackType?: AttackType;
 }
 
 export interface ItemDrop {

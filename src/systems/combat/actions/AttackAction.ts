@@ -1,5 +1,6 @@
 import { CombatAction, CombatActionContext, CombatActionParams, CombatActionResult } from './CombatAction';
 import { EntityUtils } from '../../../utils/EntityUtils';
+import { FormationUtils } from '../../../utils/FormationUtils';
 import { GameServices } from '../../../services/GameServices';
 import { SFX_CATALOG } from '../../../config/AudioConstants';
 import { calculateAttackChargeTime } from '../../../config/InitiativeConstants';
@@ -10,7 +11,16 @@ export class AttackAction implements CombatAction {
 
   canExecute(context: CombatActionContext, _params: CombatActionParams): boolean {
     const aliveMonsters = context.encounter.monsters.filter((m) => m.hp > 0);
-    return aliveMonsters.length > 0;
+    if (aliveMonsters.length === 0) return false;
+
+    const currentUnit = context.getCurrentUnit();
+    if (!currentUnit || !EntityUtils.isCharacter(currentUnit)) return false;
+
+    if (!FormationUtils.canMeleeAttackFromPosition(currentUnit, context.party)) {
+      return false;
+    }
+
+    return true;
   }
 
   execute(context: CombatActionContext, params: CombatActionParams): CombatActionResult {

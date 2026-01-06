@@ -14,7 +14,7 @@ export const CLASS_EQUIPMENT_RESTRICTIONS = {
     shields: ['none'],
   },
   Priest: {
-    weapons: ['mace', 'staff', 'flail'], // No edged weapons
+    weapons: ['mace', 'staff', 'flail'],
     armor: ['robe', 'leather', 'chain'],
     shields: ['small', 'medium'],
   },
@@ -43,6 +43,36 @@ export const CLASS_EQUIPMENT_RESTRICTIONS = {
     armor: ['all'],
     shields: ['all'],
   },
+  Ranger: {
+    weapons: ['sword', 'bow', 'dagger'],
+    armor: ['leather', 'studded', 'chain'],
+    shields: ['small'],
+  },
+  Monk: {
+    weapons: ['staff', 'mace'],
+    armor: ['robe'],
+    shields: ['none'],
+  },
+  Alchemist: {
+    weapons: ['dagger', 'staff'],
+    armor: ['robe', 'leather'],
+    shields: ['none'],
+  },
+  Psionic: {
+    weapons: ['dagger', 'staff'],
+    armor: ['robe'],
+    shields: ['none'],
+  },
+  Bard: {
+    weapons: ['sword', 'dagger', 'bow'],
+    armor: ['leather', 'studded'],
+    shields: ['small'],
+  },
+  Valkyrie: {
+    weapons: ['sword', 'spear', 'mace'],
+    armor: ['chain', 'plate'],
+    shields: ['all'],
+  },
 };
 
 // Item templates for generation - Wizardry Gaiden IV Test Items
@@ -61,6 +91,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
+    range: 'melee',
   },
   {
     id: 'dagger',
@@ -75,6 +106,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
+    range: 'melee',
   },
   {
     id: 'poison_dagger',
@@ -89,6 +121,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
+    range: 'melee',
     onHitEffect: {
       statusType: 'Poisoned',
       chance: 0.10,
@@ -109,6 +142,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 1,
+    range: 'melee',
     onHitEffect: {
       statusType: 'Paralyzed',
       chance: 0.15,
@@ -129,6 +163,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
+    range: 'melee',
     onHitEffect: {
       statusType: 'Sleeping',
       chance: 0.08,
@@ -149,6 +184,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
+    range: 'reach',
   },
   {
     id: 'mace',
@@ -163,6 +199,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: false,
     blessed: false,
     enchantment: 0,
+    range: 'melee',
   },
   {
     id: 'muramasa',
@@ -177,6 +214,7 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     cursed: true, // Always cursed - cannot unequip
     blessed: false,
     enchantment: 3,
+    range: 'melee',
     description: 'A legendary cursed katana that thirsts for blood',
   },
   {
@@ -186,17 +224,48 @@ export const ITEM_TEMPLATES: Partial<Item>[] = [
     type: 'weapon',
     value: 5000,
     weight: 2,
-    effects: [{ type: 'damage', value: 6 }], // 1d4+2 average
+    effects: [{ type: 'damage', value: 6 }],
     classRestrictions: ['Mage', 'Bishop'],
     identified: false,
     cursed: false,
     blessed: false,
     enchantment: 2,
+    range: 'reach',
     invokable: true,
     charges: 30,
     maxCharges: 30,
     spellId: 'POWER_STRIKE',
     description: 'A magical staff imbued with a powerful offensive spell',
+  },
+  {
+    id: 'short_bow',
+    name: 'Short Bow',
+    unidentifiedName: '?Bow',
+    type: 'weapon',
+    value: 15,
+    weight: 2,
+    effects: [{ type: 'damage', value: 5 }],
+    classRestrictions: ['Thief', 'Ranger', 'Ninja'],
+    identified: true,
+    cursed: false,
+    blessed: false,
+    enchantment: 0,
+    range: 'ranged',
+  },
+  {
+    id: 'long_bow',
+    name: 'Long Bow',
+    unidentifiedName: '?Bow',
+    type: 'weapon',
+    value: 50,
+    weight: 3,
+    effects: [{ type: 'damage', value: 7 }],
+    classRestrictions: ['Ranger', 'Ninja'],
+    identified: true,
+    cursed: false,
+    blessed: false,
+    enchantment: 0,
+    range: 'ranged',
   },
 
   // === ARMOR ===
